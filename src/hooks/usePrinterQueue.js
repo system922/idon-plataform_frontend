@@ -13,7 +13,7 @@ export function usePrinterQueue() {
 
   useEffect(() => {
     loadQueueFromStorage();
-  }, []);
+  }, [loadQueueFromStorage]);
 
   // ── Guardar cola en localStorage ───────────────────────────────────────────
 

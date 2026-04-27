@@ -12,7 +12,7 @@ import {
   FiDollarSign, FiClipboard, FiThermometer, FiTruck, FiGrid,
   FiCalendar, FiStar, FiShoppingBag, FiClock, FiUsers,
   FiUserCheck, FiMap, FiMapPin, FiList, FiGlobe, FiBell,
-  FiFileText, FiUser, FiAlertCircle, FiZap,
+  FiFileText, FiAlertCircle, FiZap,
 } from 'react-icons/fi';
 import API_BASE, { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/BusinessLayout.css';
@@ -148,7 +148,7 @@ export default function BusinessLayout({ user, onLogout }) {
   const [error,        setError]        = useState(null);
   const [collapsed,    setCollapsed]    = useState(false);
   const [isSuspended,  setIsSuspended]  = useState(false);
-  const [selectedBiz,  setSelectedBiz]  = useState(getStoredBiz);
+  const [, setSelectedBiz] = useState(getStoredBiz);
 
   // ── Apertura de caja ──────────────────────────────────────────────────────
   const [aperturaChecked,  setAperturaChecked]  = useState(false);
