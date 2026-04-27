@@ -14,6 +14,7 @@ const AdminDashboard = () => {
     totalUsers: 0,
     modulesInUse: 0,
   });
+  const [, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 

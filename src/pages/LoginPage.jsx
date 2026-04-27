@@ -465,7 +465,7 @@ export default function LoginPage({ onLogin }) {
 
           {/* Color dots */}
           <div className="color-indicators">
-            {colors.map((c, i) => (
+            {COLORS.map((c, i) => (
               <div
                 key={i}
                 className={`color-dot ${i === logoColor ? 'active' : ''}`}
