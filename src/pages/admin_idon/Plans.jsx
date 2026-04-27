@@ -1,5 +1,4 @@
 import React from 'react';
-import { FiCreditCard } from 'react-icons/fi';
 import '../../styles/AdminPages.css';
 
 export default function Plans() {

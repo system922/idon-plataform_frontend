@@ -76,15 +76,6 @@ const Lbl = ({ children }) => (
   </label>
 );
 
-const Section = ({ title, children }) => (
-  <div style={{ marginBottom:'20px', paddingBottom:'20px', borderBottom:'1px solid var(--admin-border-light)' }}>
-    <h3 style={{ fontSize:'12px', fontWeight:'700', color:'#8CB79B', marginBottom:'12px',
-      textTransform:'uppercase', letterSpacing:'.5px' }}>
-      {title}
-    </h3>
-    {children}
-  </div>
-);
 
 /* ══ MODAL MÓDULOS DEL NEGOCIO ═════════════════════════════ */
 const BusinessModulesModal = ({ business, onClose, onSaved }) => {

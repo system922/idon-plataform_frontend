@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { Plus, Edit2, Trash2, X, Search, RefreshCw, BookOpen, ChevronRight, ChevronDown, Minus } from 'react-feather';
+import { Plus, Edit2, Trash2, X, Search, RefreshCw, BookOpen, Minus } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 
 const EMPTY_RECIPE = { name: '', description: '', category_id: '', yield_qty: 1, yield_unit: 'unidad' };

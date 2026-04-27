@@ -7,7 +7,6 @@ import {
   Clock as FiClock,
   RefreshCw as FiRefreshCw,
   Plus as FiPlus,
-  X
 } from 'react-feather';
 import '../../styles/AttendancePage.css';
 
@@ -84,6 +83,7 @@ export default function AttendancePage() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchAll();
   }, []);

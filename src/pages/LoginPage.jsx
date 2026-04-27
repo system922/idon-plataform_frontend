@@ -9,6 +9,12 @@ import {
 import '../styles/LoginPage.css';
 
 const SYSTEM_LOGO_URL = process.env.PUBLIC_URL + '/system.svg';
+const LOGOS = [
+  `${process.env.PUBLIC_URL}/IDON_1.svg`,
+  `${process.env.PUBLIC_URL}/IDON_2.svg`,
+  `${process.env.PUBLIC_URL}/IDON_3.svg`,
+];
+const COLORS = ['#ff8c42', '#8CB79B', '#FF6B9D', '#00D4FF'];
 
 export default function LoginPage({ onLogin }) {
   const navigate = useNavigate();
@@ -50,7 +56,7 @@ export default function LoginPage({ onLogin }) {
   /* ─── Owner lookup state ─── */
   const [ownerExists, setOwnerExists] = useState(false);
   const [ownerSearching, setOwnerSearching] = useState(false);
-  const [foundByApi, setFoundByApi] = useState(false);
+  const [, setFoundByApi] = useState(false);
 
   /* ─── Business types from API ─── */
   const [businessTypes, setBusinessTypes] = useState([]);
@@ -58,24 +64,18 @@ export default function LoginPage({ onLogin }) {
   const [errorTypes, setErrorTypes] = useState('');
 
   /* ─── Logo carousel ─── */
-  const logos = [
-    `${process.env.PUBLIC_URL}/IDON_1.svg`,
-    `${process.env.PUBLIC_URL}/IDON_2.svg`,
-    `${process.env.PUBLIC_URL}/IDON_3.svg`
-  ];
-  const colors = ['#ff8c42', '#8CB79B', '#FF6B9D', '#00D4FF'];
 
   const [logoIndex, setLogoIndex] = useState(0);
   const [logoColor, setLogoColor] = useState(0);
   const [logoOpacity, setLogoOpacity] = useState(1);
-  const [businessLogo, setBusinessLogo] = useState(null);
+  const [, setBusinessLogo] = useState(null);
 
   /* smooth logo cross-fade */
   useEffect(() => {
     const id = setInterval(() => {
       setLogoOpacity(0);
       setTimeout(() => {
-        setLogoIndex(prev => (prev + 1) % logos.length);
+        setLogoIndex(prev => (prev + 1) % LOGOS.length);
         setLogoOpacity(1);
       }, 600);
     }, 4000);
@@ -85,7 +85,7 @@ export default function LoginPage({ onLogin }) {
   /* color cycle */
   useEffect(() => {
     const id = setInterval(() => {
-      setLogoColor(prev => (prev + 1) % colors.length);
+      setLogoColor(prev => (prev + 1) % COLORS.length);
     }, 2500);
     return () => clearInterval(id);
   }, []);
@@ -108,6 +108,7 @@ export default function LoginPage({ onLogin }) {
     const q = new URLSearchParams(location.search);
     const id = routeBusinessSlug || q.get('b');
     if (id) setBusinessSlugInput(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ─── Fetch business types when user reaches step 2 ─── */
@@ -128,7 +129,7 @@ export default function LoginPage({ onLogin }) {
         .catch(e => setErrorTypes(e.message))
         .finally(() => setLoadingTypes(false));
     }
-  }, [isLogin, registroStep]);
+  }, [isLogin, registroStep, businessTypes.length]);
 
   /* ─── Ecuador civil registry API ─── */
   async function buscarEnAPIEcuador(cedula) {
@@ -413,7 +414,7 @@ export default function LoginPage({ onLogin }) {
     return 'idle';
   };
 
-  const currentColor = colors[logoColor];
+  const currentColor = COLORS[logoColor];
 
   return (
     <div className="login-page">
@@ -431,7 +432,7 @@ export default function LoginPage({ onLogin }) {
           {/* Logo */}
           <div className="logo-carousel">
             <img
-              src={logos[logoIndex]}
+              src={LOGOS[logoIndex]}
               alt="IDON Logo"
               className="animated-logo"
               style={{

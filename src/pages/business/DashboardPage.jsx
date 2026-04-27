@@ -69,6 +69,7 @@ export default function ManagerDashboard() {
   const [graphLoading, setGraphLoading] = useState(true);
   const [error,        setError       ] = useState('');
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchStats(); fetchGraphs(); }, []);
 
   async function fetchStats() {

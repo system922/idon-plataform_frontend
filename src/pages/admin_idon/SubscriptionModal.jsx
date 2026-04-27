@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  FiX, FiCheck, FiCreditCard, FiBox, FiSettings, FiShoppingCart,
+  FiX, FiCreditCard, FiBox, FiSettings, FiShoppingCart,
   FiBarChart2, FiDollarSign, FiBriefcase, FiTruck, FiGrid,
   FiCalendar, FiStar, FiShoppingBag, FiUsers, FiUserCheck,
   FiMap, FiMapPin, FiList, FiGlobe, FiBell, FiFileText,

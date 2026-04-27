@@ -7,18 +7,11 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { fetchWithAuth } from '../../config/apiBase';
 
-const getToken    = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
 const getStoredBiz = () => {
   try { return JSON.parse(localStorage.getItem('selectedBusiness') || 'null'); }
   catch { return null; }
 };
 
-// ─── DATOS DEL PROPIETARIO (mostrar encima de las cuentas) ───────────────────
-const OWNER_INFO = {
-  fullName: 'Jefferson Gregorio Cagua Figueroa',   // ← nombres y apellidos
-  cedula:   '1315614477',           // ← número de cédula
-  email:    'jcaguafigueroa9907@gmail.com',   // ← correo de contacto
-};
 
 // ─── CUENTAS BANCARIAS ────────────────────────────────────────────────────────
 const BANK_ACCOUNTS = [

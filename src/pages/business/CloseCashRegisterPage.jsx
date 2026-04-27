@@ -64,7 +64,6 @@ export default function CashRegisterClosePage() {
   const [comandasFisico, setComandasFisico] = useState('0');
   const [remarks, setRemarks] = useState('');
 
-  const { selectedBusiness } = useBusinessContext();
   const [bizInfo, setBizInfo] = useState(null);
   const [printerConnected, setPrinterConnected] = useState(false);
 
