@@ -1,17 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import PageTemplate from '../../components/PageTemplate';
 import OrderHeader from '../../components/OrderHeader';
 import ItemsSection from '../../components/ItemsSection';
 import AddItemModal from '../../components/AddItemModal';
 import { fetchWithAuth } from '../../config/apiBase';
-import { useQzTray } from '../../components/useQzTray';
-import { usePrinterService } from '../../services/usePrinterService';
 import '../../styles/CreateOrder.css';
 
 export default function TakeOrderPageNew() {
-  const { printerConnected, printerError }  = useQzTray();
-  const { print }                           = usePrinterService();
   const [vatRate,               setVatRate              ] = useState(0.12);
   const [productos,             setProductos            ] = useState([]);
   const [guardando,             setGuardando            ] = useState(false);
@@ -26,7 +21,6 @@ export default function TakeOrderPageNew() {
   const [productoSeleccionado,  setProductoSeleccionado ] = useState(null);
   const [cantidadItem,          setCantidadItem         ] = useState(1);
   const [notasItem,             setNotasItem            ] = useState('');
-  const [printLoading,          setPrintLoading         ] = useState(false);
 
   // ── Carga inicial ─────────────────────────────────────────────────────────
 
@@ -92,27 +86,6 @@ export default function TakeOrderPageNew() {
   const totalConIva = useMemo(() => subtotal + ivaAmount, [subtotal, ivaAmount]);
   const ivaLabel    = useMemo(() => `${Math.round((vatRate || 0) * 1000) / 10}%`, [vatRate]);
 
-  // ── Impresión — reutiliza usePrinterService con template 'comanda' ────────
-  //
-  //  El data que enviamos sigue el contrato de formatComandaTicket():
-  //  { comanda, table, items, notes }
-  //  Cualquier cambio de formato se hace en usePrinterService, no aquí.
-
-  async function imprimirComanda(pedido, clienteNombre) {
-    if (!printerConnected) return;
-    try {
-      setPrintLoading(true);
-      await print('printer_ticket', 'comanda', {
-        comanda: { number: pedido?.numero_pedido ?? 'N/A' },
-        table:   pedido?.mesa_numero ?? pedido?.numero_mesa ?? (orderType === 'delivery' ? 'DELIVERY' : 'LLEVAR'),
-        items:   items,   // items locales con campo .notas ya incluido
-        notes:   notas,
-      });
-    } finally {
-      setPrintLoading(false);
-    }
-  }
-
   // ── Guardar orden ─────────────────────────────────────────────────────────
 
   async function guardarOrden() {
@@ -173,9 +146,6 @@ export default function TakeOrderPageNew() {
       const data = await res.json();
       setSuccess(`✅ Orden ${data?.pedido?.numero_pedido ?? ''} enviada a cocina`);
 
-      // Imprimir comanda reutilizando usePrinterService
-      await imprimirComanda(data.pedido, CF_NOMBRE);
-
       setTimeout(() => {
         setNumeroMesa(''); setMesaId(''); setNotas('');
         setOrderType('dine_in'); setItems([]);
@@ -194,14 +164,8 @@ export default function TakeOrderPageNew() {
   return (
     <PageTemplate title="Nueva orden" subtitle="Enviar a cocina">
       <div className="takeorder-shell">
-        {error      && <div className="alert alert-error">{error}</div>}
-        {success    && <div className="alert alert-success">{success}</div>}
-        {printerError && (
-          <div className="print-alert">
-            <div className="print-alert-title">Error de impresión</div>
-            <div className="print-alert-desc">{printerError}. Verifica QZ Tray y la impresora USB.</div>
-          </div>
-        )}
+        {error   && <div className="alert alert-error">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
 
         <div className="order-grid">
           <OrderHeader
@@ -218,7 +182,7 @@ export default function TakeOrderPageNew() {
             ivaAmount={ivaAmount}
             totalConIva={totalConIva}
             ivaLabel={ivaLabel}
-            guardando={guardando || printLoading}
+            guardando={guardando}
             orderType={orderType}
             numeroMesa={numeroMesa}
             guardarOrden={guardarOrden}
