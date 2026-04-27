@@ -1,0 +1,173 @@
+/* Modal Overlay centrado y blur */
+.rol-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(14, 13, 20, 0.80);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  backdrop-filter: blur(3px);
+}
+
+/* Caja del Modal */
+.rol-modal-box {
+  background: linear-gradient(135deg, #161922 0%, #232434 100%);
+  border-radius: 18px;
+  box-shadow: 0 32px 80px #000a, 0 3px 14px #0005;
+  width: 97vw;
+  max-width: 420px;
+  min-width: 300px;
+  padding: 36px 30px 24px 30px;
+  border: 1.2px solid #232544;
+  color: #f3f1ff;
+  margin: 0 12px;
+  position: relative;
+}
+
+/* Header y título */
+.rol-modal-box h2 {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #fff;
+  line-height: 1.05;
+  margin: 0 0 24px 0;
+}
+
+.rol-modal-box button.close {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+/* Inputs generales */
+.rol-modal-box input[type="text"],
+.rol-modal-box input[type="email"],
+.rol-modal-box input[type="password"] {
+  background: #252638;
+  color: #e8e6f4;
+  border: 1.4px solid #30334e;
+  border-radius: 8px;
+  font-size: 15px;
+  padding: 11px 13px;
+  width: 100%;
+  outline: none;
+  box-sizing: border-box;
+  margin: 0 0 16px 0;
+  font-family: inherit;
+  transition: border .18s;
+}
+.rol-modal-box input[type="text"]:focus,
+.rol-modal-box input[type="email"]:focus,
+.rol-modal-box input[type="password"]:focus {
+  border-color: #6842fe;
+}
+
+/* Labels */
+.rol-modal-box label {
+  display: block;
+  color: #bcbce6;
+  font-weight: 700;
+  margin-bottom: 7px;
+  font-size: 14px;
+}
+
+/* Permisos modulos lista */
+.rol-permisos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 8px 0 18px 0;
+}
+
+/* Checkbox de modulo estilo pro */
+.rol-modulo-checkbox {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: #e6e6e6;
+  gap: 11px;
+  cursor: pointer;
+  margin-bottom: 4px;
+  padding: 1px 0;
+}
+.rol-modulo-checkbox input[type="checkbox"] {
+  accent-color: #6842fe;
+  width: 18px;
+  height: 18px;
+  margin-right: 5px;
+}
+
+/* Features de modulo */
+.rol-modulo-features {
+  margin-left: 27px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 7px;
+}
+.rol-feature-checkbox {
+  display: flex;
+  align-items: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #c5bdfc;
+  cursor: pointer;
+  background: #232443;
+  padding: 4px 9px 4px 7px;
+  border-radius: 7px;
+  margin-bottom: 2px;
+  transition: background .14s;
+}
+.rol-feature-checkbox input[type="checkbox"] {
+  accent-color: #6842fe;
+  width: 14px; height: 14px;
+  margin-right: 5px;
+}
+
+/* Footer botones */
+.rol-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 11px;
+  margin-top: 26px;
+}
+.rol-modal-footer button {
+  padding: 9px 26px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+.rol-modal-footer .cancelar {
+  background: #292935;
+  color: #eee;
+  border: 1px solid #383850;
+}
+.rol-modal-footer .crear {
+  background: #6842fe;
+  color: #fff;
+  border: none;
+  box-shadow: 0 1px 8px #4f42fe33;
+  transition: background .14s;
+}
+.rol-modal-footer .crear:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* Scroll suave dentro del modal si hay overflow */
+.rol-modal-box {
+  max-height: 92vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #6842fe #232434;
+}

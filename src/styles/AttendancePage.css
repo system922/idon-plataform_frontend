@@ -1,0 +1,125 @@
+.att-toolbar {
+  display: flex;
+  gap: 10px;
+}
+
+.att-btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.att-btn.primary {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+}
+
+/* GRID */
+.att-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px,1fr));
+  gap: 16px;
+}
+
+/* CARD */
+.att-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.att-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.att-avatar {
+  width: 36px;
+  height: 36px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.att-cedula {
+  font-size: 12px;
+  margin: 6px 0;
+  color: var(--color-text-muted);
+}
+
+.att-times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  font-size: 13px;
+  gap: 5px;
+}
+
+.att-status {
+  margin-top: 10px;
+  font-weight: bold;
+  color: var(--color-primary);
+}
+
+/* MODAL */
+.att-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.att-modal {
+  background: var(--color-card);
+  border-radius: 10px;
+  width: 400px;
+  padding: 20px;
+}
+
+.att-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.att-modal-body {
+  background: rgba(255,255,255,0.08);
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.att-input {
+  color: #2c421b;
+  font-size: 14px;
+  font-weight: 900;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+}
+
+.att-modal-footer {
+  margin-top: 15px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.att-empty {
+  padding: 40px;
+  text-align: center;
+  opacity: 0.6;
+}

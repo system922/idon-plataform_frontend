@@ -1,0 +1,334 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800;900&family=Inter:wght@300;400;500;600&display=swap');
+
+/* ── Variables (mismo sistema que LoginPage) ── */
+:root {
+  --lp-orange:      #ff8c42;
+  --lp-orange-dim:  rgba(255,140,66,.18);
+  --lp-orange-glow: rgba(255,140,66,.35);
+  --lp-green:       #8CB79B;
+  --lp-green-dim:   rgba(140,183,155,.18);
+  --lp-bg:          #080810;
+  --lp-card:        rgba(18,18,28,.92);
+  --lp-border:      rgba(255,140,66,.18);
+  --lp-border-hi:   rgba(255,140,66,.45);
+  --lp-txt:         #f0f0f8;
+  --lp-txt-muted:   #7a7a96;
+  --lp-txt-soft:    #b0b0c8;
+  --lp-radius:      14px;
+}
+
+/* ══════════════════════════════════════════
+   PÁGINA BASE
+══════════════════════════════════════════ */
+.legal-page {
+  height: 100vh;
+  height: 100dvh;
+  background: var(--lp-bg);
+  color: var(--lp-txt);
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #ff8c42 rgba(255,255,255,.04);
+}
+
+/* ── Scrollbar personalizada (Chrome / Edge / Safari) ── */
+.legal-page::-webkit-scrollbar {
+  width: 6px;
+}
+.legal-page::-webkit-scrollbar-track {
+  background: rgba(255,255,255,.04);
+}
+.legal-page::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--lp-orange), var(--lp-green));
+  border-radius: 99px;
+}
+.legal-page::-webkit-scrollbar-thumb:hover {
+  background: var(--lp-orange);
+}
+
+/* Blob ambiental de fondo — igual que el login */
+.legal-page::before {
+  content: '';
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  top: -200px;
+  right: -200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,140,66,.07) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+.legal-page::after {
+  content: '';
+  position: fixed;
+  width: 500px;
+  height: 500px;
+  bottom: -150px;
+  left: -150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(140,183,155,.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ══════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════ */
+.legal-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 1.25rem 2rem;
+  background: rgba(8,8,16,.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--lp-border);
+  box-shadow: 0 1px 0 rgba(255,140,66,.08), 0 4px 24px rgba(0,0,0,.4);
+}
+
+/* línea naranja superior — mismo truco que .form-container::before */
+.legal-header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,140,66,.6), transparent);
+}
+
+.legal-header h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 900;
+  letter-spacing: -1px;
+  margin: 0.5rem 0 0.25rem;
+  background: linear-gradient(135deg, #ffffff 0%, var(--lp-orange) 50%, var(--lp-green) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.15;
+}
+
+.legal-date {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--lp-txt-muted);
+  font-weight: 500;
+  letter-spacing: .4px;
+  margin-top: 0.2rem;
+}
+
+/* ── Botón Volver ── */
+.legal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  background: var(--lp-orange-dim);
+  border: 1px solid rgba(255,140,66,.28);
+  color: var(--lp-orange);
+  border-radius: 10px;
+  font-family: 'Syne', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .25s, transform .25s, box-shadow .25s;
+  margin-bottom: 0.75rem;
+}
+.legal-back:hover {
+  background: rgba(255,140,66,.28);
+  transform: translateX(-4px);
+  box-shadow: 0 0 14px var(--lp-orange-glow);
+}
+.legal-back:active { transform: translateX(-2px); }
+
+/* ══════════════════════════════════════════
+   CONTENIDO
+══════════════════════════════════════════ */
+.legal-content {
+  position: relative;
+  z-index: 1;
+  padding: 2.5rem 1rem 5rem;
+  animation: legalFadeIn .45s ease-out both;
+}
+
+@keyframes legalFadeIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.legal-wrapper {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+/* ══════════════════════════════════════════
+   SECCIONES
+══════════════════════════════════════════ */
+.legal-section {
+  background: var(--lp-card);
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius);
+  padding: 1.75rem 2rem;
+  margin-bottom: 1.25rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+  transition: border-color .3s, box-shadow .3s;
+}
+.legal-section::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,140,66,.25), transparent);
+}
+.legal-section:hover {
+  border-color: var(--lp-border-hi);
+  box-shadow: 0 0 28px rgba(255,140,66,.06);
+}
+
+.legal-section h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  font-weight: 800;
+  letter-spacing: -.2px;
+  margin-bottom: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--lp-border);
+  background: linear-gradient(135deg, var(--lp-txt) 0%, var(--lp-orange) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: block;
+}
+
+.legal-section h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--lp-green);
+  margin: 1.25rem 0 0.6rem;
+  letter-spacing: .2px;
+}
+
+.legal-section p {
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: var(--lp-txt-soft);
+  margin-bottom: 0.85rem;
+}
+
+.legal-section ul {
+  margin: 0 0 1rem 1.25rem;
+  list-style: none;
+  padding: 0;
+}
+
+.legal-section li {
+  position: relative;
+  padding-left: 1.2rem;
+  margin-bottom: 0.55rem;
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: var(--lp-txt-soft);
+}
+.legal-section li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lp-orange);
+  opacity: .7;
+}
+
+.legal-section strong {
+  color: var(--lp-orange);
+  font-weight: 600;
+}
+
+/* ── Info de contacto ── */
+.contact-info {
+  background: rgba(255,140,66,.04);
+  border: 1px solid rgba(255,140,66,.2);
+  border-left: 3px solid var(--lp-orange);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-top: 0.75rem;
+}
+.contact-info p {
+  margin-bottom: 0.4rem;
+  color: var(--lp-txt);
+  font-size: 0.88rem;
+}
+.contact-info a {
+  color: var(--lp-orange);
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255,140,66,.35);
+  transition: color .25s, border-color .25s;
+}
+.contact-info a:hover {
+  color: #ffa866;
+  border-bottom-color: #ffa866;
+}
+
+/* ── Links dentro de secciones ── */
+.legal-section a {
+  color: var(--lp-orange);
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255,140,66,.4);
+  transition: color .25s, border-color .25s;
+}
+.legal-section a:hover {
+  color: #ffa866;
+  border-bottom-color: #ffa866;
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .legal-header  { padding: 1rem 1.25rem; }
+  .legal-content { padding: 1.5rem 0.75rem 4rem; }
+  .legal-section { padding: 1.25rem 1.25rem; }
+  .legal-section h2 { font-size: 1rem; }
+}
+
+@media (max-width: 480px) {
+  .legal-header h1 { font-size: 1.3rem; }
+  .legal-back { font-size: 0.72rem; padding: 0.45rem 0.75rem; }
+  .legal-content { padding: 1rem 0.5rem 3rem; }
+  .legal-section { padding: 1rem; margin-bottom: 0.75rem; border-radius: 10px; }
+  .legal-section p,
+  .legal-section li { font-size: 0.84rem; }
+}
+
+/* ══════════════════════════════════════════
+   IMPRESIÓN
+══════════════════════════════════════════ */
+@media print {
+  .legal-page,
+  .legal-page::before,
+  .legal-page::after { background: #fff; }
+  .legal-header { background: #fff; border-bottom: 1px solid #ccc; box-shadow: none; }
+  .legal-header::before { display: none; }
+  .legal-header h1 { -webkit-text-fill-color: #111; background: none; color: #111; }
+  .legal-back { display: none; }
+  .legal-section { background: #fff; border: 1px solid #ddd; box-shadow: none; }
+  .legal-section::before { display: none; }
+  .legal-section h2 { -webkit-text-fill-color: #111; background: none; color: #111; }
+  .legal-section a,
+  .contact-info a { color: #0055cc; border-bottom: none; }
+  .contact-info { background: #f5f5f5; border-left: 3px solid #333; }
+}
