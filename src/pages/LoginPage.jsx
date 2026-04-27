@@ -7,6 +7,7 @@ import {
   FiTrendingUp, FiBarChart2, FiCheckCircle
 } from 'react-icons/fi';
 import '../styles/LoginPage.css';
+import API_BASE from '../config/apiBase';
 
 const SYSTEM_LOGO_URL = process.env.PUBLIC_URL + '/system.svg';
 const LOGOS = [
@@ -116,7 +117,6 @@ export default function LoginPage({ onLogin }) {
     if (!isLogin && registroStep === 2 && businessTypes.length === 0) {
       setLoadingTypes(true);
       setErrorTypes('');
-      const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
       fetch(`${API_BASE}/api/business-types`)
         .then(r => {
           if (!r.ok) throw new Error('No se pudieron cargar los tipos de negocio');
@@ -290,7 +290,6 @@ export default function LoginPage({ onLogin }) {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
       const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -320,7 +319,6 @@ export default function LoginPage({ onLogin }) {
   const handleSelectBusiness = async (businessId) => {
     setSelectingBusiness(true); setError('');
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
       const res = await fetch(`${API_BASE}/api/auth/select-business`, {
         method: 'POST',
         headers: {
@@ -343,7 +341,6 @@ export default function LoginPage({ onLogin }) {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
       const body = {
         firstName:      regForm.firstName,
         lastName:       regForm.lastName,
