@@ -27,6 +27,7 @@ export default function CheckoutModern() {
   const [selectedItems, setSelectedItems] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [, setClientApiLoading] = useState(false);
 
   // Normal payment state
   const [amountPaidRaw, setAmountPaidRaw] = useState('');
