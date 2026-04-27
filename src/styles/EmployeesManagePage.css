@@ -223,3 +223,28 @@
   padding: 8px 14px;
   border-radius: 8px;
 }
+
+/* ── Responsive ── */
+@media (max-width: 767px) {
+  .emp-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .emp-search-box {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .emp-search-box input {
+    width: 100%;
+  }
+
+  .emp-stats {
+    flex-wrap: wrap;
+  }
+
+  .emp-stats > * {
+    min-width: calc(50% - 8px);
+    flex: 1;
+  }
+}

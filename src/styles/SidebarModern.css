@@ -560,3 +560,35 @@
 .sidebar-modern.collapsed .sidebar-footer {
   position: static;
 }
+
+/* ══════════════════════════════════════════════════════
+   MOBILE  (≤ 767px)
+══════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  /* Siempre expandido en el drawer móvil */
+  .sidebar-modern.collapsed {
+    width: 100% !important;
+  }
+
+  .sidebar-modern.collapsed .sidebar-logo-text,
+  .sidebar-modern.collapsed .section-label,
+  .sidebar-modern.collapsed .section-chevron,
+  .sidebar-modern.collapsed .menu-label,
+  .sidebar-modern.collapsed .user-info,
+  .sidebar-modern.collapsed .user-chevron {
+    display: block !important;
+    opacity: 1 !important;
+    width: auto !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+
+  /* Aumenta el tamaño de los items para toque fácil */
+  .section-header,
+  .menu-item {
+    min-height: 46px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    font-size: 14px;
+  }
+}

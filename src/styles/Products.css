@@ -278,3 +278,34 @@ body {
 .btn-secondary:hover {
   background: rgba(255,255,255,0.05);
 }
+
+/* ── Responsive ── */
+@media (max-width: 767px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .stats {
+    flex-wrap: wrap;
+  }
+
+  .stat-card {
+    min-width: calc(50% - 8px);
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .modal {
+    width: 95vw;
+    max-width: 95vw;
+    padding: 18px;
+  }
+}

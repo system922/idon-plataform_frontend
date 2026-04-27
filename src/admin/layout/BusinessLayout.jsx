@@ -12,7 +12,7 @@ import {
   FiDollarSign, FiClipboard, FiThermometer, FiTruck, FiGrid,
   FiCalendar, FiStar, FiShoppingBag, FiClock, FiUsers,
   FiUserCheck, FiMap, FiMapPin, FiList, FiGlobe, FiBell,
-  FiFileText, FiAlertCircle, FiZap,
+  FiFileText, FiAlertCircle, FiZap, FiMenu,
 } from 'react-icons/fi';
 import API_BASE, { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/BusinessLayout.css';
@@ -147,6 +147,7 @@ export default function BusinessLayout({ user, onLogout }) {
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [collapsed,    setCollapsed]    = useState(false);
+  const [mobileOpen,   setMobileOpen]   = useState(false);
   const [isSuspended,  setIsSuspended]  = useState(false);
   const [, setSelectedBiz] = useState(getStoredBiz);
 
@@ -254,14 +255,29 @@ export default function BusinessLayout({ user, onLogout }) {
       ) : (
         <div className="business-layout">
 
+          {/* Mobile topbar */}
+          <header className="business-mobile-topbar">
+            <button className="business-hamburger" onClick={() => setMobileOpen(true)} aria-label="Abrir menú">
+              <FiMenu size={22} />
+            </button>
+            <span className="business-mobile-brand">ID<span>ON</span></span>
+            <div className="business-mobile-topbar-spacer" />
+          </header>
+
+          {/* Overlay backdrop */}
+          {mobileOpen && (
+            <div className="business-overlay" onClick={() => setMobileOpen(false)} />
+          )}
+
           {/* ── Sidebar ── */}
-          <div className={`business-sidebar-wrapper ${collapsed ? 'collapsed' : ''}`}>
+          <div className={`business-sidebar-wrapper ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
             <SidebarModern
               user={user}
               menu={navData ? buildSidebarMenu(navData, ownerAccess) : []}
               onLogout={handleLogout}
               collapsed={collapsed}
               setCollapsed={setCollapsed}
+              onMobileClose={() => setMobileOpen(false)}
             />
           </div>
 

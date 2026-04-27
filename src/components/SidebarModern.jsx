@@ -195,7 +195,7 @@ function UserCard({ user, onLogout, isCollapsed }) {
 /* ─────────────────────────────────────────────
    SIDEBAR PRINCIPAL
 ───────────────────────────────────────────── */
-export default function SidebarModern({ user, menu, onLogout, collapsed, setCollapsed }) {
+export default function SidebarModern({ user, menu, onLogout, collapsed, setCollapsed, onMobileClose }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState({});
@@ -210,7 +210,10 @@ export default function SidebarModern({ user, menu, onLogout, collapsed, setColl
     : [];
 
   const handleToggle   = (key) => setExpandedSections(p => ({ ...p, [key]: !p[key] }));
-  const handleNavigate = (path) => { console.log('[Sidebar] navegando a:', path); navigate(path); };
+  const handleNavigate = (path) => {
+    navigate(path);
+    onMobileClose?.();
+  };
   const currentPath    = location.pathname;
 
   return (

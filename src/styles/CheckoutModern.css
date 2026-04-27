@@ -234,3 +234,34 @@
   border-radius: 7px;
   box-shadow:0 2px 13px #1070420f
 }
+
+/* ── Responsive ── */
+@media (max-width: 767px) {
+  .checkout-modern-card {
+    padding: 12px 14px;
+  }
+
+  .cmbx-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .inputs-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pay-methods {
+    flex-wrap: wrap;
+  }
+
+  .actions-row {
+    flex-wrap: wrap;
+  }
+
+  .btn-guardar,
+  .btn-cancelar {
+    flex: 1;
+    text-align: center;
+  }
+}

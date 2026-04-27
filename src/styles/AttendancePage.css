@@ -123,3 +123,19 @@
   text-align: center;
   opacity: 0.6;
 }
+
+/* ── Responsive ── */
+@media (max-width: 767px) {
+  .att-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .att-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .att-modal {
+    width: 92vw;
+    max-width: 92vw;
+  }
+}
