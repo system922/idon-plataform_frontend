@@ -11,8 +11,8 @@ import '../../styles/CheckoutModern.css';
 
 export default function CheckoutModern() {
   const { selectedBusiness } = useBusinessContext();
-  const { printerConnected, printerLoading, printerError } = useQzTray();
-  const { print, getPrinterConfig, openCashDrawer } = usePrinterService();
+  const { printerConnected, printerError } = useQzTray();
+  const { print, getPrinterConfig } = usePrinterService();
 
   const [orders, setOrders] = useState([]);
   const [bizInfo, setBizInfo] = useState(null);
@@ -24,11 +24,9 @@ export default function CheckoutModern() {
   const [clientePhone, setClientePhone] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [printLoading, setPrintLoading] = useState(false);
-  const [notification, setNotification] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [clientApiLoading, setClientApiLoading] = useState(false);
 
   // Normal payment state
   const [amountPaidRaw, setAmountPaidRaw] = useState('');
