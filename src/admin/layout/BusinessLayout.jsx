@@ -19,6 +19,7 @@ import '../../styles/BusinessLayout.css';
 
 import { BusinessContextProvider } from '../../admin/config/BusinessContext';
 import AperturaCajaPage from '../../pages/business/AperturaCajaPage';
+import { useAutoPrint } from '../../hooks/useAutoPrint';
 
 const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
 
@@ -130,6 +131,9 @@ export default function BusinessLayout({ user, onLogout }) {
   const [collapsed,    setCollapsed]    = useState(false);
   const [isSuspended,  setIsSuspended]  = useState(false);
   const [selectedBiz,  setSelectedBiz]  = useState(getStoredBiz);
+
+  // ── Impresión automática de comandas (laptop del cajero/dueño) ───────────
+  useAutoPrint({ businessId: selectedBiz?.id, enabled: !!selectedBiz?.id });
 
   // ── Apertura de caja ──────────────────────────────────────────────────────
   const [aperturaChecked,  setAperturaChecked]  = useState(false);
