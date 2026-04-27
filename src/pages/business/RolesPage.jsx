@@ -135,6 +135,7 @@ function RoleModal({ role, onClose, onSave, saving, modules }) {
                     onChange={() => handleModuleCheck(m)}
                     onClick={ev => ev.stopPropagation()}
                   />
+                  <ModIcon code={m.code} />
                   {m.name}
                   {m.features?.length > 0 && (
                     <span style={{ marginLeft: 7, color: '#6e5dbe', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: 18 }}

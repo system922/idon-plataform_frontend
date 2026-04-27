@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { Search, DollarSign, User, FileText } from 'react-feather';
+import { DollarSign, User, FileText } from 'react-feather';
 
 export default function ReportsSalesPage() {
   // Datos demo (debes conectar a tu API)
-  const [sales, setSales] = useState([
+  const [sales] = useState([
     {
       id: 1223,
       date: '2024-05-21',
