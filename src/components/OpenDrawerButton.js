@@ -4,7 +4,7 @@ import { FiInbox } from 'react-icons/fi';
 import PasswordModal from './PasswordModal';
 import '../styles/OpenDrawerButton.css';
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
+import API_BASE from '../config/apiBase';
 
 function getOperatorUser() {
   try {

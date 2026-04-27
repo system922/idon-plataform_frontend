@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/LoginPage.css';
 
-const API_BASE = 'http://localhost:4000';
+import API_BASE from '../config/apiBase';
 
 const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }) => {
   const [step, setStep] = useState(1);

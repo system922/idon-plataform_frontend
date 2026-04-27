@@ -9,7 +9,7 @@ import AddItemModal from '../../components/AddItemModal';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
 import '../../styles/CreateOrder.css';
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
+import API_BASE from '../../config/apiBase';
 
 export default function TakeOrderPageNew() {
   const navigate = useNavigate();

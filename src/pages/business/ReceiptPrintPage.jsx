@@ -6,7 +6,7 @@ import { useBusinessContext } from '../../admin/config/BusinessContext';
 import { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/ReceiptPrint.css';
 
-const API_BASE      = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
+import API_BASE from '../../config/apiBase';
 const PRINTER_NAME  = 'POS-58';
 const WIDTH         = 32;
 // Helpers
