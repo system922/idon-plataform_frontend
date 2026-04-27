@@ -3,10 +3,14 @@
   <head>
     <meta charset="utf-8" />
 
-    <!-- Favicon -->
+    <!-- Favicon y iconos principales -->
     <link rel="icon" href="%PUBLIC_URL%/IDON_3.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="%PUBLIC_URL%/IDON_3.svg" />
-<meta property="og:image" content="%PUBLIC_URL%/IDON_3.svg" />
+    <link rel="apple-touch-icon" sizes="192x192" href="%PUBLIC_URL%/IDON_3.svg" />
+    <meta property="og:image" content="%PUBLIC_URL%/IDON_3.svg" />
+
+    <!-- Manifest -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
     <!-- Viewport -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -17,7 +21,7 @@
     <title>IDON | Gestión Multinegocios</title>
     <meta
       name="description"
-      content="IDON ERP es una plataforma de gestión multinegocio diseñada para restaurantes, comercios y empresas. Controla operaciones, ventas, inventario y más desde un solo sistema."
+      content="IDON es una plataforma de gestión multinegocio diseñada para restaurantes, comercios y empresas. Controla operaciones, ventas, inventario y más desde un solo sistema."
     />
     <meta
       name="keywords"
@@ -26,28 +30,22 @@
     <meta name="author" content="IDON" />
 
     <!-- Open Graph (para compartir en redes) -->
-    <meta property="og:title" content="IDON ERP | Gestión Inteligente de Negocios" />
+    <meta property="og:title" content="IDON | Gestión Inteligente de Negocios" />
     <meta
       property="og:description"
-      content="Administra múltiples negocios en un solo sistema con IDON ERP. Solución moderna, escalable y eficiente."
+      content="Administra múltiples negocios en un solo sistema con IDON. Solución moderna, escalable y eficiente."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="%PUBLIC_URL%/logo192.png" />
+    <meta property="og:image" content="%PUBLIC_URL%/IDON_3.svg" />
 
-    <!-- Manifest -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-
-    <!-- Preconnect (mejora rendimiento si luego usas APIs externas o fonts) -->
+    <!-- Preconnect y fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-    <!-- Tipografía recomendada -->
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
 
-    <!-- Estilo base -->
     <style>
       body {
         margin: 0;
@@ -59,14 +57,10 @@
   </head>
 
   <body>
-    <noscript>
-      IDON ERP requiere JavaScript para funcionar correctamente. Por favor, actívalo en tu navegador.
-    </noscript>
-
     <div id="root"></div>
 
     <!--
-      IDON ERP - Sistema de Gestión Multinegocio
+      IDON - Plataforma de Gestión Multinegocio
       Plataforma diseñada para escalar y adaptarse a distintos tipos de negocios.
       © 2026 IDON. Todos los derechos reservados.
     -->
