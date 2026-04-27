@@ -11,7 +11,7 @@ import '../../styles/CheckoutModern.css';
 
 export default function CheckoutModern() {
   const { selectedBusiness } = useBusinessContext();
-  const { printerConnected, printerError } = useQzTray();
+  const { printerError } = useQzTray();
   const { print, getPrinterConfig } = usePrinterService();
 
   const [orders, setOrders] = useState([]);
