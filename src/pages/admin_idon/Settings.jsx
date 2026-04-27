@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiCheck, FiRefreshCw, FiAlertCircle, FiSettings, FiMessageCircle } from 'react-icons/fi';
+import { FiCheck, FiRefreshCw, FiAlertCircle, FiMessageCircle } from 'react-icons/fi';
 import apiService from '../../services/apiService';
 import '../../styles/AdminPages.css';
 

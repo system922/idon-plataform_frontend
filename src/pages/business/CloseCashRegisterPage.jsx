@@ -3,7 +3,6 @@ import PageTemplate from '../../components/PageTemplate';
 import { RefreshCw, AlertCircle, DollarSign, Briefcase, Gift, CreditCard } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 import qz from 'qz-tray';
-import { useBusinessContext } from '../../admin/config/BusinessContext';
 import usePrinterTicket from '../../hooks/usePrinterConfig.';
 import PrintCashCloseButton from '../../components/PrintCashCloseButton';
 import '../../styles/CloseCash.css';

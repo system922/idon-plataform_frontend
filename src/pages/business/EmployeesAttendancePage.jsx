@@ -83,9 +83,9 @@ export default function AttendancePage() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchAll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function fetchAll() {
