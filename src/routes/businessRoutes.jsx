@@ -3,7 +3,7 @@
  * Ubicación: src/routes/businessRoutes.jsx
  */
 
-import { Route } from 'react-router-dom';
+import { Route, Navigate } from 'react-router-dom';
 
 import Settings            from '../pages/business/SettingsPage';
 import BusinessHome        from '../pages/business/BusinessHome';
@@ -59,11 +59,22 @@ import AccountingPayablePage  from '../pages/business/AccountingPayablePage';
 
 import EinvoicingInvoicesPage from '../pages/business/EinvoicingInvoicesPage';
 
+function OwnerRoute({ children }) {
+  const user = (() => {
+    try { return JSON.parse(localStorage.getItem('idonUser') || 'null'); }
+    catch { return null; }
+  })();
+  if (user?.userType === 'schema_employee') {
+    return <Navigate to="/app/pos/pos.sales" replace />;
+  }
+  return children;
+}
+
 export const businessRoutes = (
   <>
     {/* ── Home del panel ── */}
     <Route index element={<BusinessHome />} />
-    <Route path="dashboard" element={<Dashboard />} />
+    <Route path="dashboard" element={<OwnerRoute><Dashboard /></OwnerRoute>} />
     <Route path="profile"   element={<ProfilePage />} />
 
     {/* ────────────────────────────────────────────────
@@ -71,7 +82,7 @@ export const businessRoutes = (
     ──────────────────────────────────────────────── */}
     <Route path="core"                          element={<GenericFeaturePage moduleName="Núcleo" />} />
     <Route path="core/core.settings"            element={<Settings />} />
-    <Route path="core/core.dashboard"           element={<Dashboard />} />
+    <Route path="core/core.dashboard"           element={<OwnerRoute><Dashboard /></OwnerRoute>} />
     <Route path="core/core.users"               element={<CoreUsersPage />} />
     <Route path="core/core.roles"               element={<CoreRolesPage />} />
     <Route path="core/gestion-de-sucursales"    element={<GenericFeaturePage moduleName="Núcleo" featureName="Gestión de sucursales" />} />

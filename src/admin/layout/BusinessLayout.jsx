@@ -60,7 +60,10 @@ const toSlug = (str = '') =>
   str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-function buildSidebarMenu(navData) {
+const isDashboardPath = (path = '') =>
+  /dashboard/.test(path);
+
+function buildSidebarMenu(navData, isOwner = true) {
   if (!navData?.modules?.length) return [];
 
   return navData.modules.map(mod => {
@@ -86,11 +89,18 @@ function buildSidebarMenu(navData) {
       // Excluir la página principal de los sub-ítems (ya actúa como destino del header)
       const subPages = pages.filter(p => p !== mainPage);
 
+      const filteredSubPages = isOwner
+        ? subPages
+        : subPages.filter(page => !isDashboardPath(resolvePath(page.path, '')));
+
+      // Si el módulo es solo dashboard y no hay sub-ítems visibles, ocultarlo
+      if (!isOwner && isDashboardPath(mainPath) && filteredSubPages.length === 0) return null;
+
       return {
         section: mod.name,
         icon,
-        path: mainPath,   // ← ruta del header (para navegar al hacer click)
-        items: subPages.map(page => ({
+        path: mainPath,
+        items: filteredSubPages.map(page => ({
           label: page.name,
           path:  resolvePath(page.path, `/app/${mod.code}/${toSlug(page.name)}`),
           icon:  <FiZap size={15}/>,
@@ -100,12 +110,17 @@ function buildSidebarMenu(navData) {
 
     // Módulo con 1 sola página → link directo
     const single = pages[0];
+    const singlePath = resolvePath(single?.path, `/app/${mod.code}`);
+
+    // Ocultar si es dashboard y el usuario no es dueño
+    if (!isOwner && isDashboardPath(singlePath)) return null;
+
     return {
       label: mod.name,
       icon,
-      path: resolvePath(single?.path, `/app/${mod.code}`),
+      path: singlePath,
     };
-  });
+  }).filter(Boolean);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -122,8 +137,12 @@ const isCashierRole = (user) => {
   return CASHIER_ROLES.some(r => role.includes(r));
 };
 
+const isBusinessOwner = (user) =>
+  user?.userType !== 'schema_employee';
+
 export default function BusinessLayout({ user, onLogout }) {
   const navigate   = useNavigate();
+  const ownerAccess = isBusinessOwner(user);
   const [navData,      setNavData]      = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
@@ -239,7 +258,7 @@ export default function BusinessLayout({ user, onLogout }) {
           <div className={`business-sidebar-wrapper ${collapsed ? 'collapsed' : ''}`}>
             <SidebarModern
               user={user}
-              menu={navData ? buildSidebarMenu(navData) : []}
+              menu={navData ? buildSidebarMenu(navData, ownerAccess) : []}
               onLogout={handleLogout}
               collapsed={collapsed}
               setCollapsed={setCollapsed}

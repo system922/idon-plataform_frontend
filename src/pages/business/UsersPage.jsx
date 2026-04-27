@@ -40,7 +40,7 @@ function UserModal({ user, onClose, onSave, saving, roles }) {
   useEffect(() => {
     if (!form.role_id && roles?.length)
       setForm(f => ({ ...f, role_id: roles[0].id }));
-  }, [roles]);
+  }, [roles, form.role_id]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
