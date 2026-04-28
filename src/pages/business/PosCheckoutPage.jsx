@@ -572,6 +572,8 @@ export default function CheckoutModern() {
         const data = await res.json();
         return data.invoice_number || null;
       }
+      const errData = await res.json().catch(() => ({}));
+      console.error('Error al emitir factura electrónica (HTTP', res.status, '):', errData.error || errData);
       return null;
     } catch (e) {
       console.error('Error al emitir factura electrónica:', e);
