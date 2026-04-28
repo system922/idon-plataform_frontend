@@ -15,7 +15,7 @@ export default function OrderHeader({
       <div className="card-head">
         <h3>Datos de la orden</h3>
       </div>
-      <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+      <div className="form-grid form-grid-3col">
         {/* Línea 1: Tipo | Mesa | Ubicación */}
         <div className="field">
           <label>Tipo</label>

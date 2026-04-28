@@ -4,7 +4,7 @@ import { FiInbox } from 'react-icons/fi';
 import PasswordModal from './PasswordModal';
 import '../styles/OpenDrawerButton.css';
 
-import API_BASE from '../config/apiBase';
+import { fetchWithAuth } from '../config/apiBase';
 
 function getOperatorUser() {
   try {
@@ -111,13 +111,6 @@ function OpenDrawerButton({
   const [reasonOpen, setReasonOpen] = useState(false);
   const [reasonModalErr, setReasonModalErr] = useState('');
   const [jefeName, setJefeName] = useState('');
-  const [schema, setSchema] = useState('');
-
-  React.useEffect(() => {
-    // siempre que se monte el botón, carga el schema desde localStorage
-    const selectedBusiness = JSON.parse(localStorage.getItem('selectedBusiness') || 'null');
-    setSchema(selectedBusiness?.schemaName || '');
-  }, []);
 
   async function handleValidate(password) {
     setSubmitting(true);
@@ -180,31 +173,16 @@ function OpenDrawerButton({
       return;
     }
 
-    // <<<<<<<< LOG del payload antes de enviar >>>>>>>>
     const payload = { user_id, table_name: "cash_drawer", action, description, new_values, reason };
-    console.log("[OpenDrawerButton] -> Enviando payload audit-log:", JSON.stringify(payload, null, 2));
-    console.log("[OpenDrawerButton] -> Usando schema:", schema);
 
     try {
-      const resp = await fetch(`${API_BASE}/api/audit-log`, {
+      const resp = await fetchWithAuth('/api/audit-log', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Schema-Name': schema
-        },
         body: JSON.stringify(payload)
       });
 
-      const text = await resp.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = text;
-      }
-      console.log("[OpenDrawerButton] <- Respuesta backend audit-log:", resp.status, data);
-
       if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
         setReasonModalErr(data?.error || "Error registrando auditoría o abriendo caja");
         setLoading(false);
         return;
@@ -216,7 +194,6 @@ function OpenDrawerButton({
       setReasonOpen(false);
     } catch (e) {
       setReasonModalErr(e.message || 'Error registrando auditoría o abriendo caja');
-      console.error("[OpenDrawerButton] ERROR:", e);
     } finally {
       setLoading(false);
     }

@@ -21,7 +21,7 @@ export default function CheckoutModern() {
   const [foundCliente, setFoundCliente] = useState(null);
   const [clienteCedula, setClienteCedula] = useState('9999999999');
   const [clienteNombre, setClienteNombre] = useState('');
-  const [clientePhone, setClientePhone] = useState('');
+  const [clienteEmail, setClienteEmail] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [printLoading, setPrintLoading] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -80,7 +80,7 @@ export default function CheckoutModern() {
   const resetForm = async () => {
     setClienteCedula('9999999999');
     setClienteNombre('');
-    setClientePhone('');
+    setClienteEmail('');
     setFoundCliente(null);
     setOrderNotes('');
     setSelectedOrder(null);
@@ -133,11 +133,11 @@ export default function CheckoutModern() {
         const data = await res.json();
         if (data?.nombre || data?.name) {
           setClienteNombre(data.nombre || data.name);
-          setClientePhone(data.phone || '');
+          setClienteEmail(data.email || '');
           setFoundCliente({ ...data, tipo: docType });
         }
       } else {
-        setClientePhone('');
+        setClienteEmail('');
         setFoundCliente(null);
         // Buscar en API padrón Ecuador
         await buscarNombreEnPadronEcuador(documento.slice(0, 10));
@@ -218,7 +218,7 @@ export default function CheckoutModern() {
     setSelectedOrder(o || null);
     setClienteCedula(o?.customer_document_number || '');
     setClienteNombre(o?.customer_name || '');
-    setClientePhone('');
+    setClienteEmail('');
     setFoundCliente(null);
     setOrderNotes(o?.notes || '');
     setAmountPaid('');
@@ -339,7 +339,7 @@ export default function CheckoutModern() {
     }
 
     if (cedulaFinal && nombreFinal) {
-      clienteId = await guardarClienteSiNoExiste(cedulaFinal, nombreFinal, null, clientePhone || null);
+      clienteId = await guardarClienteSiNoExiste(cedulaFinal, nombreFinal, clienteEmail.trim() || null, null);
     }
 
     if (!clienteId) {
@@ -348,14 +348,14 @@ export default function CheckoutModern() {
       return;
     }
 
-    // Actualizar nombre/teléfono si el cliente ya existía y cambió algún dato
+    // Actualizar nombre/email si el cliente ya existía y cambió algún dato
     if (foundCliente?.id) {
       const nombreCambio = clienteNombre.trim() !== (foundCliente.name || '').trim();
-      const phoneCambio  = (clientePhone || '') !== (foundCliente.phone || '');
-      if (nombreCambio || phoneCambio) {
+      const emailCambio  = clienteEmail.trim() !== (foundCliente.email || '').trim();
+      if (nombreCambio || emailCambio) {
         fetchWithAuth(`/api/customers/${foundCliente.id}`, {
           method: 'PATCH',
-          body: JSON.stringify({ name: clienteNombre.trim(), phone: clientePhone || null }),
+          body: JSON.stringify({ name: clienteNombre.trim(), email: clienteEmail.trim() || null }),
         }).catch(e => console.error('Error actualizando cliente:', e));
       }
     }
@@ -401,8 +401,8 @@ export default function CheckoutModern() {
         }
 
         const changeForPrint = cashAmt - cashNeeded;
-        const invoiceNumMixto = await silentEmitInvoice(selectedOrder, clienteCedula, clienteNombre, 'mixto');
-        await handlePrintReceipt(selectedOrder, total, changeForPrint, invoiceNumMixto);
+        const invoiceNum = await emitirFactura(selectedOrder, clienteCedula, clienteNombre, 'mixto');
+        await handlePrintReceipt(selectedOrder, total, changeForPrint, invoiceNum);
         setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
         await resetForm();
         setTimeout(() => setSuccess(''), 1800);
@@ -512,7 +512,7 @@ export default function CheckoutModern() {
           return;
         }
 
-        const invoiceNum = await silentEmitInvoice(selectedOrder, clienteCedula, clienteNombre, paymentMethod);
+        const invoiceNum = await emitirFactura(selectedOrder, clienteCedula, clienteNombre, paymentMethod);
         await handlePrintReceipt(selectedOrder, paid, change, invoiceNum);
         setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
         setSelectedOrder(null);
@@ -527,21 +527,20 @@ export default function CheckoutModern() {
     }
   };
 
-  // ── Factura electrónica — emisión silenciosa ───────────────────────────────
+  // ── Factura electrónica ───────────────────────────────────────────────────
 
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
-  async function silentEmitInvoice(order, custCedula, custNombre, method) {
+  // Emite la factura y devuelve el número SRI (ahora rápido: backend guarda
+  // como 'pendiente' y autoriza con el SRI en background)
+  async function emitirFactura(order, custCedula, custNombre, method) {
     const cedula  = custCedula && custCedula.trim() !== '' ? custCedula : '9999999999';
     const isCF    = cedula === '9999999999' || cedula === '9999999999999';
     const isRUC   = !isCF && cedula.length === 13;
     const tipoId  = isCF ? '07' : isRUC ? '04' : '05';
     const taxRate = parseFloat(order.tax_rate) || 15;
     const ivaRate = taxRate > 1 ? taxRate : taxRate * 100;
-
-    // Usar teléfono editado por el usuario (puede diferir del valor original en BD)
-    const phone = clientePhone || foundCliente?.phone || null;
-    const email = foundCliente?.email || null;
+    const email   = foundCliente?.email || clienteEmail.trim() || null;
 
     try {
       const res = await fetchWithAuth('/api/einvoicing/invoices/emit', {
@@ -552,7 +551,6 @@ export default function CheckoutModern() {
             name:                isCF ? 'CONSUMIDOR FINAL' : (custNombre || ''),
             ruc:                 isCF ? '9999999999999'    : cedula,
             email,
-            phone,
             tipo_identificacion: tipoId,
           },
           items: (order.items || []).map(i => ({
@@ -572,9 +570,11 @@ export default function CheckoutModern() {
         const data = await res.json();
         return data.invoice_number || null;
       }
+      const errData = await res.json().catch(() => ({}));
+      console.error('Error al emitir factura (HTTP', res.status, '):', errData.error || errData);
       return null;
     } catch (e) {
-      console.error('Error al emitir factura electrónica:', e);
+      console.error('Error al emitir factura:', e);
       return null;
     }
   }
@@ -680,13 +680,13 @@ export default function CheckoutModern() {
 
             <input
               className="client-inp"
-              type="text"
-              inputMode="tel"
-              placeholder="📱 Celular"
-              value={clientePhone}
-              onChange={e => setClientePhone(e.target.value.replace(/\D/g, '').slice(0, 15))}
-              style={{ minWidth: 120, maxWidth: 140, flex: '1 1 120px', marginLeft: 4,
-                border: clientePhone ? '1.5px solid #25d366' : undefined }}
+              type="email"
+              inputMode="email"
+              placeholder="✉ Email (factura)"
+              value={clienteEmail}
+              onChange={e => setClienteEmail(e.target.value)}
+              style={{ minWidth: 160, maxWidth: 200, flex: '1 1 160px', marginLeft: 4,
+                border: clienteEmail ? '1.5px solid #6842fe' : undefined }}
             />
             <OpenDrawerButton />
           </div>

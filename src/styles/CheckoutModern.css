@@ -236,49 +236,102 @@
 }
 
 /* ── Responsive ── */
-@media (max-width: 767px) {
-  .checkout-modern-card {
-    padding: 12px 14px;
-  }
+
+/* Tablet ≤900px */
+@media (max-width: 900px) {
+  .checkout-modern-card { padding: 12px 16px; }
 
   .cmbx-row {
     flex-wrap: wrap;
     gap: 8px;
   }
-
-  .inputs-row {
-    flex-direction: column;
-    gap: 8px;
+  /* Cédula y nombre ocupan todo el ancho disponible */
+  .cmbx-row .client-inp {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: 1 1 120px !important;
+  }
+  .cmbx-row .combobox {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: 1 1 160px !important;
   }
 
-  .pay-methods {
+  /* Campos de pago: permitir wrap */
+  .pay-input-row {
     flex-wrap: wrap;
-  }
-
-  .actions-row {
-    flex-wrap: wrap;
-  }
-
-  .btn-guardar,
-  .btn-cancelar {
-    flex: 1;
-    text-align: center;
+    gap: 10px;
   }
 }
 
-@media (max-width: 400px) {
-  .checkout-modern-card {
-    padding: 8px 10px;
+/* Móvil ≤640px */
+@media (max-width: 640px) {
+  .checkout-modern-card { padding: 10px 12px; gap: 8px; }
+
+  /* Fila cliente: cada elemento ocupa toda la línea */
+  .cmbx-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .cmbx-row .label { min-width: unset !important; flex: unset !important; margin-left: 0 !important; }
+  .cmbx-row .client-inp,
+  .cmbx-row .combobox {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: unset !important;
+    margin-left: 0 !important;
   }
 
-  .combobox {
-    font-size: 13px;
-    padding: 6px 8px;
+  /* Métodos de pago: 3 por fila en lugar de todos seguidos */
+  .pay-methods {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .pay-btn {
+    font-size: 12px;
+    padding: 8px 4px;
+    justify-content: center;
+    gap: 4px;
   }
 
-  .btn-guardar,
-  .btn-cancelar {
+  /* Campos de monto: apilados verticalmente */
+  .pay-input-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  /* Cada bloque de pago (efectivo, cambio, etc.) ocupa todo el ancho */
+  .pay-input-row > div {
     width: 100%;
-    flex: none;
+    justify-content: space-between;
   }
+  .input-pay {
+    width: 100% !important;
+    flex: 1;
+    font-size: 16px;
+  }
+
+  /* Totales */
+  .sub-iva-total {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+
+  /* Botones */
+  .actions-row { flex-wrap: wrap; gap: 6px; }
+  .btn-guardar { flex: 1; min-width: 120px; font-size: 15px; padding: 10px 16px; }
+  .btn-cancelar { flex: 1; min-width: 80px; padding: 8px 16px; }
+}
+
+/* Móvil pequeño ≤400px */
+@media (max-width: 400px) {
+  .checkout-modern-card { padding: 8px 10px; }
+  .combobox { font-size: 13px; padding: 6px 8px; }
+  .pay-methods { grid-template-columns: repeat(2, 1fr); gap: 5px; }
+  .pay-btn { font-size: 11px; padding: 7px 2px; }
+  .btn-guardar, .btn-cancelar { width: 100%; flex: none; }
+  .sub-iva-total { font-size: 12px; }
 }

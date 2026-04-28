@@ -12,7 +12,7 @@ import {
   FiDollarSign, FiClipboard, FiThermometer, FiTruck, FiGrid,
   FiCalendar, FiStar, FiShoppingBag, FiClock, FiUsers,
   FiUserCheck, FiMap, FiMapPin, FiList, FiGlobe, FiBell,
-  FiFileText, FiUser, FiAlertCircle, FiZap,
+  FiFileText, FiUser, FiAlertCircle, FiZap, FiMenu,
 } from 'react-icons/fi';
 import API_BASE, { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/BusinessLayout.css';
@@ -129,6 +129,7 @@ export default function BusinessLayout({ user, onLogout }) {
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [collapsed,    setCollapsed]    = useState(false);
+  const [mobileOpen,   setMobileOpen]   = useState(false);
   const [isSuspended,  setIsSuspended]  = useState(false);
   const [selectedBiz,  setSelectedBiz]  = useState(getStoredBiz);
 
@@ -239,19 +240,42 @@ export default function BusinessLayout({ user, onLogout }) {
       ) : (
         <div className="business-layout">
 
+          {/* ── Overlay mobile ── */}
+          {mobileOpen && (
+            <div
+              className="sidebar-mobile-overlay"
+              onClick={() => setMobileOpen(false)}
+            />
+          )}
+
           {/* ── Sidebar ── */}
-          <div className={`business-sidebar-wrapper ${collapsed ? 'collapsed' : ''}`}>
+          <div className={`business-sidebar-wrapper ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
             <SidebarModern
               user={user}
               menu={navData ? buildSidebarMenu(navData) : []}
               onLogout={handleLogout}
               collapsed={collapsed}
               setCollapsed={setCollapsed}
+              onMobileClose={() => setMobileOpen(false)}
             />
           </div>
 
           {/* ── Contenido principal ── */}
           <div className="business-content-area">
+            {/* Topbar mobile con hamburguesa */}
+            <div className="mobile-topbar">
+              <span className="mobile-topbar-brand">
+                <span className="logo-white">ID</span><span className="logo-orange">ON</span>
+              </span>
+              <button
+                className="mobile-hamburger"
+                onClick={() => setMobileOpen(v => !v)}
+                aria-label="Abrir menú"
+              >
+                <FiMenu size={20} />
+              </button>
+            </div>
+
             {/* Contenido de la ruta activa */}
             <div className="business-content-inner">
               {error && (
