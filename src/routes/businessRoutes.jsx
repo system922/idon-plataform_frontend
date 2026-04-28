@@ -43,8 +43,6 @@ import Schedules           from '../pages/business/SchedulesPage';
 import EmployeesLeaves     from '../pages/business/EmployeesLeaves';
 
 
-import WhatsappPage            from '../pages/business/WhatsappPage';
-
 import GenericFeaturePage  from '../pages/business/GenericFeaturePage';
 import ProfilePage         from '../pages/ProfilePage';
 
@@ -255,7 +253,7 @@ export const businessRoutes = (
     <Route path="einvoicing/einvoicing.status"          element={<EinvoicingInvoicesPage />} />
     <Route path="einvoicing/einvoicing.invoices"        element={<EinvoicingInvoicesPage />} />
     <Route path="einvoicing/einvoicing.invoices"        element={<EinvoicingInvoicesPage />} />
-    <Route path="einvoicing/einvoicing.whatsapp"          element={<WhatsappPage />} />
+
 
     {/* ── Catch-all ── */}
     <Route path=":module"          element={<GenericFeaturePage />} />
