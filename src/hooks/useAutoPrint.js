@@ -92,7 +92,8 @@ export function useAutoPrint({ businessId, enabled = true }) {
 
     socket.on('new_order', async (data) => {
       if (printingRef.current) return;
-      if (!qz.websocket.isActive()) return; // sin QZ conectado, el poll lo reintentará
+      if (!qz.websocket.isActive()) return;
+      printingRef.current = true;
       try {
         const order = { ...(data?.pedido || data), items: data?.items || [] };
         await printOrder(order);
@@ -102,6 +103,8 @@ export function useAutoPrint({ businessId, enabled = true }) {
         });
       } catch (err) {
         console.error('[AutoPrint] Error socket print:', err);
+      } finally {
+        printingRef.current = false;
       }
     });
 
