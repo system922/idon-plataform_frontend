@@ -1,7 +1,7 @@
 // fetchProtected.js
 // Helper para peticiones autenticadas con JWT
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
+import API_BASE from '../config/apiBase';
 
 export async function fetchProtected(endpoint, options = {}) {
   const token = localStorage.getItem('idonToken') || localStorage.getItem('token');

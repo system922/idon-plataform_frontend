@@ -63,7 +63,7 @@ export function useUserModulesAndFeatures(businessId) {
       }
 
       // 🔍 STEP 3: Llamar al endpoint
-      const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
+      const API_BASE = process.env.REACT_APP_API_BASE || 'https://idon-plataform-backend.onrender.com';
       const url = `${API_BASE}/api/business/${actualBusinessId}/modules-and-features`;
 
       console.log(`🔄 Fetching: ${url}`);

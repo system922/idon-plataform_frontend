@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiBell, FiX, FiCheck, FiArrowRight } from 'react-icons/fi';
 import '../styles/NotificationBell.css';
 
-const API_BASE = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE || 'http://localhost:4000';
+import API_BASE from '../config/apiBase';
 
 const NotificationBell = ({ user }) => {
   const [isOpen, setIsOpen] = useState(false);

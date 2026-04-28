@@ -1,7 +1,7 @@
 // src/auth.js (frontend)
 // Helpers para login/logout/me con soporte multi-tenant
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'https://idon-plataform-backend.onrender.com';
+import API_BASE from '../config/apiBase';
 
 export async function loginApi(email, password, businessId = null) {
   // Usar /owner-login para TODOS los usuarios ya que valida en cascada:
