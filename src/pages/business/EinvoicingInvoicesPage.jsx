@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { RefreshCw, Download, Send, AlertCircle, CheckCircle, XCircle, Clock, FileText, MessageCircle, X } from 'react-feather';
+import { RefreshCw, Download, Send, AlertCircle, CheckCircle, XCircle, Clock, FileText, MessageCircle } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 
 const STATUS_STYLE = {
@@ -10,107 +10,6 @@ const STATUS_STYLE = {
   error:      { color: '#6b7280', bg: 'rgba(107,114,128,0.08)',border: 'rgba(107,114,128,0.3)',label: 'Error',       Icon: AlertCircle },
 };
 
-// ── Modal de envío por WhatsApp ───────────────────────────────────────────────
-function WhatsappModal({ inv, onClose, onSent }) {
-  const [phone,   setPhone  ] = useState(inv.customer_phone || '');
-  const [sending, setSending] = useState(false);
-  const [err,     setErr    ] = useState('');
-  const inputRef = useRef(null);
-
-  useEffect(() => { inputRef.current?.focus(); }, []);
-
-  const handleSend = async () => {
-    if (!phone.trim()) { setErr('Ingresa el número de teléfono'); return; }
-    setSending(true); setErr('');
-    try {
-      const res  = await fetchWithAuth(`/api/einvoicing/invoices/${inv.id}/whatsapp`, {
-        method: 'POST',
-        body: JSON.stringify({ phone: phone.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al enviar');
-      onSent(`Factura ${inv.invoice_number} enviada por WhatsApp ✓`);
-      onClose();
-    } catch (e) {
-      setErr(e.message);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-         onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 24, width: 360, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ background: 'rgba(37,211,102,0.15)', borderRadius: 8, padding: 6 }}>
-              <MessageCircle size={18} color="#25d366" />
-            </div>
-            <span style={{ fontWeight: 700, fontSize: 15, color: '#f1f5f9' }}>Enviar por WhatsApp</span>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4 }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Info de la factura */}
-        <div style={{ background: '#0f172a', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12 }}>
-          <div style={{ color: '#94a3b8', marginBottom: 2 }}>Factura</div>
-          <div style={{ fontWeight: 700, color: '#6842fe', fontSize: 14 }}>{inv.invoice_number}</div>
-          <div style={{ color: '#cbd5e1', marginTop: 4 }}>{inv.customer_name}</div>
-          <div style={{ color: '#64748b', fontSize: 11 }}>{inv.customer_ruc}</div>
-          <div style={{ color: '#22c55e', fontWeight: 700, marginTop: 4 }}>${parseFloat(inv.total || 0).toFixed(2)}</div>
-        </div>
-
-        {/* Input teléfono */}
-        <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 6, fontWeight: 600 }}>
-          Número de WhatsApp
-        </label>
-        <input
-          ref={inputRef}
-          type="tel"
-          value={phone}
-          onChange={e => setPhone(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSend()}
-          placeholder="09XXXXXXXX o +593XXXXXXXXX"
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            background: '#0f172a', border: `1.5px solid ${err ? '#ef4444' : '#334155'}`,
-            borderRadius: 8, padding: '10px 12px', color: '#f1f5f9', fontSize: 14,
-            outline: 'none', marginBottom: err ? 6 : 16,
-          }}
-        />
-        {err && <div style={{ color: '#ef4444', fontSize: 12, marginBottom: 12 }}>{err}</div>}
-
-        <div style={{ fontSize: 11, color: '#475569', marginBottom: 16 }}>
-          Formatos aceptados: <code style={{ color: '#94a3b8' }}>0999XXXXXX</code> · <code style={{ color: '#94a3b8' }}>+593999XXXXXX</code> · <code style={{ color: '#94a3b8' }}>593999XXXXXX</code>
-        </div>
-
-        {/* Botones */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={handleSend}
-            disabled={sending}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 0', background: sending ? '#166534' : '#25d366', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: sending ? 'default' : 'pointer' }}
-          >
-            <MessageCircle size={15} style={{ animation: sending ? 'spin 1s linear infinite' : 'none' }} />
-            {sending ? 'Enviando…' : 'Enviar RIDE'}
-          </button>
-          <button
-            onClick={onClose}
-            disabled={sending}
-            style={{ padding: '10px 16px', background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
-          >
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Página principal ──────────────────────────────────────────────────────────
 export default function EinvoicingInvoicesPage() {
   const [invoices,  setInvoices ] = useState([]);
@@ -118,7 +17,7 @@ export default function EinvoicingInvoicesPage() {
   const [actionId,  setActionId ] = useState(null);
   const [error,     setError    ] = useState('');
   const [success,   setSuccess  ] = useState('');
-  const [waMdl,     setWaMdl    ] = useState(null); // inv object cuando modal abierto
+
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -196,15 +95,6 @@ export default function EinvoicingInvoicesPage() {
         </button>
       }
     >
-      {/* Modal WhatsApp */}
-      {waMdl && (
-        <WhatsappModal
-          inv={waMdl}
-          onClose={() => setWaMdl(null)}
-          onSent={msg => notify(msg)}
-        />
-      )}
-
       {/* Mensajes */}
       {error && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 13 }}>
@@ -314,16 +204,6 @@ export default function EinvoicingInvoicesPage() {
                       {(inv.status === 'pendiente' || inv.status === 'rechazada') && (
                         <button onClick={() => handleResend(inv)} disabled={isAct} title="Reenviar al SRI" style={btnStyle(isAct ? '#f1f5f9' : '#f0fdf4', '#15803d', '#bbf7d0', isAct)}>
                           <Send size={11} /> {isAct ? '...' : 'SRI'}
-                        </button>
-                      )}
-                      {/* Enviar por WhatsApp — solo autorizadas */}
-                      {inv.status === 'autorizada' && (
-                        <button
-                          onClick={() => setWaMdl(inv)}
-                          title="Enviar RIDE por WhatsApp"
-                          style={btnStyle('#dcfce7', '#15803d', '#86efac')}
-                        >
-                          <MessageCircle size={11} /> WA
                         </button>
                       )}
                     </div>

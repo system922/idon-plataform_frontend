@@ -17,8 +17,6 @@ import Clientes     from './pages/admin_idon/Clientes';
 import Modulos      from './pages/admin_idon/Modulos';
 import Users        from './pages/admin_idon/Users';
 import Requests                from './pages/admin_idon/Requests';
-import WhatsAppNotifications  from './pages/admin_idon/WhatsAppNotifications';
-import WhatsAppConnect        from './pages/admin_idon/WhatsAppConnect';
 import ProfilePage             from './pages/ProfilePage';
 
 // ── Business panel ──────────────────────────────────────────
@@ -122,8 +120,6 @@ function AppRoutes({ user, setUser, handleLogout }) {
               <Route path="users"      element={<Users />} />
               <Route path="roles"      element={<Roles />} />
               <Route path="settings"                element={<Settings />} />
-              <Route path="whatsapp-notifications" element={<WhatsAppNotifications />} />
-              <Route path="whatsapp-connect"      element={<WhatsAppConnect />} />
               <Route path="audit"                  element={<Audit />} />
               <Route path="requests"   element={<Requests />} />
               <Route path="profile"    element={<ProfilePage user={user} />} />

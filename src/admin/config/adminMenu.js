@@ -48,8 +48,6 @@ export const ADMIN_MENU = [
     icon: 'settings',
     subitems: [
       { label: 'Configuración',           path: '/admin/settings'              },
-      { label: 'WhatsApp — Conexión',     path: '/admin/whatsapp-connect'      },
-      { label: 'WhatsApp — Plantillas',   path: '/admin/whatsapp-notifications' },
       { label: 'Auditoría',               path: '/admin/audit'                 },
     ],
   },
