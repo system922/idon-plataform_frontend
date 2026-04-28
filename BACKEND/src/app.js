@@ -56,7 +56,20 @@ const app = express();
 // ─── Core middleware ──────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({ origin: env.corsOrigin, credentials: true }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (process.env.CORS_ORIGIN) {
+      const allowed = process.env.CORS_ORIGIN.split(',').map(o => o.trim());
+      return allowed.includes(origin)
+        ? callback(null, true)
+        : callback(new Error(`CORS: origin ${origin} not allowed`));
+    }
+    // Sin CORS_ORIGIN configurado: acepta cualquier origen (desarrollo / primer deploy)
+    return callback(null, true);
+  },
+  credentials: true,
+}));
 app.use((req, res, next) => { logger.info(`${req.method} ${req.path}`); next(); });
 
 // ─── Middleware groups ────────────────────────────────────────────────────────
