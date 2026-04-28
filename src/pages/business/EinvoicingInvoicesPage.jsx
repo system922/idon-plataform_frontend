@@ -111,7 +111,6 @@ export default function EinvoicingInvoicesPage() {
   const [success,   setSuccess  ] = useState('');
   const [emailMdl,  setEmailMdl ] = useState(null);
 
-
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
