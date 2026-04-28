@@ -149,3 +149,134 @@ html, body, #root {
   color: #ef4444;
   font-size: 13px;
 }
+
+/* ── Mobile topbar (oculto en desktop) ── */
+.mobile-topbar {
+  display: none;
+}
+
+/* ── Overlay sidebar mobile ── */
+.sidebar-mobile-overlay {
+  display: none;
+}
+
+/* ════════════════════════════════
+   RESPONSIVE
+════════════════════════════════ */
+
+/* Tablet ≤1024px */
+@media (max-width: 1024px) {
+  .business-sidebar-wrapper {
+    width: 220px;
+    min-width: 220px;
+  }
+  .business-content-inner {
+    padding: 16px;
+  }
+}
+
+/* Mobile ≤768px — sidebar como drawer deslizable */
+@media (max-width: 768px) {
+  html, body, #root {
+    overflow: auto;
+    height: auto;
+  }
+
+  .business-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  /* Sidebar: fijo, fuera de pantalla por defecto */
+  .business-sidebar-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 260px !important;
+    min-width: 260px !important;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 300;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+  }
+
+  .business-sidebar-wrapper.mobile-open {
+    transform: translateX(0);
+  }
+
+  /* Overlay oscuro cuando sidebar está abierto */
+  .sidebar-mobile-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 299;
+    backdrop-filter: blur(2px);
+    animation: overlayIn 0.2s ease;
+  }
+
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Topbar mobile con hamburguesa */
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    height: 52px;
+    background: #111;
+    border-bottom: 1px solid #222;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+
+  .mobile-topbar-brand {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    line-height: 1;
+  }
+
+  .mobile-topbar-brand .logo-white { color: #fff; }
+  .mobile-topbar-brand .logo-orange { color: #ff8c42; }
+
+  .mobile-hamburger {
+    background: transparent;
+    border: 1px solid #333;
+    color: #fff;
+    border-radius: 8px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .mobile-hamburger:hover {
+    background: rgba(255,140,66,0.1);
+    border-color: rgba(255,140,66,0.4);
+    color: #ff8c42;
+  }
+
+  /* Área de contenido: ocupa todo el ancho */
+  .business-content-area {
+    height: auto;
+    min-height: calc(100dvh - 52px);
+    overflow-y: visible;
+    overflow-x: hidden;
+  }
+
+  .business-content-inner {
+    padding: 12px;
+  }
+}

@@ -560,3 +560,36 @@
 .sidebar-modern.collapsed .sidebar-footer {
   position: static;
 }
+
+/* ── Mobile: sidebar siempre expandido cuando es drawer ── */
+@media (max-width: 768px) {
+  .sidebar-modern {
+    width: 260px !important;
+  }
+
+  /* Ocultar el botón collapse en mobile (se usa hamburger del topbar) */
+  .collapse-btn {
+    display: none;
+  }
+
+  /* Asegurar que el sidebar no esté en modo colapsado visual en mobile */
+  .sidebar-modern.collapsed .sidebar-logo-text { display: flex; }
+  .sidebar-modern.collapsed .sidebar-logo-block { justify-content: flex-start; }
+  .sidebar-modern.collapsed .sidebar-header {
+    flex-direction: row;
+    padding: 16px 12px 14px;
+  }
+  .sidebar-modern.collapsed .section-label,
+  .sidebar-modern.collapsed .section-chevron { display: flex; }
+  .sidebar-modern.collapsed .section-header {
+    justify-content: flex-start;
+    padding: 8px 9px;
+    border-left: 2px solid transparent;
+  }
+  .sidebar-modern.collapsed .section-items { display: flex; }
+  .sidebar-modern.collapsed .user-card { justify-content: flex-start; padding: 8px 9px; }
+  .sidebar-modern.collapsed .user-info,
+  .sidebar-modern.collapsed .user-chevron { display: flex; }
+  .sidebar-modern.collapsed .sidebar-logo-img,
+  .sidebar-modern.collapsed .sidebar-logo-icon { width: 70px; height: 70px; }
+}

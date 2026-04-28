@@ -116,14 +116,14 @@ function MenuSection({ section, isCollapsed, currentPath, onNavigate, expanded, 
 /* ─────────────────────────────────────────────
    UserCard con dropdown
 ───────────────────────────────────────────── */
-function UserCard({ user, onLogout, isCollapsed }) {
+function UserCard({ user, onLogout, isCollapsed, onMobileClose }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const navigate = useNavigate();
 
   const profilePath = user?.userType === 'admin_idon' ? '/admin/profile' : '/app/profile';
 
-  const goTo = (path) => { setOpen(false); navigate(path); };
+  const goTo = (path) => { setOpen(false); navigate(path); onMobileClose?.(); };
 
   useEffect(() => {
     const handle = (e) => {
@@ -195,7 +195,7 @@ function UserCard({ user, onLogout, isCollapsed }) {
 /* ─────────────────────────────────────────────
    SIDEBAR PRINCIPAL
 ───────────────────────────────────────────── */
-export default function SidebarModern({ user, menu, onLogout, collapsed, setCollapsed }) {
+export default function SidebarModern({ user, menu, onLogout, collapsed, setCollapsed, onMobileClose }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState({});
@@ -210,7 +210,10 @@ export default function SidebarModern({ user, menu, onLogout, collapsed, setColl
     : [];
 
   const handleToggle   = (key) => setExpandedSections(p => ({ ...p, [key]: !p[key] }));
-  const handleNavigate = (path) => { console.log('[Sidebar] navegando a:', path); navigate(path); };
+  const handleNavigate = (path) => {
+    navigate(path);
+    onMobileClose?.();
+  };
   const currentPath    = location.pathname;
 
   return (
@@ -276,7 +279,7 @@ export default function SidebarModern({ user, menu, onLogout, collapsed, setColl
       </div>
 
       {/* ── FOOTER / USUARIO ── */}
-      <UserCard user={user} onLogout={onLogout} isCollapsed={collapsed} />
+      <UserCard user={user} onLogout={onLogout} isCollapsed={collapsed} onMobileClose={onMobileClose} />
     </div>
   );
 }
