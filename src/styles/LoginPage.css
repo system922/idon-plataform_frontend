@@ -542,59 +542,71 @@
   .login-right-inner { max-width: 420px; }
 }
 
-/* Tablet: el panel izquierdo se hace más compacto */
+/* Tablet 1024px: columna única, left compacto */
 @media (max-width: 1024px) {
   .login-container { grid-template-columns: 1fr; }
   .login-left {
     min-height: auto;
-    padding: 36px 24px;
-    gap: 20px;
+    padding: 28px 24px 20px;
+    gap: 16px;
   }
-  .logo-carousel { width: 150px; height: 150px; }
-  .logo-wordmark .brand-name { font-size: 44px; }
+  .logo-carousel { width: 130px; height: 130px; }
+  .logo-wordmark .brand-name { font-size: 42px; }
   .feature-list { display: none; }
+  .color-indicators { display: none; }
   .login-right {
     min-height: auto;
-    padding: 28px 20px;
-    /* En móvil el contenido puede ser más largo que la pantalla */
+    padding: 24px 20px;
     overflow-y: auto;
   }
 }
 
-/* Móvil grande */
+/* Móvil ≤640px: panel izquierdo muy compacto (solo logo + marca) */
 @media (max-width: 640px) {
   .login-left {
-    padding: 28px 20px 20px;
-    gap: 14px;
+    padding: 18px 16px 14px;
+    gap: 10px;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
   }
-  .logo-carousel { width: 120px; height: 120px; }
-  .logo-wordmark .brand-name { font-size: 36px; letter-spacing: -2px; }
-  .logo-wordmark .brand-tagline { font-size: 11px; }
+  .logo-carousel { width: 56px; height: 56px; flex-shrink: 0; }
+  .logo-carousel::before { display: none; }
+  .logo-wordmark { text-align: left; }
+  .logo-wordmark .brand-name { font-size: 30px; letter-spacing: -1.5px; }
+  .logo-wordmark .brand-tagline { font-size: 10px; }
   .color-indicators { display: none; }
+  .feature-list { display: none; }
 
   .login-right {
-    padding: 20px 14px 28px;
-    min-height: auto;
+    padding: 16px 12px 24px;
   }
-  .auth-form { padding: 20px 18px; }
+  .login-right-inner { max-width: 100%; }
+  .auth-form { padding: 18px 16px; }
   .auth-form .form-title,
-  .auth-form h3 { font-size: 17px; margin-bottom: 14px; }
-
-  .tab { padding: 12px 10px; font-size: 11px; letter-spacing: .6px; }
+  .auth-form h3 { font-size: 16px; margin-bottom: 12px; }
+  .tab { padding: 11px 8px; font-size: 10.5px; letter-spacing: .5px; }
+  .form-container { border-radius: 16px; }
 }
 
-/* Móvil pequeño: apilar columnas de nombre/apellido y documento */
+/* Móvil pequeño ≤480px */
 @media (max-width: 480px) {
+  .login-left { padding: 14px 12px; gap: 8px; }
+  .logo-carousel { width: 46px; height: 46px; }
+  .logo-wordmark .brand-name { font-size: 26px; }
+
+  .auth-form { padding: 16px 14px; }
   .grid-2 { grid-template-columns: 1fr; gap: 0; }
-  .progress-connector { max-width: 32px; min-width: 16px; }
-  .progress-step { width: 30px; height: 30px; font-size: 12px; }
+  .progress-connector { max-width: 28px; min-width: 14px; }
+  .progress-step { width: 28px; height: 28px; font-size: 11px; }
   .step-buttons { flex-direction: column-reverse; }
   .step-buttons .btn-secondary { width: 100%; }
+  .btn-submit, .btn-secondary { font-size: 12px; padding: 11px 14px; }
 }
 
 /* Landscape móvil corto */
-@media (max-height: 640px) and (max-width: 1024px) {
-  .login-left { padding: 20px; gap: 10px; }
-  .logo-carousel { width: 100px; height: 100px; }
-  .logo-wordmark .brand-name { font-size: 32px; }
+@media (max-height: 600px) and (max-width: 1024px) {
+  .login-left { padding: 10px 16px; gap: 8px; }
+  .logo-carousel { width: 44px; height: 44px; }
+  .logo-wordmark .brand-name { font-size: 24px; }
 }
