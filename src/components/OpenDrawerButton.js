@@ -3,7 +3,6 @@ import { useCashDrawer } from '../hooks/useCashDrawer';
 import { FiInbox } from 'react-icons/fi';
 import PasswordModal from './PasswordModal';
 import '../styles/OpenDrawerButton.css';
-
 import { fetchWithAuth } from '../config/apiBase';
 
 function getOperatorUser() {
@@ -96,6 +95,16 @@ function OpenDrawerReasonModal({ open, onSubmit, onClose, submitting, error }) {
   );
 }
 
+function renderJefeData(jefeCaja, jefeName) {
+  if (!jefeCaja) return jefeName || 'Jefe de Caja';
+  const datos = [
+    jefeCaja.nombre || jefeCaja.firstName || jefeCaja.email || jefeName,
+    jefeCaja.email ? `<${jefeCaja.email}>` : null,
+    jefeCaja.id ? `ID: ${jefeCaja.id}` : null
+  ].filter(Boolean);
+  return datos.join(' ');
+}
+
 function OpenDrawerButton({
   label = "Abrir Caja",
   onDone,
@@ -111,6 +120,7 @@ function OpenDrawerButton({
   const [reasonOpen, setReasonOpen] = useState(false);
   const [reasonModalErr, setReasonModalErr] = useState('');
   const [jefeName, setJefeName] = useState('');
+  const [jefeCaja, setJefeCaja] = useState(null); // <--- Estado para todo el info del jefe
 
   async function handleValidate(password) {
     setSubmitting(true);
@@ -120,7 +130,6 @@ function OpenDrawerButton({
 
     try {
       if (!schemaLocal) throw new Error('No se pudo determinar el schema del negocio');
-      // -------- aquí el cambio: fetchWithAuth en vez de fetch/API_BASE -----
       const res = await fetchWithAuth('/api/auth/validate-jefe-caja', {
         method: 'POST',
         body: JSON.stringify({ password, schema: schemaLocal }),
@@ -136,6 +145,7 @@ function OpenDrawerButton({
       }
       const jefe = await res.json();
       setJefeName(jefe.nombre || jefe.email || jefe.firstName || 'Jefe de Caja');
+      setJefeCaja(jefe); // <--- Guarda el objeto completo
       setPwOpen(false);
       setReasonOpen(true);
     } catch (e) {
@@ -159,13 +169,16 @@ function OpenDrawerButton({
     const user_id = operador.id;
     let action, description, new_values;
 
+    const jefeCompleto = renderJefeData(jefeCaja, jefeName);
+
     if (reasonType === 'cierre_error') {
       action = "caja_abierta";
-      description = `Caja abierta por autorización del jefe de caja: ${jefeName}. Acción: Reabrir por cierre accidental.`;
+      description = `Caja abierta por autorización del jefe de caja: ${jefeCompleto}. Acción: Reabrir por cierre accidental.`;
       new_values = null;
     } else if (reasonType === 'egreso_compra') {
       action = "drawer_expense";
-      description = `Caja abierta por autorización del jefe de caja: ${jefeName}. Acción: Retiro/egreso para compras. Motivo: ${reason}`;
+      description =
+        `Caja abierta por autorización del jefe de caja: ${jefeCompleto}. Acción: Retiro/egreso para compras. Motivo: ${reason}`;
       new_values = { amount: amount || null };
     } else {
       setReasonModalErr("Motivo no válido");
