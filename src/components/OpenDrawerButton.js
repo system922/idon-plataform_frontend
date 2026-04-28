@@ -120,9 +120,9 @@ function OpenDrawerButton({
 
     try {
       if (!schemaLocal) throw new Error('No se pudo determinar el schema del negocio');
-      const res = await fetch(`${API_BASE}/api/auth/validate-jefe-caja`, {
+      // -------- aquí el cambio: fetchWithAuth en vez de fetch/API_BASE -----
+      const res = await fetchWithAuth('/api/auth/validate-jefe-caja', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password, schema: schemaLocal }),
       });
       if (!res.ok) {

@@ -5,7 +5,8 @@ import { fetchWithAuth } from '../config/apiBase';
 import qz from 'qz-tray';
 import API_BASE from '../config/apiBase';
 
-const POLL_INTERVAL = 4000;
+const POLL_INTERVAL = 3000;
+
 
 export function useAutoPrint({ businessId, enabled = true }) {
   const { print }      = usePrinterService();
