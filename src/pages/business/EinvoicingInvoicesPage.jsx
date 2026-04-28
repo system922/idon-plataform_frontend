@@ -87,7 +87,7 @@ function EmailModal({ inv, onClose, onSent }) {
             style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 0', background: sending ? '#3730a3' : '#6842fe', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: sending ? 'default' : 'pointer' }}
           >
             <Mail size={15} />
-            {sending ? 'Enviando…' : 'Enviar RIDE'}
+            {sending ? 'Enviando…' : 'Reenviar Factura'}
           </button>
           <button
             onClick={onClose}

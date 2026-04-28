@@ -21,7 +21,7 @@ export default function CheckoutModern() {
   const [foundCliente, setFoundCliente] = useState(null);
   const [clienteCedula, setClienteCedula] = useState('9999999999');
   const [clienteNombre, setClienteNombre] = useState('');
-  const [clientePhone, setClientePhone] = useState('');
+  const [clienteEmail, setClienteEmail] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [printLoading, setPrintLoading] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -80,7 +80,7 @@ export default function CheckoutModern() {
   const resetForm = async () => {
     setClienteCedula('9999999999');
     setClienteNombre('');
-    setClientePhone('');
+    setClienteEmail('');
     setFoundCliente(null);
     setOrderNotes('');
     setSelectedOrder(null);
@@ -133,11 +133,11 @@ export default function CheckoutModern() {
         const data = await res.json();
         if (data?.nombre || data?.name) {
           setClienteNombre(data.nombre || data.name);
-          setClientePhone(data.phone || '');
+          setClienteEmail(data.email || '');
           setFoundCliente({ ...data, tipo: docType });
         }
       } else {
-        setClientePhone('');
+        setClienteEmail('');
         setFoundCliente(null);
         // Buscar en API padrón Ecuador
         await buscarNombreEnPadronEcuador(documento.slice(0, 10));
@@ -218,7 +218,7 @@ export default function CheckoutModern() {
     setSelectedOrder(o || null);
     setClienteCedula(o?.customer_document_number || '');
     setClienteNombre(o?.customer_name || '');
-    setClientePhone('');
+    setClienteEmail('');
     setFoundCliente(null);
     setOrderNotes(o?.notes || '');
     setAmountPaid('');
@@ -339,7 +339,7 @@ export default function CheckoutModern() {
     }
 
     if (cedulaFinal && nombreFinal) {
-      clienteId = await guardarClienteSiNoExiste(cedulaFinal, nombreFinal, null, clientePhone || null);
+      clienteId = await guardarClienteSiNoExiste(cedulaFinal, nombreFinal, clienteEmail.trim() || null, null);
     }
 
     if (!clienteId) {
@@ -348,14 +348,14 @@ export default function CheckoutModern() {
       return;
     }
 
-    // Actualizar nombre/teléfono si el cliente ya existía y cambió algún dato
+    // Actualizar nombre/email si el cliente ya existía y cambió algún dato
     if (foundCliente?.id) {
       const nombreCambio = clienteNombre.trim() !== (foundCliente.name || '').trim();
-      const phoneCambio  = (clientePhone || '') !== (foundCliente.phone || '');
-      if (nombreCambio || phoneCambio) {
+      const emailCambio  = clienteEmail.trim() !== (foundCliente.email || '').trim();
+      if (nombreCambio || emailCambio) {
         fetchWithAuth(`/api/customers/${foundCliente.id}`, {
           method: 'PATCH',
-          body: JSON.stringify({ name: clienteNombre.trim(), phone: clientePhone || null }),
+          body: JSON.stringify({ name: clienteNombre.trim(), email: clienteEmail.trim() || null }),
         }).catch(e => console.error('Error actualizando cliente:', e));
       }
     }
@@ -401,8 +401,8 @@ export default function CheckoutModern() {
         }
 
         const changeForPrint = cashAmt - cashNeeded;
-        const invoiceNumMixto = await silentEmitInvoice(selectedOrder, clienteCedula, clienteNombre, 'mixto');
-        await handlePrintReceipt(selectedOrder, total, changeForPrint, invoiceNumMixto);
+        await handlePrintReceipt(selectedOrder, total, changeForPrint);
+        silentEmitInvoice(selectedOrder, clienteCedula, clienteNombre, 'mixto'); // background
         setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
         await resetForm();
         setTimeout(() => setSuccess(''), 1800);
@@ -512,8 +512,8 @@ export default function CheckoutModern() {
           return;
         }
 
-        const invoiceNum = await silentEmitInvoice(selectedOrder, clienteCedula, clienteNombre, paymentMethod);
-        await handlePrintReceipt(selectedOrder, paid, change, invoiceNum);
+        await handlePrintReceipt(selectedOrder, paid, change);
+        silentEmitInvoice(selectedOrder, clienteCedula, clienteNombre, paymentMethod); // background
         setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
         setSelectedOrder(null);
         setAmountPaid('');
@@ -539,9 +539,8 @@ export default function CheckoutModern() {
     const taxRate = parseFloat(order.tax_rate) || 15;
     const ivaRate = taxRate > 1 ? taxRate : taxRate * 100;
 
-    // Usar teléfono editado por el usuario (puede diferir del valor original en BD)
-    const phone = clientePhone || foundCliente?.phone || null;
-    const email = foundCliente?.email || null;
+    // Email: usar el guardado en BD o el que ingresó el cajero
+    const email = foundCliente?.email || clienteEmail.trim() || null;
 
     try {
       const res = await fetchWithAuth('/api/einvoicing/invoices/emit', {
@@ -552,7 +551,6 @@ export default function CheckoutModern() {
             name:                isCF ? 'CONSUMIDOR FINAL' : (custNombre || ''),
             ruc:                 isCF ? '9999999999999'    : cedula,
             email,
-            phone,
             tipo_identificacion: tipoId,
           },
           items: (order.items || []).map(i => ({
@@ -680,16 +678,23 @@ export default function CheckoutModern() {
               style={{ minWidth: 240, maxWidth: 300, flex: '2 1 240px', marginLeft: 6 }}
             />
 
-            <input
-              className="client-inp"
-              type="text"
-              inputMode="tel"
-              placeholder="📱 Celular"
-              value={clientePhone}
-              onChange={e => setClientePhone(e.target.value.replace(/\D/g, '').slice(0, 15))}
-              style={{ minWidth: 120, maxWidth: 140, flex: '1 1 120px', marginLeft: 4,
-                border: clientePhone ? '1.5px solid #25d366' : undefined }}
-            />
+            {foundCliente?.email ? (
+              <span style={{ fontSize: 12, color: '#6842fe', background: '#ede9fe', borderRadius: 6,
+                padding: '4px 10px', marginLeft: 4, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                ✉ {foundCliente.email}
+              </span>
+            ) : (
+              <input
+                className="client-inp"
+                type="email"
+                inputMode="email"
+                placeholder="✉ Email (factura)"
+                value={clienteEmail}
+                onChange={e => setClienteEmail(e.target.value)}
+                style={{ minWidth: 160, maxWidth: 200, flex: '1 1 160px', marginLeft: 4,
+                  border: clienteEmail ? '1.5px solid #6842fe' : undefined }}
+              />
+            )}
             <OpenDrawerButton />
           </div>
 
