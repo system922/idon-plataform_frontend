@@ -265,3 +265,20 @@
     text-align: center;
   }
 }
+
+@media (max-width: 400px) {
+  .checkout-modern-card {
+    padding: 8px 10px;
+  }
+
+  .combobox {
+    font-size: 13px;
+    padding: 6px 8px;
+  }
+
+  .btn-guardar,
+  .btn-cancelar {
+    width: 100%;
+    flex: none;
+  }
+}

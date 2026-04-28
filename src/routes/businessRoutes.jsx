@@ -73,7 +73,7 @@ function OwnerRoute({ children }) {
 export const businessRoutes = (
   <>
     {/* ── Home del panel ── */}
-    <Route index element={<BusinessHome />} />
+    <Route index element={<OwnerRoute><BusinessHome /></OwnerRoute>} />
     <Route path="dashboard" element={<OwnerRoute><Dashboard /></OwnerRoute>} />
     <Route path="profile"   element={<ProfilePage />} />
 

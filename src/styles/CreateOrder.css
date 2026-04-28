@@ -72,6 +72,23 @@
   }
 }
 
+@media (max-width: 480px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .order-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .card-soft {
+    padding: 10px;
+  }
+}
+
 .card-soft {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.10);

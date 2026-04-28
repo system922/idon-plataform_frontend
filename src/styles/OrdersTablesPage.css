@@ -681,6 +681,21 @@
 .ot-modal-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .ot-stats { grid-template-columns: repeat(2, 1fr); }
+
+  .ot-stat-val { font-size: 22px; }
+
+  .ot-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ot-search { min-width: 0; }
+
+  .ot-toolbar-right { justify-content: flex-end; }
+}
+
 @media (max-width: 640px) {
   .ot-stats { grid-template-columns: repeat(2, 1fr); }
 
@@ -700,4 +715,8 @@
     border-radius: 16px 16px 0 0;
     max-height: 92vh;
   }
+}
+
+@media (max-width: 400px) {
+  .ot-stats { grid-template-columns: 1fr; }
 }

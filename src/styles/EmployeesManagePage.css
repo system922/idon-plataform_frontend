@@ -85,7 +85,7 @@
   background: linear-gradient(135deg,#1a1f2a,#141920);
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.08);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .emp-table {
@@ -246,5 +246,17 @@
   .emp-stats > * {
     min-width: calc(50% - 8px);
     flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .emp-stats > * {
+    min-width: 100%;
+  }
+
+  .emp-table th,
+  .emp-table td {
+    padding: 10px 8px;
+    font-size: 12px;
   }
 }
