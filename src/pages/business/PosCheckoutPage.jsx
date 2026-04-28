@@ -678,23 +678,16 @@ export default function CheckoutModern() {
               style={{ minWidth: 240, maxWidth: 300, flex: '2 1 240px', marginLeft: 6 }}
             />
 
-            {foundCliente?.email ? (
-              <span style={{ fontSize: 12, color: '#6842fe', background: '#ede9fe', borderRadius: 6,
-                padding: '4px 10px', marginLeft: 4, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                ✉ {foundCliente.email}
-              </span>
-            ) : (
-              <input
-                className="client-inp"
-                type="email"
-                inputMode="email"
-                placeholder="✉ Email (factura)"
-                value={clienteEmail}
-                onChange={e => setClienteEmail(e.target.value)}
-                style={{ minWidth: 160, maxWidth: 200, flex: '1 1 160px', marginLeft: 4,
-                  border: clienteEmail ? '1.5px solid #6842fe' : undefined }}
-              />
-            )}
+            <input
+              className="client-inp"
+              type="email"
+              inputMode="email"
+              placeholder="✉ Email (factura)"
+              value={clienteEmail}
+              onChange={e => setClienteEmail(e.target.value)}
+              style={{ minWidth: 160, maxWidth: 200, flex: '1 1 160px', marginLeft: 4,
+                border: clienteEmail ? '1.5px solid #6842fe' : undefined }}
+            />
             <OpenDrawerButton />
           </div>
 
