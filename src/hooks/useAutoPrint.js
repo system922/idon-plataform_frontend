@@ -8,9 +8,10 @@ import API_BASE from '../config/apiBase';
 const POLL_INTERVAL = 4000;
 
 export function useAutoPrint({ businessId, enabled = true }) {
-  const { print }   = usePrinterService();
-  const printRef    = useRef(print);
-  const printingRef = useRef(false);
+  const { print }      = usePrinterService();
+  const printRef       = useRef(print);
+  const printingRef    = useRef(false);
+  const printedIdsRef  = useRef(new Set()); // IDs ya impresos en esta sesión
 
   useEffect(() => { printRef.current = print; }, [print]);
 
@@ -29,13 +30,34 @@ export function useAutoPrint({ businessId, enabled = true }) {
     });
   }, []);
 
+  // ── Intentar imprimir un pedido (socket o poll) — sin duplicados ──────────
+  const tryPrint = useCallback(async (order) => {
+    if (!order?.id) return false;
+    if (printedIdsRef.current.has(order.id)) return false; // ya impreso
+    if (!qz.websocket.isActive()) return false;
+
+    // Marcar inmediatamente para bloquear cualquier otra llamada concurrente
+    printedIdsRef.current.add(order.id);
+    try {
+      await printOrder(order);
+      await fetchWithAuth('/api/ordenes/mark-printed', {
+        method: 'POST',
+        body: JSON.stringify({ order_ids: [order.id] }),
+      });
+      return true;
+    } catch (err) {
+      // Si falla, quitar del set para que el próximo poll lo reintente
+      printedIdsRef.current.delete(order.id);
+      throw err;
+    }
+  }, [printOrder]);
+
   // ── Polling ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!enabled || !businessId) return;
 
     const poll = async () => {
       if (printingRef.current) return;
-      // Solo imprimir si QZ ya está conectado — la conexión la maneja la página activa
       if (!qz.websocket.isActive()) return;
 
       try {
@@ -46,21 +68,12 @@ export function useAutoPrint({ businessId, enabled = true }) {
         const orders = await res.json();
         if (!orders.length) return;
 
-        const printed = [];
         for (const order of orders) {
           try {
-            await printOrder(order);
-            printed.push(order.id);
+            await tryPrint(order);
           } catch (err) {
             console.error('[AutoPrint] Error imprimiendo orden', order.order_number, err);
           }
-        }
-
-        if (printed.length) {
-          await fetchWithAuth('/api/ordenes/mark-printed', {
-            method: 'POST',
-            body: JSON.stringify({ order_ids: printed }),
-          });
         }
       } catch (err) {
         console.error('[AutoPrint] Error en poll:', err);
@@ -72,7 +85,7 @@ export function useAutoPrint({ businessId, enabled = true }) {
     const interval = setInterval(poll, POLL_INTERVAL);
     poll();
     return () => clearInterval(interval);
-  }, [enabled, businessId, printOrder]);
+  }, [enabled, businessId, tryPrint]);
 
   // ── Socket ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -91,23 +104,14 @@ export function useAutoPrint({ businessId, enabled = true }) {
     );
 
     socket.on('new_order', async (data) => {
-      if (printingRef.current) return;
-      if (!qz.websocket.isActive()) return;
-      printingRef.current = true;
       try {
         const order = { ...(data?.pedido || data), items: data?.items || [] };
-        await printOrder(order);
-        await fetchWithAuth('/api/ordenes/mark-printed', {
-          method: 'POST',
-          body: JSON.stringify({ order_ids: [order.id] }),
-        });
+        await tryPrint(order);
       } catch (err) {
         console.error('[AutoPrint] Error socket print:', err);
-      } finally {
-        printingRef.current = false;
       }
     });
 
     return () => socket.disconnect();
-  }, [enabled, businessId, printOrder]);
+  }, [enabled, businessId, tryPrint]);
 }
