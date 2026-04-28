@@ -7,7 +7,6 @@ import { fetchWithAuth } from '../config/apiBase';
 
 function getOperatorUser() {
   try {
-    // ----- Usa idonUser, no user -----
     return JSON.parse(localStorage.getItem('idonUser') || '{}');
   } catch {
     return {};
@@ -39,7 +38,12 @@ function OpenDrawerReasonModal({ open, onSubmit, onClose, submitting, error }) {
     e.preventDefault();
     if (!reasonType) return;
     if (reasonType === 'egreso_compra' && !amount) return;
-    onSubmit({ reasonType, reason, amount: amount ? parseFloat(amount) : null });
+
+    onSubmit({
+      reasonType,
+      reason,
+      amount: amount ? parseFloat(amount) : null
+    });
   }
 
   if (!open) return null;
@@ -48,14 +52,18 @@ function OpenDrawerReasonModal({ open, onSubmit, onClose, submitting, error }) {
     <div className="odr-modal-overlay">
       <form onSubmit={handleSubmit} className="odr-modal-form">
         <h3>Registrar Motivo de Apertura de Caja</h3>
+
         <select
           value={reasonType}
           disabled={submitting}
           onChange={e => setReasonType(e.target.value)}
           required
         >
-          {reasonsList.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+          {reasonsList.map(r => (
+            <option key={r.value} value={r.value}>{r.label}</option>
+          ))}
         </select>
+
         {isEgreso && (
           <>
             <input
@@ -77,7 +85,9 @@ function OpenDrawerReasonModal({ open, onSubmit, onClose, submitting, error }) {
             />
           </>
         )}
+
         {error && <div className="odr-error">{error}</div>}
+
         <div className="odr-modal-buttons">
           {reasonType && (
             <>
@@ -95,14 +105,9 @@ function OpenDrawerReasonModal({ open, onSubmit, onClose, submitting, error }) {
   );
 }
 
+// 🔥 SOLO nombre y apellido
 function renderJefeData(jefeCaja, jefeName) {
-  if (!jefeCaja) return jefeName || 'Jefe de Caja';
-  const datos = [
-    jefeCaja.nombre || jefeCaja.firstName || jefeCaja.email || jefeName,
-    jefeCaja.email ? `<${jefeCaja.email}>` : null,
-    jefeCaja.id ? `ID: ${jefeCaja.id}` : null
-  ].filter(Boolean);
-  return datos.join(' ');
+  return jefeCaja?.nombre || jefeName || 'Jefe de Caja';
 }
 
 function OpenDrawerButton({
@@ -112,6 +117,7 @@ function OpenDrawerButton({
   className = "",
 }) {
   const openDrawer = useCashDrawer();
+
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [pwOpen, setPwOpen] = useState(false);
@@ -120,20 +126,23 @@ function OpenDrawerButton({
   const [reasonOpen, setReasonOpen] = useState(false);
   const [reasonModalErr, setReasonModalErr] = useState('');
   const [jefeName, setJefeName] = useState('');
-  const [jefeCaja, setJefeCaja] = useState(null); // <--- Estado para todo el info del jefe
+  const [jefeCaja, setJefeCaja] = useState(null);
 
   async function handleValidate(password) {
     setSubmitting(true);
     setModalErr('');
+
     const selectedBusiness = JSON.parse(localStorage.getItem('selectedBusiness') || 'null');
     const schemaLocal = selectedBusiness?.schemaName;
 
     try {
       if (!schemaLocal) throw new Error('No se pudo determinar el schema del negocio');
+
       const res = await fetchWithAuth('/api/auth/validate-jefe-caja', {
         method: 'POST',
         body: JSON.stringify({ password, schema: schemaLocal }),
       });
+
       if (!res.ok) {
         if (res.status === 401 || res.status === 404) {
           setModalErr('Clave no autorizada para abrir caja');
@@ -143,11 +152,17 @@ function OpenDrawerButton({
         setModalErr(error.error || 'Error validando clave');
         return;
       }
-      const jefe = await res.json();
-      setJefeName(jefe.nombre || jefe.email || jefe.firstName || 'Jefe de Caja');
-      setJefeCaja(jefe); // <--- Guarda el objeto completo
+
+      // 🔥 CORRECTO
+      const data = await res.json();
+      const nombreCompleto = data?.jefe?.nombre || 'Jefe de Caja';
+
+      setJefeName(nombreCompleto);
+      setJefeCaja({ nombre: nombreCompleto });
+
       setPwOpen(false);
       setReasonOpen(true);
+
     } catch (e) {
       setModalErr(e.message || 'Error validando clave');
     } finally {
@@ -158,6 +173,7 @@ function OpenDrawerButton({
   async function handleReasonSubmit({ reasonType, reason, amount }) {
     setLoading(true);
     setReasonModalErr('');
+
     const operador = getOperatorUser();
 
     if (!operador || !operador.id) {
@@ -175,18 +191,26 @@ function OpenDrawerButton({
       action = "caja_abierta";
       description = `Caja abierta por autorización del jefe de caja: ${jefeCompleto}. Acción: Reabrir por cierre accidental.`;
       new_values = null;
+
     } else if (reasonType === 'egreso_compra') {
       action = "drawer_expense";
-      description =
-        `Caja abierta por autorización del jefe de caja: ${jefeCompleto}. Acción: Retiro/egreso para compras. Motivo: ${reason}`;
+      description = `Caja abierta por autorización del jefe de caja: ${jefeCompleto}. Acción: Retiro/egreso para compras. Motivo: ${reason}`;
       new_values = { amount: amount || null };
+
     } else {
       setReasonModalErr("Motivo no válido");
       setLoading(false);
       return;
     }
 
-    const payload = { user_id, table_name: "cash_drawer", action, description, new_values, reason };
+    const payload = {
+      user_id,
+      table_name: "cash_drawer",
+      action,
+      description,
+      new_values,
+      reason
+    };
 
     try {
       const resp = await fetchWithAuth('/api/audit-log', {
@@ -202,9 +226,12 @@ function OpenDrawerButton({
       }
 
       const ok = await openDrawer();
+
       if (!ok) setErr('No se pudo abrir la caja');
       else if (typeof onDone === 'function') onDone();
+
       setReasonOpen(false);
+
     } catch (e) {
       setReasonModalErr(e.message || 'Error registrando auditoría o abriendo caja');
     } finally {
@@ -226,6 +253,7 @@ function OpenDrawerButton({
       >
         <FiInbox size={18} /> {loading ? "Abriendo..." : label}
       </button>
+
       {err && <div className="odr-error-msg">{err}</div>}
 
       <PasswordModal
@@ -235,6 +263,7 @@ function OpenDrawerButton({
         onSubmit={handleValidate}
         error={modalErr}
       />
+
       <OpenDrawerReasonModal
         open={reasonOpen}
         onClose={() => { if (!loading) setReasonOpen(false); }}
