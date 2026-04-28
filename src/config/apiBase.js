@@ -16,6 +16,7 @@ export function fetchWithAuth(path, options = {}) {
   if (business?.schemaName) headers['X-DB-Name']      = business.schemaName;
 
   return fetch(`${API_BASE}${path}`, {
+    credentials: 'include',
     ...options,
     headers,
   });

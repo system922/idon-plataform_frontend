@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiClipboard, FiUsers, FiTool, FiStar, FiServer, FiFileText, FiTrendingUp, FiRefreshCw } from 'react-icons/fi';
+import { FiClipboard, FiUsers, FiTool, FiStar, FiServer, FiEdit, FiSettings, FiFileText, FiTrendingUp, FiRefreshCw } from 'react-icons/fi';
 import { fetchProtected } from '../../utils/auth';
+import API_BASE from '../../config/apiBase';
 import '../../styles/AdminPages.css';
 
 const AdminDashboard = () => {
@@ -14,7 +15,7 @@ const AdminDashboard = () => {
     totalUsers: 0,
     modulesInUse: 0,
   });
-  const [, setRecentActivity] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 

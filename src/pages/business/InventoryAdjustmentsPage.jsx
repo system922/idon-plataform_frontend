@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { Plus, X, Search, RefreshCw, ArrowUp, ArrowDown, Sliders } from 'react-feather';
+import { Plus, Edit2, Trash2, X, Search, RefreshCw, ArrowUp, ArrowDown, Sliders } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 
 const EMPTY = { product_id: '', type: 'entrada', quantity: '', unit_cost: '', notes: '' };

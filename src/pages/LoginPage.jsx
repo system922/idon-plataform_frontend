@@ -7,15 +7,8 @@ import {
   FiTrendingUp, FiBarChart2, FiCheckCircle
 } from 'react-icons/fi';
 import '../styles/LoginPage.css';
-import API_BASE from '../config/apiBase';
 
 const SYSTEM_LOGO_URL = process.env.PUBLIC_URL + '/system.svg';
-const LOGOS = [
-  `${process.env.PUBLIC_URL}/IDON_1.svg`,
-  `${process.env.PUBLIC_URL}/IDON_2.svg`,
-  `${process.env.PUBLIC_URL}/IDON_3.svg`,
-];
-const COLORS = ['#ff8c42', '#8CB79B', '#FF6B9D', '#00D4FF'];
 
 export default function LoginPage({ onLogin }) {
   const navigate = useNavigate();
@@ -57,7 +50,7 @@ export default function LoginPage({ onLogin }) {
   /* ─── Owner lookup state ─── */
   const [ownerExists, setOwnerExists] = useState(false);
   const [ownerSearching, setOwnerSearching] = useState(false);
-  const [, setFoundByApi] = useState(false);
+  const [foundByApi, setFoundByApi] = useState(false);
 
   /* ─── Business types from API ─── */
   const [businessTypes, setBusinessTypes] = useState([]);
@@ -65,18 +58,24 @@ export default function LoginPage({ onLogin }) {
   const [errorTypes, setErrorTypes] = useState('');
 
   /* ─── Logo carousel ─── */
+  const logos = [
+    `${process.env.PUBLIC_URL}/IDON_1.svg`,
+    `${process.env.PUBLIC_URL}/IDON_2.svg`,
+    `${process.env.PUBLIC_URL}/IDON_3.svg`
+  ];
+  const colors = ['#ff8c42', '#8CB79B', '#FF6B9D', '#00D4FF'];
 
   const [logoIndex, setLogoIndex] = useState(0);
   const [logoColor, setLogoColor] = useState(0);
   const [logoOpacity, setLogoOpacity] = useState(1);
-  const [, setBusinessLogo] = useState(null);
+  const [businessLogo, setBusinessLogo] = useState(null);
 
   /* smooth logo cross-fade */
   useEffect(() => {
     const id = setInterval(() => {
       setLogoOpacity(0);
       setTimeout(() => {
-        setLogoIndex(prev => (prev + 1) % LOGOS.length);
+        setLogoIndex(prev => (prev + 1) % logos.length);
         setLogoOpacity(1);
       }, 600);
     }, 4000);
@@ -86,7 +85,7 @@ export default function LoginPage({ onLogin }) {
   /* color cycle */
   useEffect(() => {
     const id = setInterval(() => {
-      setLogoColor(prev => (prev + 1) % COLORS.length);
+      setLogoColor(prev => (prev + 1) % colors.length);
     }, 2500);
     return () => clearInterval(id);
   }, []);
@@ -109,7 +108,6 @@ export default function LoginPage({ onLogin }) {
     const q = new URLSearchParams(location.search);
     const id = routeBusinessSlug || q.get('b');
     if (id) setBusinessSlugInput(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ─── Fetch business types when user reaches step 2 ─── */
@@ -117,6 +115,7 @@ export default function LoginPage({ onLogin }) {
     if (!isLogin && registroStep === 2 && businessTypes.length === 0) {
       setLoadingTypes(true);
       setErrorTypes('');
+      const API_BASE = process.env.REACT_APP_API_BASE || 'https://idon-plataform-backend.onrender.com';
       fetch(`${API_BASE}/api/business-types`)
         .then(r => {
           if (!r.ok) throw new Error('No se pudieron cargar los tipos de negocio');
@@ -129,7 +128,7 @@ export default function LoginPage({ onLogin }) {
         .catch(e => setErrorTypes(e.message))
         .finally(() => setLoadingTypes(false));
     }
-  }, [isLogin, registroStep, businessTypes.length]);
+  }, [isLogin, registroStep]);
 
   /* ─── Ecuador civil registry API ─── */
   async function buscarEnAPIEcuador(cedula) {
@@ -290,6 +289,7 @@ export default function LoginPage({ onLogin }) {
     e.preventDefault();
     setLoading(true); setError('');
     try {
+      const API_BASE = process.env.REACT_APP_API_BASE || 'https://idon-plataform-backend.onrender.com';
       const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -319,6 +319,7 @@ export default function LoginPage({ onLogin }) {
   const handleSelectBusiness = async (businessId) => {
     setSelectingBusiness(true); setError('');
     try {
+      const API_BASE = process.env.REACT_APP_API_BASE || 'https://idon-plataform-backend.onrender.com';
       const res = await fetch(`${API_BASE}/api/auth/select-business`, {
         method: 'POST',
         headers: {
@@ -341,6 +342,7 @@ export default function LoginPage({ onLogin }) {
     e.preventDefault();
     setLoading(true); setError('');
     try {
+      const API_BASE = process.env.REACT_APP_API_BASE || 'https://idon-plataform-backend.onrender.com';
       const body = {
         firstName:      regForm.firstName,
         lastName:       regForm.lastName,
@@ -411,7 +413,7 @@ export default function LoginPage({ onLogin }) {
     return 'idle';
   };
 
-  const currentColor = COLORS[logoColor];
+  const currentColor = colors[logoColor];
 
   return (
     <div className="login-page">
@@ -429,7 +431,7 @@ export default function LoginPage({ onLogin }) {
           {/* Logo */}
           <div className="logo-carousel">
             <img
-              src={LOGOS[logoIndex]}
+              src={logos[logoIndex]}
               alt="IDON Logo"
               className="animated-logo"
               style={{
@@ -462,7 +464,7 @@ export default function LoginPage({ onLogin }) {
 
           {/* Color dots */}
           <div className="color-indicators">
-            {COLORS.map((c, i) => (
+            {colors.map((c, i) => (
               <div
                 key={i}
                 className={`color-dot ${i === logoColor ? 'active' : ''}`}

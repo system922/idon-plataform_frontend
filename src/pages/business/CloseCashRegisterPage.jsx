@@ -3,6 +3,7 @@ import PageTemplate from '../../components/PageTemplate';
 import { RefreshCw, AlertCircle, DollarSign, Briefcase, Gift, CreditCard } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 import qz from 'qz-tray';
+import { useBusinessContext } from '../../admin/config/BusinessContext';
 import usePrinterTicket from '../../hooks/usePrinterConfig.';
 import PrintCashCloseButton from '../../components/PrintCashCloseButton';
 import '../../styles/CloseCash.css';
@@ -63,6 +64,7 @@ export default function CashRegisterClosePage() {
   const [comandasFisico, setComandasFisico] = useState('0');
   const [remarks, setRemarks] = useState('');
 
+  const { selectedBusiness } = useBusinessContext();
   const [bizInfo, setBizInfo] = useState(null);
   const [printerConnected, setPrinterConnected] = useState(false);
 

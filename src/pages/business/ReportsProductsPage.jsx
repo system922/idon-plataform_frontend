@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { Package, BarChart2 } from 'react-feather';
+import { Search, Package, BarChart2 } from 'react-feather';
 
 export default function ReportsProductsPage() {
   // Datos demo, reemplaza por los datos de tu API
-  const [products] = useState([
+  const [products, setProducts] = useState([
     { id: 1, name: 'Café Americano', sku: 'CAFE-1', qty: 62, total: 148.5 },
     { id: 2, name: 'Cappuccino', sku: 'CAFE-2', qty: 37, total: 117.8 },
     { id: 3, name: 'Pan de Yuca', sku: 'PAN-1', qty: 45, total: 67.5 },

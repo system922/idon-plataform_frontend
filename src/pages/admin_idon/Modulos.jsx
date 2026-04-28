@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  FiBox, FiPlus, FiEdit2, FiTrash2, FiCheck,
-  FiRefreshCw, FiSettings,
+  FiBox, FiPlus, FiEdit2, FiTrash2, FiCheck, FiX,
+  FiRefreshCw, FiSettings, FiDollarSign,
 } from 'react-icons/fi';
 import API_BASE from '../../config/apiBase';
 import '../../styles/AdminPages.css';

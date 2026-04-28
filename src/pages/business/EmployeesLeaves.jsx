@@ -86,7 +86,7 @@ export default function EmployeesLeavesPage() {
   const [leaves, setLeaves] = useState(MOCK);
   const [search, setSearch] = useState('');
   const [show, setShow] = useState(false);
-  const [editing] = useState(null);
+  const [editing, setEditing] = useState(null);
 
   const filtered = leaves.filter(l =>
     l.employee.toLowerCase().includes(search.toLowerCase())

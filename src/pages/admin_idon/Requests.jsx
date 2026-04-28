@@ -110,7 +110,6 @@ const AdminSolicitudes = () => {
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchRequests(); }, [filterStatus]);
 
   const getStatusBadge = (status) => {
@@ -310,7 +309,6 @@ const DetailModal = ({ request, onClose, onApprove, onReject }) => {
       }
     };
     load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request.id]);
 
   const toggleModule = (modId) => {

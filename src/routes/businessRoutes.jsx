@@ -30,7 +30,7 @@ import InventoryRecipes    from '../pages/business/InventoryRecipesPage';
 import ReportProducts      from '../pages/business/ReportsProductsPage';
 import ReportsSales        from '../pages/business/ReportsSalesPage';
 
-import Order               from '../pages/business/OrderPage.jsx';
+import Order               from '../pages/business/OrderPage_';
 import OrderTable          from '../pages/business/OrdersTablesPage';
 import OrderHistory        from '../pages/business/OrdersHistoryPage';
 import OrdersKitchenScreenPage from '../pages/business/OrdersKitchenScreenPage';

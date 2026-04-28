@@ -12,7 +12,7 @@ import {
   FiDollarSign, FiClipboard, FiThermometer, FiTruck, FiGrid,
   FiCalendar, FiStar, FiShoppingBag, FiClock, FiUsers,
   FiUserCheck, FiMap, FiMapPin, FiList, FiGlobe, FiBell,
-  FiFileText, FiAlertCircle, FiZap, FiMenu,
+  FiFileText, FiUser, FiAlertCircle, FiZap,
 } from 'react-icons/fi';
 import API_BASE, { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/BusinessLayout.css';
@@ -61,10 +61,7 @@ const toSlug = (str = '') =>
   str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-const isDashboardPath = (path = '') =>
-  /dashboard/.test(path);
-
-function buildSidebarMenu(navData, isOwner = true) {
+function buildSidebarMenu(navData) {
   if (!navData?.modules?.length) return [];
 
   return navData.modules.map(mod => {
@@ -90,18 +87,11 @@ function buildSidebarMenu(navData, isOwner = true) {
       // Excluir la página principal de los sub-ítems (ya actúa como destino del header)
       const subPages = pages.filter(p => p !== mainPage);
 
-      const filteredSubPages = isOwner
-        ? subPages
-        : subPages.filter(page => !isDashboardPath(resolvePath(page.path, '')));
-
-      // Si el módulo es solo dashboard y no hay sub-ítems visibles, ocultarlo
-      if (!isOwner && isDashboardPath(mainPath) && filteredSubPages.length === 0) return null;
-
       return {
         section: mod.name,
         icon,
-        path: mainPath,
-        items: filteredSubPages.map(page => ({
+        path: mainPath,   // ← ruta del header (para navegar al hacer click)
+        items: subPages.map(page => ({
           label: page.name,
           path:  resolvePath(page.path, `/app/${mod.code}/${toSlug(page.name)}`),
           icon:  <FiZap size={15}/>,
@@ -111,17 +101,12 @@ function buildSidebarMenu(navData, isOwner = true) {
 
     // Módulo con 1 sola página → link directo
     const single = pages[0];
-    const singlePath = resolvePath(single?.path, `/app/${mod.code}`);
-
-    // Ocultar si es dashboard y el usuario no es dueño
-    if (!isOwner && isDashboardPath(singlePath)) return null;
-
     return {
       label: mod.name,
       icon,
-      path: singlePath,
+      path: resolvePath(single?.path, `/app/${mod.code}`),
     };
-  }).filter(Boolean);
+  });
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -138,19 +123,14 @@ const isCashierRole = (user) => {
   return CASHIER_ROLES.some(r => role.includes(r));
 };
 
-const isBusinessOwner = (user) =>
-  user?.userType !== 'schema_employee';
-
 export default function BusinessLayout({ user, onLogout }) {
   const navigate   = useNavigate();
-  const ownerAccess = isBusinessOwner(user);
   const [navData,      setNavData]      = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [collapsed,    setCollapsed]    = useState(false);
-  const [mobileOpen,   setMobileOpen]   = useState(false);
   const [isSuspended,  setIsSuspended]  = useState(false);
-  const [, setSelectedBiz] = useState(getStoredBiz);
+  const [selectedBiz,  setSelectedBiz]  = useState(getStoredBiz);
 
   // ── Impresión automática de comandas (laptop del cajero/dueño) ───────────
   useAutoPrint({ businessId: selectedBiz?.id, enabled: !!selectedBiz?.id });
@@ -259,29 +239,14 @@ export default function BusinessLayout({ user, onLogout }) {
       ) : (
         <div className="business-layout">
 
-          {/* Mobile topbar */}
-          <header className="business-mobile-topbar">
-            <button className="business-hamburger" onClick={() => setMobileOpen(true)} aria-label="Abrir menú">
-              <FiMenu size={22} />
-            </button>
-            <span className="business-mobile-brand">ID<span>ON</span></span>
-            <div className="business-mobile-topbar-spacer" />
-          </header>
-
-          {/* Overlay backdrop */}
-          {mobileOpen && (
-            <div className="business-overlay" onClick={() => setMobileOpen(false)} />
-          )}
-
           {/* ── Sidebar ── */}
-          <div className={`business-sidebar-wrapper ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+          <div className={`business-sidebar-wrapper ${collapsed ? 'collapsed' : ''}`}>
             <SidebarModern
               user={user}
-              menu={navData ? buildSidebarMenu(navData, ownerAccess) : []}
+              menu={navData ? buildSidebarMenu(navData) : []}
               onLogout={handleLogout}
               collapsed={collapsed}
               setCollapsed={setCollapsed}
-              onMobileClose={() => setMobileOpen(false)}
             />
           </div>
 

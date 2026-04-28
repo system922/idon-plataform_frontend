@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { fetchWithAuth } from '../config/apiBase';
 import { usePrinterQueue } from '../hooks/usePrinterQueue';
 import qz from 'qz-tray';
@@ -61,7 +61,6 @@ export function useQzTray() {
     };
 
     connectPrinter();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Procesar cola cuando se conecta la impresora ────────────────────────────

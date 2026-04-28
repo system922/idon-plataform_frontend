@@ -2,14 +2,6 @@ import { useCallback } from 'react';
 import { fetchWithAuth } from '../config/apiBase';
 import qz from 'qz-tray';
 
-const getDefaultPrinterName = () => 'POS-58';
-const getDefaultPrinterWidth = (key) => key === 'printer_main' ? 42 : 32;
-const getDefaultPrinter = (key) => ({
-  name: getDefaultPrinterName(),
-  width: getDefaultPrinterWidth(key),
-  footer: '',
-});
-
 export function usePrinterService() {
   /**
    * Obtiene configuración de impresora desde BD
@@ -47,6 +39,14 @@ export function usePrinterService() {
     }
   }, []);
 
+  const getDefaultPrinterName = (key) => 'POS-58';
+  const getDefaultPrinterWidth = (key) => key === 'printer_main' ? 42 : 32;
+
+  const getDefaultPrinter = (key) => ({
+    name: getDefaultPrinterName(key),
+    width: getDefaultPrinterWidth(key),
+    footer: '',
+  });
 
   /**
    * Genera un ticket formateado según el tipo
@@ -271,7 +271,7 @@ function formatDate(str, format = 'short') {
  * COMANDA - Formato exacto del original
  */
 function formatComandaTicket(data, width = 32) {
-  const { comanda, table, items = [], notes = '' } = data;
+  const { comanda, table, items = [], notes = '', timestamp, bizInfo } = data;
   
   const line = () => '='.repeat(width);
   const sep = () => '-'.repeat(width);
@@ -518,7 +518,7 @@ function formatInvoiceTicket(data, width = 42) {
  * RECIBO
  */
 function formatReceiptTicket(data, width = 42) {
-  const { bizInfo, receipt, items = [], subtotal = 0, tax = 0, total = 0, paymentMethod = 'EFECTIVO', printerFooter } = data;
+  const { bizInfo, receipt, customer, items = [], subtotal = 0, tax = 0, total = 0, paymentMethod = 'EFECTIVO', printerFooter } = data;
   const line = '='.repeat(width);
   const subline = '-'.repeat(width);
 
@@ -767,7 +767,7 @@ function formatCashCloseTicket(data, width = 42) {
  * ROL DE PAGO
  */
 function formatPayrollTicket(data, width = 42) {
-  const { bizInfo, employee, period, items = [], deductions = [], totalEarnings = 0, totalDeductions = 0, netSalary = 0, printerFooter } = data;
+  const { bizInfo, employee, payroll, period, items = [], deductions = [], totalEarnings = 0, totalDeductions = 0, netSalary = 0, printerFooter } = data;
   const line = '='.repeat(width);
   const subline = '-'.repeat(width);
 

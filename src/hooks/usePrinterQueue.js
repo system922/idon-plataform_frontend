@@ -9,6 +9,18 @@ export function usePrinterQueue() {
   const { print } = usePrinterService();
   const processingRef = useRef(false);
 
+  // ── Cargar cola desde localStorage ─────────────────────────────────────────
+
+  useEffect(() => {
+    loadQueueFromStorage();
+  }, []);
+
+  // ── Guardar cola en localStorage ───────────────────────────────────────────
+
+  useEffect(() => {
+    saveQueueToStorage(queue);
+  }, [queue]);
+
   // ── Cargar de localStorage ────────────────────────────────────────────────
 
   const loadQueueFromStorage = useCallback(() => {
@@ -34,18 +46,6 @@ export function usePrinterQueue() {
       console.error('Error guardando cola de impresión:', err);
     }
   }, []);
-
-  // ── Cargar cola desde localStorage ─────────────────────────────────────────
-
-  useEffect(() => {
-    loadQueueFromStorage();
-  }, [loadQueueFromStorage]);
-
-  // ── Guardar cola en localStorage ───────────────────────────────────────────
-
-  useEffect(() => {
-    saveQueueToStorage(queue);
-  }, [queue, saveQueueToStorage]);
 
   // ── Agregar a cola ────────────────────────────────────────────────────────
 

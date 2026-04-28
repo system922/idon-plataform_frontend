@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Printer, Edit2, Trash2, Save } from 'react-feather';
+import { Search, Check, X, Printer, Edit2, Trash2, Save } from 'react-feather';
 import qz from 'qz-tray';
 import PageTemplate from '../../components/PageTemplate';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
@@ -10,6 +10,28 @@ import '../../styles/OrdersHistoryPage.css';
 // --- Helpers de impresión ---
 import API_BASE from '../../config/apiBase';
 const PRINTER_NAME = 'POS-58';
+const WIDTH = 32;
+const line = () => '='.repeat(WIDTH);
+const sep = () => '-'.repeat(WIDTH);
+const center = (txt) => {
+  const t = String(txt || '').trim();
+  const pad = Math.max(0, Math.floor((WIDTH - t.length) / 2));
+  return ' '.repeat(pad) + t;
+};
+const wrap = (txt, width = WIDTH) => {
+  const str = String(txt ?? '').trim();
+  if (!str) return [];
+  const words = str.split(/\s+/);
+  const lines = [];
+  let cur = '';
+  for (const word of words) {
+    const next = cur ? `${cur} ${word}` : word;
+    if (next.length <= width) cur = next;
+    else { if (cur) lines.push(cur); cur = word; }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+};
 
 const fmt = (n) => `$${parseFloat(n || 0).toFixed(2)}`;
 
@@ -103,7 +125,7 @@ function buildModificationComanda({
 export default function OrdersHistoryPage() {
   const { selectedBusiness } = useBusinessContext();
   const [orders, setOrders] = useState([]);
-  const [productos] = useState([
+  const [productos, setProductos] = useState([
     { id: 1, name: 'Café Americano', price: 1.5 },
     { id: 2, name: 'Capuccino', price: 2.2 },
     { id: 3, name: 'Croissant', price: 1.8 },
@@ -146,6 +168,7 @@ export default function OrdersHistoryPage() {
   }, []);
 
   // Load orders
+  useEffect(() => { loadOrders(); }, [selectedBusiness]);
   const loadOrders = async () => {
     // Ajusta el endpoint a como te retorna tus órdenes históricas
     try {
@@ -156,9 +179,6 @@ export default function OrdersHistoryPage() {
       showNotification('Error al cargar órdenes', 'error');
     }
   };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadOrders(); }, [selectedBusiness]);
 
   // Print modificación con tachado/insertado estilo POS-Cocina
   const handlePrintModification = async (order, removedProducts = [], addedProducts = [], remainingItems=[]) => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  FiCheck, FiRefreshCw,
+  FiMessageCircle, FiCheck, FiRefreshCw, FiAlertCircle,
   FiEdit2, FiSend, FiEye, FiToggleLeft, FiToggleRight, FiX,
 } from 'react-icons/fi';
 import apiService from '../../services/apiService';

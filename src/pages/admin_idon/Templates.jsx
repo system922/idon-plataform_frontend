@@ -1,4 +1,5 @@
 import React from 'react';
+import { FiLayout } from 'react-icons/fi';
 import '../../styles/AdminPages.css';
 
 export default function Templates() {

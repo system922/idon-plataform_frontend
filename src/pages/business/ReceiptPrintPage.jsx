@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Printer } from 'react-feather';
+import { Search, Check, X, Printer } from 'react-feather';
 import qz from 'qz-tray';
 import PageTemplate from '../../components/PageTemplate';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
@@ -78,6 +78,16 @@ export default function PosReceiptPrint() {
     })();
   }, []);
 
+  // Auth headers
+  const getHeaders = () => {
+    const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
+    const dbName = selectedBusiness?.schemaName;
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'X-DB-Name': dbName,
+    };
+  };
 
   // Load business receipt info
   useEffect(() => {
@@ -225,6 +235,10 @@ export default function PosReceiptPrint() {
     order.id.toString().includes(searchTerm)
   );
 
+  const showNotification = (msg, type = 'info') => {
+    setNotification({ msg, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
   // RENDER
   return (

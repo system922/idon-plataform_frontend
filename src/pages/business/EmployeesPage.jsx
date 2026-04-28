@@ -156,6 +156,7 @@ function EmployeeModal({ employee, onClose, onSave, saving }) {
 /* ================= PAGE ================= */
 export default function EmployeesManagePage() {
 
+  const selectedBusiness = JSON.parse(localStorage.getItem('selectedBusiness') || 'null');
 
   const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState('');
