@@ -1,35 +1,55 @@
 import { useState, useEffect, useRef } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { RefreshCw, CheckCircle, XCircle, Smartphone, AlertCircle, LogOut } from 'react-feather';
+import { RefreshCw, CheckCircle, XCircle, Smartphone, AlertCircle, LogOut, Loader } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 
 const STATUS_INFO = {
   ready:        { color: '#15803d', bg: 'rgba(34,197,94,0.08)',   border: 'rgba(34,197,94,0.3)',   icon: <CheckCircle size={22} color="#22c55e" />, label: 'Conectado' },
   qr:           { color: '#b45309', bg: 'rgba(217,119,6,0.08)',   border: 'rgba(217,119,6,0.3)',   icon: <Smartphone  size={22} color="#d97706" />, label: 'Esperando escaneo' },
+  loading:      { color: '#6366f1', bg: 'rgba(99,102,241,0.08)',  border: 'rgba(99,102,241,0.3)',  icon: <Loader      size={22} color="#818cf8" />, label: 'Iniciando…' },
   disconnected: { color: '#b91c1c', bg: 'rgba(225,29,72,0.06)',   border: 'rgba(225,29,72,0.25)',  icon: <XCircle     size={22} color="#e11d48" />, label: 'Desconectado' },
   auth_failure: { color: '#6b7280', bg: 'rgba(107,114,128,0.08)', border: 'rgba(107,114,128,0.3)', icon: <AlertCircle size={22} color="#6b7280" />, label: 'Error de autenticación' },
 };
 
 export default function WhatsappPage() {
-  const [status,     setStatus]     = useState('disconnected');
+  const [rawStatus,  setRawStatus]  = useState('disconnected');
   const [qr,         setQr]         = useState(null);
   const [actionLoad, setActionLoad] = useState(false);
   const [msg,        setMsg]        = useState('');
-  const [msgType,    setMsgType]    = useState('info'); // 'info' | 'error'
-  const pollRef = useRef(null);
+  const [msgType,    setMsgType]    = useState('info');
+  const [attempts,   setAttempts]   = useState(0);
+  const [waitingQr,  setWaitingQr]  = useState(false); // true tras pulsar Conectar
+  const waitingRef = useRef(false);
+  const pollRef    = useRef(null);
+
+  // Estado visible: si acabamos de reiniciar y aún no llega QR → mostrar 'loading'
+  const status = (waitingQr && rawStatus === 'disconnected') ? 'loading' : rawStatus;
 
   const poll = async () => {
     try {
       const res  = await fetchWithAuth('/api/whatsapp/status');
       const data = await res.json();
-      setStatus(data.status || 'disconnected');
+      const s    = data.status || 'disconnected';
+      setRawStatus(s);
       setQr(data.qr || null);
+      setAttempts(data.reconnectAttempts || 0);
+
+      // Si ya llegó QR o está listo → dejar de esperar
+      if (s === 'qr' || s === 'ready') {
+        setWaitingQr(false);
+        waitingRef.current = false;
+      }
+
+      // Si inicializando en el backend → mantener loading
+      if (data.initializing) {
+        setWaitingQr(true);
+        waitingRef.current = true;
+      }
     } catch {
-      // silencioso — puede pasar si backend está reiniciando
+      // silencioso
     }
   };
 
-  // Polling cada 3 s siempre (detecta desconexión desde el celular)
   useEffect(() => {
     poll();
     pollRef.current = setInterval(poll, 3000);
@@ -38,19 +58,25 @@ export default function WhatsappPage() {
 
   const notify = (text, type = 'info') => {
     setMsg(text); setMsgType(type);
-    setTimeout(() => setMsg(''), 4000);
+    setTimeout(() => setMsg(''), 5000);
   };
 
   const handleConnect = async () => {
     setActionLoad(true);
+    setWaitingQr(true);
+    waitingRef.current = true;
+    setQr(null);
+    setRawStatus('disconnected');
     try {
       await fetchWithAuth('/api/whatsapp/restart', { method: 'POST' });
-      notify('Iniciando conexión — espera el código QR...');
-      setStatus('disconnected');
-      setQr(null);
-      setTimeout(poll, 2000);
-    } catch { notify('Error al iniciar', 'error'); }
-    finally { setActionLoad(false); }
+      notify('Chrome iniciando — el QR aparece en ~20 segundos...');
+    } catch {
+      notify('Error al conectar con el servidor', 'error');
+      setWaitingQr(false);
+      waitingRef.current = false;
+    } finally {
+      setActionLoad(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -59,8 +85,9 @@ export default function WhatsappPage() {
     try {
       await fetchWithAuth('/api/whatsapp/logout', { method: 'POST' });
       notify('Sesión cerrada. Pulsa "Conectar" para vincular un número nuevo.');
-      setStatus('disconnected');
+      setRawStatus('disconnected');
       setQr(null);
+      setWaitingQr(false);
     } catch { notify('Error al cerrar sesión', 'error'); }
     finally { setActionLoad(false); }
   };
@@ -86,11 +113,11 @@ export default function WhatsappPage() {
           {status !== 'ready' && (
             <button
               onClick={handleConnect}
-              disabled={actionLoad}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#25d366', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
+              disabled={actionLoad || status === 'loading'}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#25d366', color: '#fff', border: 'none', borderRadius: 6, cursor: (actionLoad || status === 'loading') ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13, opacity: (actionLoad || status === 'loading') ? 0.7 : 1 }}
             >
-              <RefreshCw size={14} style={{ animation: actionLoad ? 'spin 1s linear infinite' : 'none' }} />
-              {status === 'qr' ? 'Regenerar QR' : 'Conectar'}
+              <RefreshCw size={14} style={{ animation: (actionLoad || status === 'loading') ? 'spin 1s linear infinite' : 'none' }} />
+              {status === 'loading' ? 'Iniciando…' : status === 'qr' ? 'Regenerar QR' : 'Conectar'}
             </button>
           )}
         </div>
@@ -110,22 +137,41 @@ export default function WhatsappPage() {
 
       {/* Tarjeta de estado */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: info.bg, border: `1.5px solid ${info.border}`, borderRadius: 14, padding: '18px 22px', marginBottom: 20 }}>
-        {info.icon}
+        <div style={{ animation: status === 'loading' ? 'spin 1.2s linear infinite' : 'none', display: 'flex' }}>
+          {info.icon}
+        </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 800, fontSize: 15, color: info.color }}>{info.label}</div>
           <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
             {status === 'ready'        && 'Las facturas autorizadas se envían automáticamente al número del cliente.'}
+            {status === 'loading'      && 'Chrome está arrancando y cargando WhatsApp Web. El QR aparece en ~20–30 seg…'}
             {status === 'qr'           && 'Abre WhatsApp → ⋮ → Dispositivos vinculados → Vincular un dispositivo → escanea el QR de abajo.'}
-            {status === 'disconnected' && 'Pulsa "Conectar" para generar el código QR o reconectar la sesión guardada.'}
+            {status === 'disconnected' && !waitingQr && 'Pulsa "Conectar" para generar el código QR o reconectar la sesión guardada.'}
             {status === 'auth_failure' && 'La sesión expiró o fue cerrada desde el celular. Pulsa "Conectar" para escanear un nuevo QR.'}
           </div>
+          {attempts > 0 && status !== 'ready' && (
+            <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 4 }}>
+              ⚠ Intentos de reconexión: {attempts}
+              {attempts >= 3 && ' — Verifica que el backend esté activo y Chrome instalado.'}
+            </div>
+          )}
         </div>
-        {/* Indicador de polling en vivo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#94a3b8' }}>
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: status === 'ready' ? '#22c55e' : '#94a3b8', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: status === 'ready' ? '#22c55e' : status === 'loading' ? '#818cf8' : '#94a3b8', display: 'inline-block', animation: 'pulse 2s infinite' }} />
           En vivo
         </div>
       </div>
+
+      {/* Spinner de espera mientras carga */}
+      {status === 'loading' && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '30px 20px', background: 'rgba(99,102,241,0.05)', border: '1.5px solid rgba(99,102,241,0.2)', borderRadius: 14, marginBottom: 20 }}>
+          <div style={{ width: 48, height: 48, border: '4px solid rgba(99,102,241,0.2)', borderTop: '4px solid #818cf8', borderRadius: '50%', animation: 'spin 0.9s linear infinite' }} />
+          <div style={{ fontSize: 14, color: '#818cf8', fontWeight: 600 }}>Iniciando Chrome y WhatsApp Web…</div>
+          <div style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', maxWidth: 340 }}>
+            La primera vez puede tomar hasta 30 segundos. El código QR aparecerá automáticamente.
+          </div>
+        </div>
+      )}
 
       {/* QR para escanear */}
       {qr && status === 'qr' && (
@@ -160,6 +206,10 @@ export default function WhatsappPage() {
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.3; }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
         }
       `}</style>
     </PageTemplate>
