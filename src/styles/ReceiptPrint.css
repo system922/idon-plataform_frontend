@@ -1,4 +1,5 @@
-/* ── Layout principal ─────────────────────────────────────── */
+/* == Layout Principal y Paneles == */
+
 .checkout-main {
   display: flex;
   align-items: flex-start;
@@ -9,28 +10,58 @@
   .checkout-main { flex-direction: column; gap: 14px; }
 }
 
-/* ── Panel izquierdo: lista de órdenes ────────────────────── */
 .orders-list-panel {
   flex: 1;
   min-width: 0;
 }
 
-/* ── Buscador oscuro ──────────────────────────────────────── */
+.payment-panel {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.28);
+  padding: 22px 24px;
+  min-width: 320px;
+  max-width: 380px;
+  width: 100%;
+}
+@media (max-width: 870px) {
+  .payment-panel { max-width: 100%; min-width: 0; }
+}
+
+.empty-panel,
+.empty-state {
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px dashed rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.55);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  padding: 20px;
+}
+
+/* == Buscador & Tabla == */
+
 .search-box {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.10);
   border-radius: 12px;
   padding: 10px 14px;
   margin-bottom: 12px;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255,255,255,0.45);
   transition: border-color 0.15s;
 }
 .search-box:focus-within {
-  border-color: rgba(16, 185, 129, 0.45);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+  border-color: rgba(16,185,129,0.45);
+  box-shadow: 0 0 0 3px rgba(16,185,129,0.12);
 }
 .search-box input {
   background: none;
@@ -38,41 +69,40 @@
   outline: none;
   width: 100%;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255,255,255,0.92);
   font-family: inherit;
 }
 .search-box input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255,255,255,0.35);
 }
 
-/* ── Tabla de órdenes ─────────────────────────────────────── */
 .orders-table {
   width: 100%;
   border-radius: 14px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.28);
 }
 .orders-table table {
   width: 100%;
   border-collapse: collapse;
 }
 .orders-table th {
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(255, 255, 255, 0.70);
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.70);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   padding: 10px 16px;
   text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  border-bottom: 1px solid rgba(255,255,255,0.10);
 }
 .orders-table td {
   padding: 11px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.85);
   font-size: 14px;
 }
 .orders-table tr:last-child td {
@@ -83,9 +113,8 @@
 }
 .orders-table tr.selected,
 .orders-table tr:hover {
-  background: rgba(16, 185, 129, 0.09);
+  background: rgba(16,185,129,0.09);
 }
-
 .orders-table td.amount {
   color: #975ffe;
   font-weight: 900;
@@ -93,10 +122,10 @@
 }
 
 .orders-table td .btn-select {
-  background: rgba(16, 185, 129, 0.13);
-  color: rgba(255, 255, 255, 0.88);
+  background: rgba(16,185,129,0.13);
+  color: rgba(255,255,255,0.88);
   font-weight: 600;
-  border: 1px solid rgba(16, 185, 129, 0.30);
+  border: 1px solid rgba(16,185,129,0.30);
   border-radius: 8px;
   padding: 6px 12px;
   display: flex;
@@ -108,8 +137,8 @@
   white-space: nowrap;
 }
 .orders-table td .btn-select:hover {
-  background: rgba(16, 185, 129, 0.26);
-  border-color: rgba(16, 185, 129, 0.55);
+  background: rgba(16,185,129,0.26);
+  border-color: rgba(16,185,129,0.55);
   color: #fff;
 }
 
@@ -124,20 +153,7 @@
   color: #79aaff;
 }
 
-/* ── Panel derecho: detalle del recibo ────────────────────── */
-.payment-panel {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 14px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
-  padding: 22px 24px;
-  min-width: 320px;
-  max-width: 380px;
-  width: 100%;
-}
-@media (max-width: 870px) {
-  .payment-panel { max-width: 100%; min-width: 0; }
-}
+/* == Detalle del Recibo == */
 
 .panel-title {
   font-weight: 800;
@@ -146,10 +162,9 @@
   margin-bottom: 14px;
 }
 
-/* ── Resumen de orden ─────────────────────────────────────── */
 .order-summary {
-  background: rgba(0, 0, 0, 0.20);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0,0,0,0.20);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 10px;
   padding: 14px 16px;
   margin-bottom: 14px;
@@ -177,15 +192,14 @@
   display: flex;
   justify-content: space-between;
   padding: 6px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  color: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.85);
   font-size: 14px;
   font-weight: 600;
 }
 .item-name  { font-weight: 700; color: #fff; }
 .item-price { font-weight: 800; color: #b299fa; }
 
-/* ── Subtotal / IVA / Total ───────────────────────────────── */
 .subtotal-line,
 .tax-line,
 .total-line {
@@ -194,7 +208,7 @@
   align-items: center;
   padding: 3px 0;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.60);
+  color: rgba(255,255,255,0.60);
 }
 .total-line {
   font-weight: bold;
@@ -210,9 +224,10 @@
   font-weight: 1000;
 }
 
-/* ── Botones ──────────────────────────────────────────────── */
+/* == Botones == */
+
 .btn-complete {
-  background: rgba(16, 185, 129, 0.85);
+  background: rgba(16,185,129,0.85);
   color: #fff;
   font-weight: 800;
   border: none;
@@ -224,7 +239,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.25);
+  box-shadow: 0 3px 8px rgba(16,185,129,0.25);
 }
 .btn-complete:disabled {
   opacity: 0.60;
@@ -233,10 +248,10 @@
 .btn-complete:hover { background: #10b981; }
 
 .btn-cancel {
-  background: rgba(239, 68, 68, 0.15);
+  background: rgba(239,68,68,0.15);
   color: #f87171;
   font-weight: 700;
-  border: 1px solid rgba(239, 68, 68, 0.30);
+  border: 1px solid rgba(239,68,68,0.30);
   border-radius: 7px;
   padding: 10px 18px;
   font-size: 13px;
@@ -247,31 +262,14 @@
   gap: 5px;
 }
 .btn-cancel:hover {
-  background: rgba(239, 68, 68, 0.30);
+  background: rgba(239,68,68,0.30);
   color: #fff;
-  border-color: rgba(239, 68, 68, 0.55);
+  border-color: rgba(239,68,68,0.55);
 }
 
-/* ── Empty states ─────────────────────────────────────────── */
-.empty-panel,
-.empty-state {
-  min-height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  border: 1px dashed rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.03);
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 14px;
-  font-weight: 600;
-  text-align: center;
-  padding: 20px;
-}
-
-/* ── Notificaciones ───────────────────────────────────────── */
+/* == Notificaciones == */
 .notification {
-  background: rgba(35, 43, 77, 0.92);
+  background: rgba(35,43,77,0.92);
   color: #fff;
   border-radius: 8px;
   padding: 10px 16px;
@@ -280,9 +278,18 @@
   font-weight: 700;
   font-size: 14px;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
-.notification.info    { background: rgba(24, 103, 192, 0.92); }
-.notification.success { background: rgba(16, 185, 129, 0.92); }
-.notification.error   { background: rgba(225, 29, 72, 0.92); }
-.notification.warning { background: rgba(217, 119, 6, 0.92); }
+.notification.info    { background: rgba(24,103,192,0.92); }
+.notification.success { background: rgba(16,185,129,0.92); }
+.notification.error   { background: rgba(225,29,72,0.92); }
+.notification.warning { background: rgba(217,119,6,0.92); }
+
+/* === Responsive design para móvil === */
+@media (max-width: 700px) {
+  .checkout-main { flex-direction: column; }
+  .payment-panel { padding: 12px 7px; max-width: 100%; }
+  .orders-table th, .orders-table td { padding: 7px 7px; font-size: 13px; }
+  .item-line { font-size: 12px; }
+  .btn-complete, .btn-cancel { padding: 9px 8px; font-size: 12px; }
+}
