@@ -401,8 +401,8 @@ export default function CheckoutModern() {
         }
 
         const changeForPrint = cashAmt - cashNeeded;
-        await handlePrintReceipt(selectedOrder, total, changeForPrint);
-        silentEmitInvoice(selectedOrder, clienteCedula, clienteNombre, 'mixto'); // background
+        const invoiceNum = await emitirFactura(selectedOrder, clienteCedula, clienteNombre, 'mixto');
+        await handlePrintReceipt(selectedOrder, total, changeForPrint, invoiceNum);
         setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
         await resetForm();
         setTimeout(() => setSuccess(''), 1800);
@@ -512,8 +512,8 @@ export default function CheckoutModern() {
           return;
         }
 
-        await handlePrintReceipt(selectedOrder, paid, change);
-        silentEmitInvoice(selectedOrder, clienteCedula, clienteNombre, paymentMethod); // background
+        const invoiceNum = await emitirFactura(selectedOrder, clienteCedula, clienteNombre, paymentMethod);
+        await handlePrintReceipt(selectedOrder, paid, change, invoiceNum);
         setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
         setSelectedOrder(null);
         setAmountPaid('');
@@ -527,20 +527,20 @@ export default function CheckoutModern() {
     }
   };
 
-  // ── Factura electrónica — emisión silenciosa ───────────────────────────────
+  // ── Factura electrónica ───────────────────────────────────────────────────
 
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
-  async function silentEmitInvoice(order, custCedula, custNombre, method) {
+  // Emite la factura y devuelve el número SRI (ahora rápido: backend guarda
+  // como 'pendiente' y autoriza con el SRI en background)
+  async function emitirFactura(order, custCedula, custNombre, method) {
     const cedula  = custCedula && custCedula.trim() !== '' ? custCedula : '9999999999';
     const isCF    = cedula === '9999999999' || cedula === '9999999999999';
     const isRUC   = !isCF && cedula.length === 13;
     const tipoId  = isCF ? '07' : isRUC ? '04' : '05';
     const taxRate = parseFloat(order.tax_rate) || 15;
     const ivaRate = taxRate > 1 ? taxRate : taxRate * 100;
-
-    // Email: usar el guardado en BD o el que ingresó el cajero
-    const email = foundCliente?.email || clienteEmail.trim() || null;
+    const email   = foundCliente?.email || clienteEmail.trim() || null;
 
     try {
       const res = await fetchWithAuth('/api/einvoicing/invoices/emit', {
@@ -571,10 +571,10 @@ export default function CheckoutModern() {
         return data.invoice_number || null;
       }
       const errData = await res.json().catch(() => ({}));
-      console.error('Error al emitir factura electrónica (HTTP', res.status, '):', errData.error || errData);
+      console.error('Error al emitir factura (HTTP', res.status, '):', errData.error || errData);
       return null;
     } catch (e) {
-      console.error('Error al emitir factura electrónica:', e);
+      console.error('Error al emitir factura:', e);
       return null;
     }
   }
