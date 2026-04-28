@@ -59,17 +59,22 @@ export default function PosReceiptPrint() {
   useEffect(() => {
     (async () => {
       try {
-        const certData = await fetch(`${API_BASE}/api/print/cert`).then(r => r.text());
+        if (qz.websocket.isActive()) { setPrinterConnected(true); return; }
+        const certData = await fetchWithAuth('/api/print/cert').then(r => r.text());
         qz.security.setCertificatePromise(async () => certData);
         qz.security.setSignaturePromise(async (toSign) => {
-          const { signature } = await fetch(`${API_BASE}/api/print/sign`, {
+          const r = await fetchWithAuth('/api/print/sign', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ data: toSign }),
-          }).then(r => r.json());
+          });
+          const { signature } = await r.json();
           return signature;
         });
-        if (!qz.websocket.isActive()) await qz.websocket.connect();
+        await qz.websocket.connect({
+          host: 'localhost',
+          port: { secure: [8183, 8184], insecure: [8182] },
+          usingSecure: window.location.protocol === 'https:',
+        });
         setPrinterConnected(true);
       } catch (e) {
         console.warn('⚠️ QZ Tray no disponible:', e?.message);
@@ -133,7 +138,7 @@ export default function PosReceiptPrint() {
   };
 
   // --- Imprimir comprobante ---
-  const buildReceiptText = (order, paid, change) => {
+  const buildReceiptText = (order, paid, change, invoiceNumber = null) => {
     const biz     = bizInfo || {};
     const now     = new Date();
     const dateStr = now.toLocaleDateString('es-EC');
@@ -161,6 +166,7 @@ export default function PosReceiptPrint() {
 
     out += line() + '\n';
 
+    if (invoiceNumber) out += center(`No. ${invoiceNumber}`) + '\n';
     out += `Fecha:  ${dateStr} ${timeStr}\n`;
     if (order.customer_document_number) 
       out += `C.I.: ${order.customer_document_number}\n`; 
@@ -196,7 +202,12 @@ export default function PosReceiptPrint() {
   };
 
   const handlePrintReceipt = async (order) => {
-    const text = buildReceiptText(order, order.total, 0);
+    let invoiceNumber = null;
+    try {
+      const r = await fetchWithAuth(`/api/einvoicing/invoices/by-order/${order.id}`);
+      if (r.ok) { const data = await r.json(); invoiceNumber = data?.invoice_number || null; }
+    } catch {}
+    const text = buildReceiptText(order, order.total, 0, invoiceNumber);
 
     if (printerConnected) {
       try {

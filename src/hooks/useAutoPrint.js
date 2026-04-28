@@ -5,50 +5,16 @@ import { fetchWithAuth } from '../config/apiBase';
 import qz from 'qz-tray';
 import API_BASE from '../config/apiBase';
 
-const POLL_INTERVAL = 4000; // cada 4 segundos
+const POLL_INTERVAL = 4000;
 
 export function useAutoPrint({ businessId, enabled = true }) {
-  const { print }      = usePrinterService();
-  const printRef       = useRef(print);
-  const printingRef    = useRef(false); // evita solapamiento de polls
+  const { print }   = usePrinterService();
+  const printRef    = useRef(print);
+  const printingRef = useRef(false);
 
   useEffect(() => { printRef.current = print; }, [print]);
 
-  // ── 1. Conectar QZ Tray ───────────────────────────────────────────────────
-  const connectQZ = useCallback(async () => {
-    try {
-      if (qz.websocket.isActive()) return true;
-
-      const certRes  = await fetchWithAuth('/api/print/cert');
-      const certData = await certRes.text();
-
-      qz.security.setCertificatePromise(async () => certData);
-      qz.security.setSignaturePromise(async (toSign) => {
-        const r = await fetchWithAuth('/api/print/sign', {
-          method: 'POST',
-          body: JSON.stringify({ data: toSign }),
-        });
-        const { signature } = await r.json();
-        return signature;
-      });
-
-      await qz.websocket.connect({
-        host: 'localhost',
-        port: { secure: [8183, 8184], insecure: [8182] },
-        usingSecure: window.location.protocol === 'https:',
-      });
-      console.log('[AutoPrint] QZ Tray conectado ✅');
-      return true;
-    } catch {
-      return false;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (enabled) connectQZ();
-  }, [enabled, connectQZ]);
-
-  // ── 2. Imprimir una orden ─────────────────────────────────────────────────
+  // ── Imprimir una orden ────────────────────────────────────────────────────
   const printOrder = useCallback(async (order) => {
     const items = Array.isArray(order.items) ? order.items : [];
     await printRef.current('printer_ticket', 'comanda', {
@@ -63,18 +29,14 @@ export function useAutoPrint({ businessId, enabled = true }) {
     });
   }, []);
 
-  // ── 3. Polling — mecanismo principal ──────────────────────────────────────
+  // ── Polling ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!enabled || !businessId) return;
 
     const poll = async () => {
       if (printingRef.current) return;
-
-      // Si QZ no está activo, intentar reconectar
-      if (!qz.websocket.isActive()) {
-        const ok = await connectQZ();
-        if (!ok) return; // este dispositivo no tiene impresora
-      }
+      // Solo imprimir si QZ ya está conectado — la conexión la maneja la página activa
+      if (!qz.websocket.isActive()) return;
 
       try {
         printingRef.current = true;
@@ -89,7 +51,6 @@ export function useAutoPrint({ businessId, enabled = true }) {
           try {
             await printOrder(order);
             printed.push(order.id);
-            console.log('[AutoPrint] Comanda impresa:', order.order_number);
           } catch (err) {
             console.error('[AutoPrint] Error imprimiendo orden', order.order_number, err);
           }
@@ -109,11 +70,11 @@ export function useAutoPrint({ businessId, enabled = true }) {
     };
 
     const interval = setInterval(poll, POLL_INTERVAL);
-    poll(); // ejecutar inmediatamente al montar
+    poll();
     return () => clearInterval(interval);
-  }, [enabled, businessId, connectQZ, printOrder]);
+  }, [enabled, businessId, printOrder]);
 
-  // ── 4. Socket — respuesta inmediata (bonus sobre el polling) ─────────────
+  // ── Socket ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!enabled || !businessId) return;
 
@@ -129,13 +90,9 @@ export function useAutoPrint({ businessId, enabled = true }) {
       console.log('[AutoPrint] Socket conectado — business:', businessId)
     );
 
-    // El socket adelanta la impresión; el polling la confirma/recupera
     socket.on('new_order', async (data) => {
       if (printingRef.current) return;
-      if (!qz.websocket.isActive()) {
-        const ok = await connectQZ();
-        if (!ok) return;
-      }
+      if (!qz.websocket.isActive()) return; // sin QZ conectado, el poll lo reintentará
       try {
         const order = { ...(data?.pedido || data), items: data?.items || [] };
         await printOrder(order);
@@ -143,13 +100,11 @@ export function useAutoPrint({ businessId, enabled = true }) {
           method: 'POST',
           body: JSON.stringify({ order_ids: [order.id] }),
         });
-        console.log('[AutoPrint] Comanda impresa via socket:', order.order_number);
       } catch (err) {
         console.error('[AutoPrint] Error socket print:', err);
-        // El polling recuperará esta orden en el siguiente ciclo
       }
     });
 
     return () => socket.disconnect();
-  }, [enabled, businessId, connectQZ, printOrder]);
+  }, [enabled, businessId, printOrder]);
 }
