@@ -149,19 +149,25 @@ export default function OrdersHistoryPage() {
   useEffect(() => {
     (async () => {
       try {
-        const certData = await fetch(`${API_BASE}/api/print/cert`).then(r => r.text());
+        if (qz.websocket.isActive()) { setPrinterConnected(true); return; }
+        const certData = await fetchWithAuth('/api/print/cert').then(r => r.text());
         qz.security.setCertificatePromise(async () => certData);
         qz.security.setSignaturePromise(async (toSign) => {
-          const { signature } = await fetch(`${API_BASE}/api/print/sign`, {
+          const r = await fetchWithAuth('/api/print/sign', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ data: toSign }),
-          }).then(r => r.json());
+          });
+          const { signature } = await r.json();
           return signature;
         });
-        if (!qz.websocket.isActive()) await qz.websocket.connect();
+        await qz.websocket.connect({
+          host: 'localhost',
+          port: { secure: [8183, 8184], insecure: [8182] },
+          usingSecure: window.location.protocol === 'https:',
+        });
         setPrinterConnected(true);
       } catch (e) {
+        console.warn('⚠️ QZ Tray no disponible:', e?.message);
         setPrinterConnected(false);
       }
     })();
