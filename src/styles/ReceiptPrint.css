@@ -1,95 +1,115 @@
-/* Fondo general moderno */
+/* ── Layout principal ─────────────────────────────────────── */
 .checkout-main {
-  min-height: auto;
   display: flex;
   align-items: flex-start;
-  justify-content: center;
-  background: rgba(255,255,255,0.08);
-  padding-top: 0px;
-  border-radius: 10px;
+  gap: 14px;
+  min-height: auto;
 }
-@media (max-width:1100px) {
-  .checkout-main { flex-direction: column; gap: 30px;}
+@media (max-width: 1100px) {
+  .checkout-main { flex-direction: column; gap: 14px; }
 }
 
-/* --- Tabla y búsqueda --- */
+/* ── Panel izquierdo: lista de órdenes ────────────────────── */
 .orders-list-panel {
-  width: 100%;
-  max-width: 660px;
-  background: rgba(255,255,255,0.08);
+  flex: 1;
+  min-width: 0;
 }
 
+/* ── Buscador oscuro ──────────────────────────────────────── */
 .search-box {
-  width: 100%;
   display: flex;
   align-items: center;
-  background: #f3f6f8;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 12px;
-  padding: 8px 16px;
-  margin-bottom: 17px;
-  font-size: 16px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  transition: border-color 0.15s;
+}
+.search-box:focus-within {
+  border-color: rgba(16, 185, 129, 0.45);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
 }
 .search-box input {
   background: none;
   border: none;
   outline: none;
-  margin-left: 12px;
   width: 100%;
-  font-size: 16px;
-  color: #181a27;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.92);
+  font-family: inherit;
+}
+.search-box input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
 }
 
-/* Tabla moderna */
+/* ── Tabla de órdenes ─────────────────────────────────────── */
 .orders-table {
   width: 100%;
-  border-radius: 13px;
+  border-radius: 14px;
   overflow: hidden;
-  background: rgba(24,32,28,0.96);
-  box-shadow: 0 3px 12px #0002;
-  font-size: 15px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
 }
 .orders-table table {
   width: 100%;
   border-collapse: collapse;
 }
-.orders-table th, .orders-table td {
-  padding: 11px 18px;
-  border: none;
-}
 .orders-table th {
-  background: #f3f6f8;
-  color: #21244a;
-  font-size: 1rem;
-  font-weight: 900;
-  letter-spacing: 0.45px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.70);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+.orders-table td {
+  padding: 11px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+}
+.orders-table tr:last-child td {
+  border-bottom: none;
 }
 .orders-table tr {
-  border-bottom: 1px solid #1c2b23;
   transition: background 0.13s;
 }
 .orders-table tr.selected,
 .orders-table tr:hover {
-  background: #03564e;
-  color: #fff;
+  background: rgba(16, 185, 129, 0.09);
 }
+
 .orders-table td.amount {
   color: #975ffe;
   font-weight: 900;
-  font-size: 1.07em;
+  font-size: 1.05em;
 }
+
 .orders-table td .btn-select {
-  background: #dddfff !important;
-  color: #462388;
-  font-weight: 700;
-  border: none;
+  background: rgba(16, 185, 129, 0.13);
+  color: rgba(255, 255, 255, 0.88);
+  font-weight: 600;
+  border: 1px solid rgba(16, 185, 129, 0.30);
   border-radius: 8px;
-  padding: 6px 14px;
-  display: flex; gap:6px; align-items: center;
-  cursor: pointer; font-size: 14px;
-  transition: background 0.16s, color 0.13s;
+  padding: 6px 12px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.16s;
+  white-space: nowrap;
 }
 .orders-table td .btn-select:hover {
-  background: #975ffe !important;
+  background: rgba(16, 185, 129, 0.26);
+  border-color: rgba(16, 185, 129, 0.55);
   color: #fff;
 }
 
@@ -98,42 +118,46 @@
   color: #ffe895;
 }
 .mesa-num small {
-  font-size: 12px; font-weight: 900;
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
   color: #79aaff;
 }
 
-/* Panel derecho: recibo/preview */
+/* ── Panel derecho: detalle del recibo ────────────────────── */
 .payment-panel {
-  background: #23272f;
-  border-radius: 18px;
-  box-shadow: 0 2px 22px #0002;
-  padding: 28px 32px;
-  min-width: 340px;
-  max-width: 390px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  padding: 22px 24px;
+  min-width: 320px;
+  max-width: 380px;
   width: 100%;
-  margin-left: auto;
 }
-@media (max-width:870px) { .payment-panel { max-width:100%; min-width:0; } }
+@media (max-width: 870px) {
+  .payment-panel { max-width: 100%; min-width: 0; }
+}
 
 .panel-title {
   font-weight: 800;
-  font-size: 1.28rem;
+  font-size: 1.1rem;
   color: #354ced;
-  margin-bottom: 17px;
+  margin-bottom: 14px;
 }
 
+/* ── Resumen de orden ─────────────────────────────────────── */
 .order-summary {
-  background: #2b2e35;
-  border-radius: 9px;
-  padding: 18px 18px 12px 18px;
-  box-shadow: 0 1px 5px #0001;
-  margin-bottom: 15px;
-  margin-top: 7px;
+  background: rgba(0, 0, 0, 0.20);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
 }
 .summary-header h3 {
   font-weight: 900;
-  font-size: 1.06rem;
-  margin-bottom: 8px;
+  font-size: 1rem;
+  margin: 0 0 8px 0;
   color: #fff;
   display: flex;
   align-items: center;
@@ -141,10 +165,11 @@
 }
 .summary-header small {
   color: #5285f1;
-  font-size: 0.93em;
+  font-size: 0.9em;
   font-weight: 800;
-  margin-left: 6px;
+  margin-left: 4px;
 }
+
 .items-list {
   margin-bottom: 10px;
 }
@@ -152,95 +177,112 @@
   display: flex;
   justify-content: space-between;
   padding: 6px 0;
-  border-bottom: 1px dashed #4e597a6c;
-  color: #dfdfff;
-  font-size: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
   font-weight: 600;
 }
-.item-name { font-weight: 700; }
-.item-price {
-  font-weight: 800;
-  color: #b299fa;
-}
+.item-name  { font-weight: 700; color: #fff; }
+.item-price { font-weight: 800; color: #b299fa; }
 
-/* Subtotal/IVA/total */
-.subtotal-line, .tax-line, .total-line {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 2px 0; font-size: 16px;
-  color: #a5a7b1;
+/* ── Subtotal / IVA / Total ───────────────────────────────── */
+.subtotal-line,
+.tax-line,
+.total-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.60);
 }
 .total-line {
   font-weight: bold;
   color: #fff;
   background: linear-gradient(90deg, #8f8fd9 0%, #b3a1fc 100%);
   border-radius: 8px;
-  padding: 7px 0 7px 10px;
-  margin: 14px 0 3px 0;
+  padding: 8px 10px;
+  margin: 12px 0 3px 0;
 }
 .total-line .total-amount {
   color: #fff;
-  font-size: 1.17em;
+  font-size: 1.15em;
   font-weight: 1000;
 }
 
-/* Botones */
+/* ── Botones ──────────────────────────────────────────────── */
 .btn-complete {
-  background: #1bc47d;
+  background: rgba(16, 185, 129, 0.85);
   color: #fff;
   font-weight: 800;
   border: none;
   border-radius: 9px;
-  padding: 12px 27px;
-  font-size: 1.1rem;
-  margin-right: 10px;
+  padding: 11px 24px;
+  font-size: 14px;
   cursor: pointer;
-  transition: background .14s;
-  box-shadow: 0 3px 8px #08bc3f26;
+  transition: background 0.14s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.25);
 }
 .btn-complete:disabled {
-  background: #1bc47db4;
-  color: #fff;
-  opacity: 0.7;
+  opacity: 0.60;
   cursor: not-allowed;
 }
-.btn-complete:hover { background: #41f8b0; color: #232127; }
-.btn-cancel {
-  background: #ef4444;
-  color: #fff;
-  font-weight: 700;
-  border: none;
-  border-radius: 7px;
-  padding: 10px 20px;
-  margin-left: 8px;
-  font-size: 1.08rem;
-  cursor: pointer;
-  transition: background .13s;
-}
-.btn-cancel:hover { background: #fff; color: #d55252; border: 1px solid #d55252; }
+.btn-complete:hover { background: #10b981; }
 
-/* Empty state y notificaciones */
-.empty-panel, .empty-state {
-  min-height: 123px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 13px;
-  background: #26252c;
-  margin-top: 7px;
-  color: #fff; font-size: 1.17rem;
+.btn-cancel {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
   font-weight: 700;
-  text-align: center;
+  border: 1px solid rgba(239, 68, 68, 0.30);
+  border-radius: 7px;
+  padding: 10px 18px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.13s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
+.btn-cancel:hover {
+  background: rgba(239, 68, 68, 0.30);
+  color: #fff;
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
+/* ── Empty states ─────────────────────────────────────────── */
+.empty-panel,
+.empty-state {
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  padding: 20px;
+}
+
+/* ── Notificaciones ───────────────────────────────────────── */
 .notification {
-  background: #232b4d;
+  background: rgba(35, 43, 77, 0.92);
   color: #fff;
   border-radius: 8px;
-  padding: 11px 19px;
-  margin: 16px auto 0 auto;
+  padding: 10px 16px;
+  margin: 14px auto 0;
   max-width: 500px;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 14px;
   text-align: center;
-  box-shadow: 0 2px 8px #2d265638;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
-.notification.info { background: #1867c0; }
-.notification.success { background: #17a754; }
-.notification.error { background: #e11d48; }
+.notification.info    { background: rgba(24, 103, 192, 0.92); }
+.notification.success { background: rgba(16, 185, 129, 0.92); }
+.notification.error   { background: rgba(225, 29, 72, 0.92); }
+.notification.warning { background: rgba(217, 119, 6, 0.92); }
