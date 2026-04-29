@@ -1,63 +1,37 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { RefreshCw, AlertCircle, DollarSign, Briefcase, Gift, CreditCard } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 import qz from 'qz-tray';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
-import usePrinterTicket from '../../hooks/usePrinterConfig.';
-import PrintCashCloseButton from '../../components/PrintCashCloseButton';
+import usePrinterTicket from '../../hooks/usePrinterConfig'; // ✅ FIX IMPORT
 import '../../styles/CloseCash.css';
 
 // --- Helpers ---
 function money(val) {
-  if (val === null || val === undefined || isNaN(val)) return '00.00';
-  return Number(val).toLocaleString('es-VE', {
+  if (val === null || val === undefined || isNaN(val)) return '$0.00';
+  return Number(val).toLocaleString('es-EC', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
   });
-}
-
-function fmtFechaHora(str) {
-  if (!str) return '—';
-  try {
-    if (/^\d{2}:\d{2}:\d{2}/.test(str)) return str.slice(0,8);
-    const d = new Date(str);
-    return d.toLocaleDateString('es-EC', {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      timeZone: 'America/Guayaquil'
-    }) + ' ' +
-    d.toLocaleTimeString('es-EC', {
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-      hour12: false, timeZone: 'America/Guayaquil'
-    });
-  } catch {
-    return str;
-  }
-}
-
-function getDiffEstado(dif) {
-  if (dif === 0) return 'cierre-ok';
-  if (dif < 0) return 'cierre-faltante';
-  return 'cierre-sobrante';
-}
-
-function getDiffLabel(dif) {
-  if (dif === 0) return 'OK';
-  if (dif < 0) return 'FALTANTE';
-  return 'SOBRANTE';
 }
 
 // 🔥 Helper seguro
 function getMetodoTotal(metodosArr, metodo) {
-  const obj = (metodosArr || []).find(m => m.payment_method === metodo);
-  return obj ? Number(obj.total_cobrado) : 0;
+  if (!Array.isArray(metodosArr)) return 0;
+
+  const obj = metodosArr.find(m => m.payment_method === metodo);
+
+  console.log("🔍 Método:", metodo, "→", obj);
+
+  return obj ? Number(obj.total_cobrado || 0) : 0;
 }
 
-// 🔥 Total dinámico (PRO)
+// 🔥 Total dinámico
 function getTotalVentas(metodosArr) {
-  return (metodosArr || []).reduce(
+  if (!Array.isArray(metodosArr)) return 0;
+
+  return metodosArr.reduce(
     (acc, m) => acc + Number(m.total_cobrado || 0),
     0
   );
@@ -65,7 +39,9 @@ function getTotalVentas(metodosArr) {
 
 // --- COMPONENTE ---
 export default function CashRegisterClosePage() {
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
+  const today = new Date().toLocaleDateString('en-CA', {
+    timeZone: 'America/Guayaquil'
+  });
 
   const printerTicket = usePrinterTicket();
 
@@ -81,8 +57,6 @@ export default function CashRegisterClosePage() {
   const [remarks, setRemarks] = useState('');
 
   const { selectedBusiness } = useBusinessContext();
-  const [bizInfo, setBizInfo] = useState(null);
-  const [printerConnected, setPrinterConnected] = useState(false);
 
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -103,9 +77,8 @@ export default function CashRegisterClosePage() {
         });
 
         if (!qz.websocket.isActive()) await qz.websocket.connect();
-        setPrinterConnected(true);
       } catch (e) {
-        setPrinterConnected(false);
+        console.warn("QZ no conectado");
       }
     })();
   }, []);
@@ -121,14 +94,14 @@ export default function CashRegisterClosePage() {
 
       fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`)
         .then(r => r.json()).catch(() => null),
-
-      fetchWithAuth('/api/settings/receipt-info')
-        .then(r => r.ok ? r.json() : null).catch(() => null),
     ])
-    .then(([closeRes, datosRes, bizRes]) => {
+    .then(([closeRes, datosRes]) => {
+
+      console.log("🔥 API SUMMARY:", datosRes);
+
       setClose(closeRes && closeRes.id ? closeRes : null);
       setDatos(datosRes || null);
-      if (bizRes) setBizInfo(bizRes);
+
     })
     .finally(() => setLoading(false));
 
@@ -136,13 +109,13 @@ export default function CashRegisterClosePage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // 🔥 CÁLCULOS ROBUSTOS
+  // 🔥 CÁLCULOS
   const gastosTotal = (datos?.gastos || []).reduce(
     (a, g) => a + Number(g.monto || 0),
     0
   );
 
-  const ventasSistema = getTotalVentas(datos?.metodos);
+  const ventasSistema = getTotalVentas(datos?.metodos || []);
 
   const ventasFisicoCalc =
     Number(efectivoFisico || 0) +
@@ -174,7 +147,7 @@ export default function CashRegisterClosePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Error');
 
-      setMessage('Cuadre guardado');
+      setMessage('✅ Cuadre guardado');
       load();
 
     } catch (err) {
@@ -182,11 +155,22 @@ export default function CashRegisterClosePage() {
     }
   };
 
+  // --- RENDER ---
   return (
     <PageTemplate title="Cuadre de Caja" theme="cash">
 
       {error && <div className="alert-error">{error}</div>}
       {message && <div className="alert-success">{message}</div>}
+
+      {loading && <div>Cargando...</div>}
+
+      {!loading && !datos && (
+        <div style={{color:'red'}}>❌ No se pudieron cargar datos</div>
+      )}
+
+      {!loading && datos?.metodos?.length === 0 && (
+        <div style={{color:'orange'}}>⚠ No hay ventas registradas hoy</div>
+      )}
 
       <form onSubmit={handleSubmit} className="cash-close-form">
 
@@ -204,27 +188,42 @@ export default function CashRegisterClosePage() {
 
             <tr>
               <td>Efectivo</td>
-              <td><input value={efectivoFisico} onChange={e => setEfectivoFisico(e.target.value)} /></td>
+              <td>
+                <input
+                  value={efectivoFisico}
+                  onChange={e => setEfectivoFisico(e.target.value)}
+                />
+              </td>
               <td>{money(getMetodoTotal(datos?.metodos, "cash"))}</td>
               <td>{money(Number(efectivoFisico) - getMetodoTotal(datos?.metodos, "cash"))}</td>
             </tr>
 
             <tr>
               <td>Transferencia</td>
-              <td><input value={transferFisico} onChange={e => setTransferFisico(e.target.value)} /></td>
+              <td>
+                <input
+                  value={transferFisico}
+                  onChange={e => setTransferFisico(e.target.value)}
+                />
+              </td>
               <td>{money(getMetodoTotal(datos?.metodos, "transfer"))}</td>
               <td>{money(Number(transferFisico) - getMetodoTotal(datos?.metodos, "transfer"))}</td>
             </tr>
 
             <tr>
               <td>Tarjeta</td>
-              <td><input value={tarjetaFisico} onChange={e => setTarjetaFisico(e.target.value)} /></td>
+              <td>
+                <input
+                  value={tarjetaFisico}
+                  onChange={e => setTarjetaFisico(e.target.value)}
+                />
+              </td>
               <td>{money(getMetodoTotal(datos?.metodos, "card"))}</td>
               <td>{money(Number(tarjetaFisico) - getMetodoTotal(datos?.metodos, "card"))}</td>
             </tr>
 
             <tr>
-              <td>Total Ventas</td>
+              <td><strong>Total Ventas</strong></td>
               <td>{money(ventasFisicoCalc)}</td>
               <td>{money(ventasSistema)}</td>
               <td>{money(ventasFisicoCalc - ventasSistema)}</td>
@@ -233,12 +232,16 @@ export default function CashRegisterClosePage() {
           </tbody>
         </table>
 
-        <div>Total gastos: {money(gastosTotal)}</div>
-        <div>Neto sistema: {money(netoSistema)}</div>
+        <div><strong>Total gastos:</strong> {money(gastosTotal)}</div>
+        <div><strong>Neto sistema:</strong> {money(netoSistema)}</div>
 
-        <textarea value={remarks} onChange={e => setRemarks(e.target.value)} />
+        <textarea
+          placeholder="Observaciones..."
+          value={remarks}
+          onChange={e => setRemarks(e.target.value)}
+        />
 
-        <button type="submit">Guardar</button>
+        <button type="submit">Guardar Cuadre</button>
 
       </form>
     </PageTemplate>
