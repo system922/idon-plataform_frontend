@@ -3,7 +3,7 @@ import PageTemplate from '../../components/PageTemplate';
 import { fetchWithAuth } from '../../config/apiBase';
 import qz from 'qz-tray';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
-import usePrinterTicket from '../../hooks/usePrinterConfig'; // ✅ FIX IMPORT
+import usePrinterTicket from '../../hooks/usePrinterConfig.';
 import '../../styles/CloseCash.css';
 
 // --- Helpers ---
