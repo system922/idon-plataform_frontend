@@ -3,7 +3,7 @@ import PageTemplate from '../../components/PageTemplate';
 import { fetchWithAuth } from '../../config/apiBase';
 import qz from 'qz-tray';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
-import usePrinterTicket from '../../hooks/usePrinterConfig.';
+import usePrinterTicket from '../../hooks/usePrinterConfig';
 import '../../styles/CloseCash.css';
 
 // --- Helpers ---
@@ -18,22 +18,19 @@ function money(val) {
 
 function getMetodoTotal(metodosArr, metodo) {
   if (!Array.isArray(metodosArr)) return 0;
-
   const obj = metodosArr.find(m => m.payment_method === metodo);
-
   return obj ? Number(obj.total_cobrado || 0) : 0;
 }
 
 function getTotalVentas(metodosArr) {
   if (!Array.isArray(metodosArr)) return 0;
-
   return metodosArr.reduce(
     (acc, m) => acc + Number(m.total_cobrado || 0),
     0
   );
 }
 
-// --- COMPONENTE ---
+// --- COMPONENT ---
 export default function CashRegisterClosePage() {
   const today = new Date().toLocaleDateString('en-CA', {
     timeZone: 'America/Guayaquil'
@@ -101,11 +98,19 @@ export default function CashRegisterClosePage() {
       }
 
       // --- SUMMARY ---
-      if (!summaryRes.ok) throw new Error('Error cargando summary');
+      if (!summaryRes.ok) {
+        const txt = await summaryRes.text();
+        console.error("❌ SUMMARY RAW:", txt);
+        throw new Error('Error cargando summary');
+      }
 
       const summaryData = await summaryRes.json();
 
-      console.log("🔥 SUMMARY OK:", summaryData);
+      if (!summaryData || typeof summaryData !== 'object') {
+        throw new Error('Summary inválido');
+      }
+
+      console.log("🧠 DATOS FRONT:", summaryData);
 
       setClose(closeData && closeData.id ? closeData : null);
       setDatos(summaryData);
@@ -132,9 +137,9 @@ export default function CashRegisterClosePage() {
   const ventasSistema = getTotalVentas(datos?.metodos || []);
 
   const ventasFisicoCalc =
-    Number(efectivoFisico || 0) +
-    Number(transferFisico || 0) +
-    Number(tarjetaFisico || 0);
+    parseFloat(efectivoFisico || 0) +
+    parseFloat(transferFisico || 0) +
+    parseFloat(tarjetaFisico || 0);
 
   const netoSistema = ventasSistema - gastosTotal;
 
@@ -148,11 +153,11 @@ export default function CashRegisterClosePage() {
       const res = await fetchWithAuth('/api/pos/cash-register/closing', {
         method: 'POST',
         body: JSON.stringify({
-          efectivoFisico: Number(efectivoFisico),
-          transferenciaFisico: Number(transferFisico),
-          tarjetaFisico: Number(tarjetaFisico),
-          propinaFisico: Number(propinaFisico),
-          comandasFisico: Number(comandasFisico),
+          efectivoFisico: parseFloat(efectivoFisico || 0),
+          transferenciaFisico: parseFloat(transferFisico || 0),
+          tarjetaFisico: parseFloat(tarjetaFisico || 0),
+          propinaFisico: parseFloat(propinaFisico || 0),
+          comandasFisico: parseInt(comandasFisico || 0),
           date: today,
           remarks,
         }),
@@ -220,12 +225,14 @@ export default function CashRegisterClosePage() {
                     <td>{metodo.toUpperCase()}</td>
                     <td>
                       <input
+                        type="number"
+                        step="0.01"
                         value={value}
                         onChange={e => setter(e.target.value)}
                       />
                     </td>
                     <td>{money(sistema)}</td>
-                    <td>{money(Number(value) - sistema)}</td>
+                    <td>{money(parseFloat(value || 0) - sistema)}</td>
                   </tr>
                 );
               })}
