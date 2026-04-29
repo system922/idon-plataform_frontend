@@ -1,0 +1,390 @@
+﻿/* ════════════════════════════════════════════════════════════════
+   PageTemplate.css - Estilos universales moderno IDON
+   Tema: Naranja + Dark background
+   ════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Colores principales */
+  --pt-orange: #ff8c42;
+  --pt-orange-dark: #e87530;
+  --pt-orange-light: #ffaa6e;
+  --pt-orange-soft: rgba(255, 140, 66, 0.1);
+
+  /* Background */
+  --pt-bg-primary: #111111;
+  --pt-bg-secondary: #1a1a1a;
+  --pt-bg-tertiary: #252525;
+  --pt-border: #222222;
+  --pt-border-light: #333333;
+
+  /* Text */
+  --pt-text-primary: #ffffff;
+  --pt-text-secondary: #e0e0e0;
+  --pt-text-muted: #94a3b8;
+  --pt-text-dim: #64748b;
+
+  /* Otros */
+  --pt-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --pt-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   PAGE TEMPLATE
+   ════════════════════════════════════════════════════════════════ */
+
+.page-template {
+  width: 100%;
+  min-height: calc(100vh - 80px);
+  background: transparent;
+  padding: 24px;
+  border: 0;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HEADER
+   ════════════════════════════════════════════════════════════════ */
+
+.page-template-header {
+  margin: 0 0 28px 0;
+  padding: 20px 0;
+  background: linear-gradient(135deg, rgba(255, 140, 66, 0.08) 0%, transparent 100%);
+  border-bottom: 2px solid var(--pt-border);
+  border-radius: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  position: relative;
+}
+
+.page-template-header::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: linear-gradient(90deg, var(--pt-orange), transparent);
+  animation: slideRight 0.8s ease-out forwards;
+}
+
+@keyframes slideRight {
+  to { width: 80px; }
+}
+
+.page-template-header-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.page-template-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.page-template-title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--pt-text-primary);
+  letter-spacing: -0.5px;
+}
+
+.page-template-subtitle {
+  margin: 0;
+  color: var(--pt-text-muted);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CONTENT
+   ════════════════════════════════════════════════════════════════ */
+
+.page-template-content {
+  display: grid;
+  gap: 20px;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CARDS (Legacy support)
+   ════════════════════════════════════════════════════════════════ */
+
+.card {
+  background: var(--pt-bg-secondary);
+  border: 1px solid var(--pt-border);
+  border-radius: 8px;
+  padding: 20px;
+  color: var(--pt-text-secondary);
+  transition: all var(--pt-transition);
+}
+
+.card:hover {
+  border-color: var(--pt-border-light);
+  background: rgba(255, 140, 66, 0.05);
+  box-shadow: 0 4px 20px rgba(255, 140, 66, 0.15);
+}
+
+.card-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--pt-border);
+}
+
+.card-header h3,
+.card-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--pt-text-primary);
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   TABLAS (Legacy support)
+   ════════════════════════════════════════════════════════════════ */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--pt-bg-secondary);
+  border: 1px solid var(--pt-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table thead {
+  background: rgba(255, 140, 66, 0.05);
+  border-bottom: 2px solid var(--pt-border);
+}
+
+.table th {
+  padding: 14px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pt-orange);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.table td {
+  padding: 12px 16px;
+  color: var(--pt-text-secondary);
+  border-bottom: 1px solid var(--pt-border);
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 140, 66, 0.08);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   LOADING STATE
+   ════════════════════════════════════════════════════════════════ */
+
+.page-template-loading {
+  background: var(--pt-bg-secondary);
+  border: 1px solid var(--pt-border);
+  border-radius: 8px;
+  padding: 48px 24px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.page-template-spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--pt-border);
+  border-top-color: var(--pt-orange);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.page-template-loading p {
+  margin: 0;
+  color: var(--pt-text-muted);
+  font-size: 14px;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ERROR STATE
+   ════════════════════════════════════════════════════════════════ */
+
+.page-template-error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, transparent 100%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-left: 4px solid #ef4444;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-template-error-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.page-template-error-icon {
+  font-size: 24px;
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.page-template-error-title {
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--pt-text-primary);
+}
+
+.page-template-error-message {
+  margin: 0;
+  font-size: 13px;
+  color: var(--pt-text-muted);
+}
+
+.page-template-error-retry {
+  padding: 8px 16px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--pt-transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.page-template-error-retry:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ADMIN THEME
+   ════════════════════════════════════════════════════════════════ */
+
+.page-template-admin {
+  /* Hereda todos los estilos pero puede tener overrides */
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+  .page-template {
+    padding: 18px;
+  }
+
+  .page-template-title {
+    font-size: 28px;
+  }
+
+  .page-template-header {
+    margin: 0 0 20px 0;
+    padding: 16px 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-template {
+    padding: 14px;
+  }
+
+  .page-template-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .page-template-header-actions {
+    width: 100%;
+  }
+
+  .page-template-header-actions button {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .page-template-title {
+    font-size: 24px;
+  }
+
+  .page-template-content {
+    gap: 16px;
+  }
+
+  .page-template-error {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .page-template-error-retry {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .table th,
+  .table td {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-template {
+    padding: 12px;
+  }
+
+  .page-template-title {
+    font-size: 20px;
+  }
+
+  .page-template-subtitle {
+    font-size: 12px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .table {
+    font-size: 12px;
+  }
+}

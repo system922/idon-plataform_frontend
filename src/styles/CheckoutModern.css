@@ -1,0 +1,337 @@
+/* Fondo general */
+.checkout-modern-main {
+  min-height: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: rgba(255,255,255,0.08);
+  padding-top: 0px;
+  border-radius: 10px;
+  
+}
+
+/* Card principal */
+.checkout-modern-card {
+  width: 100%;
+  min-height: 100%;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  box-shadow: 0 2px 13px #0003;
+  padding: 10px 26px 10px 26px;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Inputs fila arriba */
+.cmbx-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  
+}
+.cmbx-row .label {
+  font-weight: 800;
+  color: #ffffff;
+  margin-right: 3px;
+}
+.combobox {
+  flex:1;
+  font-size: 14.2px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1.4px solid #d6e8d4;
+  background: #fcfff7;
+  color: #2c421b;
+  font-weight: 600;
+}
+.inputs-row {
+  display: flex;
+  gap: 9px;
+  margin-top: 4px;
+}
+.client-inp {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: #fff;
+  font-weight: 700;
+}
+/* Detalle de orden */
+.order-details {
+  border-radius: 6px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: #fff;
+  padding: 13px 10px 7px 10px;
+  margin-bottom: 2px;
+}
+.order-head {
+  font-weight: 700;
+  color: rgba(255,255,255,0.72);
+  font-size: 17px;
+  margin-bottom: 7px;
+}
+.order-items {
+  margin-bottom: 5px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  font-size: 18px;
+  font-weight: 900;
+  color: #474343;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(0, 0, 0, 0.05));
+}
+.item-line {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px dashed #e0eee7;
+  color: rgb(255, 255, 255);
+  padding: 2.5px 0 2.5px 0;
+  font-size: 14.4px;
+}
+.item-amt {
+  font-weight: 800;
+  letter-spacing: .5px;
+}
+.totals-footer {
+  position: relative;
+  bottom: auto;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-radius: 0;
+  border: none;
+  border-top: rgba(255,255,255,0.06);
+  background: transparent;
+  padding: 16px 0 0 0;
+}
+.sub-iva-total {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  justify-content: end;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  font-size: 14px;
+  font-weight: 900;
+  color: #fff;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  gap: 12px;
+}
+.total-section {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  justify-content: end;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05));
+  gap: 12px;
+}
+
+/* Métodos de pago */
+.pay-methods {
+  display: flex;
+  gap: 7px;
+  margin-top: 5px;
+}
+.pay-btn {
+  flex: 1 1 48px;
+  background: #e2edfd;
+  border: 1.5px solid #3a3a3a;
+  color: #3f3e3e;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 7px;
+  padding: 7px 0 6px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.13s;
+}
+.pay-btn.selected, .pay-btn:focus {
+  background: #000000;;
+  color: #ffffff;
+  border: 1.5px solid #000000;
+}
+
+/* Pago monto */
+.pay-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.input-pay {
+  width: 90px;
+  font-size: 16px;
+  padding: 5.5px 11px;
+  border-radius: 8px;
+  border: 1.5px solid #fefefe;
+  font-weight: 800;
+  color: #202d29;
+  background: #eafff8;
+}
+
+/* Acciones */
+.actions-row {
+  margin-top: 5px;
+  display: flex;
+  gap: 5px;
+  justify-content: flex-start;
+  align-items: center;
+}
+.btn-guardar {
+  background: #000;
+  color: #134522;
+  font-weight: 900;
+  font-size: 16.1px;
+  border: none;
+  border-radius: 8px;
+  padding: 8.5px 26px;
+  cursor: pointer;
+  transition: filter 0.13s;
+}
+.btn-guardar:disabled {
+  background: #000000;
+  color: #ffffff;
+  filter: grayscale(0.23);
+}
+.btn-guardar:hover {
+  background: #ffffff;
+  color: #000;
+}
+
+.btn-cancelar {
+  background: #e56767;
+  color: #ffffff;
+  font-weight: 700;
+  border: 1.7px solid #bdbec6;
+  border-radius: 8px;
+  padding: 7px 22px;
+  transition: background 0.13s;
+}
+.btn-cancelar:hover {
+  background: #ffffff;
+  color: #d55252;
+}
+.notification.modern {
+  position: fixed;
+  top: 48px; left: 50%; transform: translateX(-50%);
+  background: #e0ffe4;
+  color: #196215;
+  font-weight: 800;
+  padding: 14px 48px;
+  border-radius: 7px;
+  box-shadow:0 2px 13px #1070420f
+}
+
+/* ── Responsive ── */
+
+/* Tablet ≤900px */
+@media (max-width: 900px) {
+  .checkout-modern-card { padding: 12px 16px; }
+
+  .cmbx-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  /* Cédula y nombre ocupan todo el ancho disponible */
+  .cmbx-row .client-inp {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: 1 1 120px !important;
+  }
+  .cmbx-row .combobox {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: 1 1 160px !important;
+  }
+
+  /* Campos de pago: permitir wrap */
+  .pay-input-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+/* Móvil ≤640px */
+@media (max-width: 640px) {
+  .checkout-modern-card { padding: 10px 12px; gap: 8px; }
+
+  /* Fila cliente: cada elemento ocupa toda la línea */
+  .cmbx-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .cmbx-row .label { min-width: unset !important; flex: unset !important; margin-left: 0 !important; }
+  .cmbx-row .client-inp,
+  .cmbx-row .combobox {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: unset !important;
+    margin-left: 0 !important;
+  }
+
+  /* Métodos de pago: 3 por fila en lugar de todos seguidos */
+  .pay-methods {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .pay-btn {
+    font-size: 12px;
+    padding: 8px 4px;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  /* Campos de monto: apilados verticalmente */
+  .pay-input-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  /* Cada bloque de pago (efectivo, cambio, etc.) ocupa todo el ancho */
+  .pay-input-row > div {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .input-pay {
+    width: 100% !important;
+    flex: 1;
+    font-size: 16px;
+  }
+
+  /* Totales */
+  .sub-iva-total {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+
+  /* Botones */
+  .actions-row { flex-wrap: wrap; gap: 6px; }
+  .btn-guardar { flex: 1; min-width: 120px; font-size: 15px; padding: 10px 16px; }
+  .btn-cancelar { flex: 1; min-width: 80px; padding: 8px 16px; }
+}
+
+/* Móvil pequeño ≤400px */
+@media (max-width: 400px) {
+  .checkout-modern-card { padding: 8px 10px; }
+  .combobox { font-size: 13px; padding: 6px 8px; }
+  .pay-methods { grid-template-columns: repeat(2, 1fr); gap: 5px; }
+  .pay-btn { font-size: 11px; padding: 7px 2px; }
+  .btn-guardar, .btn-cancelar { width: 100%; flex: none; }
+  .sub-iva-total { font-size: 12px; }
+}

@@ -1,0 +1,595 @@
+/* ============================================================
+   SidebarModern.css
+   Ubicación: src/styles/SidebarModern.css
+   ============================================================ */
+
+:root {
+  --sb-width: 220px;
+  --sb-collapsed: 60px;
+  --sb-orange: #ff8c42;
+  --sb-bg: #111111;
+  --sb-border: #222222;
+  --sb-accent: #ff8c42;
+  --sb-accent-hover: #e87530;
+  --sb-accent-soft: rgba(255, 140, 66, 0.10);
+  --sb-accent-active: rgba(255, 140, 66, 0.13);
+  --sb-text: #94A3B8;
+  --sb-text-strong: #FFFFFF;
+  --sb-muted: #64748B;
+  --sb-hover: rgba(255, 255, 255, 0.05);
+  --sb-radius: 8px;
+  --sb-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================
+   SIDEBAR CONTENEDOR
+   ============================================================ */
+.sidebar-modern {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  background: var(--sb-bg);
+  border-right: 1px solid var(--sb-border);
+  overflow: hidden;
+  transition: width var(--sb-transition);
+  user-select: none;
+  position: relative;
+}
+
+/* Línea decorativa superior con el color de marca */
+.sidebar-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ff8c42 0%, #ff5e8c 100%);
+  z-index: 1;
+}
+
+/* ============================================================
+   HEADER / LOGO
+   ============================================================ */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 12px 14px;
+  border-bottom: 1px solid var(--sb-border);
+  flex-shrink: 0;
+  gap: 8px;
+  margin-top: 2px; /* espacio para la línea decorativa */
+}
+
+.sidebar-logo-block {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Contenedor del logo — sin fondo para que el SVG muestre sus propios colores */
+.sidebar-logo-icon {
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Fallback letra "I" si el SVG falla */
+.sidebar-logo-fallback {
+  font-size: 16px;
+  font-weight: 800;
+  color: #3B82F6;
+  letter-spacing: -0.5px;
+}
+
+.sidebar-logo-text {
+  overflow: hidden;
+  min-width: 0;
+  transition: opacity var(--sb-transition);
+}
+
+.sidebar-logo-text h2 {
+  font-size: 30px;
+  font-weight: 900;
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.logo-white {
+  color: #FFFFFF !important;
+}
+
+.logo-orange {
+  color: var(--sb-orange) !important;
+}
+
+.logo-subtitle {
+  font-size: 5.3px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  display: block;
+  margin-top: 2px;
+}
+
+/* Botón colapsar */
+.collapse-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid var(--sb-border);
+  color: var(--sb-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--sb-transition);
+  flex-shrink: 0;
+}
+
+.collapse-btn:hover {
+  background: var(--sb-accent-soft);
+  color: var(--sb-accent);
+  border-color: rgba(255, 140, 66, 0.4);
+}
+
+/* ============================================================
+   MENÚ SCROLLABLE
+   ============================================================ */
+.sidebar-menu {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sidebar-menu::-webkit-scrollbar { width: 2px; }
+.sidebar-menu::-webkit-scrollbar-track { background: transparent; }
+.sidebar-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 99px;
+}
+
+/* ── Sección del menú ── */
+.menu-section {
+  margin-bottom: 1px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px;
+  border-radius: var(--sb-radius);
+  cursor: pointer;
+  transition: all var(--sb-transition);
+  color: var(--sb-text);
+  position: relative;
+  border-left: 2px solid transparent;
+}
+
+.section-header:hover {
+  background: var(--sb-hover);
+  color: var(--sb-text-strong);
+}
+
+.section-header:hover .section-icon {
+  color: var(--sb-text-strong);
+}
+
+/* Estado activo: fondo naranja suave + borde izquierdo naranja */
+.section-header.active {
+  background: var(--sb-accent-active);
+  color: var(--sb-orange);
+  border-left-color: var(--sb-orange);
+}
+
+.section-header.active .section-icon {
+  color: var(--sb-orange);
+}
+
+.section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  flex-shrink: 0;
+  color: var(--sb-muted);
+  transition: color var(--sb-transition);
+}
+
+.section-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.section-chevron {
+  display: flex;
+  align-items: center;
+  color: var(--sb-muted);
+  transition: transform var(--sb-transition);
+  flex-shrink: 0;
+}
+
+.section-chevron.rotated {
+  transform: rotate(-180deg);
+}
+
+/* ── Items dentro de sección expandida ── */
+.section-items {
+  margin: 3px 0 4px 14px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 140, 66, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: fadeSlide 0.14s ease;
+}
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12.5px;
+  font-weight: 400;
+  transition: all var(--sb-transition);
+  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
+  border-left: 2px solid transparent;
+}
+
+.menu-item:hover {
+  background: rgba(255, 140, 66, 0.07);
+  color: rgba(255, 255, 255, 0.9);
+  border-left-color: rgba(255, 140, 66, 0.4);
+}
+
+.menu-item.active {
+  background: rgba(255, 140, 66, 0.12);
+  color: var(--sb-orange);
+  font-weight: 600;
+  border-left-color: var(--sb-orange);
+}
+
+.menu-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.menu-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Estado vacío ── */
+.sidebar-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 14px;
+  color: var(--sb-muted);
+  text-align: center;
+  gap: 10px;
+  font-size: 11.5px;
+}
+
+/* ============================================================
+   MODO COLAPSADO
+   ============================================================ */
+
+/* Header colapsado: logo arriba, botón abajo (columna centrada) */
+.sidebar-modern.collapsed .sidebar-header,
+.sidebar-header.collapsed-header {
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px 10px;
+  gap: 8px;
+}
+
+.sidebar-modern.collapsed .sidebar-logo-text {
+  display: none;
+}
+
+.sidebar-modern.collapsed .sidebar-logo-block {
+  justify-content: center;
+}
+
+.sidebar-modern.collapsed .section-label,
+.sidebar-modern.collapsed .section-chevron {
+  display: none;
+}
+
+.sidebar-modern.collapsed .section-header {
+  justify-content: center;
+  padding: 9px;
+  border-left-color: transparent;
+}
+
+.sidebar-modern.collapsed .section-header.active {
+  border-left-color: transparent;
+  border-radius: 8px;
+}
+
+.sidebar-modern.collapsed .section-items {
+  display: none;
+}
+
+/* ============================================================
+   FOOTER / USUARIO
+   ============================================================ */
+.sidebar-footer {
+  flex-shrink: 0;
+  padding: 8px 7px 10px;
+  border-top: 1px solid var(--sb-border);
+  position: relative;
+}
+
+/* Card clickeable del usuario */
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--sb-transition);
+  border: 1px solid transparent;
+}
+
+.user-card:hover {
+  background: var(--sb-hover);
+  border-color: var(--sb-border);
+}
+
+.user-card.open {
+  background: var(--sb-accent-active);
+  border-color: rgba(255, 140, 66, 0.3);
+}
+
+/* Avatar con iniciales */
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff8c42, #e87530);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 6px rgba(255, 140, 66, 0.25);
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.user-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sb-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.user-role {
+  font-size: 10px;
+  color: var(--sb-accent);
+  margin: 1px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.user-chevron {
+  color: var(--sb-muted);
+  transition: transform var(--sb-transition);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.user-chevron.open {
+  transform: rotate(180deg);
+  color: var(--sb-accent);
+}
+
+/* ── Dropdown hacia arriba ── */
+.user-dropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 7px;
+  right: 7px;
+  background: #1a1a1a;
+  border: 1px solid var(--sb-border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.5);
+  animation: dropUp 0.14s ease;
+  z-index: 999;
+}
+
+@keyframes dropUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.user-dropdown-header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--sb-border);
+}
+
+.user-dropdown-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sb-text-strong);
+  margin: 0 0 2px;
+  line-height: 1.2;
+}
+
+.user-dropdown-email {
+  font-size: 10.5px;
+  color: var(--sb-muted);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 14px;
+  cursor: pointer;
+  color: var(--sb-text);
+  font-size: 12.5px;
+  font-weight: 400;
+  transition: all var(--sb-transition);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.user-dropdown-item:hover {
+  background: var(--sb-hover);
+  color: var(--sb-text-strong);
+}
+
+.user-dropdown-item.danger {
+  color: #EF4444;
+}
+
+.user-dropdown-item.danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: #EF4444;
+}
+
+.user-dropdown-divider {
+  height: 1px;
+  background: var(--sb-border);
+  margin: 2px 0;
+}
+
+/* Colapsado: centrar avatar */
+.sidebar-modern.collapsed .user-card {
+  justify-content: center;
+  padding: 8px;
+}
+
+.sidebar-modern.collapsed .user-info,
+.sidebar-modern.collapsed .user-chevron {
+  display: none;
+}
+
+/* Logo SVG IDON — muestra sus colores originales (naranja/rosa) */
+.sidebar-logo-img {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Logo más pequeño cuando el sidebar está colapsado */
+.sidebar-modern.collapsed .sidebar-logo-img,
+.sidebar-modern.collapsed .sidebar-logo-icon {
+  width: 40px;
+  height: 40px;
+}
+
+/* Dropdown de usuario visible y flotante cuando sidebar está colapsado */
+.sidebar-modern.collapsed .user-dropdown {
+  position: fixed;
+  left: 60px; /* igual al ancho colapsado */
+  bottom: 24px;
+  min-width: 140px;
+  max-width: 180px;
+  z-index: 9999;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  border-radius: 10px;
+}
+
+/* Ajuste para que el menú no se recorte en colapsado */
+.sidebar-modern.collapsed .sidebar-footer {
+  position: static;
+}
+
+/* ── Mobile: sidebar siempre expandido cuando es drawer ── */
+@media (max-width: 768px) {
+  .sidebar-modern {
+    width: 260px !important;
+  }
+
+  /* Ocultar el botón collapse en mobile (se usa hamburger del topbar) */
+  .collapse-btn {
+    display: none;
+  }
+
+  /* Asegurar que el sidebar no esté en modo colapsado visual en mobile */
+  .sidebar-modern.collapsed .sidebar-logo-text { display: flex; }
+  .sidebar-modern.collapsed .sidebar-logo-block { justify-content: flex-start; }
+  .sidebar-modern.collapsed .sidebar-header {
+    flex-direction: row;
+    padding: 16px 12px 14px;
+  }
+  .sidebar-modern.collapsed .section-label,
+  .sidebar-modern.collapsed .section-chevron { display: flex; }
+  .sidebar-modern.collapsed .section-header {
+    justify-content: flex-start;
+    padding: 8px 9px;
+    border-left: 2px solid transparent;
+  }
+  .sidebar-modern.collapsed .section-items { display: flex; }
+  .sidebar-modern.collapsed .user-card { justify-content: flex-start; padding: 8px 9px; }
+  .sidebar-modern.collapsed .user-info,
+  .sidebar-modern.collapsed .user-chevron { display: flex; }
+  .sidebar-modern.collapsed .sidebar-logo-img,
+  .sidebar-modern.collapsed .sidebar-logo-icon { width: 70px; height: 70px; }
+}

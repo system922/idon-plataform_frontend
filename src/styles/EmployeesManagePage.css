@@ -1,0 +1,262 @@
+/* ===== PAGE ===== */
+.emp-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== TOOLBAR ===== */
+.emp-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.emp-search-box {
+  display: flex;
+  align-items: center;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 8px 12px;
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+}
+
+.emp-search-box input {
+  background: transparent;
+  border: none;
+  color: white;
+  margin-left: 8px;
+  outline: none;
+}
+
+/* ===== BUTTONS ===== */
+.emp-btn-primary {
+  background: linear-gradient(135deg,#6842fe,#7c5cff);
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.emp-refresh-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* ===== STATS ===== */
+.emp-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.emp-stat-card {
+  flex: 1;
+  background: linear-gradient(135deg,#1a1f2a,#141920);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 18px;
+  border-radius: 14px;
+}
+
+.emp-stat-card span {
+  font-size: 24px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.emp-stat-card p {
+  color: rgba(255,255,255,0.5);
+  margin-top: 4px;
+}
+
+.emp-stat-card.active span { color: #10b981; }
+.emp-stat-card.inactive span { color: #ef4444; }
+
+/* ===== TABLE ===== */
+.emp-table-wrapper {
+  background: linear-gradient(135deg,#1a1f2a,#141920);
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  overflow-x: auto;
+}
+
+.emp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.emp-table thead {
+  background: rgba(104,66,254,0.15);
+}
+
+.emp-table th {
+  padding: 14px;
+  text-align: left;
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+}
+
+.emp-table td {
+  padding: 14px;
+  color: #fff;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.emp-table tr:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+/* ===== STATUS ===== */
+.emp-status {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.emp-status.active {
+  background: rgba(16,185,129,0.15);
+  color: #10b981;
+}
+
+.emp-status.inactive {
+  background: rgba(239,68,68,0.15);
+  color: #ef4444;
+}
+
+/* ===== ACTIONS ===== */
+.emp-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.emp-actions button {
+  background: rgba(104,66,254,0.12);
+  border: 1px solid rgba(104,66,254,0.3);
+  color: #6842fe;
+  border-radius: 8px;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+
+.emp-actions button.delete {
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.3);
+  color: #ef4444;
+}
+
+/* ===== MODAL ===== */
+.emp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.emp-modal {
+  background: linear-gradient(135deg,#1a1f2a,#141920);
+  border: 1px solid rgba(104,66,254,0.25);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+}
+
+/* HEADER */
+.emp-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.emp-modal-header h2 {
+  color: #fff;
+  font-size: 18px;
+  margin: 0;
+}
+
+/* GRID */
+.emp-modal-grid {
+  padding: 16px 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* INPUT */
+.emp-input {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 10px;
+  border-radius: 8px;
+  color: #fff;
+}
+
+/* FOOTER */
+.emp-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.emp-btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+  padding: 8px 14px;
+  border-radius: 8px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 767px) {
+  .emp-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .emp-search-box {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .emp-search-box input {
+    width: 100%;
+  }
+
+  .emp-stats {
+    flex-wrap: wrap;
+  }
+
+  .emp-stats > * {
+    min-width: calc(50% - 8px);
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .emp-stats > * {
+    min-width: 100%;
+  }
+
+  .emp-table th,
+  .emp-table td {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+}

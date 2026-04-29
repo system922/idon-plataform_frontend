@@ -1,0 +1,399 @@
+/**
+ * 🔔 Notification Bell - Floating Widget CSS
+ * Floats in the top-right corner with badge counter
+ * Dropdown panel for quick notification management
+ */
+
+.nb-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ==================== BELL BUTTON ==================== */
+
+.nb-bell-button {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 24px;
+}
+
+.nb-bell-button:hover {
+  background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.nb-bell-button:active {
+  transform: scale(0.95);
+}
+
+/* Badge Counter */
+.nb-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+  animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* ==================== DROPDOWN PANEL ==================== */
+
+.nb-dropdown {
+  position: absolute;
+  top: 65px;
+  right: 0;
+  width: 380px;
+  max-height: 600px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .nb-dropdown {
+    width: calc(100vw - 40px);
+    max-width: 380px;
+    right: -20px;
+  }
+}
+
+/* ==================== HEADER ==================== */
+
+.nb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid #333;
+  background: linear-gradient(135deg, #0d2e2e 0%, #0a1f1f 100%);
+}
+
+.nb-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  letter-spacing: 0.5px;
+}
+
+.nb-close-btn {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.nb-close-btn:hover {
+  color: white;
+}
+
+/* ==================== LOADING STATE ==================== */
+
+.nb-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 12px;
+  color: #999;
+}
+
+.nb-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(76, 175, 80, 0.2);
+  border-top-color: #4caf50;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.nb-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(76, 175, 80, 0.2);
+  border-top-color: #4caf50;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==================== EMPTY STATE ==================== */
+
+.nb-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 12px;
+  color: #666;
+  text-align: center;
+}
+
+.nb-empty svg {
+  opacity: 0.5;
+}
+
+.nb-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* ==================== NOTIFICATIONS LIST ==================== */
+
+.nb-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  max-height: 450px;
+}
+
+.nb-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.nb-list::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.nb-list::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+
+.nb-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* ==================== NOTIFICATION ITEM ==================== */
+
+.nb-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border-bottom: 1px solid #2a2a2a;
+  gap: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.nb-item:hover {
+  background-color: #242424;
+}
+
+.nb-item-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nb-item-type {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.nb-type-payment_review .nb-item-type {
+  background-color: rgba(255, 152, 0, 0.2);
+  color: #ffb74d;
+}
+
+.nb-type-subscription_inactive .nb-item-type {
+  background-color: rgba(244, 67, 54, 0.2);
+  color: #ef5350;
+}
+
+.nb-type-renewal_reminder .nb-item-type {
+  background-color: rgba(33, 150, 243, 0.2);
+  color: #64b5f6;
+}
+
+.nb-type-warning .nb-item-type {
+  background-color: rgba(255, 152, 0, 0.2);
+  color: #ffb74d;
+}
+
+.nb-type-alert .nb-item-type {
+  background-color: rgba(244, 67, 54, 0.2);
+  color: #ef5350;
+}
+
+.nb-type-success .nb-item-type {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: #81c784;
+}
+
+.nb-item-message {
+  margin: 0;
+  font-size: 13px;
+  color: white;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.nb-item-date {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+}
+
+/* ==================== ITEM ACTIONS ==================== */
+
+.nb-item-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.nb-resolve-btn {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 16px;
+}
+
+.nb-resolve-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+  transform: scale(1.05);
+}
+
+.nb-resolve-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.nb-resolve-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ==================== FOOTER ==================== */
+
+.nb-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #333;
+  background-color: #0d2e2e;
+  text-align: center;
+}
+
+.nb-view-all-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #4caf50;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.nb-view-all-link:hover {
+  color: white;
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+@media (max-width: 640px) {
+  .nb-container {
+    top: 10px;
+    right: 10px;
+  }
+
+  .nb-bell-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .nb-dropdown {
+    width: calc(100vw - 20px);
+    max-height: 70vh;
+    top: 60px;
+    right: -10px;
+  }
+
+  .nb-list {
+    max-height: 50vh;
+  }
+
+  .nb-item-message {
+    font-size: 12px;
+  }
+}
