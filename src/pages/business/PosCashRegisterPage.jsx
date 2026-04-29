@@ -16,18 +16,14 @@ function money(val) {
   });
 }
 
-// 🔥 Helper seguro
 function getMetodoTotal(metodosArr, metodo) {
   if (!Array.isArray(metodosArr)) return 0;
 
   const obj = metodosArr.find(m => m.payment_method === metodo);
 
-  console.log("🔍 Método:", metodo, "→", obj);
-
   return obj ? Number(obj.total_cobrado || 0) : 0;
 }
 
-// 🔥 Total dinámico
 function getTotalVentas(metodosArr) {
   if (!Array.isArray(metodosArr)) return 0;
 
@@ -44,10 +40,11 @@ export default function CashRegisterClosePage() {
   });
 
   const printerTicket = usePrinterTicket();
+  const { selectedBusiness } = useBusinessContext();
 
   const [close, setClose] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [datos, setDatos] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [efectivoFisico, setEfectivoFisico] = useState('0.00');
   const [transferFisico, setTransferFisico] = useState('0.00');
@@ -56,16 +53,15 @@ export default function CashRegisterClosePage() {
   const [comandasFisico, setComandasFisico] = useState('0');
   const [remarks, setRemarks] = useState('');
 
-  const { selectedBusiness } = useBusinessContext();
-
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  // --- QZ ---
+  // --- QZ CONFIG ---
   useEffect(() => {
     (async () => {
       try {
         const certData = await fetchWithAuth('/api/print/cert').then(r => r.text());
+
         qz.security.setCertificatePromise(async () => certData);
 
         qz.security.setSignaturePromise(async (toSign) => {
@@ -76,40 +72,58 @@ export default function CashRegisterClosePage() {
           return signature;
         });
 
-        if (!qz.websocket.isActive()) await qz.websocket.connect();
+        if (!qz.websocket.isActive()) {
+          await qz.websocket.connect();
+        }
+
       } catch (e) {
-        console.warn("QZ no conectado");
+        console.warn("⚠️ QZ no conectado:", e.message);
       }
     })();
   }, []);
 
-  // --- LOAD ---
-  const load = useCallback(() => {
+  // --- LOAD DATA ---
+  const load = useCallback(async () => {
     setLoading(true);
     setError('');
 
-    Promise.all([
-      fetchWithAuth(`/api/pos/cash-register/full-closing?date=${today}`)
-        .then(r => r.status === 404 ? {} : r.json()).catch(() => null),
+    try {
+      const [closeRes, summaryRes] = await Promise.all([
+        fetchWithAuth(`/api/pos/cash-register/full-closing?date=${today}`),
+        fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`)
+      ]);
 
-      fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`)
-        .then(r => r.json()).catch(() => null),
-    ])
-    .then(([closeRes, datosRes]) => {
+      // --- FULL CLOSING ---
+      let closeData = null;
+      if (closeRes.status !== 404) {
+        if (!closeRes.ok) throw new Error('Error cargando cierre');
+        closeData = await closeRes.json();
+      }
 
-      console.log("🔥 API SUMMARY:", datosRes);
+      // --- SUMMARY ---
+      if (!summaryRes.ok) throw new Error('Error cargando summary');
 
-      setClose(closeRes && closeRes.id ? closeRes : null);
-      setDatos(datosRes || null);
+      const summaryData = await summaryRes.json();
 
-    })
-    .finally(() => setLoading(false));
+      console.log("🔥 SUMMARY OK:", summaryData);
 
+      setClose(closeData && closeData.id ? closeData : null);
+      setDatos(summaryData);
+
+    } catch (err) {
+      console.error("❌ ERROR LOAD:", err);
+      setError('Error cargando datos del servidor');
+      setDatos(null);
+    } finally {
+      setLoading(false);
+    }
   }, [today]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  // 🔥 CÁLCULOS
+  // --- CALCULOS ---
   const gastosTotal = (datos?.gastos || []).reduce(
     (a, g) => a + Number(g.monto || 0),
     0
@@ -145,17 +159,21 @@ export default function CashRegisterClosePage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Error');
 
-      setMessage('✅ Cuadre guardado');
+      if (!res.ok) {
+        throw new Error(data?.error || 'Error guardando cuadre');
+      }
+
+      setMessage('✅ Cuadre guardado correctamente');
       load();
 
     } catch (err) {
+      console.error("❌ ERROR SUBMIT:", err);
       setError(err.message);
     }
   };
 
-  // --- RENDER ---
+  // --- UI ---
   return (
     <PageTemplate title="Cuadre de Caja" theme="cash">
 
@@ -165,85 +183,76 @@ export default function CashRegisterClosePage() {
       {loading && <div>Cargando...</div>}
 
       {!loading && !datos && (
-        <div style={{color:'red'}}>❌ No se pudieron cargar datos</div>
+        <div style={{ color: 'red' }}>❌ No se pudieron cargar datos</div>
       )}
 
       {!loading && datos?.metodos?.length === 0 && (
-        <div style={{color:'orange'}}>⚠ No hay ventas registradas hoy</div>
+        <div style={{ color: 'orange' }}>⚠ No hay ventas registradas hoy</div>
       )}
 
-      <form onSubmit={handleSubmit} className="cash-close-form">
+      {!loading && datos && (
+        <form onSubmit={handleSubmit} className="cash-close-form">
 
-        <table className="cash-table">
-          <thead>
-            <tr>
-              <th>Concepto</th>
-              <th>Físico</th>
-              <th>Sistema</th>
-              <th>Diferencia</th>
-            </tr>
-          </thead>
+          <table className="cash-table">
+            <thead>
+              <tr>
+                <th>Concepto</th>
+                <th>Físico</th>
+                <th>Sistema</th>
+                <th>Diferencia</th>
+              </tr>
+            </thead>
 
-          <tbody>
+            <tbody>
 
-            <tr>
-              <td>Efectivo</td>
-              <td>
-                <input
-                  value={efectivoFisico}
-                  onChange={e => setEfectivoFisico(e.target.value)}
-                />
-              </td>
-              <td>{money(getMetodoTotal(datos?.metodos, "cash"))}</td>
-              <td>{money(Number(efectivoFisico) - getMetodoTotal(datos?.metodos, "cash"))}</td>
-            </tr>
+              {['cash', 'transfer', 'card'].map((metodo) => {
+                const fisicoMap = {
+                  cash: [efectivoFisico, setEfectivoFisico],
+                  transfer: [transferFisico, setTransferFisico],
+                  card: [tarjetaFisico, setTarjetaFisico],
+                };
 
-            <tr>
-              <td>Transferencia</td>
-              <td>
-                <input
-                  value={transferFisico}
-                  onChange={e => setTransferFisico(e.target.value)}
-                />
-              </td>
-              <td>{money(getMetodoTotal(datos?.metodos, "transfer"))}</td>
-              <td>{money(Number(transferFisico) - getMetodoTotal(datos?.metodos, "transfer"))}</td>
-            </tr>
+                const [value, setter] = fisicoMap[metodo];
+                const sistema = getMetodoTotal(datos.metodos, metodo);
 
-            <tr>
-              <td>Tarjeta</td>
-              <td>
-                <input
-                  value={tarjetaFisico}
-                  onChange={e => setTarjetaFisico(e.target.value)}
-                />
-              </td>
-              <td>{money(getMetodoTotal(datos?.metodos, "card"))}</td>
-              <td>{money(Number(tarjetaFisico) - getMetodoTotal(datos?.metodos, "card"))}</td>
-            </tr>
+                return (
+                  <tr key={metodo}>
+                    <td>{metodo.toUpperCase()}</td>
+                    <td>
+                      <input
+                        value={value}
+                        onChange={e => setter(e.target.value)}
+                      />
+                    </td>
+                    <td>{money(sistema)}</td>
+                    <td>{money(Number(value) - sistema)}</td>
+                  </tr>
+                );
+              })}
 
-            <tr>
-              <td><strong>Total Ventas</strong></td>
-              <td>{money(ventasFisicoCalc)}</td>
-              <td>{money(ventasSistema)}</td>
-              <td>{money(ventasFisicoCalc - ventasSistema)}</td>
-            </tr>
+              <tr>
+                <td><strong>Total Ventas</strong></td>
+                <td>{money(ventasFisicoCalc)}</td>
+                <td>{money(ventasSistema)}</td>
+                <td>{money(ventasFisicoCalc - ventasSistema)}</td>
+              </tr>
 
-          </tbody>
-        </table>
+            </tbody>
+          </table>
 
-        <div><strong>Total gastos:</strong> {money(gastosTotal)}</div>
-        <div><strong>Neto sistema:</strong> {money(netoSistema)}</div>
+          <div><strong>Total gastos:</strong> {money(gastosTotal)}</div>
+          <div><strong>Neto sistema:</strong> {money(netoSistema)}</div>
 
-        <textarea
-          placeholder="Observaciones..."
-          value={remarks}
-          onChange={e => setRemarks(e.target.value)}
-        />
+          <textarea
+            placeholder="Observaciones..."
+            value={remarks}
+            onChange={e => setRemarks(e.target.value)}
+          />
 
-        <button type="submit">Guardar Cuadre</button>
+          <button type="submit">Guardar Cuadre</button>
 
-      </form>
+        </form>
+      )}
     </PageTemplate>
   );
 }
