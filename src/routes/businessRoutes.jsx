@@ -13,7 +13,7 @@ import CoreRolesPage       from '../pages/business/RolesPage';
 import AuditLogs           from '../pages/business/AuditPage';
 
 
-import CloseCashPage       from '../pages/business/CloseCashRegisterPage.jsx';
+import CloseCashPage       from '../pages/business/PosCashRegisterPage.jsx';
 import AperturaCajaPage    from '../pages/business/AperturaCajaPage.jsx';
 import ReceiptPrint        from '../pages/business/ReceiptPrintPage';
 import Checkout            from '../pages/business/PosCheckoutPage';
