@@ -29,6 +29,7 @@ export default function CheckoutModern() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [clientApiLoading, setClientApiLoading] = useState(false);
+  
 
   const [amountPaidRaw, setAmountPaidRaw] = useState('');
   const [amountPaid, setAmountPaid] = useState('');
@@ -39,6 +40,13 @@ export default function CheckoutModern() {
   const [refCard, setRefCard] = useState('');
   const [refTransfer, setRefTransfer] = useState('');
   const [mixtoManual, setMixtoManual] = useState(new Set());
+
+  const IVA_RATE = 0.15;
+
+  const calcItemIva = (item) => {
+    const base = (item.unit_price || 0) * (item.quantity || 0);
+    return Math.round(base * IVA_RATE * 100) / 100;
+  };
 
 
   // ── Carga inicial ──────────────────────────────────────────────────────────
@@ -293,20 +301,21 @@ export default function CheckoutModern() {
           .filter(i => selectedItems.includes(i.id))
           .reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
       : (selectedOrder?.subtotal || 0);
-
+  
   const getSplitTax = () =>
-    selectedOrder && paymentMethod === 'split'
-      ? selectedOrder.items
-          .filter(i => selectedItems.includes(i.id))
-          .reduce((sum, i) => sum + (i.line_total - i.unit_price * i.quantity), 0)
-      : (selectedOrder?.tax_amount || 0);
+  selectedOrder && paymentMethod === 'split'
+    ? selectedOrder.items
+        .filter(i => selectedItems.includes(i.id))
+        .reduce((sum, i) => sum + calcItemIva(i), 0)
+    : 0;
+
 
   const getPaymentTotal = () => getSplitSubtotal() + getSplitTax();
 
   // ── Totales ────────────────────────────────────────────────────────────────
 
   const subtotal = selectedOrder ? Number(selectedOrder.subtotal || 0) : 0;
-  const iva = selectedOrder ? Number(selectedOrder.tax_amount || 0) : 0;
+  const iva = selectedOrder ? (selectedOrder.items || []).reduce((sum, item) => sum + calcItemIva(item), 0): 0;
   const total = selectedOrder ? Number(selectedOrder.total || 0) : 0;
 
   const change = Math.max(
@@ -561,7 +570,7 @@ export default function CheckoutModern() {
           })),
           subtotal:   parseFloat(order.subtotal) || 0,
           iva_rate:   ivaRate,
-          iva_amount: parseFloat(order.tax_amount) || 0,
+          iva_amount: (order.items || []).reduce((sum, i) => sum + calcItemIva(i), 0),
           total:      parseFloat(order.total) || 0,
           forma_pago: FORMA_PAGO_MAP[method] || '01',
         }),
