@@ -35,7 +35,7 @@ function ProductoModal({ open, initial = null, onSave, onClose }) {
     codigoBarras: "",
   });
   const [categorias, setCategorias] = useState([]);
-  const [tasaIva, setTasaIva] = useState(0.12);
+  const [tasaIva, setTasaIva] = useState(0.15);
   const [sku, setSku] = useState("");
   const [codigo, setCodigo] = useState("");
   const inputBarraRef = useRef();
@@ -55,10 +55,10 @@ function ProductoModal({ open, initial = null, onSave, onClose }) {
       try {
         const r = await fetch("/api/settings/tax");
         const d = await r.json();
-        let tasa = Number(d.vat_rate || d.iva || 12);
+        let tasa = Number(d.vat_rate || d.iva || 15);
         if (tasa > 1.5) tasa = tasa/100;
         setTasaIva(Number(tasa));
-      } catch { setTasaIva(0.12);}
+      } catch { setTasaIva(0.15);}
     })();
   }, [open]);
 
