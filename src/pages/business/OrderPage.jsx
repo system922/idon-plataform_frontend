@@ -167,6 +167,7 @@ export default function TakeOrderPageNew() {
       setGuardando(false);
     }
   }
+  
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
