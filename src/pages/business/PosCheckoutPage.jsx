@@ -422,7 +422,12 @@ export default function CheckoutModern() {
       }
 
       const pagoTotal = getPaymentTotal();
-      const paid = parseFloat(amountPaid) || 0;
+      const cash = parseFloat(amountPaid) || 0;
+      const card = parseFloat(cardPaid) || 0;
+      const transfer = parseFloat(transferPaid) || 0;
+
+      const paid = cash + card + transfer;
+
 
       if (paid < pagoTotal) {
         setError(`El pago debe ser al menos ${fmt(pagoTotal)}`);
@@ -966,29 +971,59 @@ export default function CheckoutModern() {
 
                 {/* SPLIT: Selección de items */}
                 {paymentMethod === 'split' && selectedOrder && (
-                  <div style={{ margin: "0px 0 2px 0" }}>
-                    <div style={{ fontWeight: 700, fontSize: 12.0, marginTop: 4 }}>Selecciona los productos a cobrar:</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                      {(selectedOrder.items || []).map((item, idx) => (
-                        <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: 3, fontWeight: 600, fontSize: '13.6px' }}>
-                          <input
-                            type="checkbox"
-                            disabled={item.paid}
-                            checked={selectedItems.includes(item.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedItems(prev => [...prev, item.id]);
-                              } else {
-                                setSelectedItems(prev => prev.filter(id => id !== item.id));
-                              }
-                            }}
-                          />
-                          {item.quantity}x {item.product_name || item.name}
-                        </label>
-                      ))}
-                    </div>
+                <>
+                  <div style={{ fontWeight: 700, fontSize: 12, marginTop: 4 }}>
+                    Selecciona los productos a cobrar:
                   </div>
-                )}
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    {(selectedOrder.items || []).map((item, idx) => (
+                      <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <input
+                          type="checkbox"
+                          disabled={item.paid}
+                          checked={selectedItems.includes(item.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedItems(prev => [...prev, item.id]);
+                            } else {
+                              setSelectedItems(prev => prev.filter(id => id !== item.id));
+                            }
+                          }}
+                        />
+                        {item.quantity}x {item.product_name || item.name}
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* 💰 PAGOS */}
+                  <div style={{ marginTop: 15 }}>
+                    <b>Métodos de pago:</b>
+
+                    {/* EFECTIVO */}
+                    <input
+                      placeholder="Efectivo"
+                      value={amountPaid}
+                      onChange={e => setAmountPaid(e.target.value)}
+                    />
+
+                    {/* TARJETA */}
+                    <input
+                      placeholder="Tarjeta"
+                      value={cardPaid}
+                      onChange={e => setCardPaid(e.target.value)}
+                    />
+
+                    {/* TRANSFERENCIA */}
+                    <input
+                      placeholder="Transferencia"
+                      value={transferPaid}
+                      onChange={e => setTransferPaid(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
               </div>
 
               {/* Botones acciones */}
