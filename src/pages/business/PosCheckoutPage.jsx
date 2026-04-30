@@ -49,7 +49,7 @@ export default function CheckoutModern() {
 
   useEffect(() => {
     if (!selectedOrder) return;
-    const t = Number(selectedOrder.total || 0);
+    const t = paymentMethod === 'split' ? getPaymentTotal() : Number(selectedOrder.total || 0);
     if (paymentMethod === 'card') {
       setAmountPaid(t.toFixed(2));
       setCardPaid(t.toFixed(2));
@@ -70,6 +70,14 @@ export default function CheckoutModern() {
       setTransferPaid('');
       setTransferPaidRaw('');
       setMixtoManual(new Set());
+    } else if (paymentMethod === 'split') {
+      setAmountPaid('');
+      setAmountPaidRaw('');
+      setCardPaid('');
+      setCardPaidRaw('');
+      setTransferPaid('');
+      setTransferPaidRaw('');
+      setSelectedItems([]);
     }
   }, [paymentMethod, selectedOrder]);
 
@@ -93,6 +101,7 @@ export default function CheckoutModern() {
     setRefCard('');
     setRefTransfer('');
     setMixtoManual(new Set());
+    setSelectedItems([]);
   };
 
   const loadOrders = async () => {
@@ -285,32 +294,29 @@ export default function CheckoutModern() {
   const getSplitSubtotal = () => {
     return selectedOrder && paymentMethod === 'split'
       ? selectedOrder.items
-          .filter(i => selectedItems.includes(i.id))  // Filtramos solo los productos seleccionados
-          .reduce((sum, i) => sum + (i.unit_price * i.quantity), 0)  // Calculamos el subtotal de los productos seleccionados
-      : 0;  // Si no estamos en modo split, devolvemos 0 o el subtotal completo
+          .filter(i => selectedItems.includes(i.id))
+          .reduce((sum, i) => sum + (i.unit_price * i.quantity), 0)
+      : 0;
   };
 
   // IVA de los productos seleccionados
   const getSplitTax = () => {
     if (!selectedOrder || paymentMethod !== 'split') {
-      return 0;  // Si no estamos en "split", devolvemos 0 o el IVA completo de la orden
+      return 0;
     }
 
-    // Calcular el IVA de los productos seleccionados
     return selectedOrder.items
-      .filter(i => selectedItems.includes(i.id))  // Filtramos solo los productos seleccionados
+      .filter(i => selectedItems.includes(i.id))
       .reduce((sum, i) => {
-        const subtotalItem = i.unit_price * i.quantity;  // Subtotal por producto
-        const lineTotal = i.line_total || subtotalItem;  // Total de línea por producto
-        const productTax = lineTotal - subtotalItem;  // IVA del producto (diferencia entre total de línea y subtotal)
-        return sum + productTax;  // Acumulamos el IVA de los productos seleccionados
+        const subtotalItem = i.unit_price * i.quantity;
+        const lineTotal = i.line_total || subtotalItem;
+        const productTax = lineTotal - subtotalItem;
+        return sum + productTax;
       }, 0);
   };
 
   // Total de los productos seleccionados (incluyendo IVA)
   const getPaymentTotal = () => getSplitSubtotal() + getSplitTax();
-
-
 
   // ── Totales ────────────────────────────────────────────────────────────────
 
@@ -318,10 +324,11 @@ export default function CheckoutModern() {
   const iva = selectedOrder ? Number(selectedOrder.tax_amount || 0) : 0;
   const total = selectedOrder ? Number(selectedOrder.total || 0) : 0;
 
+  const totalAPagar = paymentMethod === 'split' ? getPaymentTotal() : total;
+
   const change = Math.max(
     0,
-    (parseFloat(amountPaid) || 0) -
-      (paymentMethod === 'split' ? getPaymentTotal() : total)
+    (parseFloat(amountPaid) || 0) - totalAPagar
   );
 
   const mixtoCardAmt     = parseFloat(cardPaid) || 0;
@@ -332,16 +339,16 @@ export default function CheckoutModern() {
   const mixtoReady       = mixtoCashAmt >= mixtoCashNeeded && (mixtoCardAmt + mixtoTransferAmt + mixtoCashNeeded) > 0;
 
   const handleSelectItem = (itemId) => {
-  setSelectedItems((prevSelected) => {
-    if (prevSelected.includes(itemId)) {
-      return prevSelected.filter(id => id !== itemId); // Si el item ya está seleccionado, lo deseleccionamos
-    }
-    return [...prevSelected, itemId]; // Si no, lo agregamos a la selección
-  });
-};
+    setSelectedItems((prevSelected) => {
+      if (prevSelected.includes(itemId)) {
+        return prevSelected.filter(id => id !== itemId);
+      }
+      return [...prevSelected, itemId];
+    });
+  };
 
 
-  // ── Cobro/Guardar ──────────────────���───────────────────────────────────────
+  // ── Cobro/Guardar ──────────────────────────────────────────────────────────
 
   const handlePayment = async () => {
     setPrintLoading(true);
@@ -448,7 +455,6 @@ export default function CheckoutModern() {
 
       const paid = cash + card + transfer;
 
-
       if (paid < pagoTotal) {
         setError(`El pago debe ser al menos ${fmt(pagoTotal)}`);
         setPrintLoading(false);
@@ -460,21 +466,21 @@ export default function CheckoutModern() {
           method: 'POST',
           body: JSON.stringify({
             item_ids: selectedItems,
-            amount_paid: pagoTotal, // 🔥 IMPORTANTE: no mandes el efectivo con cambio
+            amount_paid: pagoTotal,
             payment_method: paymentMethod,
             cliente_id: clienteId,
             notes: orderNotes
           }),
         });
 
-        // 🔥 Marcar items pagados
+        // Marcar items pagados
         const nuevosItems = selectedOrder.items.map(i =>
           selectedItems.includes(i.id)
             ? { ...i, paid: true }
             : i
         );
 
-        // 🔥 Recalcular lo que queda pendiente
+        // Recalcular lo que queda pendiente
         const remainingItems = nuevosItems.filter(i => !i.paid);
 
         const newSubtotal = remainingItems.reduce(
@@ -500,21 +506,25 @@ export default function CheckoutModern() {
         setSelectedOrder(newOrder);
         setSelectedItems([]);
         setAmountPaid('');
+        setCardPaid('');
+        setTransferPaid('');
 
-        // 🔥 Cambio SOLO para lo que se pagó
+        // Cambio SOLO para lo que se pagó
         const changeSplit = Math.max(0, paid - pagoTotal);
 
-        // 🔥 Imprimir SOLO los items pagados
+        // Imprimir SOLO los items pagados
         await handlePrintReceipt(
           {
             ...selectedOrder,
             items: selectedOrder.items.filter(i => selectedItems.includes(i.id))
           },
-          paid,
-          changeSplit
+          pagoTotal,
+          changeSplit,
+          null,
+          'split'
         );
 
-        // 🔥 Si TODO está pagado → cerrar orden
+        // Si TODO está pagado → cerrar orden
         const allPaid = nuevosItems.every(i => i.paid);
 
         if (allPaid) {
@@ -535,6 +545,8 @@ export default function CheckoutModern() {
           setTimeout(() => setSuccess(''), 1800);
         }
 
+        setSuccess('Pago de división registrado correctamente');
+
       } catch (err) {
         setError(err.message);
       } finally {
@@ -554,7 +566,6 @@ export default function CheckoutModern() {
         return;
       }
 
-      // Para pos_payments siempre guardamos el total owed (no el efectivo recibido que incluye cambio)
       const refNum = paymentMethod === 'card' ? (refCard || null)
                    : paymentMethod === 'transfer' ? (refTransfer || null)
                    : null;
@@ -600,8 +611,6 @@ export default function CheckoutModern() {
 
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
-  // Emite la factura y devuelve el número SRI (ahora rápido: backend guarda
-  // como 'pendiente' y autoriza con el SRI en background)
   async function emitirFactura(order, custCedula, custNombre, method) {
     const cedula  = custCedula && custCedula.trim() !== '' ? custCedula : '9999999999';
     const isCF    = cedula === '9999999999' || cedula === '9999999999999';
@@ -650,14 +659,13 @@ export default function CheckoutModern() {
 
   // ── Impresión ──────────────────────────────────────────────────────────────
 
-  const handlePrintReceipt = async (order, paid, changeAmount, invoiceNumber = null) => {
+  const handlePrintReceipt = async (order, paid, changeAmount, invoiceNumber = null, splitMode = null) => {
     try {
       const printerConfig = await getPrinterConfig('printer_main');
 
-      // Mapeo de forma de pago → { cash, card, other }
-      const cashAmt     = paymentMethod === 'mixto' ? mixtoCashAmt     : paymentMethod === 'cash'     ? (parseFloat(amountPaid) || 0) : 0;
-      const cardAmt     = paymentMethod === 'mixto' ? mixtoCardAmt     : paymentMethod === 'card'     ? (parseFloat(cardPaid)   || 0) : 0;
-      const transferAmt = paymentMethod === 'mixto' ? mixtoTransferAmt : paymentMethod === 'transfer' ? (parseFloat(transferPaid) || 0) : 0;
+      const cashAmt     = paymentMethod === 'mixto' ? mixtoCashAmt     : paymentMethod === 'cash'     ? (parseFloat(amountPaid) || 0) : splitMode === 'split' ? (parseFloat(amountPaid) || 0) : 0;
+      const cardAmt     = paymentMethod === 'mixto' ? mixtoCardAmt     : paymentMethod === 'card'     ? (parseFloat(cardPaid)   || 0) : splitMode === 'split' ? (parseFloat(cardPaid) || 0) : 0;
+      const transferAmt = paymentMethod === 'mixto' ? mixtoTransferAmt : paymentMethod === 'transfer' ? (parseFloat(transferPaid) || 0) : splitMode === 'split' ? (parseFloat(transferPaid) || 0) : 0;
 
       const result = await print('printer_main', 'invoice', {
         bizInfo,
@@ -685,7 +693,7 @@ export default function CheckoutModern() {
           other: transferAmt,
         },
         printerFooter: printerConfig.footer,
-      }, paymentMethod === 'cash' || (paymentMethod === 'mixto' && cashAmt > 0));
+      }, paymentMethod === 'cash' || (paymentMethod === 'mixto' && cashAmt > 0) || (splitMode === 'split' && cashAmt > 0));
 
       if (result.success) {
         setSuccess(result.message);
@@ -767,49 +775,7 @@ export default function CheckoutModern() {
           {/* Contenido si hay orden seleccionada */}
           {selectedOrder && (
             <>
-              {/* Detalle Pedido */}
-              <div className="order-details">
-                <div className="order-head">
-                  <b>
-                    {selectedOrder.mesa_numero ? `Mesa ${selectedOrder.mesa_numero}` : selectedOrder.order_type === 'delivery' ? 'DELIVERY' : 'PARA LLEVAR'}{' '}
-                    <span style={{ fontWeight: 400, fontSize: 13, color: '#999' }}>
-                      # {selectedOrder.order_number || selectedOrder.id}
-                    </span>
-                  </b>
-                </div>
-
-                <div className="order-items">
-                  {(selectedOrder.items || []).map((item, idx) => (
-                    <div key={idx} className="item-line">
-                      <input
-                        type="checkbox"
-                        checked={selectedItems.includes(item.id)}
-                        onChange={() => handleSelectItem(item.id)} // Esta función manejará la selección
-                      />
-                      <span>{item.quantity}x {item.product_name || item.name}</span>
-                      <span className="item-amt">{fmt(item.unit_price * item.quantity)}</span>
-                    </div>
-                  ))}
-                </div>
-
-
-                <div className="totals-footer">
-                  <div className="sub-iva-total">
-                    <span>SUBTOTAL:</span>
-                    <span>{fmt(paymentMethod === 'split' ? getSplitSubtotal() : subtotal)}</span>
-                  </div>
-                  <div className="sub-iva-total">
-                    <span>IVA:</span>
-                    <span>{fmt(paymentMethod === 'split' ? getSplitTax() : iva)}</span>
-                  </div>
-                  <div className="sub-iva-total">
-                    <span>TOTAL:</span>
-                    <span>{fmt(paymentMethod === 'split' ? getPaymentTotal() : total)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Métodos de Pago */}
+              {/* Métodos de Pago - Mostrar primero */}
               <div className="pay-methods">
                 <button
                   className={paymentMethod === 'cash' ? "pay-btn selected" : "pay-btn"}
@@ -843,6 +809,86 @@ export default function CheckoutModern() {
                 </button>
               </div>
 
+              {/* Detalle Pedido */}
+              <div className="order-details">
+                <div className="order-head">
+                  <b>
+                    {selectedOrder.mesa_numero ? `Mesa ${selectedOrder.mesa_numero}` : selectedOrder.order_type === 'delivery' ? 'DELIVERY' : 'PARA LLEVAR'}{' '}
+                    <span style={{ fontWeight: 400, fontSize: 13, color: '#999' }}>
+                      # {selectedOrder.order_number || selectedOrder.id}
+                    </span>
+                  </b>
+                  {paymentMethod === 'split' && selectedItems.length > 0 && (
+                    <span style={{ fontWeight: 400, fontSize: 12, color: '#6842fe', marginLeft: 12 }}>
+                      ✓ {selectedItems.length} producto(s) seleccionado(s)
+                    </span>
+                  )}
+                  {paymentMethod === 'split' && selectedItems.length === 0 && (
+                    <span style={{ fontWeight: 400, fontSize: 12, color: '#f97316', marginLeft: 12 }}>
+                      ℹ️ Selecciona los productos que pagará este cliente
+                    </span>
+                  )}
+                </div>
+
+                {/* Items con checkboxes SOLO para Split */}
+                {paymentMethod === 'split' && (
+                  <div className="order-items">
+                    {(selectedOrder.items || []).map((item, idx) => (
+                      <div key={idx} className="item-line" style={{ 
+                        background: selectedItems.includes(item.id) ? '#f3f0ff' : 'transparent', 
+                        padding: '8px 12px', 
+                        borderRadius: '6px', 
+                        marginBottom: '4px',
+                        border: selectedItems.includes(item.id) ? '1.5px solid #6842fe' : 'none'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.includes(item.id)}
+                          onChange={() => handleSelectItem(item.id)}
+                          style={{ cursor: 'pointer', width: '18px', height: '18px' }}
+                        />
+                        <span style={{ flex: 1, marginLeft: '12px', fontWeight: selectedItems.includes(item.id) ? '600' : '400' }}>
+                          {item.quantity}x {item.product_name || item.name}
+                        </span>
+                        <span className="item-amt" style={{ fontWeight: selectedItems.includes(item.id) ? '700' : '600' }}>
+                          {fmt(item.unit_price * item.quantity)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Items SIN checkboxes para otros métodos */}
+                {paymentMethod !== 'split' && (
+                  <div className="order-items">
+                    {(selectedOrder.items || []).map((item, idx) => (
+                      <div key={idx} className="item-line">
+                        <span>{item.quantity}x {item.product_name || item.name}</span>
+                        <span className="item-amt">{fmt(item.unit_price * item.quantity)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Totales - Dinámicos según el método */}
+                <div className="totals-footer">
+                  <div className="sub-iva-total">
+                    <span>SUBTOTAL:</span>
+                    <span>{fmt(paymentMethod === 'split' ? getSplitSubtotal() : subtotal)}</span>
+                  </div>
+                  <div className="sub-iva-total">
+                    <span>IVA:</span>
+                    <span>{fmt(paymentMethod === 'split' ? getSplitTax() : iva)}</span>
+                  </div>
+                  <div className="sub-iva-total" style={{ borderTop: '1.5px solid #ddd', paddingTop: '8px', marginTop: '8px' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: 16 }}>TOTAL A PAGAR:</span>
+                    <span style={{ fontWeight: 'bold', fontSize: 16, color: paymentMethod === 'split' ? '#6842fe' : '#000' }}>
+                      {fmt(paymentMethod === 'split' ? getPaymentTotal() : total)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* Campos de monto según método */}
               <div className="pay-input-row" style={{ gap: 24, flexWrap: 'wrap', alignItems: 'center', margin: '20px 0' }}>
                 {/* EFECTIVO */}
@@ -873,8 +919,6 @@ export default function CheckoutModern() {
                     </div>
                   </>
                 )}
-
-                
 
                 {/* TARJETA/TRANSFERENCIA */}
                 {(paymentMethod === 'card' || paymentMethod === 'transfer') && (
@@ -995,58 +1039,134 @@ export default function CheckoutModern() {
                   </>
                 )}
 
-                {/* SPLIT: Selección de items */}
-                {paymentMethod === 'split' && selectedOrder && (
+                {/* SPLIT: Selección de métodos de pago y montos */}
+                {paymentMethod === 'split' && selectedItems.length > 0 && (
                   <>
-                    {/* Botones de método de pago */}
-                    <div className="pay-methods">
-                      <button
-                        className={paymentMethod === 'cash' ? "pay-btn selected" : "pay-btn"}
-                        onClick={() => setPaymentMethod('cash')}
-                      >
-                        <DollarSign size={15} /> Efectivo
-                      </button>
-                      <button
-                        className={paymentMethod === 'transfer' ? "pay-btn selected" : "pay-btn"}
-                        onClick={() => setPaymentMethod('transfer')}
-                      >
-                        <DollarSign size={15} /> Transferencia
-                      </button>
-                      <button
-                        className={paymentMethod === 'card' ? "pay-btn selected" : "pay-btn"}
-                        onClick={() => setPaymentMethod('card')}
-                      >
-                        <CreditCard size={15} /> Tarjeta
-                      </button>
-                      <button
-                        className={paymentMethod === 'mixto' ? "pay-btn selected" : "pay-btn"}
-                        onClick={() => setPaymentMethod('mixto')}
-                      >
-                        <Divide size={15} /> Mixto
-                      </button>
+                    <div style={{ width: '100%', borderTop: '2px solid #f0f0f0', paddingTop: '16px', marginTop: '12px' }}>
+                      <label style={{ fontWeight: 900, color: '#231c41', fontSize: 14, display: 'block', marginBottom: '12px' }}>
+                        FORMAS DE PAGO PARA ESTE CLIENTE:
+                      </label>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#fefefe', borderRadius: '9px', padding: '7px 18px' }}>
+                      <label style={{ fontWeight: 900, color: '#231c41', fontSize: 18 }}>Efectivo:</label>
+                      <input
+                        type="text"
+                        className="input-pay"
+                        style={{ color: '#090', background: '#eafffd', fontWeight: 'bold', fontSize: 18, border: '1.8px solid #b2d9cf' }}
+                        inputMode="numeric"
+                        pattern="[0-9.,]*"
+                        value={amountPaidRaw === '0' || amountPaidRaw === '' ? '' : (parseInt(amountPaidRaw, 10) / 100).toFixed(2)}
+                        onChange={e => {
+                          let digits = e.target.value.replace(/\D/g, '');
+                          if (!digits) digits = '0';
+                          if (digits.length > 10) digits = digits.slice(0, 10);
+                          setAmountPaidRaw(digits);
+                          setAmountPaid((parseInt(digits, 10) / 100).toFixed(2));
+                        }}
+                        onFocus={e => e.target.select()}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#fefefe', borderRadius: '9px', padding: '7px 18px' }}>
+                      <label style={{ fontWeight: 900, color: '#231c41', fontSize: 18 }}>Tarjeta:</label>
+                      <input
+                        type="text"
+                        className="input-pay"
+                        inputMode="numeric"
+                        pattern="[0-9.,]*"
+                        style={{ background: '#eafffd', fontWeight: 'bold', fontSize: 18, border: '1.8px solid #b2d9cf' }}
+                        value={cardPaidRaw === '0' || cardPaidRaw === '' ? '' : (parseInt(cardPaidRaw, 10) / 100).toFixed(2)}
+                        onChange={e => {
+                          let digits = e.target.value.replace(/\D/g, '');
+                          if (!digits) digits = '0';
+                          if (digits.length > 10) digits = digits.slice(0, 10);
+                          setCardPaidRaw(digits);
+                          setCardPaid((parseInt(digits, 10) / 100).toFixed(2));
+                        }}
+                        onFocus={e => e.target.select()}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#fefefe', borderRadius: '9px', padding: '7px 18px' }}>
+                      <label style={{ fontWeight: 900, color: '#231c41', fontSize: 18 }}>Transferencia:</label>
+                      <input
+                        type="text"
+                        className="input-pay"
+                        inputMode="numeric"
+                        pattern="[0-9.,]*"
+                        style={{ background: '#eafffd', fontWeight: 'bold', fontSize: 18, border: '1.8px solid #b2d9cf' }}
+                        value={transferPaidRaw === '0' || transferPaidRaw === '' ? '' : (parseInt(transferPaidRaw, 10) / 100).toFixed(2)}
+                        onChange={e => {
+                          let digits = e.target.value.replace(/\D/g, '');
+                          if (!digits) digits = '0';
+                          if (digits.length > 10) digits = digits.slice(0, 10);
+                          setTransferPaidRaw(digits);
+                          setTransferPaid((parseInt(digits, 10) / 100).toFixed(2));
+                        }}
+                        onFocus={e => e.target.select()}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#d7d6fc', borderRadius: '9px', padding: '7px 18px' }}>
+                      <label style={{ fontWeight: 900, color: '#231c41', fontSize: 18 }}>Ref. Tarjeta:</label>
+                      <input
+                        type="text"
+                        className="input-pay"
+                        style={{ background: '#eafffd', fontWeight: 'bold', fontSize: 18, border: '1.8px solid #b2d9cf' }}
+                        value={refCard}
+                        onChange={e => setRefCard(e.target.value)}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#d7d6fc', borderRadius: '9px', padding: '7px 18px' }}>
+                      <label style={{ fontWeight: 900, color: '#231c41', fontSize: 18 }}>Ref. Transferencia:</label>
+                      <input
+                        type="text"
+                        className="input-pay"
+                        style={{ background: '#eafffd', fontWeight: 'bold', fontSize: 18, border: '1.8px solid #b2d9cf' }}
+                        value={refTransfer}
+                        onChange={e => setRefTransfer(e.target.value)}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#d7d6fc', borderRadius: '9px', padding: '7px 18px', width: '100%' }}>
+                      <label style={{ fontWeight: 900, color: '#231c41', fontSize: 18 }}>Cambio:</label>
+                      <span style={{ color: '#191933', fontWeight: 800, fontSize: 18 }}>{fmt(change)}</span>
                     </div>
                   </>
                 )}
 
+                {paymentMethod === 'split' && selectedItems.length === 0 && (
+                  <div style={{ width: '100%', padding: '16px', background: '#fff3cd', borderRadius: '8px', border: '1px solid #ffc107', color: '#856404' }}>
+                    👆 Selecciona al menos un producto arriba para continuar
+                  </div>
+                )}
               </div>
+
               {/* Botones acciones */}
               <div className="actions-row">
                 <button
                   className="btn-guardar"
                   disabled={printLoading || (
-                    paymentMethod === 'mixto'
-                      ? !mixtoReady
-                      : paymentMethod === 'split'
-                        ? (parseFloat(amountPaid) < getPaymentTotal() || selectedItems.length === 0)
-                        : paymentMethod === 'cash'
-                          ? (!amountPaid || parseFloat(amountPaid) < total)
-                          : false
+                    paymentMethod === 'split'
+                      ? selectedItems.length === 0
+                      : paymentMethod === 'cash'
+                        ? (!amountPaid || parseFloat(amountPaid) < total)
+                        : paymentMethod === 'card' || paymentMethod === 'transfer'
+                          ? false
+                          : paymentMethod === 'mixto'
+                            ? !mixtoReady
+                            : false
                   )}
                   onClick={handlePayment}
                 >
                   <Check size={16} /> {printLoading ? 'Procesando...' : 'GUARDAR'}
                 </button>
-                <button className="btn-cancelar" onClick={() => setSelectedOrder(null)}>
+                <button className="btn-cancelar" onClick={() => {
+                  setSelectedOrder(null);
+                  setSelectedItems([]);
+                }}>
                   <X size={16} /> Cancelar
                 </button>
               </div>
