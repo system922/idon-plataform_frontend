@@ -301,17 +301,12 @@ export default function CheckoutModern() {
 
   // IVA de los productos seleccionados
   const getSplitTax = () => {
-    if (!selectedOrder || paymentMethod !== 'split') {
-      return 0;
-    }
+    if (!selectedOrder || paymentMethod !== 'split') return 0;
 
     return selectedOrder.items
       .filter(i => selectedItems.includes(i.id))
       .reduce((sum, i) => {
-        const subtotalItem = i.unit_price * i.quantity;
-        const lineTotal = i.line_total || subtotalItem;
-        const productTax = lineTotal - subtotalItem;
-        return sum + productTax;
+        return sum + (Number(i.tax || 0) * i.quantity);
       }, 0);
   };
 
