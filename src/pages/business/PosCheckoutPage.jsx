@@ -288,6 +288,10 @@ export default function CheckoutModern() {
     setTransferPaidRaw(String(Math.round(vals.transfer * 100)));
   };
 
+  // helper global (AQUÍ)
+  const round2 = (n) =>
+    Math.round((n + Number.EPSILON) * 100) / 100;
+
 
   // ── SPLIT ──────────────────────────────────────────────────────────────────
   // Subtotal de los productos seleccionados
@@ -306,7 +310,9 @@ export default function CheckoutModern() {
     return selectedOrder.items
       .filter(i => selectedItems.includes(i.id))
       .reduce((sum, i) => {
-        return sum + (Number(i.unit_price*0.15) * i.quantity);
+        const ivaUnit = i.unit_price * 0.15;
+        const ivaLine = round2(ivaUnit * i.quantity);
+        return sum + ivaLine;
       }, 0);
   };
 
