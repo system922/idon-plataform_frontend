@@ -281,34 +281,36 @@ export default function CheckoutModern() {
 
 
   // ── SPLIT ──────────────────────────────────────────────────────────────────
-
   // Subtotal de los productos seleccionados
-  const getSplitSubtotal = () =>
-    selectedOrder && paymentMethod === 'split'
+  const getSplitSubtotal = () => {
+    return selectedOrder && paymentMethod === 'split'
       ? selectedOrder.items
-          .filter(i => selectedItems.includes(i.id))  // Filtrar productos seleccionados
-          .reduce((sum, i) => sum + (i.unit_price * i.quantity), 0)  // Calcular el subtotal
-      : (selectedOrder?.subtotal || 0);
+          .filter(i => selectedItems.includes(i.id))  // Filtramos solo los productos seleccionados
+          .reduce((sum, i) => sum + (i.unit_price * i.quantity), 0)  // Calculamos el subtotal de los productos seleccionados
+      : 0;  // Si no estamos en modo split, devolvemos 0 o el subtotal completo
+  };
 
   // IVA de los productos seleccionados
   const getSplitTax = () => {
     if (!selectedOrder || paymentMethod !== 'split') {
-      return selectedOrder?.tax_amount || 0;  // Si no estamos en "split", devolver el IVA total de la orden
+      return 0;  // Si no estamos en "split", devolvemos 0 o el IVA completo de la orden
     }
 
     // Calcular el IVA de los productos seleccionados
     return selectedOrder.items
-      .filter(i => selectedItems.includes(i.id))  // Filtrar productos seleccionados
+      .filter(i => selectedItems.includes(i.id))  // Filtramos solo los productos seleccionados
       .reduce((sum, i) => {
         const subtotalItem = i.unit_price * i.quantity;  // Subtotal por producto
         const lineTotal = i.line_total || subtotalItem;  // Total de línea por producto
         const productTax = lineTotal - subtotalItem;  // IVA del producto (diferencia entre total de línea y subtotal)
-        return sum + productTax;  // Acumulamos el IVA
+        return sum + productTax;  // Acumulamos el IVA de los productos seleccionados
       }, 0);
   };
 
   // Total de los productos seleccionados (incluyendo IVA)
   const getPaymentTotal = () => getSplitSubtotal() + getSplitTax();
+
+
 
   // ── Totales ────────────────────────────────────────────────────────────────
 
@@ -328,6 +330,16 @@ export default function CheckoutModern() {
   const mixtoCashNeeded  = Math.round(Math.max(0, total - mixtoCardAmt - mixtoTransferAmt) * 100) / 100;
   const mixtoChange      = Math.max(0, mixtoCashAmt - mixtoCashNeeded);
   const mixtoReady       = mixtoCashAmt >= mixtoCashNeeded && (mixtoCardAmt + mixtoTransferAmt + mixtoCashNeeded) > 0;
+
+  const handleSelectItem = (itemId) => {
+  setSelectedItems((prevSelected) => {
+    if (prevSelected.includes(itemId)) {
+      return prevSelected.filter(id => id !== itemId); // Si el item ya está seleccionado, lo deseleccionamos
+    }
+    return [...prevSelected, itemId]; // Si no, lo agregamos a la selección
+  });
+};
+
 
   // ── Cobro/Guardar ──────────────────���───────────────────────────────────────
 
@@ -769,11 +781,17 @@ export default function CheckoutModern() {
                 <div className="order-items">
                   {(selectedOrder.items || []).map((item, idx) => (
                     <div key={idx} className="item-line">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.includes(item.id)}
+                        onChange={() => handleSelectItem(item.id)} // Esta función manejará la selección
+                      />
                       <span>{item.quantity}x {item.product_name || item.name}</span>
                       <span className="item-amt">{fmt(item.unit_price * item.quantity)}</span>
                     </div>
                   ))}
                 </div>
+
 
                 <div className="totals-footer">
                   <div className="sub-iva-total">
@@ -978,27 +996,39 @@ export default function CheckoutModern() {
                 )}
 
                 {/* SPLIT: Selección de items */}
-                {/* Mostrar Subtotal, IVA y Total de los productos seleccionados en "split" */}
                 {paymentMethod === 'split' && selectedOrder && (
                   <>
-                    <div className="totals-footer">
-                      <div className="sub-iva-total">
-                        <span>SUBTOTAL:</span>
-                        <span>{fmt(getSplitSubtotal())}</span> {/* Subtotal de los productos seleccionados */}
-                      </div>
-                      <div className="sub-iva-total">
-                        <span>IVA:</span>
-                        <span>{fmt(getSplitTax())}</span> {/* IVA de los productos seleccionados */}
-                      </div>
-                      <div className="sub-iva-total">
-                        <span>TOTAL:</span>
-                        <span>{fmt(getPaymentTotal())}</span> {/* Total de los productos seleccionados */}
-                      </div>
+                    {/* Botones de método de pago */}
+                    <div className="pay-methods">
+                      <button
+                        className={paymentMethod === 'cash' ? "pay-btn selected" : "pay-btn"}
+                        onClick={() => setPaymentMethod('cash')}
+                      >
+                        <DollarSign size={15} /> Efectivo
+                      </button>
+                      <button
+                        className={paymentMethod === 'transfer' ? "pay-btn selected" : "pay-btn"}
+                        onClick={() => setPaymentMethod('transfer')}
+                      >
+                        <DollarSign size={15} /> Transferencia
+                      </button>
+                      <button
+                        className={paymentMethod === 'card' ? "pay-btn selected" : "pay-btn"}
+                        onClick={() => setPaymentMethod('card')}
+                      >
+                        <CreditCard size={15} /> Tarjeta
+                      </button>
+                      <button
+                        className={paymentMethod === 'mixto' ? "pay-btn selected" : "pay-btn"}
+                        onClick={() => setPaymentMethod('mixto')}
+                      >
+                        <Divide size={15} /> Mixto
+                      </button>
                     </div>
                   </>
                 )}
-              </div>
 
+              </div>
               {/* Botones acciones */}
               <div className="actions-row">
                 <button
