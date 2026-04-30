@@ -236,15 +236,15 @@ export default function CheckoutModern() {
   };
 
   const handleMixtoField = (field, digits) => {
+    const currentTotal = selectedOrder ? Number(selectedOrder.total || 0) : 0;
+
     const value = parseInt(digits || '0', 10) / 100;
 
-    // Actualizar qué campos ingresó el usuario manualmente
     const newManual = new Set(mixtoManual);
     if (value === 0) newManual.delete(field);
     else newManual.add(field);
     setMixtoManual(newManual);
 
-    // Valores actuales + el campo recién cambiado
     const vals = {
       cash:     field === 'cash'     ? value : (parseFloat(amountPaid)   || 0),
       card:     field === 'card'     ? value : (parseFloat(cardPaid)     || 0),
@@ -255,26 +255,21 @@ export default function CheckoutModern() {
     const autoFields = ALL.filter(f => !newManual.has(f));
 
     if (autoFields.length === 1) {
-      // Dos campos manuales → el campo restante toma el faltante
       const af = autoFields[0];
       const manualSum = ALL.filter(f => f !== af).reduce((s, f) => s + vals[f], 0);
-      vals[af] = Math.round(Math.max(0, total - manualSum) * 100) / 100;
+      vals[af] = Math.round(Math.max(0, currentTotal - manualSum) * 100) / 100;
     } else if (autoFields.length === 2) {
-      // Un campo manual → el faltante va al auto de mayor prioridad (orden: transfer > card > cash)
       const manualField = ALL.find(f => newManual.has(f));
-      const remainder   = Math.round(Math.max(0, total - (manualField ? vals[manualField] : 0)) * 100) / 100;
+      const remainder = Math.round(Math.max(0, currentTotal - (manualField ? vals[manualField] : 0)) * 100) / 100;
+
       if (manualField === 'card') {
-        // Ingresó tarjeta → faltante en efectivo
         vals.cash = remainder; vals.transfer = 0;
       } else if (manualField === 'cash') {
-        // Ingresó efectivo → faltante en transferencia primero
         vals.transfer = remainder; vals.card = 0;
       } else {
-        // Ingresó transferencia → faltante en tarjeta
         vals.card = remainder; vals.cash = 0;
       }
     }
-    // autoFields.length === 3 → nadie ingresó nada, no auto-rellenar
 
     setAmountPaid(vals.cash.toFixed(2));
     setAmountPaidRaw(String(Math.round(vals.cash * 100)));
@@ -283,6 +278,7 @@ export default function CheckoutModern() {
     setTransferPaid(vals.transfer.toFixed(2));
     setTransferPaidRaw(String(Math.round(vals.transfer * 100)));
   };
+
 
   // ── SPLIT ──────────────────────────────────────────────────────────────────
 
@@ -298,14 +294,16 @@ export default function CheckoutModern() {
       return selectedOrder?.tax_amount || 0;
     }
 
-    const taxRate = Number(selectedOrder.tax_rate || 0); // ej: 0.15
+    let taxRate = Number(selectedOrder.tax_rate || 0);
+    if (taxRate > 1) taxRate = taxRate / 100;
 
+    // Calcular el IVA solo para los productos seleccionados
     return selectedOrder.items
       .filter(i => selectedItems.includes(i.id))
       .reduce((sum, i) => {
-        const subtotal = i.unit_price * i.quantity;
-        const iva = subtotal * taxRate;
-        return sum + iva;
+        const subtotalItem = i.unit_price * i.quantity;
+        const totalItem = i.line_total || subtotalItem;
+        return sum + (totalItem - subtotalItem); 
       }, 0);
   };
 
