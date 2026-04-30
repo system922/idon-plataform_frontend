@@ -306,7 +306,9 @@ export default function CheckoutModern() {
     return selectedOrder.items
       .filter(i => selectedItems.includes(i.id))
       .reduce((sum, i) => {
-        return sum + (Number(i.tax_rate) * i.quantity);
+        const base = i.unit_price * i.quantity;
+        const rate = Number(i.tax_rate || 0);
+        return sum + (base * rate);
       }, 0);
   };
 
