@@ -293,12 +293,21 @@ export default function CheckoutModern() {
           .reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
       : (selectedOrder?.subtotal || 0);
 
-  const getSplitTax = () =>
-    selectedOrder && paymentMethod === 'split'
-      ? selectedOrder.items
-          .filter(i => selectedItems.includes(i.id))
-          .reduce((sum, i) => sum + (i.line_total - i.unit_price * i.quantity), 0)
-      : (selectedOrder?.tax_amount || 0);
+  const getSplitTax = () => {
+    if (!selectedOrder || paymentMethod !== 'split') {
+      return selectedOrder?.tax_amount || 0;
+    }
+
+    const taxRate = Number(selectedOrder.tax_rate || 0); // ej: 0.15
+
+    return selectedOrder.items
+      .filter(i => selectedItems.includes(i.id))
+      .reduce((sum, i) => {
+        const subtotal = i.unit_price * i.quantity;
+        const iva = subtotal * taxRate;
+        return sum + iva;
+      }, 0);
+  };
 
   const getPaymentTotal = () => getSplitSubtotal() + getSplitTax();
 
