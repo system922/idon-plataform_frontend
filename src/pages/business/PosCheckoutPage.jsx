@@ -282,33 +282,32 @@ export default function CheckoutModern() {
 
   // ── SPLIT ──────────────────────────────────────────────────────────────────
 
+  // Subtotal de los productos seleccionados
   const getSplitSubtotal = () =>
     selectedOrder && paymentMethod === 'split'
       ? selectedOrder.items
-          .filter(i => selectedItems.includes(i.id))
-          .reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
+          .filter(i => selectedItems.includes(i.id))  // Filtrar productos seleccionados
+          .reduce((sum, i) => sum + (i.unit_price * i.quantity), 0)  // Calcular el subtotal
       : (selectedOrder?.subtotal || 0);
 
+  // IVA de los productos seleccionados
   const getSplitTax = () => {
     if (!selectedOrder || paymentMethod !== 'split') {
-      return selectedOrder?.tax_amount || 0; // Si no estamos en "split", devolvemos el total de IVA de la orden
+      return selectedOrder?.tax_amount || 0;  // Si no estamos en "split", devolver el IVA total de la orden
     }
 
-    let taxRate = Number(selectedOrder.tax_rate || 0); // Tasa de IVA de la orden
-    if (taxRate > 1) taxRate = taxRate / 100; // Aseguramos que la tasa sea un porcentaje
-
-    // Sumar el IVA de los productos seleccionados
+    // Calcular el IVA de los productos seleccionados
     return selectedOrder.items
-      .filter(i => selectedItems.includes(i.id)) // Filtramos los productos seleccionados
+      .filter(i => selectedItems.includes(i.id))  // Filtrar productos seleccionados
       .reduce((sum, i) => {
-        const subtotalItem = i.unit_price * i.quantity; // Subtotal del producto
-        const lineTotal = i.line_total || subtotalItem; // Total de línea, si existe
-        const productTax = lineTotal - subtotalItem; // IVA del producto (diferencia entre total de línea y subtotal)
-        return sum + productTax; // Sumamos el IVA de cada producto seleccionado
+        const subtotalItem = i.unit_price * i.quantity;  // Subtotal por producto
+        const lineTotal = i.line_total || subtotalItem;  // Total de línea por producto
+        const productTax = lineTotal - subtotalItem;  // IVA del producto (diferencia entre total de línea y subtotal)
+        return sum + productTax;  // Acumulamos el IVA
       }, 0);
   };
 
-
+  // Total de los productos seleccionados (incluyendo IVA)
   const getPaymentTotal = () => getSplitSubtotal() + getSplitTax();
 
   // ── Totales ────────────────────────────────────────────────────────────────
@@ -979,60 +978,25 @@ export default function CheckoutModern() {
                 )}
 
                 {/* SPLIT: Selección de items */}
+                {/* Mostrar Subtotal, IVA y Total de los productos seleccionados en "split" */}
                 {paymentMethod === 'split' && selectedOrder && (
-                <>
-                  <div style={{ fontWeight: 700, fontSize: 12, marginTop: 4 }}>
-                    Selecciona los productos a cobrar:
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    {(selectedOrder.items || []).map((item, idx) => (
-                      <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                        <input
-                          type="checkbox"
-                          disabled={item.paid}
-                          checked={selectedItems.includes(item.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedItems(prev => [...prev, item.id]);
-                            } else {
-                              setSelectedItems(prev => prev.filter(id => id !== item.id));
-                            }
-                          }}
-                        />
-                        {item.quantity}x {item.product_name || item.name}
-                      </label>
-                    ))}
-                  </div>
-
-                  {/* 💰 PAGOS */}
-                  <div style={{ marginTop: 15 }}>
-                    <b>Métodos de pago:</b>
-
-                    {/* EFECTIVO */}
-                    <input
-                      placeholder="Efectivo"
-                      value={amountPaid}
-                      onChange={e => setAmountPaid(e.target.value)}
-                    />
-
-                    {/* TARJETA */}
-                    <input
-                      placeholder="Tarjeta"
-                      value={cardPaid}
-                      onChange={e => setCardPaid(e.target.value)}
-                    />
-
-                    {/* TRANSFERENCIA */}
-                    <input
-                      placeholder="Transferencia"
-                      value={transferPaid}
-                      onChange={e => setTransferPaid(e.target.value)}
-                    />
-                  </div>
-                </>
-              )}
-
+                  <>
+                    <div className="totals-footer">
+                      <div className="sub-iva-total">
+                        <span>SUBTOTAL:</span>
+                        <span>{fmt(getSplitSubtotal())}</span> {/* Subtotal de los productos seleccionados */}
+                      </div>
+                      <div className="sub-iva-total">
+                        <span>IVA:</span>
+                        <span>{fmt(getSplitTax())}</span> {/* IVA de los productos seleccionados */}
+                      </div>
+                      <div className="sub-iva-total">
+                        <span>TOTAL:</span>
+                        <span>{fmt(getPaymentTotal())}</span> {/* Total de los productos seleccionados */}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Botones acciones */}
