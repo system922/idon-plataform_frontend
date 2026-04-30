@@ -291,21 +291,23 @@ export default function CheckoutModern() {
 
   const getSplitTax = () => {
     if (!selectedOrder || paymentMethod !== 'split') {
-      return selectedOrder?.tax_amount || 0;
+      return selectedOrder?.tax_amount || 0; // Si no estamos en "split", devolvemos el total de IVA de la orden
     }
 
-    let taxRate = Number(selectedOrder.tax_rate || 0);
-    if (taxRate > 1) taxRate = taxRate / 100;
+    let taxRate = Number(selectedOrder.tax_rate || 0); // Tasa de IVA de la orden
+    if (taxRate > 1) taxRate = taxRate / 100; // Aseguramos que la tasa sea un porcentaje
 
-    // Calcular el IVA solo para los productos seleccionados
+    // Sumar el IVA de los productos seleccionados
     return selectedOrder.items
-      .filter(i => selectedItems.includes(i.id))
+      .filter(i => selectedItems.includes(i.id)) // Filtramos los productos seleccionados
       .reduce((sum, i) => {
-        const subtotalItem = i.unit_price * i.quantity;
-        const totalItem = i.line_total || subtotalItem;
-        return sum + (totalItem - subtotalItem); 
+        const subtotalItem = i.unit_price * i.quantity; // Subtotal del producto
+        const lineTotal = i.line_total || subtotalItem; // Total de línea, si existe
+        const productTax = lineTotal - subtotalItem; // IVA del producto (diferencia entre total de línea y subtotal)
+        return sum + productTax; // Sumamos el IVA de cada producto seleccionado
       }, 0);
   };
+
 
   const getPaymentTotal = () => getSplitSubtotal() + getSplitTax();
 
