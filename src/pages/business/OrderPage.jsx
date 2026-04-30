@@ -7,7 +7,8 @@ import { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/CreateOrder.css';
 
 export default function TakeOrderPageNew() {
-  const [vatRate,               setVatRate              ] = useState(0.12);
+  const [vatRate,               setVatRate              ] = useState(0.15);
+  const [categorias,            setCategorias           ] = useState([]);
   const [productos,             setProductos            ] = useState([]);
   const [guardando,             setGuardando            ] = useState(false);
   const [error,                 setError                ] = useState('');
@@ -27,6 +28,7 @@ export default function TakeOrderPageNew() {
   useEffect(() => {
     cargarDatos();
     cargarIva();
+    cargarCategorias();
   }, []);
 
   async function cargarIva() {
@@ -37,6 +39,16 @@ export default function TakeOrderPageNew() {
       const rate = Number(data?.vat_rate ?? data?.iva_rate ?? data?.iva_percentage);
       if (Number.isFinite(rate)) setVatRate(rate > 1 ? rate / 100 : rate);
     } catch {}
+  }
+
+  async function cargarCategorias() {
+    try {
+      const res = await fetchWithAuth('/api/categories'); // API que retorna las categorías
+      const data = await res.json();
+      setCategorias(data); // Guardamos las categorías en el estado
+    } catch (err) {
+      setError('Error al cargar categorías');
+    }
   }
 
   async function cargarDatos() {
@@ -167,7 +179,7 @@ export default function TakeOrderPageNew() {
       setGuardando(false);
     }
   }
-  
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -209,6 +221,7 @@ export default function TakeOrderPageNew() {
           notasItem={notasItem}
           setNotasItem={setNotasItem}
           agregarItem={agregarItem}
+          categorias={categorias}
         />
       </div>
     </PageTemplate>

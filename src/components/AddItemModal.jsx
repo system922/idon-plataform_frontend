@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/AddItemModal.css';
 
 export default function AddItemModal({
@@ -11,8 +11,17 @@ export default function AddItemModal({
   setCantidadItem,
   notasItem,
   setNotasItem,
-  agregarItem
+  agregarItem,
+  categorias,  // Asegúrate de pasar las categorías desde el componente padre
 }) {
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
+
+  // Filtrar productos según la categoría seleccionada
+  const productosFiltrados = categoriaSeleccionada
+    ? productos.filter(p => p.category_name === categoriaSeleccionada)
+    : productos;
+
+  // Si el modal no está visible, no renderizamos nada
   if (!showAddItemModal) return null;
 
   return (
@@ -28,19 +37,35 @@ export default function AddItemModal({
         {/* BODY - GRID 4 COLUMNAS */}
         <div className="modal-body">
           <div className="modal-form-grid">
-            
+
+            {/* CATEGORÍA */}
+            <div className="field">
+              <label>Categoría</label>
+              <select
+                value={categoriaSeleccionada}
+                onChange={(e) => setCategoriaSeleccionada(e.target.value)}
+              >
+                <option value="">-- Selecciona una categoría --</option>
+                {categorias && categorias.map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* PRODUCTO */}
             <div className="field">
               <label>Producto</label>
               <select
                 value={productoSeleccionado?.id || ''}
                 onChange={(e) => {
-                  const producto = productos.find((p) => String(p.id) === String(e.target.value));
+                  const producto = productosFiltrados.find((p) => String(p.id) === String(e.target.value));
                   setProductoSeleccionado(producto || null);
                 }}
               >
                 <option value="">-- Selecciona --</option>
-                {productos.map((p) => (
+                {productosFiltrados.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
                   </option>
@@ -65,7 +90,6 @@ export default function AddItemModal({
                   min="1"
                   value={cantidadItem}
                   onChange={(e) => setCantidadItem(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  // Sin border ni margin extra aquí
                 />
                 <button
                   type="button"
