@@ -186,7 +186,6 @@ export default function CheckoutModern() {
         }
       }
 
-      // Si no existe, créalo
       const res = await fetchWithAuth('/api/customers', {
         method: 'POST',
         body: JSON.stringify({
@@ -386,7 +385,7 @@ export default function CheckoutModern() {
             payment_method: 'mixto',
             amount_paid: total,
             payments: mixtoPayments,
-            cliente_id: clienteId,
+            customer_id: clienteId,
             customer_name: clienteNombre,
             customer_document_number: clienteCedula,
             notes: orderNotes
@@ -436,42 +435,87 @@ export default function CheckoutModern() {
           method: 'POST',
           body: JSON.stringify({
             item_ids: selectedItems,
-            amount_paid: pagoTotal,
+            amount_paid: pagoTotal, // 🔥 IMPORTANTE: no mandes el efectivo con cambio
             payment_method: paymentMethod,
             cliente_id: clienteId,
             notes: orderNotes
           }),
         });
 
-        const nuevosItems = selectedOrder.items.filter(i => !selectedItems.includes(i.id));
-        const newOrder = { ...selectedOrder, items: nuevosItems };
+        // 🔥 Marcar items pagados
+        const nuevosItems = selectedOrder.items.map(i =>
+          selectedItems.includes(i.id)
+            ? { ...i, paid: true }
+            : i
+        );
+
+        // 🔥 Recalcular lo que queda pendiente
+        const remainingItems = nuevosItems.filter(i => !i.paid);
+
+        const newSubtotal = remainingItems.reduce(
+          (sum, i) => sum + (i.unit_price * i.quantity),
+          0
+        );
+
+        const newTax = remainingItems.reduce(
+          (sum, i) => sum + ((i.line_total || 0) - (i.unit_price * i.quantity)),
+          0
+        );
+
+        const newTotal = newSubtotal + newTax;
+
+        const newOrder = {
+          ...selectedOrder,
+          items: nuevosItems,
+          subtotal: newSubtotal,
+          tax_amount: newTax,
+          total: newTotal
+        };
+
         setSelectedOrder(newOrder);
         setSelectedItems([]);
         setAmountPaid('');
 
-        if (nuevosItems.length === 0) {
+        // 🔥 Cambio SOLO para lo que se pagó
+        const changeSplit = Math.max(0, paid - pagoTotal);
+
+        // 🔥 Imprimir SOLO los items pagados
+        await handlePrintReceipt(
+          {
+            ...selectedOrder,
+            items: selectedOrder.items.filter(i => selectedItems.includes(i.id))
+          },
+          paid,
+          changeSplit
+        );
+
+        // 🔥 Si TODO está pagado → cerrar orden
+        const allPaid = nuevosItems.every(i => i.paid);
+
+        if (allPaid) {
           await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
             method: 'PATCH',
             body: JSON.stringify({
               status: 'paid',
-              payment_method: paymentMethod,
-              amount_paid: paid,
-              cliente_id: clienteId,
+              payment_method: 'split',
+              amount_paid: selectedOrder.total,
+              customer_id: clienteId,
+              customer_name: clienteNombre,
               notes: orderNotes,
             }),
           });
 
-          await handlePrintReceipt(selectedOrder, paid, change);
           setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
           setSelectedOrder(null);
-          setAmountPaid('');
           setTimeout(() => setSuccess(''), 1800);
         }
+
       } catch (err) {
         setError(err.message);
       } finally {
         setPrintLoading(false);
       }
+
       return;
     }
 
@@ -498,7 +542,7 @@ export default function CheckoutModern() {
             payment_method: paymentMethod,
             amount_paid: total,
             reference_number: refNum,
-            cliente_id: clienteId,
+            customer_id: clienteId,
             customer_name: clienteNombre,
             customer_document_number: clienteCedula,
             notes: orderNotes
@@ -929,13 +973,15 @@ export default function CheckoutModern() {
                         <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: 3, fontWeight: 600, fontSize: '13.6px' }}>
                           <input
                             type="checkbox"
+                            disabled={item.paid}
                             checked={selectedItems.includes(item.id)}
-                            onChange={e => setSelectedItems(prev =>
-                              e.target.checked
-                                ? [...prev, item.id]
-                                : prev.filter(id => id !== item.id)
-                            )}
-                            style={{ marginRight: 6 }}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedItems(prev => [...prev, item.id]);
+                              } else {
+                                setSelectedItems(prev => prev.filter(id => id !== item.id));
+                              }
+                            }}
                           />
                           {item.quantity}x {item.product_name || item.name}
                         </label>
