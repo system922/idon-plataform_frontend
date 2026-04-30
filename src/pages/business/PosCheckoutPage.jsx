@@ -306,7 +306,7 @@ export default function CheckoutModern() {
     return selectedOrder.items
       .filter(i => selectedItems.includes(i.id))
       .reduce((sum, i) => {
-        return sum + (Number(i.tax || 0) * i.quantity);
+        return sum + (Number(i.tax_rate) * i.quantity);
       }, 0);
   };
 
