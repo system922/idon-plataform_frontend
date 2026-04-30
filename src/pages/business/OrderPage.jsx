@@ -89,11 +89,16 @@ export default function TakeOrderPageNew() {
   // ── Guardar orden ─────────────────────────────────────────────────────────
 
   async function guardarOrden() {
+    // ── Validación para "dine_in" ───────────────────────────────────────────────────
     if (orderType === 'dine_in' && !numeroMesa) {
-      setError('Debe ingresar un número de mesa'); return;
+      setError('Debe ingresar un número de mesa');
+      return; // No continuar con el guardado si no hay número de mesa
     }
+
+    // ── Validación para asegurar que haya al menos un ítem ───────────────────────────
     if (items.length === 0) {
-      setError('Debe agregar al menos un item'); return;
+      setError('Debe agregar al menos un ítem');
+      return; // No continuar con el guardado si no hay ítems
     }
 
     try {
@@ -124,7 +129,7 @@ export default function TakeOrderPageNew() {
       const res = await fetchWithAuth('/api/ordenes', {
         method: 'POST',
         body: JSON.stringify({
-          numero_mesa:    orderType === 'dine_in' ? parseInt(numeroMesa, 10) : null,
+          numero_mesa:    orderType === 'dine_in' ? parseInt(numeroMesa, 10) : null, // Solo pasa si es "dine_in"
           mesa_id:        mesaId,
           cliente_id:     clienteId,
           items,
@@ -147,9 +152,13 @@ export default function TakeOrderPageNew() {
       setSuccess(`✅ Orden ${data?.pedido?.numero_pedido ?? ''} enviada a cocina`);
 
       setTimeout(() => {
-        setNumeroMesa(''); setMesaId(''); setNotas('');
-        setOrderType('dine_in'); setItems([]);
-        setSuccess(''); setError('');
+        setNumeroMesa('');
+        setMesaId('');
+        setNotas('');
+        setOrderType('dine_in');
+        setItems([]);
+        setSuccess('');
+        setError('');
       }, 2500);
 
     } catch (err) {
@@ -158,7 +167,6 @@ export default function TakeOrderPageNew() {
       setGuardando(false);
     }
   }
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
