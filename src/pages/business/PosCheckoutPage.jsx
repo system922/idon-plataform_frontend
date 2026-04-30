@@ -289,8 +289,14 @@ export default function CheckoutModern() {
   };
 
   // helper global (AQUÍ)
-  const round2 = (n) =>
-    Math.round((n + Number.EPSILON) * 100) / 100;
+  const roundPOS = (value) => {
+  const cents = Math.round(value * 100);
+  const lastDigit = cents % 10;
+    if (lastDigit <= 5) {
+      return cents / 100;
+    }
+    return (cents + 1) / 100;
+  };
 
 
   // ── SPLIT ──────────────────────────────────────────────────────────────────
@@ -311,7 +317,7 @@ export default function CheckoutModern() {
       .filter(i => selectedItems.includes(i.id))
       .reduce((sum, i) => {
         const ivaUnit = i.unit_price * 0.15;
-        const ivaLine = round2(ivaUnit * i.quantity);
+        const ivaLine = roundPOS(ivaUnit * i.quantity);
         return sum + ivaLine;
       }, 0);
   };
