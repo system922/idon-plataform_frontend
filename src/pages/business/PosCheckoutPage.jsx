@@ -289,24 +289,20 @@ export default function CheckoutModern() {
   };
 
   // helper global (AQUÍ)
-  const roundPOS = (value) => {
-  const cents = Math.round(value * 100);
-  const lastDigit = cents % 10;
-    if (lastDigit <= 5) {
-      return cents / 100;
-    }
-    return (cents + 1) / 100;
-  };
+  const round2 = (n) =>
+    Math.round((n + Number.EPSILON) * 100) / 100;
 
 
   // ── SPLIT ──────────────────────────────────────────────────────────────────
   // Subtotal de los productos seleccionados
   const getSplitSubtotal = () => {
-    return selectedOrder && paymentMethod === 'split'
-      ? selectedOrder.items
-          .filter(i => selectedItems.includes(i.id))
-          .reduce((sum, i) => sum + (i.unit_price * i.quantity), 0)
-      : 0;
+    if (!selectedOrder || paymentMethod !== 'split') return 0;
+
+    return selectedOrder.items
+      .filter(i => selectedItems.includes(i.id))
+      .reduce((sum, i) => {
+        return sum + (Number(i.unit_price) * i.quantity);
+      }, 0);
   };
 
   // IVA de los productos seleccionados
@@ -316,9 +312,7 @@ export default function CheckoutModern() {
     return selectedOrder.items
       .filter(i => selectedItems.includes(i.id))
       .reduce((sum, i) => {
-        const ivaUnit = i.unit_price * 0.15;
-        const ivaLine = roundPOS(ivaUnit * i.quantity);
-        return sum + ivaLine;
+        return sum + round2(Number(i.tax_amount || i.iva || 0) * i.quantity);
       }, 0);
   };
 
