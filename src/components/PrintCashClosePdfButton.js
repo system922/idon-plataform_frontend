@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import { fetchWithAuth } from '../../config/apiBase';
+import { fetchWithAuth } from '../config/apiBase';
 
 export default function PrintCashClosePdfButton({ close, opening, summary }) {
 
