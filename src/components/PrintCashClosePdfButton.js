@@ -25,32 +25,32 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
 
       // ============ ENCABEZADO AZUL ============
       doc.setFillColor(41, 128, 185);
-      doc.rect(0, 0, pageWidth, 45, 'F');
+      doc.rect(0, 0, pageWidth, 40, 'F');
       
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(20);
+      doc.setFontSize(18);
       doc.setFont(undefined, 'bold');
       doc.text(settings.trade_name || settings.company_name || "NOMBRE DEL NEGOCIO", pageWidth / 2, y, { align: 'center' });
       
-      y += 7;
-      doc.setFontSize(9);
+      y += 6;
+      doc.setFontSize(8);
       doc.setFont(undefined, 'normal');
       if (settings.address) {
         doc.text(settings.address, pageWidth / 2, y, { align: 'center' });
-        y += 5;
+        y += 4;
       }
       doc.text(`Tel: ${settings.phone || "N/A"} | RUC: ${settings.ruc || einvData?.ruc || "N/A"}`, pageWidth / 2, y, { align: 'center' });
 
       // ============ TÍTULO ============
-      y = 55;
+      y = 50;
       doc.setTextColor(0, 0, 0);
-      doc.setFontSize(16);
+      doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
       doc.text("REPORTE DE CIERRE DE CAJA", pageWidth / 2, y, { align: 'center' });
 
       // ============ INFO DEL REPORTE ============
-      y += 10;
-      doc.setFontSize(9);
+      y += 8;
+      doc.setFontSize(8);
       doc.setFont(undefined, 'normal');
       
       const fechaCierre = new Date().toLocaleString('es-EC', { 
@@ -70,16 +70,16 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       doc.text(`ID Cierre: #${close?.id || Date.now()}`, 15, y);
 
       // ============ APERTURA DE CAJA ============
-      y += 10;
+      y += 8;
       doc.setFillColor(245, 245, 245);
-      doc.rect(15, y, pageWidth - 30, 7, 'F');
+      doc.rect(15, y, pageWidth - 30, 6, 'F');
       
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.setFont(undefined, 'bold');
       doc.setTextColor(0, 0, 0);
-      doc.text("APERTURA DE CAJA", 18, y + 5);
+      doc.text("APERTURA DE CAJA", 18, y + 4);
 
-      y += 10;
+      y += 9;
       doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
       
@@ -100,15 +100,15 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       doc.text(`$${totalApertura.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
       // ============ INGRESOS POR VENTAS ============
-      y += 10;
+      y += 8;
       doc.setFillColor(245, 245, 245);
-      doc.rect(15, y, pageWidth - 30, 7, 'F');
+      doc.rect(15, y, pageWidth - 30, 6, 'F');
       
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.setFont(undefined, 'bold');
-      doc.text("INGRESOS POR VENTAS", 18, y + 5);
+      doc.text("INGRESOS POR VENTAS", 18, y + 4);
 
-      y += 10;
+      y += 9;
       doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
 
@@ -135,15 +135,15 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       doc.text(`$${totalVentas.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
       // ============ EGRESOS Y GASTOS ============
-      y += 10;
+      y += 8;
       doc.setFillColor(245, 245, 245);
-      doc.rect(15, y, pageWidth - 30, 7, 'F');
+      doc.rect(15, y, pageWidth - 30, 6, 'F');
       
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.setFont(undefined, 'bold');
-      doc.text("EGRESOS Y GASTOS", 18, y + 5);
+      doc.text("EGRESOS Y GASTOS", 18, y + 4);
 
-      y += 10;
+      y += 9;
       doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
 
@@ -169,41 +169,13 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       doc.text(`TOTAL EGRESOS:`, 18, y);
       doc.text(`$${totalGastos.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
-      // ============ CAJA ESPERADA (AZUL) ============
-      y += 10;
-      doc.setFillColor(52, 152, 219);
-      doc.rect(15, y, pageWidth - 30, 22, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'normal');
-      
-      y += 5;
-      doc.text(`Apertura:`, 18, y);
-      doc.text(`$${totalApertura.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
-      
-      y += 5;
-      doc.text(`+ Ventas:`, 18, y);
-      doc.text(`$${totalVentas.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
-      
-      y += 5;
-      doc.text(`- Egresos:`, 18, y);
-      doc.text(`$${totalGastos.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
-      
-      y += 6;
-      doc.setFontSize(11);
-      doc.setFont(undefined, 'bold');
-      const cajaEsperada = totalApertura + totalVentas - totalGastos;
-      doc.text(`CAJA ESPERADA (Sistema):`, 18, y);
-      doc.text(`$${cajaEsperada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
-
       // ============ CONTEO FÍSICO (VERDE) ============
-      y += 12;
+      y += 10;
       doc.setFillColor(46, 204, 113);
-      doc.rect(15, y, pageWidth - 30, 27, 'F');
+      doc.rect(15, y, pageWidth - 30, 25, 'F');
       
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.setFont(undefined, 'bold');
       y += 5;
       doc.text("CONTEO FÍSICO DE CAJA", 18, y);
@@ -231,30 +203,18 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       
       doc.text(`Propinas contadas:`, 18, y);
       doc.text(`$${propinaContada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
-      y += 6;
-      
-      doc.setFontSize(11);
-      doc.setFont(undefined, 'bold');
-      const totalContado = efectivoContado + transferenciaContada + tarjetaContada + propinaContada;
-      doc.text(`TOTAL CONTADO:`, 18, y);
-      doc.text(`$${totalContado.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
-      // ============ DIFERENCIA (ROJO/VERDE) ============
-      y += 12;
+      // ============ RESUMEN FINAL (VERDE) ============
+      y += 8;
+      const totalContado = efectivoContado + transferenciaContada + tarjetaContada + propinaContada;
+      const cajaEsperada = totalApertura + totalVentas - totalGastos;
       const diferencia = totalContado - cajaEsperada;
       const esCuadrado = Math.abs(diferencia) < 0.01;
       
-      if (esCuadrado) {
-        doc.setFillColor(34, 197, 94); // Verde
-      } else if (diferencia > 0) {
-        doc.setFillColor(59, 130, 246); // Azul
-      } else {
-        doc.setFillColor(239, 68, 68); // Rojo
-      }
-      
+      // Mantener el fondo verde para el resumen
+      doc.setFillColor(46, 204, 113);
       doc.rect(15, y, pageWidth - 30, 15, 'F');
       
-      doc.setTextColor(255, 255, 255);
       doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
       
@@ -267,40 +227,40 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       doc.text(`$${totalContado.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
       
       y += 6;
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
-      const diferenciaTexto = esCuadrado ? 'CUADRADO ✓' : diferencia > 0 ? 'SOBRANTE' : 'FALTANTE';
+      const diferenciaTexto = esCuadrado ? 'CUADRADO ✓' : diferencia > 0 ? 'SOBRANTE:' : 'FALTANTE:';
       doc.text(diferenciaTexto, 18, y);
-      doc.text(`${diferencia > 0 ? '+' : ''}$${diferencia.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+      doc.text(`$${Math.abs(diferencia).toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
       // ============ OBSERVACIONES ============
       if (close?.remarks && close.remarks.trim()) {
-        y += 12;
+        y += 10;
         doc.setFillColor(255, 243, 205);
-        doc.rect(15, y, pageWidth - 30, 7, 'F');
+        doc.rect(15, y, pageWidth - 30, 6, 'F');
         
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
         doc.setTextColor(0, 0, 0);
-        doc.text("OBSERVACIONES", 18, y + 5);
+        doc.text("OBSERVACIONES", 18, y + 4);
 
-        y += 10;
+        y += 9;
         doc.setFontSize(8);
         doc.setFont(undefined, 'normal');
         
         const maxWidth = pageWidth - 36;
         const lines = doc.splitTextToSize(close.remarks, maxWidth);
         lines.forEach(line => {
-          if (y > pageHeight - 30) return; // Evitar overflow
+          if (y > pageHeight - 30) return;
           doc.text(line, 18, y);
           y += 4;
         });
       }
 
       // ============ PIE DE PÁGINA ============
-      const footerY = pageHeight - 25;
+      const footerY = pageHeight - 20;
       doc.setDrawColor(200, 200, 200);
-      doc.line(15, footerY, pageWidth - 15, footerY);
+      doc.line(pageWidth / 2 - 30, footerY, pageWidth / 2 + 30, footerY);
       
       doc.setTextColor(100, 100, 100);
       doc.setFontSize(8);
@@ -308,7 +268,7 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       doc.text("Firma del responsable", pageWidth / 2, footerY + 5, { align: 'center' });
       
       doc.setFontSize(7);
-      doc.text(`Generado el ${fechaCierre}`, pageWidth / 2, footerY + 10, { align: 'center' });
+      doc.text(`Generado el ${new Date().toLocaleDateString('es-EC')} a las ${new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}`, pageWidth / 2, footerY + 10, { align: 'center' });
 
       // Guardar PDF
       const nombreArchivo = `cierre-caja-${new Date().toISOString().split('T')[0]}.pdf`;
@@ -326,3 +286,4 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
     </button>
   );
 }
+
