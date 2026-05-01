@@ -20,307 +20,298 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
 
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.width;
-      let y = 15;
+      const pageHeight = doc.internal.pageSize.height;
+      let y = 20;
 
-      // ============ ENCABEZADO CON DATOS DEL NEGOCIO ============
+      // ============ ENCABEZADO AZUL ============
       doc.setFillColor(41, 128, 185);
-      doc.rect(0, 0, pageWidth, 35, 'F');
+      doc.rect(0, 0, pageWidth, 45, 'F');
       
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
+      doc.setFontSize(20);
       doc.setFont(undefined, 'bold');
       doc.text(settings.trade_name || settings.company_name || "NOMBRE DEL NEGOCIO", pageWidth / 2, y, { align: 'center' });
       
       y += 7;
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
-      doc.text(settings.address || "Dirección del negocio", pageWidth / 2, y, { align: 'center' });
-      
-      y += 5;
-      const contactInfo = `Tel: ${settings.phone || "N/A"} | RUC: ${settings.ruc || einvData?.ruc || "N/A"}`;
-      doc.text(contactInfo, pageWidth / 2, y, { align: 'center' });
+      if (settings.address) {
+        doc.text(settings.address, pageWidth / 2, y, { align: 'center' });
+        y += 5;
+      }
+      doc.text(`Tel: ${settings.phone || "N/A"} | RUC: ${settings.ruc || einvData?.ruc || "N/A"}`, pageWidth / 2, y, { align: 'center' });
 
-      // ============ TÍTULO DEL REPORTE ============
-      y = 45;
+      // ============ TÍTULO ============
+      y = 55;
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(16);
       doc.setFont(undefined, 'bold');
       doc.text("REPORTE DE CIERRE DE CAJA", pageWidth / 2, y, { align: 'center' });
 
-      // ============ INFORMACIÓN DEL REPORTE ============
+      // ============ INFO DEL REPORTE ============
       y += 10;
       doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
       
       const fechaCierre = new Date().toLocaleString('es-EC', { 
-        dateStyle: 'full', 
-        timeStyle: 'short' 
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       });
       
       doc.text(`Fecha y Hora: ${fechaCierre}`, 15, y);
-      y += 5;
+      y += 4;
       doc.text(`Usuario: ${userData?.name || userData?.username || "N/A"}`, 15, y);
-      y += 5;
+      y += 4;
       doc.text(`Cargo: ${userData?.role || "Cajero"}`, 15, y);
-      y += 5;
-      doc.text(`ID Cierre: ${close?.id || Date.now()}`, 15, y);
+      y += 4;
+      doc.text(`ID Cierre: #${close?.id || Date.now()}`, 15, y);
 
-      // Línea separadora
-      y += 5;
-      doc.setDrawColor(200, 200, 200);
-      doc.line(15, y, pageWidth - 15, y);
-
-      // ============ SECCIÓN APERTURA ============
+      // ============ APERTURA DE CAJA ============
       y += 10;
-      doc.setFillColor(236, 240, 241);
-      doc.rect(15, y - 5, pageWidth - 30, 8, 'F');
+      doc.setFillColor(245, 245, 245);
+      doc.rect(15, y, pageWidth - 30, 7, 'F');
       
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
-      doc.setTextColor(52, 73, 94);
-      doc.text("APERTURA DE CAJA", 18, y);
-
-      y += 8;
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
       doc.setTextColor(0, 0, 0);
-      
-      const efectivoApertura = Number(opening?.total_efectivo || 0).toFixed(2);
-      const bancaApertura = Number(opening?.monto_banca || 0).toFixed(2);
-      const totalApertura = (Number(efectivoApertura) + Number(bancaApertura)).toFixed(2);
-      
-      doc.text(`Efectivo inicial:`, 20, y);
-      doc.text(`$${efectivoApertura}`, pageWidth - 20, y, { align: 'right' });
-      y += 6;
-      
-      doc.text(`Banca inicial:`, 20, y);
-      doc.text(`$${bancaApertura}`, pageWidth - 20, y, { align: 'right' });
-      y += 6;
-      
-      doc.setFont(undefined, 'bold');
-      doc.text(`Total apertura:`, 20, y);
-      doc.text(`$${totalApertura}`, pageWidth - 20, y, { align: 'right' });
+      doc.text("APERTURA DE CAJA", 18, y + 5);
 
-      // ============ SECCIÓN VENTAS ============
-      y += 12;
-      doc.setFillColor(236, 240, 241);
-      doc.rect(15, y - 5, pageWidth - 30, 8, 'F');
-      
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(52, 73, 94);
-      doc.text("INGRESOS POR VENTAS", 18, y);
-
-      y += 8;
-      doc.setFontSize(10);
+      y += 10;
+      doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
-      doc.setTextColor(0, 0, 0);
+      
+      const efectivoApertura = Number(opening?.total_efectivo || 0);
+      const bancaApertura = Number(opening?.monto_banca || 0);
+      const totalApertura = efectivoApertura + bancaApertura;
+      
+      doc.text(`Efectivo inicial:`, 18, y);
+      doc.text(`$${efectivoApertura.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+      y += 5;
+      
+      doc.text(`Banca inicial:`, 18, y);
+      doc.text(`$${bancaApertura.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+      y += 5;
+      
+      doc.setFont(undefined, 'bold');
+      doc.text(`Total apertura:`, 18, y);
+      doc.text(`$${totalApertura.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+
+      // ============ INGRESOS POR VENTAS ============
+      y += 10;
+      doc.setFillColor(245, 245, 245);
+      doc.rect(15, y, pageWidth - 30, 7, 'F');
+      
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text("INGRESOS POR VENTAS", 18, y + 5);
+
+      y += 10;
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
 
       let totalVentas = 0;
       
       if (summary?.metodos && summary.metodos.length > 0) {
         summary.metodos.forEach(m => {
-          const monto = Number(m.total_cobrado || 0).toFixed(2);
-          totalVentas += Number(monto);
+          const monto = Number(m.total_cobrado || 0);
+          totalVentas += monto;
           
-          doc.text(`${m.payment_method}:`, 20, y);
-          doc.text(`$${monto}`, pageWidth - 20, y, { align: 'right' });
-          y += 6;
+          doc.text(`${m.payment_method}:`, 18, y);
+          doc.text(`$${monto.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+          y += 5;
         });
       } else {
         doc.setTextColor(150, 150, 150);
-        doc.text("No hay ventas registradas", 20, y);
-        y += 6;
+        doc.text("Sin ventas registradas", 18, y);
+        y += 5;
         doc.setTextColor(0, 0, 0);
       }
 
       doc.setFont(undefined, 'bold');
-      doc.setFontSize(11);
-      doc.text(`TOTAL VENTAS:`, 20, y);
-      doc.text(`$${totalVentas.toFixed(2)}`, pageWidth - 20, y, { align: 'right' });
+      doc.text(`TOTAL VENTAS:`, 18, y);
+      doc.text(`$${totalVentas.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
-      // ============ SECCIÓN EGRESOS ============
-      y += 12;
-      doc.setFillColor(236, 240, 241);
-      doc.rect(15, y - 5, pageWidth - 30, 8, 'F');
+      // ============ EGRESOS Y GASTOS ============
+      y += 10;
+      doc.setFillColor(245, 245, 245);
+      doc.rect(15, y, pageWidth - 30, 7, 'F');
       
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
-      doc.setTextColor(52, 73, 94);
-      doc.text("EGRESOS Y GASTOS", 18, y);
+      doc.text("EGRESOS Y GASTOS", 18, y + 5);
 
-      y += 8;
-      doc.setFontSize(10);
+      y += 10;
+      doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
-      doc.setTextColor(0, 0, 0);
 
       let totalGastos = 0;
       
       if (summary?.gastos && summary.gastos.length > 0) {
         summary.gastos.forEach(g => {
-          const monto = Number(g.monto || 0).toFixed(2);
-          totalGastos += Number(monto);
+          const monto = Number(g.monto || 0);
+          totalGastos += monto;
           
-          doc.text(`${g.concepto}:`, 20, y);
-          doc.text(`$${monto}`, pageWidth - 20, y, { align: 'right' });
-          y += 6;
+          doc.text(`${g.concepto}:`, 18, y);
+          doc.text(`$${monto.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+          y += 5;
         });
       } else {
         doc.setTextColor(150, 150, 150);
-        doc.text("No hay egresos registrados", 20, y);
-        y += 6;
+        doc.text("Sin egresos registrados", 18, y);
+        y += 5;
         doc.setTextColor(0, 0, 0);
       }
 
       doc.setFont(undefined, 'bold');
-      doc.setFontSize(11);
-      doc.text(`TOTAL EGRESOS:`, 20, y);
-      doc.text(`$${totalGastos.toFixed(2)}`, pageWidth - 20, y, { align: 'right' });
+      doc.text(`TOTAL EGRESOS:`, 18, y);
+      doc.text(`$${totalGastos.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
-      // ============ CAJA ESPERADA (SISTEMA) ============
-      y += 12;
+      // ============ CAJA ESPERADA (AZUL) ============
+      y += 10;
       doc.setFillColor(52, 152, 219);
-      doc.rect(15, y - 5, pageWidth - 30, 28, 'F');
+      doc.rect(15, y, pageWidth - 30, 22, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      
+      y += 5;
+      doc.text(`Apertura:`, 18, y);
+      doc.text(`$${totalApertura.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+      
+      y += 5;
+      doc.text(`+ Ventas:`, 18, y);
+      doc.text(`$${totalVentas.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+      
+      y += 5;
+      doc.text(`- Egresos:`, 18, y);
+      doc.text(`$${totalGastos.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+      
+      y += 6;
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      const cajaEsperada = totalApertura + totalVentas - totalGastos;
+      doc.text(`CAJA ESPERADA (Sistema):`, 18, y);
+      doc.text(`$${cajaEsperada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+
+      // ============ CONTEO FÍSICO (VERDE) ============
+      y += 12;
+      doc.setFillColor(46, 204, 113);
+      doc.rect(15, y, pageWidth - 30, 27, 'F');
       
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
-      
-      y += 2;
-      doc.text(`Apertura:`, 20, y);
-      doc.text(`$${totalApertura}`, pageWidth - 20, y, { align: 'right' });
-      
-      y += 6;
-      doc.text(`+ Ventas:`, 20, y);
-      doc.text(`$${totalVentas.toFixed(2)}`, pageWidth - 20, y, { align: 'right' });
-      
-      y += 6;
-      doc.text(`- Egresos:`, 20, y);
-      doc.text(`$${totalGastos.toFixed(2)}`, pageWidth - 20, y, { align: 'right' });
-      
-      y += 8;
-      doc.setFontSize(13);
-      const cajaEsperada = (Number(totalApertura) + totalVentas - totalGastos).toFixed(2);
-      doc.text(`CAJA ESPERADA (Sistema):`, 20, y);
-      doc.text(`$${cajaEsperada}`, pageWidth - 20, y, { align: 'right' });
-
-      // ============ CONTEO FÍSICO ============
-      y += 15;
-      doc.setFillColor(46, 204, 113);
-      doc.rect(15, y - 5, pageWidth - 30, 8, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
+      y += 5;
       doc.text("CONTEO FÍSICO DE CAJA", 18, y);
 
-      y += 8;
-      doc.setFontSize(10);
+      y += 6;
+      doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
-      doc.setTextColor(0, 0, 0);
 
-      const efectivoContado = Number(close?.cash_counted || 0).toFixed(2);
-      const transferenciaContada = Number(close?.transfer_counted || 0).toFixed(2);
-      const tarjetaContada = Number(close?.card_counted || 0).toFixed(2);
-      const propinaContada = Number(close?.tip_counted || 0).toFixed(2);
+      const efectivoContado = Number(close?.cash_counted || 0);
+      const transferenciaContada = Number(close?.transfer_counted || 0);
+      const tarjetaContada = Number(close?.card_counted || 0);
+      const propinaContada = Number(close?.tip_counted || 0);
       
-      doc.text(`Efectivo contado:`, 20, y);
-      doc.text(`$${efectivoContado}`, pageWidth - 20, y, { align: 'right' });
+      doc.text(`Efectivo contado:`, 18, y);
+      doc.text(`$${efectivoContado.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+      y += 5;
+      
+      doc.text(`Transferencias contadas:`, 18, y);
+      doc.text(`$${transferenciaContada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+      y += 5;
+      
+      doc.text(`Tarjetas contadas:`, 18, y);
+      doc.text(`$${tarjetaContada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+      y += 5;
+      
+      doc.text(`Propinas contadas:`, 18, y);
+      doc.text(`$${propinaContada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
       y += 6;
       
-      doc.text(`Transferencias contadas:`, 20, y);
-      doc.text(`$${transferenciaContada}`, pageWidth - 20, y, { align: 'right' });
-      y += 6;
-      
-      doc.text(`Tarjetas contadas:`, 20, y);
-      doc.text(`$${tarjetaContada}`, pageWidth - 20, y, { align: 'right' });
-      y += 6;
-      
-      doc.text(`Propinas contadas:`, 20, y);
-      doc.text(`$${propinaContada}`, pageWidth - 20, y, { align: 'right' });
-      y += 6;
-      
-      doc.setFont(undefined, 'bold');
       doc.setFontSize(11);
-      const totalContado = (Number(efectivoContado) + Number(transferenciaContada) + Number(tarjetaContada) + Number(propinaContada)).toFixed(2);
-      doc.text(`TOTAL CONTADO:`, 20, y);
-      doc.text(`$${totalContado}`, pageWidth - 20, y, { align: 'right' });
+      doc.setFont(undefined, 'bold');
+      const totalContado = efectivoContado + transferenciaContada + tarjetaContada + propinaContada;
+      doc.text(`TOTAL CONTADO:`, 18, y);
+      doc.text(`$${totalContado.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
-      // ============ DIFERENCIA ============
+      // ============ DIFERENCIA (ROJO/VERDE) ============
       y += 12;
-      const diferencia = (Number(totalContado) - Number(cajaEsperada)).toFixed(2);
-      const esSobrante = Number(diferencia) > 0;
-      const esCuadrado = Number(diferencia) === 0;
+      const diferencia = totalContado - cajaEsperada;
+      const esCuadrado = Math.abs(diferencia) < 0.01;
       
-      // Color según diferencia
       if (esCuadrado) {
         doc.setFillColor(34, 197, 94); // Verde
-      } else if (esSobrante) {
+      } else if (diferencia > 0) {
         doc.setFillColor(59, 130, 246); // Azul
       } else {
         doc.setFillColor(239, 68, 68); // Rojo
       }
       
-      doc.rect(15, y - 5, pageWidth - 30, 18, 'F');
+      doc.rect(15, y, pageWidth - 30, 15, 'F');
       
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
       
-      y += 2;
-      doc.text(`Total esperado:`, 20, y);
-      doc.text(`$${cajaEsperada}`, pageWidth - 20, y, { align: 'right' });
+      y += 5;
+      doc.text(`Total esperado:`, 18, y);
+      doc.text(`$${cajaEsperada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+      
+      y += 5;
+      doc.text(`Total contado:`, 18, y);
+      doc.text(`$${totalContado.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
       
       y += 6;
-      doc.text(`Total contado:`, 20, y);
-      doc.text(`$${totalContado}`, pageWidth - 20, y, { align: 'right' });
-      
-      y += 8;
-      doc.setFontSize(14);
-      const diferenciaTexto = esCuadrado ? 'CAJA CUADRADA' : esSobrante ? 'SOBRANTE' : 'FALTANTE';
-      doc.text(`${diferenciaTexto}:`, 20, y);
-      doc.text(`${Number(diferencia) > 0 ? '+' : ''}$${diferencia}`, pageWidth - 20, y, { align: 'right' });
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      const diferenciaTexto = esCuadrado ? 'CUADRADO ✓' : diferencia > 0 ? 'SOBRANTE' : 'FALTANTE';
+      doc.text(diferenciaTexto, 18, y);
+      doc.text(`${diferencia > 0 ? '+' : ''}$${diferencia.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
       // ============ OBSERVACIONES ============
-      if (close?.remarks) {
-        y += 15;
-        doc.setFillColor(236, 240, 241);
-        doc.rect(15, y - 5, pageWidth - 30, 8, 'F');
+      if (close?.remarks && close.remarks.trim()) {
+        y += 12;
+        doc.setFillColor(255, 243, 205);
+        doc.rect(15, y, pageWidth - 30, 7, 'F');
         
-        doc.setFontSize(11);
+        doc.setFontSize(10);
         doc.setFont(undefined, 'bold');
-        doc.setTextColor(52, 73, 94);
-        doc.text("OBSERVACIONES", 18, y);
-
-        y += 8;
-        doc.setFontSize(9);
-        doc.setFont(undefined, 'normal');
         doc.setTextColor(0, 0, 0);
+        doc.text("OBSERVACIONES", 18, y + 5);
+
+        y += 10;
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'normal');
         
-        // Dividir texto largo en múltiples líneas
-        const maxWidth = pageWidth - 40;
+        const maxWidth = pageWidth - 36;
         const lines = doc.splitTextToSize(close.remarks, maxWidth);
         lines.forEach(line => {
-          doc.text(line, 20, y);
-          y += 5;
+          if (y > pageHeight - 30) return; // Evitar overflow
+          doc.text(line, 18, y);
+          y += 4;
         });
       }
 
       // ============ PIE DE PÁGINA ============
-      y += 15;
+      const footerY = pageHeight - 25;
+      doc.setDrawColor(200, 200, 200);
+      doc.line(15, footerY, pageWidth - 15, footerY);
+      
       doc.setTextColor(100, 100, 100);
       doc.setFontSize(8);
       doc.setFont(undefined, 'normal');
-      doc.text("_".repeat(80), pageWidth / 2, y, { align: 'center' });
-      y += 5;
-      doc.text("Firma del responsable", pageWidth / 2, y, { align: 'center' });
+      doc.text("Firma del responsable", pageWidth / 2, footerY + 5, { align: 'center' });
       
-      y += 10;
       doc.setFontSize(7);
-      doc.text(`Documento generado automáticamente el ${fechaCierre}`, pageWidth / 2, y, { align: 'center' });
+      doc.text(`Generado el ${fechaCierre}`, pageWidth / 2, footerY + 10, { align: 'center' });
 
       // Guardar PDF
-      const nombreArchivo = `cierre-caja-${new Date().toISOString().split('T')[0]}-${Date.now()}.pdf`;
+      const nombreArchivo = `cierre-caja-${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(nombreArchivo);
 
     } catch (error) {
