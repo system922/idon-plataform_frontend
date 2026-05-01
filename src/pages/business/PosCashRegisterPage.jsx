@@ -152,7 +152,7 @@ export default function CashRegisterClosePage() {
   // UI
   // ===============================
   return (
-    <PageTemplate title="Cierre de Caja SaaS">
+    <PageTemplate title="Cierre de Caja Diario" subtitle="Gestiona el cierre de caja, registra el conteo físico y genera reportes.">
 
       {error && <div className="alert-error">{error}</div>}
       {msg && <div className="alert-success">{msg}</div>}
