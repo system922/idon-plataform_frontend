@@ -1,35 +1,45 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { fetchWithAuth } from '../../config/apiBase';
-
-import PrintCashCloseButton from '../../components/PrintCashCloseButton';
-import PrintCashClosePdfButton from '../../components/PrintCashClosePdfButton';
-
 import '../../styles/CloseCash.css';
 
-const toNum = (v) => isNaN(Number(v)) ? 0 : Number(v);
+// ===============================
+// HELPERS
+// ===============================
+const toNum = (v) => Number(v) || 0;
 
-const money = (v) =>
-  toNum(v).toLocaleString('es-EC', {
+const money = (val) =>
+  toNum(val).toLocaleString('es-EC', {
     style: 'currency',
-    currency: 'USD'
+    currency: 'USD',
   });
 
+// ===============================
+// COMPONENT
+// ===============================
 export default function CashRegisterClosePage() {
 
   const today = new Date().toLocaleDateString('en-CA', {
     timeZone: 'America/Guayaquil'
   });
 
-  const [datos, setDatos] = useState(null);
+  // ===============================
+  // STATE
+  // ===============================
+  const [summary, setSummary] = useState(null);
   const [opening, setOpening] = useState(null);
+  const [closing, setClosing] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [efectivoFisico, setEfectivoFisico] = useState(0);
-  const [transferFisico, setTransferFisico] = useState(0);
-  const [tarjetaFisico, setTarjetaFisico] = useState(0);
+  const [efectivo, setEfectivo] = useState(0);
+  const [transfer, setTransfer] = useState(0);
+  const [tarjeta, setTarjeta] = useState(0);
+  const [propina, setPropina] = useState(0);
+  const [comandas, setComandas] = useState(0);
+  const [remarks, setRemarks] = useState('');
 
-  const [closeSaved, setCloseSaved] = useState(null);
+  const [error, setError] = useState('');
+  const [msg, setMsg] = useState('');
 
   // ===============================
   // LOAD DATA
@@ -38,19 +48,42 @@ export default function CashRegisterClosePage() {
     setLoading(true);
 
     try {
-      const [summaryRes, openingRes] = await Promise.all([
-        fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`),
-        fetchWithAuth(`/api/pos/cash-register/opening?date=${today}`)
-      ]);
+      // SUMMARY
+      const res = await fetchWithAuth(
+        `/api/pos/cash-register/summary?date=${today}`
+      );
+      const data = await res.json();
+      setSummary(data);
 
-      const summary = await summaryRes.json();
-      const openingData = openingRes.ok ? await openingRes.json() : null;
+      // OPENING
+      const openRes = await fetchWithAuth(
+        `/api/pos/cash-register/opening?date=${today}`
+      );
 
-      setDatos(summary);
-      setOpening(openingData);
+      if (openRes.ok) {
+        setOpening(await openRes.json());
+      }
+
+      // CLOSING (SI EXISTE)
+      const closeRes = await fetchWithAuth(
+        `/api/pos/cash-register/full-closing?date=${today}`
+      );
+
+      if (closeRes.ok) {
+        const close = await closeRes.json();
+        setClosing(close);
+
+        // bloquear inputs con datos existentes
+        setEfectivo(close.cash_counted || 0);
+        setTransfer(close.transfer_counted || 0);
+        setTarjeta(close.card_counted || 0);
+        setPropina(0);
+        setComandas(close.orders_counted || 0);
+        setRemarks(close.remarks || '');
+      }
 
     } catch (err) {
-      console.error(err);
+      setError('Error cargando datos');
     } finally {
       setLoading(false);
     }
@@ -63,35 +96,24 @@ export default function CashRegisterClosePage() {
   // ===============================
   // CALCULOS
   // ===============================
+  const ventas = summary?.metodos || [];
 
-  const gastosTotal = (datos?.gastos || [])
-    .reduce((a, b) => a + toNum(b.monto), 0);
+  const totalVentas = ventas.reduce(
+    (a, b) => a + toNum(b.total_cobrado),
+    0
+  );
 
-  const cashVentas = datos?.metodos?.find(m => m.payment_method === 'cash')?.total_cobrado || 0;
-  const transferVentas = datos?.metodos?.find(m => m.payment_method === 'transfer')?.total_cobrado || 0;
-  const cardVentas = datos?.metodos?.find(m => m.payment_method === 'card')?.total_cobrado || 0;
+  const gastos = (summary?.gastos || []).reduce(
+    (a, g) => a + toNum(g.monto),
+    0
+  );
 
-  // 🧠 APERTURA
-  const aperturaEfectivo = toNum(opening?.total_efectivo);
-  const aperturaBanca = toNum(opening?.monto_banca);
+  const aperturaTotal =
+    toNum(opening?.total_efectivo) +
+    toNum(opening?.monto_banca);
 
-  // ===============================
-  // ESPERADO REAL
-  // ===============================
-  const efectivoEsperado =
-    aperturaEfectivo + toNum(cashVentas) - gastosTotal;
-
-  const transferEsperado =
-    aperturaBanca + toNum(transferVentas);
-
-  const tarjetaEsperado = toNum(cardVentas);
-
-  // ===============================
-  // DIFERENCIAS
-  // ===============================
-  const diffCash = toNum(efectivoFisico) - efectivoEsperado;
-  const diffTransfer = toNum(transferFisico) - transferEsperado;
-  const diffCard = toNum(tarjetaFisico) - tarjetaEsperado;
+  const cajaTotal =
+    aperturaTotal + totalVentas - gastos;
 
   // ===============================
   // GUARDAR
@@ -99,151 +121,138 @@ export default function CashRegisterClosePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const res = await fetchWithAuth('/api/pos/cash-register/closing', {
-      method: 'POST',
-      body: JSON.stringify({
-        efectivoFisico,
-        transferenciaFisico: transferFisico,
-        tarjetaFisico
-      })
-    });
+    try {
+      const res = await fetchWithAuth('/api/pos/cash-register/closing', {
+        method: 'POST',
+        body: JSON.stringify({
+          efectivoFisico: efectivo,
+          transferenciaFisico: transfer,
+          tarjetaFisico: tarjeta,
+          propinaFisico: propina,
+          comandasFisico: comandas,
+          date: today,
+          remarks
+        }),
+      });
 
-    const data = await res.json();
-    setCloseSaved(data);
-    alert("Cierre guardado correctamente");
+      if (!res.ok) throw new Error('Error al guardar');
+
+      setMsg('✔ Cierre guardado correctamente');
+      load();
+
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
-  if (loading) return <div>Cargando...</div>;
-
+  // ===============================
+  // UI
+  // ===============================
   return (
-    <PageTemplate title="Cuadre de Caja">
+    <PageTemplate title="Cierre de Caja">
 
-      <div className="cash-grid">
+      {error && <div className="alert-error">{error}</div>}
+      {msg && <div className="alert-success">{msg}</div>}
 
-        {/* =========================
-            🟦 IZQUIERDA
-        ========================= */}
-        <div className="left-panel">
+      {loading && <div>Cargando...</div>}
 
-          {/* APERTURA */}
-          <div className="card">
-            <h3>Apertura</h3>
+      {!loading && summary && (
+        <div className="cash-layout">
 
-            <p>Efectivo: {money(aperturaEfectivo)}</p>
-            <p>Banca (transfer): {money(aperturaBanca)}</p>
+          {/* ================= LEFT SIDE ================= */}
+          <div className="cash-left">
 
-            <hr />
-
-            <p>
-              <strong>Total:</strong>{" "}
-              {money(aperturaEfectivo + aperturaBanca)}
-            </p>
-          </div>
-
-          {/* EGRESOS */}
-          <div className="card">
-            <h3>Egresos</h3>
-
-            {(datos?.gastos || []).map((g, i) => (
-              <div key={i} className="row">
-                <span>{g.concepto}</span>
-                <span>{money(g.monto)}</span>
-              </div>
-            ))}
-
-            <hr />
-
-            <p>
-              <strong>Total:</strong> {money(gastosTotal)}
-            </p>
-          </div>
-
-        </div>
-
-        {/* =========================
-            🟩 DERECHA (70%)
-        ========================= */}
-        <div className="right-panel">
-
-          <form onSubmit={handleSubmit}>
-
-            <table className="cash-table">
-              <thead>
-                <tr>
-                  <th>Método</th>
-                  <th>Esperado</th>
-                  <th>Físico</th>
-                  <th>Diferencia</th>
-                </tr>
-              </thead>
-
-              <tbody>
-
-                <tr>
-                  <td>Efectivo</td>
-                  <td>{money(efectivoEsperado)}</td>
-                  <td>
-                    <input value={efectivoFisico}
-                      onChange={e => setEfectivoFisico(e.target.value)} />
-                  </td>
-                  <td>{money(diffCash)}</td>
-                </tr>
-
-                <tr>
-                  <td>Transfer</td>
-                  <td>{money(transferEsperado)}</td>
-                  <td>
-                    <input value={transferFisico}
-                      onChange={e => setTransferFisico(e.target.value)} />
-                  </td>
-                  <td>{money(diffTransfer)}</td>
-                </tr>
-
-                <tr>
-                  <td>Tarjeta</td>
-                  <td>{money(tarjetaEsperado)}</td>
-                  <td>
-                    <input value={tarjetaFisico}
-                      onChange={e => setTarjetaFisico(e.target.value)} />
-                  </td>
-                  <td>{money(diffCard)}</td>
-                </tr>
-
-              </tbody>
-            </table>
-
-            <button className="btn-primary">
-              Cerrar Caja
-            </button>
-
-          </form>
-
-          {/* =========================
-              🖨️ PRINT + PDF
-          ========================= */}
-          {closeSaved && (
-            <div style={{ marginTop: 20 }}>
-
-              <PrintCashCloseButton
-                close={closeSaved}
-                datos={datos}
-                printerTicket={{ name: "POS-58", width: 32 }}
-                printerConnected={true}
-              />
-
-              <PrintCashClosePdfButton
-                close={closeSaved}
-                datos={datos}
-                opening={opening}
-              />
-
+            {/* APERTURA */}
+            <div className="card">
+              <h3>📦 Apertura</h3>
+              <p>Efectivo: {money(opening?.total_efectivo)}</p>
+              <p>Banca (transferencias): {money(opening?.monto_banca)}</p>
+              <p><b>Total:</b> {money(aperturaTotal)}</p>
             </div>
-          )}
 
+            {/* EGRESOS */}
+            <div className="card">
+              <h3>💸 Egresos</h3>
+
+              {(summary?.gastos || []).map((g, i) => (
+                <div key={i} className="row">
+                  <span>{g.concepto}</span>
+                  <span>{money(g.monto)}</span>
+                </div>
+              ))}
+
+              <hr />
+              <b>Total: {money(gastos)}</b>
+            </div>
+          </div>
+
+          {/* ================= RIGHT SIDE ================= */}
+          <div className="cash-right">
+
+            {closing && (
+              <div className="lock">
+                🔒 CIERRE YA REALIZADO
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit}>
+
+              <div className="grid">
+
+                <label>Efectivo</label>
+                <input
+                  value={efectivo}
+                  onChange={e => setEfectivo(e.target.value)}
+                  disabled={!!closing}
+                />
+
+                <label>Transferencia</label>
+                <input
+                  value={transfer}
+                  onChange={e => setTransfer(e.target.value)}
+                  disabled={!!closing}
+                />
+
+                <label>Tarjeta</label>
+                <input
+                  value={tarjeta}
+                  onChange={e => setTarjeta(e.target.value)}
+                  disabled={!!closing}
+                />
+
+                <label>Propina</label>
+                <input
+                  value={propina}
+                  onChange={e => setPropina(e.target.value)}
+                  disabled={!!closing}
+                />
+
+              </div>
+
+              <textarea
+                placeholder="Observaciones"
+                value={remarks}
+                onChange={e => setRemarks(e.target.value)}
+                disabled={!!closing}
+              />
+
+              <button disabled={!!closing}>
+                {closing ? 'Cerrado' : 'Guardar cierre'}
+              </button>
+
+            </form>
+
+            {/* RESUMEN FINAL */}
+            <div className="card total">
+              <h3>📊 Resumen</h3>
+              <p>Ventas: {money(totalVentas)}</p>
+              <p>Apertura + ventas - gastos</p>
+              <h2>{money(cajaTotal)}</h2>
+            </div>
+
+          </div>
         </div>
-
-      </div>
-
+      )}
     </PageTemplate>
   );
 }

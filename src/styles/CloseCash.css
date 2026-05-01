@@ -1,62 +1,71 @@
-.cash-grid {
-  display: grid;
-  grid-template-columns: 30% 70%;
+.cash-layout {
+  display: flex;
   gap: 20px;
 }
 
-.left-panel {
+/* LEFT */
+.cash-left {
+  width: 30%;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 15px;
+}
+
+/* RIGHT */
+.cash-right {
+  width: 70%;
 }
 
 .card {
   background: #0f172a;
   color: white;
-  padding: 18px;
+  padding: 15px;
   border-radius: 12px;
 }
 
 .row {
   display: flex;
   justify-content: space-between;
-  margin: 6px 0;
-  color: #cbd5e1;
+  font-size: 13px;
 }
 
-.right-panel {
-  background: #0f172a;
-  padding: 20px;
-  border-radius: 12px;
-  color: white;
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
-.cash-table {
-  width: 100%;
-}
-
-.cash-table th,
-.cash-table td {
-  padding: 10px;
-  text-align: left;
-}
-
-input {
-  background: #1e293b;
-  border: none;
+input, textarea {
   padding: 8px;
   border-radius: 8px;
-  color: white;
-  width: 90px;
+  border: none;
 }
 
-.btn-primary {
-  margin-top: 20px;
-  background: #22c55e;
+textarea {
+  width: 100%;
+  margin-top: 10px;
+}
+
+button {
+  margin-top: 10px;
+  padding: 10px;
+  background: #3b82f6;
+  color: white;
   border: none;
-  padding: 12px 18px;
   border-radius: 10px;
-  cursor: pointer;
+}
+
+.lock {
+  background: #dc2626;
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.total {
+  margin-top: 15px;
+  background: #111827;
 }
 
 .btn-pdf {
