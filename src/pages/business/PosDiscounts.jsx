@@ -66,7 +66,7 @@ function DiscountModal({ onClose, onSaved }) {
   const [err, setErr] = useState('');
 
   useEffect(() => {
-    fetchWithAuth('/api/categories')
+    fetchWithAuth('/api/pos/categories') // ✅ FIX
       .then(r => r.json())
       .then(setCategories)
       .catch(() => {});
@@ -98,7 +98,7 @@ function DiscountModal({ onClose, onSaved }) {
     setErr('');
 
     try {
-      const res = await fetchWithAuth('/pos/discounts', {
+      const res = await fetchWithAuth('/api/pos/discounts', { // ✅ FIX
         method: 'POST',
         body: JSON.stringify({
           ...form,
@@ -241,11 +241,14 @@ export default function PosDiscounts() {
 
   const load = async () => {
     setLoading(true);
+    setErr('');
+
     try {
-      const res = await fetchWithAuth('/pos/discounts');
+      const res = await fetchWithAuth('/api/pos/discounts'); // ✅ FIX
       setDiscounts(await res.json());
     } catch (e) {
       setErr('Error al cargar');
+      setDiscounts([]);
     } finally {
       setLoading(false);
     }
