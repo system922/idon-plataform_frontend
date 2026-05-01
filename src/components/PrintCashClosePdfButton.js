@@ -169,10 +169,22 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       doc.text(`TOTAL EGRESOS:`, 18, y);
       doc.text(`$${totalGastos.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
-      // ============ CONTEO FÍSICO (VERDE) ============
+      // ============ CALCULAR VALORES ============
+      const efectivoContado = Number(close?.cash_counted || 0);
+      const transferenciaContada = Number(close?.transfer_counted || 0);
+      const tarjetaContada = Number(close?.card_counted || 0);
+      const propinaContada = Number(close?.tip_counted || 0);
+      const totalContado = efectivoContado + transferenciaContada + tarjetaContada + propinaContada;
+      const cajaEsperada = totalApertura + totalVentas - totalGastos;
+      const diferencia = totalContado - cajaEsperada;
+      const esCuadrado = Math.abs(diferencia) < 0.01;
+
+      // ============ CONTEO FÍSICO - BLOQUE VERDE UNIFICADO ============
       y += 10;
+      const alturaBloque = 50; // Altura total del bloque verde
+      
       doc.setFillColor(46, 204, 113);
-      doc.rect(15, y, pageWidth - 30, 25, 'F');
+      doc.rect(15, y, pageWidth - 30, alturaBloque, 'F');
       
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(10);
@@ -183,11 +195,6 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       y += 6;
       doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
-
-      const efectivoContado = Number(close?.cash_counted || 0);
-      const transferenciaContada = Number(close?.transfer_counted || 0);
-      const tarjetaContada = Number(close?.card_counted || 0);
-      const propinaContada = Number(close?.tip_counted || 0);
       
       doc.text(`Efectivo contado:`, 18, y);
       doc.text(`$${efectivoContado.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
@@ -203,22 +210,15 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       
       doc.text(`Propinas contadas:`, 18, y);
       doc.text(`$${propinaContada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
-
-      // ============ RESUMEN FINAL (VERDE) ============
-      y += 8;
-      const totalContado = efectivoContado + transferenciaContada + tarjetaContada + propinaContada;
-      const cajaEsperada = totalApertura + totalVentas - totalGastos;
-      const diferencia = totalContado - cajaEsperada;
-      const esCuadrado = Math.abs(diferencia) < 0.01;
       
-      // Mantener el fondo verde para el resumen
-      doc.setFillColor(46, 204, 113);
-      doc.rect(15, y, pageWidth - 30, 15, 'F');
-      
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'normal');
+      // Línea separadora dentro del bloque verde
+      y += 7;
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.3);
+      doc.line(18, y, pageWidth - 18, y);
       
       y += 5;
+      doc.setFontSize(9);
       doc.text(`Total esperado:`, 18, y);
       doc.text(`$${cajaEsperada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
       
@@ -233,9 +233,13 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       doc.text(diferenciaTexto, 18, y);
       doc.text(`$${Math.abs(diferencia).toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
+      // Resetear color de línea
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.1);
+
       // ============ OBSERVACIONES ============
+      y += 10;
       if (close?.remarks && close.remarks.trim()) {
-        y += 10;
         doc.setFillColor(255, 243, 205);
         doc.rect(15, y, pageWidth - 30, 6, 'F');
         
@@ -286,4 +290,3 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
     </button>
   );
 }
-
