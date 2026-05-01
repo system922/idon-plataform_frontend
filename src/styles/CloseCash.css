@@ -58,3 +58,17 @@ input {
   border-radius: 10px;
   cursor: pointer;
 }
+
+.btn-pdf {
+  margin-top: 10px;
+  background: #3b82f6;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-pdf:hover {
+  background: #2563eb;
+}
