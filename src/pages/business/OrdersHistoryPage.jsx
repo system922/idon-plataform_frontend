@@ -3,12 +3,11 @@ import { Search, Check, X, Printer, Edit2, Trash2, Save } from 'react-feather';
 import qz from 'qz-tray';
 import PageTemplate from '../../components/PageTemplate';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
-import AddItemModal from '../../components/AddItemModal'; // <-- Ajusta ruta si difiere
+import AddItemModal from '../../components/AddItemModal';
 import { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/OrdersHistoryPage.css';
 
 // --- Helpers de impresión ---
-import API_BASE from '../../config/apiBase';
 const PRINTER_NAME = 'POS-58';
 const WIDTH = 32;
 const line = () => '='.repeat(WIDTH);
@@ -106,11 +105,29 @@ function buildModificationComanda({
       const qty = item.quantity || item.cantidad || 1;
       const name = String(item.product_name || item.nombre || item.name || `Item ${idx+1}`).toUpperCase();
       const prefix = `${qty}x `;
-      const lines = wrap(name, WIDTH - prefix.length - 6); // for tachado
+      const lines = wrap(name, WIDTH - prefix.length - 6);
       out += prefix + (lines[0] ? `~~${lines[0]}~~` : '') + '\n';
       for(let i=1;i<lines.length;i++) out += '   ~~' + lines[i] + '~~\n';
       if(item.nota || item.notas) {
         wrap(item.nota || item.notas, WIDTH - 6).forEach(ln => out += ` - ~~${ln}~~\n`);
+      }
+      out += sep() + '\n';
+    });
+  }
+
+  // AGREGADOS
+  if (added.length) {
+    out += center('PRODUCTOS AGREGADOS') + '\n';
+    out += sep() + '\n';
+    added.forEach((item, idx) => {
+      const qty = item.quantity || item.cantidad || 1;
+      const name = String(item.product_name || item.nombre || item.name || `Item ${idx+1}`).toUpperCase();
+      const prefix = `${qty}x `;
+      const lines = wrap(name, WIDTH - prefix.length);
+      out += prefix + (lines[0] || '') + ' [NUEVO]\n';
+      for(let i=1;i<lines.length;i++) out += '   ' + lines[i] + '\n';
+      if(item.nota || item.notas) {
+        wrap(item.nota || item.notas, WIDTH - 3).forEach(ln => out += ` - ${ln}\n`);
       }
       out += sep() + '\n';
     });
@@ -125,12 +142,8 @@ function buildModificationComanda({
 export default function OrdersHistoryPage() {
   const { selectedBusiness } = useBusinessContext();
   const [orders, setOrders] = useState([]);
-  const [productos, setProductos] = useState([
-    { id: 1, name: 'Café Americano', price: 1.5 },
-    { id: 2, name: 'Capuccino', price: 2.2 },
-    { id: 3, name: 'Croissant', price: 1.8 },
-    // ... agrega los productos de tu catálogo real aquí
-  ]);
+  const [productos, setProductos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [editItems, setEditItems] = useState([]);
@@ -173,16 +186,40 @@ export default function OrdersHistoryPage() {
     })();
   }, []);
 
-  // Load orders
-  useEffect(() => { loadOrders(); }, [selectedBusiness]);
+  // Cargar datos iniciales
+  useEffect(() => {
+    loadOrders();
+    loadProductos();
+    loadCategorias();
+  }, [selectedBusiness]);
+
   const loadOrders = async () => {
-    // Ajusta el endpoint a como te retorna tus órdenes históricas
     try {
       const response = await fetchWithAuth('/api/ordenes?all=1');
       const data = await response.json();
       if (Array.isArray(data)) setOrders(data);
     } catch (err) {
       showNotification('Error al cargar órdenes', 'error');
+    }
+  };
+
+  const loadProductos = async () => {
+    try {
+      const res = await fetchWithAuth('/api/products');
+      const data = await res.json();
+      setProductos(Array.isArray(data) ? data : data?.productos ?? data?.data ?? []);
+    } catch (err) {
+      showNotification('Error al cargar productos', 'error');
+    }
+  };
+
+  const loadCategorias = async () => {
+    try {
+      const res = await fetchWithAuth('/api/categories');
+      const data = await res.json();
+      setCategorias(Array.isArray(data) ? data : []);
+    } catch (err) {
+      showNotification('Error al cargar categorías', 'error');
     }
   };
 
@@ -205,7 +242,6 @@ export default function OrdersHistoryPage() {
       showNotification('Comanda modificada enviada a la impresora', 'success');
     } catch (e) {
       showNotification('Error de QZ Tray. Usando impresión web', 'warning');
-      // Fallback web print (igual visual en browser)
       const texto = buildModificationComanda({
         mesaNum: order.mesa_numero,
         ordenNum: order.order_number || order.id,
@@ -234,8 +270,15 @@ export default function OrdersHistoryPage() {
   // Eliminar
   const handleDeleteOrder = async (orderId) => {
     if (!window.confirm('¿Seguro que deseas eliminar la orden?')) return;
-    // PATCH/DELETE lógico solo si tu API lo permite
-    showNotification('No implementado (simulación)', 'warning'); // agrega aquí tu fetch
+    try {
+      const res = await fetchWithAuth(`/api/ordenes/${orderId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Error al eliminar');
+      showNotification('Orden eliminada correctamente', 'success');
+      loadOrders();
+      setSelectedOrder(null);
+    } catch (err) {
+      showNotification('Error al eliminar orden', 'error');
+    }
   };
 
   // Guardar edición
@@ -252,15 +295,25 @@ export default function OrdersHistoryPage() {
       );
       const addedItems = remainingItems.filter(ri => ri._added);
 
-      // PATCH la orden en tu backend...
-      // await fetch(`${API_BASE}/api/ordenes/${selectedOrder.id}/productos`...
+      // PATCH la orden en tu backend
+      const res = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ items: remainingItems })
+      });
 
-      showNotification('Orden modificada', 'success');
+      if (!res.ok) throw new Error('Error al actualizar orden');
+
+      showNotification('Orden modificada correctamente', 'success');
       setSelectedOrder({ ...selectedOrder, items: remainingItems });
-      setEditMode(false); setEditItems([]);
+      setEditMode(false);
+      setEditItems([]);
+      
       // Imprime modificación (si hay cambios)
-      if (removedItems.length || addedItems.length)
+      if (removedItems.length || addedItems.length) {
         await handlePrintModification(selectedOrder, removedItems, addedItems, remainingItems);
+      }
+      
+      loadOrders();
     } catch (err) {
       showNotification('Error al guardar cambios', 'error');
     }
@@ -268,21 +321,27 @@ export default function OrdersHistoryPage() {
 
   // AGREGAR ITEM DESDE MODAL
   const agregarItem = () => {
-    if (!productoSeleccionado) return;
-    setEditItems(editItems => [
-      ...editItems,
-      {
-        product_id: Math.random().toString(36).substring(2,9),
-        product_name: productoSeleccionado.name,
-        quantity: cantidadItem,
-        unit_price: Number(productoSeleccionado.price),
-        line_total: Number(productoSeleccionado.price) * cantidadItem,
-        nota: notasItem,
-        _added: true
-      }
-    ]);
+    if (!productoSeleccionado) {
+      showNotification('Selecciona un producto', 'warning');
+      return;
+    }
+    
+    const nuevoItem = {
+      product_id: productoSeleccionado.id,
+      product_name: productoSeleccionado.name,
+      quantity: cantidadItem,
+      unit_price: Number(productoSeleccionado.price),
+      line_total: Number(productoSeleccionado.price) * cantidadItem,
+      nota: notasItem,
+      _added: true
+    };
+
+    setEditItems(prev => [...prev, nuevoItem]);
     setShowAddItemModal(false);
-    setProductoSeleccionado(null); setCantidadItem(1); setNotasItem('');
+    setProductoSeleccionado(null);
+    setCantidadItem(1);
+    setNotasItem('');
+    showNotification('Producto agregado', 'success');
   };
 
   return (
@@ -319,7 +378,7 @@ export default function OrdersHistoryPage() {
                 </thead>
                 <tbody>
                   {orders.filter(order =>
-                    (order.mesa_numero?.toString()  || '').includes(searchTerm)
+                    (order.mesa_numero?.toString() || '').includes(searchTerm)
                     || (order.order_number?.toString() || '').includes(searchTerm)
                     || order.id.toString().includes(searchTerm)
                   ).map(order => (
@@ -328,7 +387,9 @@ export default function OrdersHistoryPage() {
                       className={selectedOrder?.id === order.id ? 'selected' : ''}
                       onClick={() => {
                         if (editMode && selectedOrder?.id === order.id) return;
-                        setSelectedOrder(order); setEditMode(false); setEditItems([]);
+                        setSelectedOrder(order);
+                        setEditMode(false);
+                        setEditItems([]);
                       }}
                     >
                       <td className="mesa-num">
@@ -346,20 +407,35 @@ export default function OrdersHistoryPage() {
                         <button
                           type="button"
                           className="btn-edit"
-                          onClick={e => { e.stopPropagation(); if (editMode) return; setSelectedOrder(order); setEditMode(true); setEditItems((order.items || []).map(i => ({ ...i }))); }}
-                          disabled={editMode}>
+                          onClick={e => {
+                            e.stopPropagation();
+                            if (editMode) return;
+                            setSelectedOrder(order);
+                            setEditMode(true);
+                            setEditItems((order.items || []).map(i => ({ ...i })));
+                          }}
+                          disabled={editMode}
+                        >
                           <Edit2 size={14} /> Editar
                         </button>
                         <button
                           type="button"
                           className="btn-delete"
-                          onClick={e => { e.stopPropagation(); handleDeleteOrder(order.id); }}>
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleDeleteOrder(order.id);
+                          }}
+                        >
                           <Trash2 size={13} /> Eliminar
                         </button>
                         <button
                           type="button"
                           className="btn-print"
-                          onClick={e => { e.stopPropagation(); handlePrintModification(order, [], [], order.items); }}>
+                          onClick={e => {
+                            e.stopPropagation();
+                            handlePrintModification(order, [], [], order.items);
+                          }}
+                        >
                           <Printer size={13} /> Reimprimir
                         </button>
                       </td>
@@ -370,6 +446,7 @@ export default function OrdersHistoryPage() {
             )}
           </div>
         </div>
+
         {/* Panel de detalle/editar */}
         {selectedOrder ? (
           <div className="payment-panel">
@@ -384,49 +461,80 @@ export default function OrdersHistoryPage() {
                   &nbsp;<small>#{selectedOrder.order_number || selectedOrder.id}</small>
                 </h3>
               </div>
+
               {/* Botón para abrir modal */}
               {editMode && (
-                <div style={{margin: '16px 0'}}>
+                <div style={{ margin: '16px 0' }}>
                   <button
                     type="button"
                     className="btn-primary"
                     onClick={() => {
                       setShowAddItemModal(true);
-                      setProductoSeleccionado(null); setCantidadItem(1); setNotasItem('');
+                      setProductoSeleccionado(null);
+                      setCantidadItem(1);
+                      setNotasItem('');
                     }}
                   >
                     + Agregar producto
                   </button>
                 </div>
               )}
+
               {/* Lista editable */}
               {editMode ? (
                 <div className="items-list">
                   {editItems.map((item, idx) => (
-                    <div key={idx} className={`item-line${item._remove ? ' removed' : ''}${item._added ? ' added' : ''}`}>
-                      <span className="item-name">{item.quantity}x {item.product_name}</span>
+                    <div
+                      key={idx}
+                      className={`item-line${item._remove ? ' removed' : ''}${item._added ? ' added' : ''}`}
+                    >
+                      <span className="item-name">
+                        {item.quantity}x {item.product_name}
+                      </span>
                       <span className="item-price">{fmt(item.unit_price * item.quantity)}</span>
-                      {item.nota && <span style={{color:'#b3b3b3',fontSize:12,marginLeft:6}}>Nota: {item.nota}</span>}
+                      {item.nota && (
+                        <span style={{ color: '#b3b3b3', fontSize: 12, marginLeft: 6 }}>
+                          Nota: {item.nota}
+                        </span>
+                      )}
                       {!item._remove && (
                         <button
                           type="button"
                           className="btn-remove-item"
-                          onClick={() => setEditItems(editItems.map((it,i) => i===idx ? { ...it, _remove: true } : it))}
-                          style={{ marginLeft:8, color: '#e3342f', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 800 }}
-                          title="Quitar producto">
+                          onClick={() =>
+                            setEditItems(editItems.map((it, i) => (i === idx ? { ...it, _remove: true } : it)))
+                          }
+                          title="Quitar producto"
+                        >
                           <X size={13} />
                         </button>
                       )}
-                      {item._added && <span style={{color:'#22d3ee',fontSize:11,marginLeft:7}}>(agregado)</span>}
-                      {item._remove && <span style={{color:'#e3342f',fontSize:12,marginLeft:10}}>Eliminado</span>}
+                      {item._added && (
+                        <span style={{ color: '#22d3ee', fontSize: 11, marginLeft: 7 }}>(agregado)</span>
+                      )}
+                      {item._remove && (
+                        <span style={{ color: '#e3342f', fontSize: 12, marginLeft: 10 }}>Eliminado</span>
+                      )}
                     </div>
                   ))}
                   <div style={{ marginTop: 14 }}>
-                    <button type="button" className="btn-complete" style={{ minWidth: 120, fontSize: 14, fontWeight: 800 }} onClick={handleSaveEdit}>
+                    <button
+                      type="button"
+                      className="btn-complete"
+                      style={{ minWidth: 120, fontSize: 14, fontWeight: 800 }}
+                      onClick={handleSaveEdit}
+                    >
                       <Save size={14} /> Guardar Cambios e Imprimir
                     </button>
-                    <button type="button" className="btn-cancel" style={{ marginLeft: 12 }}
-                      onClick={() => { setEditMode(false); setEditItems([]); }}>
+                    <button
+                      type="button"
+                      className="btn-cancel"
+                      style={{ marginLeft: 12 }}
+                      onClick={() => {
+                        setEditMode(false);
+                        setEditItems([]);
+                      }}
+                    >
                       <X size={16} /> Cancelar
                     </button>
                   </div>
@@ -435,31 +543,38 @@ export default function OrdersHistoryPage() {
                 <div className="items-list">
                   {(selectedOrder.items || []).map((item, idx) => (
                     <div key={idx} className="item-line">
-                      <span className="item-name">{item.quantity}x {item.product_name}</span>
+                      <span className="item-name">
+                        {item.quantity}x {item.product_name}
+                      </span>
                       <span className="item-price">{fmt(item.unit_price * item.quantity)}</span>
-                      {item.nota && <span style={{color:'#b3b3b3',fontSize:12,marginLeft:6}}>Nota: {item.nota}</span>}
+                      {item.nota && (
+                        <span style={{ color: '#b3b3b3', fontSize: 12, marginLeft: 6 }}>
+                          Nota: {item.nota}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
+
               <div className="subtotal-line">
                 <span>Subtotal:</span>
                 <span>
-                  {
-                    (!editMode
+                  {fmt(
+                    !editMode
                       ? selectedOrder.subtotal
-                      : editItems.filter(i => !i._remove).reduce((s,it) => s + it.unit_price * it.quantity, 0)) || 0
-                  }
+                      : editItems.filter(i => !i._remove).reduce((s, it) => s + it.unit_price * it.quantity, 0)
+                  )}
                 </span>
               </div>
               <div className="total-line">
                 <span>TOTAL:</span>
                 <span className="total-amount">
-                  {
-                    (!editMode
+                  {fmt(
+                    !editMode
                       ? selectedOrder.total
-                      : editItems.filter(i => !i._remove).reduce((s,it) => s + it.unit_price * it.quantity, 0)) || 0
-                  }
+                      : editItems.filter(i => !i._remove).reduce((s, it) => s + it.unit_price * it.quantity, 0)
+                  )}
                 </span>
               </div>
             </div>
@@ -470,6 +585,8 @@ export default function OrdersHistoryPage() {
           </div>
         )}
       </div>
+
+      {/* Modal para agregar items */}
       <AddItemModal
         showAddItemModal={showAddItemModal}
         setShowAddItemModal={setShowAddItemModal}
@@ -481,15 +598,11 @@ export default function OrdersHistoryPage() {
         notasItem={notasItem}
         setNotasItem={setNotasItem}
         agregarItem={agregarItem}
+        categorias={categorias}
       />
-      {notification && (
-        <div className={`notification ${notification.type}`}>{notification.msg}</div>
-      )}
-      <style>{`
-        .item-line.removed { opacity:0.4; text-decoration:line-through; }
-        .item-line.added { color: #22d3ee; }
-        .btn-remove-item { margin-left:8px;}
-      `}</style>
+
+      {/* Notificaciones */}
+      {notification && <div className={`notification ${notification.type}`}>{notification.msg}</div>}
     </PageTemplate>
   );
 }
