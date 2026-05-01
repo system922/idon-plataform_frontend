@@ -19,6 +19,14 @@ const money = (val) =>
     currency: 'USD',
   });
 
+function getOperatorUser() {
+  try {
+    return JSON.parse(localStorage.getItem('idonUser') || '{}');
+  } catch {
+    return {};
+  }
+}
+
 // ===============================
 // COMPONENT
 // ===============================
@@ -181,14 +189,18 @@ export default function CashRegisterClosePage() {
   const diferencia = totalContado - cajaTotal;
 
   // ===============================
-  // SAVE
+  // SAVE WITH AUDIT
   // ===============================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setMsg('');
 
+    const operador = getOperatorUser();
+    const userName = operador?.nombre || operador?.name || operador?.username || operador?.email || 'Usuario';
+
     try {
+      // 1. Guardar cierre de caja
       const res = await fetchWithAuth('/api/pos/cash-register/closing', {
         method: 'POST',
         body: JSON.stringify({
@@ -209,6 +221,42 @@ export default function CashRegisterClosePage() {
 
       const closeData = await res.json();
       setClosing(closeData);
+
+      // 2. Guardar auditoría de cierre de caja
+      if (operador?.id) {
+        const diferenciaTexto = diferencia === 0 
+          ? 'Sin diferencias' 
+          : diferencia > 0 
+            ? `Sobrante de $${Math.abs(diferencia).toFixed(2)}`
+            : `Faltante de $${Math.abs(diferencia).toFixed(2)}`;
+
+        const auditPayload = {
+          user_id: operador.id,
+          table_name: "cash_drawer",
+          action: "cierre_caja_completado",
+          description: `Cierre de caja completado por ${userName}. Efectivo contado: $${toNum(efectivo).toFixed(2)}, Transferencias: $${toNum(transfer).toFixed(2)}, Tarjeta: $${toNum(tarjeta).toFixed(2)}, Propina: $${toNum(propina).toFixed(2)}. Total contado: $${totalContado.toFixed(2)}, Total esperado: $${cajaTotal.toFixed(2)}. ${diferenciaTexto}${remarks ? `. Observaciones: ${remarks}` : ''}`,
+          new_values: {
+            efectivo_contado: toNum(efectivo),
+            transferencias_contadas: toNum(transfer),
+            tarjeta_contada: toNum(tarjeta),
+            propina_contada: toNum(propina),
+            total_contado: totalContado,
+            total_esperado: cajaTotal,
+            diferencia: diferencia,
+            apertura_efectivo: aperturaEfectivo,
+            apertura_banca: aperturaBanca,
+            total_ventas: totalVentas,
+            total_gastos: gastos,
+            observaciones: remarks || null
+          },
+          reason: "Registro de Cierre de Caja"
+        };
+
+        await fetchWithAuth('/api/audit-log', {
+          method: 'POST',
+          body: JSON.stringify(auditPayload)
+        }).catch(err => console.warn('Error guardando auditoría de cierre:', err));
+      }
 
       setMsg('✔ Cierre guardado correctamente');
 
