@@ -12,17 +12,13 @@ function formatMoney(val) {
     : val;
 }
 
+// ✅ NUEVO: formateo correcto a Ecuador (una sola vez)
 function formatDateEC(date) {
   if (!date) return "-";
   try {
     return new Date(date).toLocaleString('es-EC', {
       timeZone: 'America/Guayaquil',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
+      hour12: false
     });
   } catch {
     return date;
@@ -47,13 +43,25 @@ export default function CoreAuditLog() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = '';
 
+  // ── Carga de auditoría ─────────────────────────────────────────────────────
+
   const loadAuditLogs = async () => {
     setLoading(true);
     setErr('');
     try {
       const res = await fetchWithAuth('/api/audit-log');
       const data = await res.json();
-      setLogs(Array.isArray(data.logs) ? data.logs : []);
+
+      // ✅ OPTIMIZACIÓN: formatear fecha UNA sola vez
+      const logsFormatted = Array.isArray(data.logs)
+        ? data.logs.map(log => ({
+            ...log,
+            created_at_ec: formatDateEC(log.created_at)
+          }))
+        : [];
+
+      setLogs(logsFormatted);
+
     } catch (error) {
       setLogs([]);
       setErr(error.message || 'Error al cargar auditoría.');
@@ -63,6 +71,8 @@ export default function CoreAuditLog() {
   };
 
   useEffect(() => { loadAuditLogs(); }, []);
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   const headerAction = (
     <button onClick={loadAuditLogs} disabled={loading} style={{
@@ -97,6 +107,7 @@ export default function CoreAuditLog() {
           {err}
         </div>
       )}
+
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(370px, 1fr))',
@@ -118,9 +129,11 @@ export default function CoreAuditLog() {
             const actionDetails = actionLabelStyle(log.action);
             const isExpense = (log.action || "").toLowerCase() === "drawer_expense";
             let amount = "";
+
             if (isExpense && log.new_values && typeof log.new_values === "object") {
               amount = formatMoney(log.new_values.amount);
             }
+
             return (
               <div key={log.id || idx} style={{
                 background: actionDetails.background,
@@ -142,6 +155,7 @@ export default function CoreAuditLog() {
                   }}>
                     <Shield size={20} />
                   </div>
+
                   <div>
                     <span style={{
                       fontWeight: 900,
@@ -151,17 +165,22 @@ export default function CoreAuditLog() {
                     }}>
                       {actionDetails.label}
                     </span>
+
+                    {/* ✅ USO CORRECTO */}
                     <div style={{ color: "#8793aa", fontSize: 14, fontWeight: 500 }}>
-                      {formatDateEC(log.created_at)}
+                      {log.created_at_ec || log.created_at}
                     </div>
                   </div>
                 </div>
+
                 <div style={{ fontSize: 15, marginBottom: 0 }}>
                   <b>Usuario:</b> <User size={13} style={{ verticalAlign: '-1px' }} /> {log.user_display_name || log.user_id || "-"}
                 </div>
+
                 <div style={{ fontSize: 15, color: "#373c6b", minHeight: 22, fontWeight: 600 }}>
                   <b>Descripción:</b> {log.description}
                 </div>
+
                 {isExpense && amount &&
                   <div style={{
                     display: 'flex',
@@ -173,7 +192,9 @@ export default function CoreAuditLog() {
                     margin: "7px 0 2px"
                   }}>
                     <FiDollarSign /> Total:
-                    <span style={{color:"#c37e2c", fontWeight:900, marginLeft:3}}>{amount}</span>
+                    <span style={{color:"#c37e2c", fontWeight:900, marginLeft:3}}>
+                      {amount}
+                    </span>
                   </div>
                 }
               </div>
