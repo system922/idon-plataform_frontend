@@ -1,83 +1,221 @@
+/* ===============================
+   🌐 BASE LAYOUT
+================================*/
 .cash-layout {
   display: flex;
-  gap: 20px;
+  gap: 24px;
+  padding: 24px;
+  background: #f4f6fb;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
-/* LEFT */
+/* ===============================
+   📦 LEFT PANEL (APERTURA + EGRESOS)
+================================*/
 .cash-left {
   width: 30%;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 16px;
 }
 
-/* RIGHT */
+/* ===============================
+   📊 RIGHT PANEL (CIERRE)
+================================*/
 .cash-right {
   width: 70%;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(20, 20, 50, 0.08);
+  border: 1px solid #eef0f5;
 }
 
+/* ===============================
+   🧾 CARDS
+================================*/
 .card {
-  background: #0f172a;
-  color: white;
-  padding: 15px;
-  border-radius: 12px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 6px 18px rgba(20, 20, 50, 0.06);
+  border: 1px solid #eef0f5;
+  transition: 0.2s ease;
 }
 
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(20, 20, 50, 0.1);
+}
+
+/* ===============================
+   TITULOS
+================================*/
+.card h3 {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: #111827;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* ===============================
+   FILAS
+================================*/
 .row {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
+  padding: 6px 0;
+  color: #374151;
 }
 
+/* ===============================
+   TOTAL CARD
+================================*/
+.total {
+  background: linear-gradient(135deg, #111827, #1f2937);
+  color: white;
+}
+
+.total h3 {
+  color: #fff;
+}
+
+.total h2 {
+  margin-top: 10px;
+  font-size: 24px;
+}
+
+/* ===============================
+   FORM GRID
+================================*/
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
-input, textarea {
-  padding: 8px;
-  border-radius: 8px;
-  border: none;
+label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+  display: block;
 }
 
+/* ===============================
+   INPUTS
+================================*/
+input,
 textarea {
   width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+  font-size: 14px;
+  outline: none;
+  transition: 0.2s;
+}
+
+input:focus,
+textarea:focus {
+  border-color: #6366f1;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* ===============================
+   TEXTAREA
+================================*/
+textarea {
+  min-height: 90px;
+  resize: none;
   margin-top: 10px;
 }
 
+/* ===============================
+   BUTTON
+================================*/
 button {
-  margin-top: 10px;
-  padding: 10px;
-  background: #3b82f6;
+  margin-top: 14px;
+  width: 100%;
+  padding: 12px;
+  background: #4f46e5;
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
 }
 
-.lock {
-  background: #dc2626;
-  color: white;
+button:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* ===============================
+   ALERTS
+================================*/
+.alert-error {
+  background: #fee2e2;
+  color: #991b1b;
   padding: 10px;
   border-radius: 10px;
   margin-bottom: 10px;
 }
 
-.total {
-  margin-top: 15px;
-  background: #111827;
+.alert-success {
+  background: #dcfce7;
+  color: #166534;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 10px;
 }
 
+/* ===============================
+   LOCK BADGE
+================================*/
+.lock {
+  background: #fff7ed;
+  color: #c2410c;
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  border: 1px solid #fed7aa;
+}
+
+/* ===============================
+   PDF BUTTON
+================================*/
 .btn-pdf {
-  margin-top: 10px;
-  background: #3b82f6;
-  color: white;
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
+  margin-top: 12px;
+  background: #0ea5e9;
 }
 
 .btn-pdf:hover {
-  background: #2563eb;
+  background: #0284c7;
+}
+
+/* ===============================
+   RESPONSIVE
+================================*/
+@media (max-width: 1024px) {
+  .cash-layout {
+    flex-direction: column;
+  }
+
+  .cash-left,
+  .cash-right {
+    width: 100%;
+  }
 }

@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { fetchWithAuth } from '../../config/apiBase';
-import PrintCashClosePdfButton from '../../components/PrintCashClosePdfButton';
+
 import PrintCashCloseButton from '../../components/PrintCashCloseButton';
+import PrintCashClosePdfButton from '../../components/PrintCashClosePdfButton';
+
 import '../../styles/CloseCash.css';
 
 // ===============================
@@ -41,11 +43,10 @@ export default function CashRegisterClosePage() {
   const [msg, setMsg] = useState('');
 
   // ===============================
-  // LOAD DATA
+  // LOAD
   // ===============================
   const load = useCallback(async () => {
     setLoading(true);
-
     try {
       const [sumRes, openRes, closeRes] = await Promise.all([
         fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`),
@@ -55,10 +56,7 @@ export default function CashRegisterClosePage() {
 
       setSummary(await sumRes.json());
 
-      if (openRes.ok) {
-        setOpening(await openRes.json());
-      }
-
+      if (openRes.ok) setOpening(await openRes.json());
       if (closeRes.ok) {
         const c = await closeRes.json();
         setClosing(c);
@@ -71,7 +69,7 @@ export default function CashRegisterClosePage() {
         setRemarks(c.remarks || '');
       }
 
-    } catch (err) {
+    } catch (e) {
       setError('Error cargando datos');
     } finally {
       setLoading(false);
@@ -83,28 +81,27 @@ export default function CashRegisterClosePage() {
   }, [load]);
 
   // ===============================
-  // CALCULOS CORRECTOS
+  // DATA CALCS
   // ===============================
   const ventas = summary?.metodos || [];
 
-  const totalVentas =
-    ventas.reduce((a, b) => a + toNum(b.total_cobrado), 0);
+  const totalVentas = ventas.reduce(
+    (a, b) => a + toNum(b.total_cobrado),
+    0
+  );
 
-  const gastos =
-    (summary?.gastos || []).reduce((a, g) => a + toNum(g.monto), 0);
+  const gastos = (summary?.gastos || [])
+    .reduce((a, g) => a + toNum(g.monto), 0);
 
-  // 🔥 APERTURA REAL (SEPARADA)
+  // 🔥 APERTURA PRO REAL
   const aperturaEfectivo = toNum(opening?.total_efectivo);
   const aperturaBanca = toNum(opening?.monto_banca);
-
-  // 🔥 IMPORTANTE: banca se suma a transferencias
   const aperturaTotal = aperturaEfectivo + aperturaBanca;
 
-  const cajaTotal =
-    aperturaTotal + totalVentas - gastos;
+  const cajaTotal = aperturaTotal + totalVentas - gastos;
 
   // ===============================
-  // GUARDAR CIERRE
+  // SAVE
   // ===============================
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -123,30 +120,24 @@ export default function CashRegisterClosePage() {
         }),
       });
 
-      if (!res.ok) throw new Error('Error al guardar cierre');
+      if (!res.ok) throw new Error('Error al guardar');
 
       const closeData = await res.json();
 
-      setMsg('✔ Cierre guardado correctamente');
+      setMsg('✔ Cierre guardado');
 
       await load();
 
-      // ===============================
-      // 🖨️ AUTO PRINT TERMICO
-      // ===============================
-      if (window.printCashClose) {
-        window.printCashClose(closeData, summary, opening);
-      }
+      // AUTO PRINT
+      window.printCashClose?.(closeData, summary, opening);
 
-      // ===============================
-      // 📄 AUTO PDF
-      // ===============================
+      // AUTO PDF
       setTimeout(() => {
         document.getElementById('btn-pdf')?.click();
-      }, 500);
+      }, 600);
 
-    } catch (err) {
-      setError(err.message);
+    } catch (e) {
+      setError(e.message);
     }
   };
 
@@ -159,7 +150,7 @@ export default function CashRegisterClosePage() {
       {error && <div className="alert-error">{error}</div>}
       {msg && <div className="alert-success">{msg}</div>}
 
-      {loading && <div>Cargando...</div>}
+      {loading && <div className="loading">Cargando...</div>}
 
       {!loading && summary && (
 
@@ -170,10 +161,8 @@ export default function CashRegisterClosePage() {
 
             <div className="card">
               <h3>📦 Apertura</h3>
-
-              <p>Efectivo: {money(aperturaEfectivo)}</p>
-              <p>Banca: {money(aperturaBanca)}</p>
-
+              <div>Efectivo: {money(aperturaEfectivo)}</div>
+              <div>Banca (Transferencias): {money(aperturaBanca)}</div>
               <hr />
               <b>Total: {money(aperturaTotal)}</b>
             </div>
@@ -197,29 +186,22 @@ export default function CashRegisterClosePage() {
           {/* ================= RIGHT ================= */}
           <div className="cash-right">
 
-            {closing && <div className="lock">🔒 CIERRE YA REALIZADO</div>}
+            {closing && (
+              <div className="lock">🔒 CIERRE REALIZADO</div>
+            )}
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="form">
 
-              <div className="grid">
-                <label>Efectivo</label>
-                <input value={efectivo} onChange={e=>setEfectivo(e.target.value)} disabled={!!closing} />
-
-                <label>Transferencia</label>
-                <input value={transfer} onChange={e=>setTransfer(e.target.value)} disabled={!!closing} />
-
-                <label>Tarjeta</label>
-                <input value={tarjeta} onChange={e=>setTarjeta(e.target.value)} disabled={!!closing} />
-
-                <label>Propina</label>
-                <input value={propina} onChange={e=>setPropina(e.target.value)} disabled={!!closing} />
-              </div>
+              <input placeholder="Efectivo" value={efectivo} onChange={e=>setEfectivo(e.target.value)} disabled={!!closing}/>
+              <input placeholder="Transferencia" value={transfer} onChange={e=>setTransfer(e.target.value)} disabled={!!closing}/>
+              <input placeholder="Tarjeta" value={tarjeta} onChange={e=>setTarjeta(e.target.value)} disabled={!!closing}/>
+              <input placeholder="Propina" value={propina} onChange={e=>setPropina(e.target.value)} disabled={!!closing}/>
 
               <textarea
+                placeholder="Observaciones"
                 value={remarks}
                 onChange={e=>setRemarks(e.target.value)}
                 disabled={!!closing}
-                placeholder="Observaciones"
               />
 
               <button disabled={!!closing}>
@@ -230,14 +212,13 @@ export default function CashRegisterClosePage() {
 
             <div className="card total">
               <h3>📊 Resumen Final</h3>
-              <p>Total ventas: {money(totalVentas)}</p>
-              <p>Base + ventas - egresos</p>
+              <div>Ventas: {money(totalVentas)}</div>
+              <div>Caja total</div>
               <h2>{money(cajaTotal)}</h2>
             </div>
 
-            {/* BOTONES */}
             {closing && (
-              <>
+              <div className="actions">
                 <PrintCashClosePdfButton
                   close={closing}
                   opening={opening}
@@ -248,7 +229,7 @@ export default function CashRegisterClosePage() {
                   close={closing}
                   datos={summary}
                 />
-              </>
+              </div>
             )}
 
           </div>
