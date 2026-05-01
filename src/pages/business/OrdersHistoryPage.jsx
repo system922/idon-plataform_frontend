@@ -1,4 +1,29 @@
-ords) {
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, X, Printer, Edit2, Trash2, Save } from 'react-feather';
+import qz from 'qz-tray';
+import PageTemplate from '../../components/PageTemplate';
+import { useBusinessContext } from '../../admin/config/BusinessContext';
+import AddItemModal from '../../components/AddItemModal';
+import { fetchWithAuth } from '../../config/apiBase';
+import '../../styles/OrdersHistoryPage.css';
+
+// --- Helpers de impresión ---
+const PRINTER_NAME = 'POS-58';
+const WIDTH = 32;
+const line = () => '='.repeat(WIDTH);
+const sep = () => '-'.repeat(WIDTH);
+const center = (txt) => {
+  const t = String(txt || '').trim();
+  const pad = Math.max(0, Math.floor((WIDTH - t.length) / 2));
+  return ' '.repeat(pad) + t;
+};
+const wrap = (txt, width = WIDTH) => {
+  const str = String(txt ?? '').trim();
+  if (!str) return [];
+  const words = str.split(/\s+/);
+  const lines = [];
+  let cur = '';
+  for (const word of words) {
     const next = cur ? `${cur} ${word}` : word;
     if (next.length <= width) cur = next;
     else { if (cur) lines.push(cur); cur = word; }
