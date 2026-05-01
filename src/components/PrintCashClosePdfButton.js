@@ -1,6 +1,15 @@
 import jsPDF from "jspdf";
 import { fetchWithAuth } from '../config/apiBase';
 
+// Función para obtener el usuario operador del localStorage
+function getOperatorUser() {
+  try {
+    return JSON.parse(localStorage.getItem('idonUser') || '{}');
+  } catch {
+    return {};
+  }
+}
+
 export default function PrintCashClosePdfButton({ close, opening, summary }) {
 
   const download = async () => {
@@ -14,9 +23,10 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       const einvRes = await fetchWithAuth('/api/einvoicing/config');
       const einvData = einvRes.ok ? await einvRes.json() : null;
 
-      // Obtener datos del usuario actual
-      const userRes = await fetchWithAuth('/api/auth/me');
-      const userData = userRes.ok ? await userRes.json() : null;
+      // Obtener datos del usuario operador desde localStorage
+      const operador = getOperatorUser();
+      const userName = operador?.nombre || operador?.username || operador?.name || "N/A";
+      const userRole = operador?.role || operador?.rol || "Cajero";
 
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.width;
@@ -63,9 +73,9 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       
       doc.text(`Fecha y Hora: ${fechaCierre}`, 15, y);
       y += 4;
-      doc.text(`Usuario: ${userData?.name || userData?.username || "N/A"}`, 15, y);
+      doc.text(`Usuario: ${userName}`, 15, y);
       y += 4;
-      doc.text(`Cargo: ${userData?.role || "Cajero"}`, 15, y);
+      doc.text(`Cargo: ${userRole}`, 15, y);
       y += 4;
       doc.text(`ID Cierre: #${close?.id || Date.now()}`, 15, y);
 
@@ -181,7 +191,7 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
 
       // ============ CONTEO FÍSICO - BLOQUE VERDE UNIFICADO ============
       y += 10;
-      const alturaBloque = 50; // Altura total del bloque verde
+      const alturaBloque = 50;
       
       doc.setFillColor(46, 204, 113);
       doc.rect(15, y, pageWidth - 30, alturaBloque, 'F');
