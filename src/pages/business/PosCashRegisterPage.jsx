@@ -1,37 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { fetchWithAuth } from '../../config/apiBase';
-import qz from 'qz-tray';
-import { useBusinessContext } from '../../admin/config/BusinessContext';
-import usePrinterTicket from '../../hooks/usePrinterConfig';
 import '../../styles/CloseCash.css';
 
 // ===============================
-// 🔥 HELPERS ROBUSTOS
+// HELPERS
 // ===============================
 const toNum = (v) => {
   const n = Number(v);
   return isNaN(n) ? 0 : n;
 };
 
+const round2 = (n) =>
+  Math.round((n + Number.EPSILON) * 100) / 100;
+
 function money(val) {
-  const n = toNum(val);
-  return n.toLocaleString('es-EC', {
+  return toNum(val).toLocaleString('es-EC', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
   });
 }
 
-function getMetodoTotal(metodosArr, metodo) {
-  if (!Array.isArray(metodosArr)) return 0;
-  const obj = metodosArr.find(m => m.payment_method === metodo);
+function getMetodoTotal(arr, metodo) {
+  if (!Array.isArray(arr)) return 0;
+  const obj = arr.find(m => m.payment_method === metodo);
   return toNum(obj?.total_cobrado);
-}
-
-function getTotalVentas(metodosArr) {
-  if (!Array.isArray(metodosArr)) return 0;
-  return metodosArr.reduce((acc, m) => acc + toNum(m.total_cobrado), 0);
 }
 
 // ===============================
@@ -43,47 +37,39 @@ export default function CashRegisterClosePage() {
     timeZone: 'America/Guayaquil'
   });
 
-  const { selectedBusiness } = useBusinessContext();
-  const printerTicket = usePrinterTicket();
-
-  // DATA
   const [datos, setDatos] = useState(null);
+  const [apertura, setApertura] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // INPUTS (NUMERICOS REALES)
   const [efectivoFisico, setEfectivoFisico] = useState(0);
   const [transferFisico, setTransferFisico] = useState(0);
   const [tarjetaFisico, setTarjetaFisico] = useState(0);
-  const [propinaFisico, setPropinaFisico] = useState(0);
-  const [comandasFisico, setComandasFisico] = useState(0);
-  const [remarks, setRemarks] = useState('');
 
-  // UI
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
   // ===============================
-  // LOAD DATA
+  // LOAD
   // ===============================
   const load = useCallback(async () => {
     setLoading(true);
-    setError('');
 
     try {
-      const res = await fetchWithAuth(
-        `/api/pos/cash-register/summary?date=${today}`
-      );
+      const [summaryRes, openingRes] = await Promise.all([
+        fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`),
+        fetchWithAuth(`/api/pos/cash-register/opening?date=${today}`)
+      ]);
 
-      const data = await res.json();
+      const summaryData = await summaryRes.json();
+      setDatos(summaryData);
 
-      if (!res.ok) throw new Error('Error cargando summary');
-
-      setDatos(data);
+      if (openingRes.ok) {
+        const openData = await openingRes.json();
+        setApertura(openData);
+      }
 
     } catch (err) {
-      console.error(err);
-      setError('Error cargando datos del servidor');
-      setDatos(null);
+      setError('Error cargando datos');
     } finally {
       setLoading(false);
     }
@@ -94,72 +80,64 @@ export default function CashRegisterClosePage() {
   }, [load]);
 
   // ===============================
-  // CALCULOS
+  // DATOS BASE
   // ===============================
-  const gastosTotal = (datos?.gastos || []).reduce(
-    (acc, g) => acc + toNum(g.monto),
-    0
-  );
+  const aperturaCaja = toNum(apertura?.total_inicial);
 
-  const ventasSistema = getTotalVentas(datos?.metodos);
+  const cashVentas     = getMetodoTotal(datos?.metodos, 'cash');
+  const transferVentas = getMetodoTotal(datos?.metodos, 'transfer');
+  const cardVentas     = getMetodoTotal(datos?.metodos, 'card');
 
-  const ventasFisico =
+  // ===============================
+  // 🔥 ESPERADO REAL
+  // ===============================
+  const efectivoEsperado = round2(aperturaCaja + cashVentas);
+  const transferEsperado = round2(transferVentas);
+  const tarjetaEsperado  = round2(cardVentas);
+
+  const totalEsperado =
+    efectivoEsperado +
+    transferEsperado +
+    tarjetaEsperado;
+
+  // ===============================
+  // 🧮 DIFERENCIAS REALES
+  // ===============================
+  const diffCash     = round2(efectivoFisico - efectivoEsperado);
+  const diffTransfer = round2(transferFisico - transferEsperado);
+  const diffCard     = round2(tarjetaFisico - tarjetaEsperado);
+
+  const totalFisico =
     toNum(efectivoFisico) +
     toNum(transferFisico) +
     toNum(tarjetaFisico);
 
-  // ===============================
-  // DIFERENCIAS SEGURAS
-  // ===============================
-  const efectivoSistema = getMetodoTotal(datos?.metodos, 'cash');
-  const transferSistema = getMetodoTotal(datos?.metodos, 'transfer');
-  const tarjetaSistema = getMetodoTotal(datos?.metodos, 'card');
-
-  const diffCash = toNum(efectivoFisico) - efectivoSistema;
-  const diffTransfer = toNum(transferFisico) - transferSistema;
-  const diffCard = toNum(tarjetaFisico) - tarjetaSistema;
-
-  const diffTotal = ventasFisico - ventasSistema;
-
-  const netoSistema = ventasSistema - gastosTotal;
+  const diffTotal = round2(totalFisico - totalEsperado);
 
   // ===============================
-  // SUBMIT SEGURO
+  // SUBMIT
   // ===============================
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setMessage('');
 
     try {
-      const payload = {
-        efectivoFisico: toNum(efectivoFisico),
-        transferenciaFisico: toNum(transferFisico),
-        tarjetaFisico: toNum(tarjetaFisico),
-        propinaFisico: toNum(propinaFisico),
-        comandasFisico: parseInt(comandasFisico || 0),
-
-        date: today,
-        remarks: remarks || ''
-      };
-
       const res = await fetchWithAuth('/api/pos/cash-register/closing', {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          efectivoFisico,
+          transferenciaFisico: transferFisico,
+          tarjetaFisico,
+          date: today
+        }),
       });
 
-      const data = await res.json();
+      if (!res.ok) throw new Error('Error');
 
-      if (!res.ok) {
-        throw new Error(data?.error || 'Error guardando cierre');
-      }
-
-      setMessage('✅ Cuadre guardado correctamente');
+      setMessage('✅ Cierre guardado');
       load();
 
-    } catch (err) {
-      console.error("❌ ERROR SUBMIT:", err);
-      setError(err.message);
+    } catch {
+      setError('Error al guardar');
     }
   };
 
@@ -167,31 +145,37 @@ export default function CashRegisterClosePage() {
   // UI
   // ===============================
   return (
-    <PageTemplate title="Cuadre de Caja" theme="cash">
+    <PageTemplate title="Cuadre PRO">
 
+      {loading && <div>Cargando...</div>}
       {error && <div className="alert-error">{error}</div>}
       {message && <div className="alert-success">{message}</div>}
 
-      {loading && <div>Cargando...</div>}
-
-      {!loading && datos && (
+      {!loading && (
         <form onSubmit={handleSubmit} className="cash-close-form">
 
+          {/* 🔵 INFO APERTURA */}
+          <div className="cash-box">
+            <h3>APERTURA</h3>
+            <p>Total inicial: {money(aperturaCaja)}</p>
+          </div>
+
+          {/* 🧾 TABLA PRO */}
           <table className="cash-table">
             <thead>
               <tr>
-                <th>Concepto</th>
+                <th>Método</th>
+                <th>Esperado</th>
                 <th>Físico</th>
-                <th>Sistema</th>
                 <th>Diferencia</th>
               </tr>
             </thead>
 
             <tbody>
 
-              {/* EFECTIVO */}
               <tr>
                 <td>EFECTIVO</td>
+                <td>{money(efectivoEsperado)}</td>
                 <td>
                   <input
                     type="number"
@@ -200,13 +184,14 @@ export default function CashRegisterClosePage() {
                     onChange={e => setEfectivoFisico(e.target.value)}
                   />
                 </td>
-                <td>{money(efectivoSistema)}</td>
-                <td>{money(diffCash)}</td>
+                <td className={diffCash !== 0 ? 'diff-error' : 'diff-ok'}>
+                  {money(diffCash)}
+                </td>
               </tr>
 
-              {/* TRANSFER */}
               <tr>
                 <td>TRANSFER</td>
+                <td>{money(transferEsperado)}</td>
                 <td>
                   <input
                     type="number"
@@ -215,13 +200,14 @@ export default function CashRegisterClosePage() {
                     onChange={e => setTransferFisico(e.target.value)}
                   />
                 </td>
-                <td>{money(transferSistema)}</td>
-                <td>{money(diffTransfer)}</td>
+                <td className={diffTransfer !== 0 ? 'diff-error' : 'diff-ok'}>
+                  {money(diffTransfer)}
+                </td>
               </tr>
 
-              {/* TARJETA */}
               <tr>
                 <td>TARJETA</td>
+                <td>{money(tarjetaEsperado)}</td>
                 <td>
                   <input
                     type="number"
@@ -230,31 +216,25 @@ export default function CashRegisterClosePage() {
                     onChange={e => setTarjetaFisico(e.target.value)}
                   />
                 </td>
-                <td>{money(tarjetaSistema)}</td>
-                <td>{money(diffCard)}</td>
+                <td className={diffCard !== 0 ? 'diff-error' : 'diff-ok'}>
+                  {money(diffCard)}
+                </td>
               </tr>
 
-              {/* TOTAL */}
+              {/* 🔥 TOTAL REAL */}
               <tr>
-                <td><strong>TOTAL VENTAS</strong></td>
-                <td>{money(ventasFisico)}</td>
-                <td>{money(ventasSistema)}</td>
-                <td>{money(diffTotal)}</td>
+                <td><strong>TOTAL</strong></td>
+                <td>{money(totalEsperado)}</td>
+                <td>{money(totalFisico)}</td>
+                <td className={diffTotal !== 0 ? 'diff-error' : 'diff-ok'}>
+                  {money(diffTotal)}
+                </td>
               </tr>
 
             </tbody>
           </table>
 
-          <div><strong>Total gastos:</strong> {money(gastosTotal)}</div>
-          <div><strong>Neto sistema:</strong> {money(netoSistema)}</div>
-
-          <textarea
-            placeholder="Observaciones..."
-            value={remarks}
-            onChange={e => setRemarks(e.target.value)}
-          />
-
-          <button type="submit">Guardar Cuadre</button>
+          <button type="submit">Cerrar Caja</button>
 
         </form>
       )}
