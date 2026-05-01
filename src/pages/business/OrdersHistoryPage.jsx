@@ -1,29 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, Check, X, Printer, Edit2, Trash2, Save } from 'react-feather';
-import qz from 'qz-tray';
-import PageTemplate from '../../components/PageTemplate';
-import { useBusinessContext } from '../../admin/config/BusinessContext';
-import AddItemModal from '../../components/AddItemModal';
-import { fetchWithAuth } from '../../config/apiBase';
-import '../../styles/OrdersHistoryPage.css';
-
-// --- Helpers de impresión ---
-const PRINTER_NAME = 'POS-58';
-const WIDTH = 32;
-const line = () => '='.repeat(WIDTH);
-const sep = () => '-'.repeat(WIDTH);
-const center = (txt) => {
-  const t = String(txt || '').trim();
-  const pad = Math.max(0, Math.floor((WIDTH - t.length) / 2));
-  return ' '.repeat(pad) + t;
-};
-const wrap = (txt, width = WIDTH) => {
-  const str = String(txt ?? '').trim();
-  if (!str) return [];
-  const words = str.split(/\s+/);
-  const lines = [];
-  let cur = '';
-  for (const word of words) {
+ords) {
     const next = cur ? `${cur} ${word}` : word;
     if (next.length <= width) cur = next;
     else { if (cur) lines.push(cur); cur = word; }
@@ -80,7 +55,6 @@ function buildModificationComanda({
   out += center(`${tipoOrden} • ${hora}`) + '\n';
   out += line() + '\n';
 
-  // ITEMS ACTUALES
   if (remaining.length) {
     out += center('PRODUCTOS ACTUALES') + '\n';
     out += sep() + '\n';
@@ -97,7 +71,7 @@ function buildModificationComanda({
       out += sep() + '\n';
     });
   }
-  // REMOVIDOS
+
   if (removed.length) {
     out += center('PRODUCTOS REMOVIDOS') + '\n';
     out += sep() + '\n';
@@ -115,7 +89,6 @@ function buildModificationComanda({
     });
   }
 
-  // AGREGADOS
   if (added.length) {
     out += center('PRODUCTOS AGREGADOS') + '\n';
     out += sep() + '\n';
@@ -152,13 +125,11 @@ export default function OrdersHistoryPage() {
   const [printerConnected, setPrinterConnected] = useState(false);
   const tableRef = useRef(null);
 
-  // --- Modal estado y campos ---
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [cantidadItem, setCantidadItem] = useState(1);
   const [notasItem, setNotasItem] = useState('');
 
-  // QZ Tray
   useEffect(() => {
     (async () => {
       try {
@@ -186,7 +157,6 @@ export default function OrdersHistoryPage() {
     })();
   }, []);
 
-  // Cargar datos iniciales
   useEffect(() => {
     loadOrders();
     loadProductos();
@@ -223,7 +193,6 @@ export default function OrdersHistoryPage() {
     }
   };
 
-  // Print modificación con tachado/insertado estilo POS-Cocina
   const handlePrintModification = async (order, removedProducts = [], addedProducts = [], remainingItems=[]) => {
     try {
       if (!printerConnected) throw new Error('No hay impresora');
@@ -261,13 +230,11 @@ export default function OrdersHistoryPage() {
     }
   };
 
-  // Notificaciones
   const showNotification = (msg, type = 'info') => {
     setNotification({ msg, type });
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // Eliminar
   const handleDeleteOrder = async (orderId) => {
     if (!window.confirm('¿Seguro que deseas eliminar la orden?')) return;
     try {
@@ -281,7 +248,6 @@ export default function OrdersHistoryPage() {
     }
   };
 
-  // Guardar edición
   const handleSaveEdit = async () => {
     try {
       const remainingItems = editItems.filter(i => !i._remove);
@@ -295,7 +261,6 @@ export default function OrdersHistoryPage() {
       );
       const addedItems = remainingItems.filter(ri => ri._added);
 
-      // PATCH la orden en tu backend
       const res = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ items: remainingItems })
@@ -308,7 +273,6 @@ export default function OrdersHistoryPage() {
       setEditMode(false);
       setEditItems([]);
       
-      // Imprime modificación (si hay cambios)
       if (removedItems.length || addedItems.length) {
         await handlePrintModification(selectedOrder, removedItems, addedItems, remainingItems);
       }
@@ -319,7 +283,6 @@ export default function OrdersHistoryPage() {
     }
   };
 
-  // AGREGAR ITEM DESDE MODAL
   const agregarItem = () => {
     if (!productoSeleccionado) {
       showNotification('Selecciona un producto', 'warning');
@@ -350,7 +313,6 @@ export default function OrdersHistoryPage() {
       subtitle={`${orders.length} orden${orders.length !== 1 ? 'es' : ''} encontradas`}
     >
       <div className="checkout-main">
-        {/* Lista de órdenes */}
         <div className="orders-list-panel">
           <div className="panel-title">Historial de órdenes</div>
           <div className="search-box">
@@ -369,11 +331,11 @@ export default function OrdersHistoryPage() {
               <table ref={tableRef}>
                 <thead>
                   <tr>
-                    <th>Mesa / Orden</th>
-                    <th>Estado</th>
-                    <th>Items</th>
-                    <th>Total</th>
-                    <th>Acciones</th>
+                    <th>MESA / ORDEN</th>
+                    <th>ESTADO</th>
+                    <th>ITEMS</th>
+                    <th>TOTAL</th>
+                    <th>ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -404,40 +366,42 @@ export default function OrdersHistoryPage() {
                       <td>{order.items?.length || 0}</td>
                       <td className="amount">{fmt(order.total)}</td>
                       <td onClick={e => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          className="btn-edit"
-                          onClick={e => {
-                            e.stopPropagation();
-                            if (editMode) return;
-                            setSelectedOrder(order);
-                            setEditMode(true);
-                            setEditItems((order.items || []).map(i => ({ ...i })));
-                          }}
-                          disabled={editMode}
-                        >
-                          <Edit2 size={14} /> Editar
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-delete"
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleDeleteOrder(order.id);
-                          }}
-                        >
-                          <Trash2 size={13} /> Eliminar
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-print"
-                          onClick={e => {
-                            e.stopPropagation();
-                            handlePrintModification(order, [], [], order.items);
-                          }}
-                        >
-                          <Printer size={13} /> Reimprimir
-                        </button>
+                        <div className="action-buttons">
+                          <button
+                            type="button"
+                            className="btn-action btn-edit"
+                            onClick={e => {
+                              e.stopPropagation();
+                              if (editMode) return;
+                              setSelectedOrder(order);
+                              setEditMode(true);
+                              setEditItems((order.items || []).map(i => ({ ...i })));
+                            }}
+                            disabled={editMode}
+                          >
+                            <Edit2 size={13} /> Editar
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-action btn-delete"
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleDeleteOrder(order.id);
+                            }}
+                          >
+                            <Trash2 size={13} /> Eliminar
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-action btn-print"
+                            onClick={e => {
+                              e.stopPropagation();
+                              handlePrintModification(order, [], [], order.items);
+                            }}
+                          >
+                            <Printer size={13} /> Reimprimir
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -447,135 +411,122 @@ export default function OrdersHistoryPage() {
           </div>
         </div>
 
-        {/* Panel de detalle/editar */}
         {selectedOrder ? (
           <div className="payment-panel">
-            <div className="panel-title">
-              Detalle de la orden
-              {editMode && <span style={{ color: '#10b981', marginLeft: 10 }}>(Edición activa)</span>}
+            <div className="panel-header">
+              <h3 className="panel-title">
+                Detalle de la orden
+                {editMode && <span className="edit-badge">(Edición activa)</span>}
+              </h3>
             </div>
             <div className="order-summary">
-              <div className="summary-header">
-                <h3>
-                  {selectedOrder.mesa_numero != null ? `Mesa ${selectedOrder.mesa_numero}` : 'Sin Mesa'}
-                  &nbsp;<small>#{selectedOrder.order_number || selectedOrder.id}</small>
-                </h3>
+              <div className="order-info">
+                <h2 className="order-mesa">
+                  {selectedOrder.mesa_numero != null ? `Sin Mesa` : 'Sin Mesa'}
+                </h2>
+                <span className="order-number">#{selectedOrder.order_number || selectedOrder.id}</span>
               </div>
 
-              {/* Botón para abrir modal */}
               {editMode && (
-                <div style={{ margin: '16px 0' }}>
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={() => {
-                      setShowAddItemModal(true);
-                      setProductoSeleccionado(null);
-                      setCantidadItem(1);
-                      setNotasItem('');
-                    }}
-                  >
-                    + Agregar producto
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="btn-add-product"
+                  onClick={() => {
+                    setShowAddItemModal(true);
+                    setProductoSeleccionado(null);
+                    setCantidadItem(1);
+                    setNotasItem('');
+                  }}
+                >
+                  + Agregar producto
+                </button>
               )}
 
-              {/* Lista editable */}
-              {editMode ? (
-                <div className="items-list">
-                  {editItems.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className={`item-line${item._remove ? ' removed' : ''}${item._added ? ' added' : ''}`}
-                    >
-                      <span className="item-name">
-                        {item.quantity}x {item.product_name}
-                      </span>
-                      <span className="item-price">{fmt(item.unit_price * item.quantity)}</span>
-                      {item.nota && (
-                        <span style={{ color: '#b3b3b3', fontSize: 12, marginLeft: 6 }}>
-                          Nota: {item.nota}
-                        </span>
-                      )}
-                      {!item._remove && (
-                        <button
-                          type="button"
-                          className="btn-remove-item"
-                          onClick={() =>
-                            setEditItems(editItems.map((it, i) => (i === idx ? { ...it, _remove: true } : it)))
-                          }
-                          title="Quitar producto"
-                        >
-                          <X size={13} />
-                        </button>
-                      )}
-                      {item._added && (
-                        <span style={{ color: '#22d3ee', fontSize: 11, marginLeft: 7 }}>(agregado)</span>
-                      )}
-                      {item._remove && (
-                        <span style={{ color: '#e3342f', fontSize: 12, marginLeft: 10 }}>Eliminado</span>
-                      )}
+              <div className="items-list">
+                {editMode ? (
+                  <>
+                    {editItems.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className={`item-card${item._remove ? ' removed' : ''}${item._added ? ' added' : ''}`}
+                      >
+                        <div className="item-info">
+                          <div className="item-qty-name">
+                            <span className="item-qty">{item.quantity}x</span>
+                            <span className="item-name">{item.product_name}</span>
+                          </div>
+                          <span className="item-price">{fmt(item.unit_price * item.quantity)}</span>
+                        </div>
+                        {!item._remove && (
+                          <button
+                            type="button"
+                            className="btn-remove-x"
+                            onClick={() =>
+                              setEditItems(editItems.map((it, i) => (i === idx ? { ...it, _remove: true } : it)))
+                            }
+                            title="Quitar producto"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <div className="action-buttons-group">
+                      <button
+                        type="button"
+                        className="btn-save"
+                        onClick={handleSaveEdit}
+                      >
+                        <Save size={14} /> Guardar Cambios e Imprimir
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-cancel-edit"
+                        onClick={() => {
+                          setEditMode(false);
+                          setEditItems([]);
+                        }}
+                      >
+                        <X size={16} /> Cancelar
+                      </button>
                     </div>
-                  ))}
-                  <div style={{ marginTop: 14 }}>
-                    <button
-                      type="button"
-                      className="btn-complete"
-                      style={{ minWidth: 120, fontSize: 14, fontWeight: 800 }}
-                      onClick={handleSaveEdit}
-                    >
-                      <Save size={14} /> Guardar Cambios e Imprimir
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-cancel"
-                      style={{ marginLeft: 12 }}
-                      onClick={() => {
-                        setEditMode(false);
-                        setEditItems([]);
-                      }}
-                    >
-                      <X size={16} /> Cancelar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="items-list">
-                  {(selectedOrder.items || []).map((item, idx) => (
-                    <div key={idx} className="item-line">
-                      <span className="item-name">
-                        {item.quantity}x {item.product_name}
-                      </span>
-                      <span className="item-price">{fmt(item.unit_price * item.quantity)}</span>
-                      {item.nota && (
-                        <span style={{ color: '#b3b3b3', fontSize: 12, marginLeft: 6 }}>
-                          Nota: {item.nota}
-                        </span>
-                      )}
+                  </>
+                ) : (
+                  (selectedOrder.items || []).map((item, idx) => (
+                    <div key={idx} className="item-card">
+                      <div className="item-info">
+                        <div className="item-qty-name">
+                          <span className="item-qty">{item.quantity}x</span>
+                          <span className="item-name">{item.product_name}</span>
+                        </div>
+                        <span className="item-price">{fmt(item.unit_price * item.quantity)}</span>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="subtotal-line">
-                <span>Subtotal:</span>
-                <span>
-                  {fmt(
-                    !editMode
-                      ? selectedOrder.subtotal
-                      : editItems.filter(i => !i._remove).reduce((s, it) => s + it.unit_price * it.quantity, 0)
-                  )}
-                </span>
+                  ))
+                )}
               </div>
-              <div className="total-line">
-                <span>TOTAL:</span>
-                <span className="total-amount">
-                  {fmt(
-                    !editMode
-                      ? selectedOrder.total
-                      : editItems.filter(i => !i._remove).reduce((s, it) => s + it.unit_price * it.quantity, 0)
-                  )}
-                </span>
+
+              <div className="order-totals">
+                <div className="subtotal-row">
+                  <span>Subtotal:</span>
+                  <span>
+                    {fmt(
+                      !editMode
+                        ? selectedOrder.subtotal
+                        : editItems.filter(i => !i._remove).reduce((s, it) => s + it.unit_price * it.quantity, 0)
+                    )}
+                  </span>
+                </div>
+                <div className="total-row">
+                  <span>TOTAL:</span>
+                  <span className="total-value">
+                    {fmt(
+                      !editMode
+                        ? selectedOrder.total
+                        : editItems.filter(i => !i._remove).reduce((s, it) => s + it.unit_price * it.quantity, 0)
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -586,7 +537,6 @@ export default function OrdersHistoryPage() {
         )}
       </div>
 
-      {/* Modal para agregar items */}
       <AddItemModal
         showAddItemModal={showAddItemModal}
         setShowAddItemModal={setShowAddItemModal}
@@ -601,7 +551,6 @@ export default function OrdersHistoryPage() {
         categorias={categorias}
       />
 
-      {/* Notificaciones */}
       {notification && <div className={`notification ${notification.type}`}>{notification.msg}</div>}
     </PageTemplate>
   );
