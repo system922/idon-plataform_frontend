@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { fetchWithAuth } from '../../config/apiBase';
+import PrintCashCloseButton from '../../components/PrintCashCloseButton';
+import PrintCashClosePdfButton from '../../components/PrintCashClosePdfButton';
 import '../../styles/CloseCash.css';
 
 // ===============================
@@ -24,62 +26,54 @@ export default function CashRegisterClosePage() {
   });
 
   // ===============================
-  // STATE
+  // DATA
   // ===============================
   const [summary, setSummary] = useState(null);
   const [opening, setOpening] = useState(null);
   const [closing, setClosing] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [efectivo, setEfectivo] = useState(0);
+  // ===============================
+  // INPUTS (SOLO UNO POR VARIABLE)
+  // ===============================
+  const [cash, setCash] = useState(0);
   const [transfer, setTransfer] = useState(0);
-  const [tarjeta, setTarjeta] = useState(0);
-  const [propina, setPropina] = useState(0);
-  const [comandas, setComandas] = useState(0);
+  const [card, setCard] = useState(0);
+  const [tip, setTip] = useState(0);
+  const [orders, setOrders] = useState(0);
   const [remarks, setRemarks] = useState('');
 
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
 
   // ===============================
-  // LOAD DATA
+  // LOAD
   // ===============================
   const load = useCallback(async () => {
     setLoading(true);
-
     try {
-      // SUMMARY
-      const res = await fetchWithAuth(
-        `/api/pos/cash-register/summary?date=${today}`
-      );
-      const data = await res.json();
-      setSummary(data);
 
-      // OPENING
-      const openRes = await fetchWithAuth(
-        `/api/pos/cash-register/opening?date=${today}`
-      );
+      const [sumRes, openRes, closeRes] = await Promise.all([
+        fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`),
+        fetchWithAuth(`/api/pos/cash-register/opening?date=${today}`),
+        fetchWithAuth(`/api/pos/cash-register/full-closing?date=${today}`)
+      ]);
 
-      if (openRes.ok) {
-        setOpening(await openRes.json());
-      }
+      const sum = await sumRes.json();
+      setSummary(sum);
 
-      // CLOSING (SI EXISTE)
-      const closeRes = await fetchWithAuth(
-        `/api/pos/cash-register/full-closing?date=${today}`
-      );
+      if (openRes.ok) setOpening(await openRes.json());
 
       if (closeRes.ok) {
-        const close = await closeRes.json();
-        setClosing(close);
+        const c = await closeRes.json();
+        setClosing(c);
 
-        // bloquear inputs con datos existentes
-        setEfectivo(close.cash_counted || 0);
-        setTransfer(close.transfer_counted || 0);
-        setTarjeta(close.card_counted || 0);
-        setPropina(0);
-        setComandas(close.orders_counted || 0);
-        setRemarks(close.remarks || '');
+        // preload cierre (bloqueado)
+        setCash(c.cash_counted || 0);
+        setTransfer(c.transfer_counted || 0);
+        setCard(c.card_counted || 0);
+        setOrders(c.orders_counted || 0);
+        setRemarks(c.remarks || '');
       }
 
     } catch (err) {
@@ -89,9 +83,7 @@ export default function CashRegisterClosePage() {
     }
   }, [today]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   // ===============================
   // CALCULOS
@@ -112,30 +104,28 @@ export default function CashRegisterClosePage() {
     toNum(opening?.total_efectivo) +
     toNum(opening?.monto_banca);
 
-  const cajaTotal =
-    aperturaTotal + totalVentas - gastos;
+  const cajaFinal = aperturaTotal + totalVentas - gastos;
 
   // ===============================
   // GUARDAR
   // ===============================
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const res = await fetchWithAuth('/api/pos/cash-register/closing', {
         method: 'POST',
         body: JSON.stringify({
-          efectivoFisico: efectivo,
+          efectivoFisico: cash,
           transferenciaFisico: transfer,
-          tarjetaFisico: tarjeta,
-          propinaFisico: propina,
-          comandasFisico: comandas,
+          tarjetaFisico: card,
+          propinaFisico: tip,
+          comandasFisico: orders,
           date: today,
           remarks
         }),
       });
 
-      if (!res.ok) throw new Error('Error al guardar');
+      if (!res.ok) throw new Error('Error guardando cierre');
 
       setMsg('✔ Cierre guardado correctamente');
       load();
@@ -157,22 +147,22 @@ export default function CashRegisterClosePage() {
       {loading && <div>Cargando...</div>}
 
       {!loading && summary && (
+
         <div className="cash-layout">
 
-          {/* ================= LEFT SIDE ================= */}
+          {/* ================= LEFT ================= */}
           <div className="cash-left">
 
-            {/* APERTURA */}
             <div className="card">
-              <h3>📦 Apertura</h3>
-              <p>Efectivo: {money(opening?.total_efectivo)}</p>
+              <h3>📦 Apertura de Caja</h3>
+              <p>Efectivo inicial: {money(opening?.total_efectivo)}</p>
               <p>Banca (transferencias): {money(opening?.monto_banca)}</p>
-              <p><b>Total:</b> {money(aperturaTotal)}</p>
+              <hr />
+              <b>Total apertura: {money(aperturaTotal)}</b>
             </div>
 
-            {/* EGRESOS */}
             <div className="card">
-              <h3>💸 Egresos</h3>
+              <h3>💸 Egresos del día</h3>
 
               {(summary?.gastos || []).map((g, i) => (
                 <div key={i} className="row">
@@ -182,17 +172,16 @@ export default function CashRegisterClosePage() {
               ))}
 
               <hr />
-              <b>Total: {money(gastos)}</b>
+              <b>Total gastos: {money(gastos)}</b>
             </div>
+
           </div>
 
-          {/* ================= RIGHT SIDE ================= */}
+          {/* ================= RIGHT (70%) ================= */}
           <div className="cash-right">
 
             {closing && (
-              <div className="lock">
-                🔒 CIERRE YA REALIZADO
-              </div>
+              <div className="lock">🔒 CIERRE YA REGISTRADO</div>
             )}
 
             <form onSubmit={handleSubmit}>
@@ -200,32 +189,16 @@ export default function CashRegisterClosePage() {
               <div className="grid">
 
                 <label>Efectivo</label>
-                <input
-                  value={efectivo}
-                  onChange={e => setEfectivo(e.target.value)}
-                  disabled={!!closing}
-                />
+                <input value={cash} onChange={e => setCash(e.target.value)} disabled={!!closing} />
 
                 <label>Transferencia</label>
-                <input
-                  value={transfer}
-                  onChange={e => setTransfer(e.target.value)}
-                  disabled={!!closing}
-                />
+                <input value={transfer} onChange={e => setTransfer(e.target.value)} disabled={!!closing} />
 
                 <label>Tarjeta</label>
-                <input
-                  value={tarjeta}
-                  onChange={e => setTarjeta(e.target.value)}
-                  disabled={!!closing}
-                />
+                <input value={card} onChange={e => setCard(e.target.value)} disabled={!!closing} />
 
                 <label>Propina</label>
-                <input
-                  value={propina}
-                  onChange={e => setPropina(e.target.value)}
-                  disabled={!!closing}
-                />
+                <input value={tip} onChange={e => setTip(e.target.value)} disabled={!!closing} />
 
               </div>
 
@@ -239,15 +212,31 @@ export default function CashRegisterClosePage() {
               <button disabled={!!closing}>
                 {closing ? 'Cerrado' : 'Guardar cierre'}
               </button>
-
             </form>
 
-            {/* RESUMEN FINAL */}
+            {/* ================= REPORT ACTIONS ================= */}
+            {closing && (
+              <div className="actions">
+
+                <PrintCashCloseButton
+                  close={closing}
+                  datos={summary}
+                  className="btn"
+                />
+
+                <PrintCashClosePdfButton
+                  close={closing}
+                  datos={summary}
+                  className="btn btn-pdf"
+                />
+
+              </div>
+            )}
+
             <div className="card total">
-              <h3>📊 Resumen</h3>
-              <p>Ventas: {money(totalVentas)}</p>
-              <p>Apertura + ventas - gastos</p>
-              <h2>{money(cajaTotal)}</h2>
+              <h3>📊 Caja Final</h3>
+              <p>Apertura + Ventas - Gastos</p>
+              <h2>{money(cajaFinal)}</h2>
             </div>
 
           </div>
