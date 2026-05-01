@@ -14,6 +14,7 @@
    📦 LEFT PANEL (APERTURA + EGRESOS)
 ================================*/
 .cash-left {
+  
   width: 30%;
   display: flex;
   flex-direction: column;
@@ -81,6 +82,10 @@
 
 .total h3 {
   color: #fff;
+}
+
+.total h3:hover {
+  color: #111827;
 }
 
 .total h2 {

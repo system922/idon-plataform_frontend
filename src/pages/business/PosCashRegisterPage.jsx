@@ -167,7 +167,7 @@ export default function CashRegisterClosePage() {
           <div className="cash-left">
 
             <div className="card">
-              <h3>📦 Apertura</h3>
+              <h3>📦 APERTURA</h3>
               <div className="row">
                 <span>Efectivo:</span>
                 <span>{money(aperturaEfectivo)}</span>
@@ -199,7 +199,7 @@ export default function CashRegisterClosePage() {
             </div>
 
             <div className="card">
-              <h3>💸 Egresos</h3>
+              <h3>💸 EGRESOS</h3>
               {(summary?.gastos || []).length > 0 ? (
                 (summary?.gastos || []).map((g, i) => (
                   <div key={i} className="row">
@@ -218,7 +218,7 @@ export default function CashRegisterClosePage() {
             </div>
 
             <div className="card total">
-              <h3>📊 Caja esperada (Sistema)</h3>
+              <h3>📊 CAJA ESPERADO (SISTEMA)</h3>
               <div className="row">
                 <span>Apertura:</span>
                 <span>{money(aperturaTotal)}</span>
@@ -248,7 +248,7 @@ export default function CashRegisterClosePage() {
             )}
 
             <div className="card">
-              <h3>💵 Conteo físico de caja</h3>
+              <h3>💵 CONTEO FÍSICO EN CAJA</h3>
               <p style={{ fontSize: 13, color: '#888', marginBottom: 15 }}>
                 Ingresa los montos reales que tienes físicamente
               </p>
@@ -256,7 +256,7 @@ export default function CashRegisterClosePage() {
               <form onSubmit={handleSubmit} className="form">
 
                 <label>
-                  <span>Efectivo contado:</span>
+                  <span>Efectivo:</span>
                   <input 
                     type="number" 
                     step="0.01"
@@ -268,7 +268,7 @@ export default function CashRegisterClosePage() {
                 </label>
 
                 <label>
-                  <span>Transferencias contadas:</span>
+                  <span>Transferencias:</span>
                   <input 
                     type="number" 
                     step="0.01"
@@ -280,7 +280,7 @@ export default function CashRegisterClosePage() {
                 </label>
 
                 <label>
-                  <span>Tarjetas contadas:</span>
+                  <span>Tarjeta:</span>
                   <input 
                     type="number" 
                     step="0.01"
@@ -292,7 +292,7 @@ export default function CashRegisterClosePage() {
                 </label>
 
                 <label>
-                  <span>Propinas contadas:</span>
+                  <span>Propina:</span>
                   <input 
                     type="number" 
                     step="0.01"
@@ -324,7 +324,7 @@ export default function CashRegisterClosePage() {
             {/* RESUMEN DE CONTEO */}
             {(efectivo > 0 || transfer > 0 || tarjeta > 0 || propina > 0) && (
               <div className="card">
-                <h3>🧮 Resumen del conteo</h3>
+                <h3>🧮 RESUMEN DEL CONTEO</h3>
                 <div className="row">
                   <span>Total contado:</span>
                   <span style={{ fontWeight: 700, fontSize: 16 }}>{money(totalContado)}</span>

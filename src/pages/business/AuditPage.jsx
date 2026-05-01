@@ -12,6 +12,23 @@ function formatMoney(val) {
     : val;
 }
 
+function formatDateEC(date) {
+  if (!date) return "-";
+  try {
+    return new Date(date).toLocaleString('es-EC', {
+      timeZone: 'America/Guayaquil',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  } catch {
+    return date;
+  }
+}
+
 function actionLabelStyle(action) {
   switch ((action || "").toLowerCase()) {
     case "drawer_expense":
@@ -28,9 +45,7 @@ function actionLabelStyle(action) {
 export default function CoreAuditLog() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState('');
-
-  // ── Carga de auditoría ─────────────────────────────────────────────────────
+  const [err, setErr] = '';
 
   const loadAuditLogs = async () => {
     setLoading(true);
@@ -48,8 +63,6 @@ export default function CoreAuditLog() {
   };
 
   useEffect(() => { loadAuditLogs(); }, []);
-
-  // ── Render ─────────────────────────────────────────────────────────────────
 
   const headerAction = (
     <button onClick={loadAuditLogs} disabled={loading} style={{
@@ -139,14 +152,14 @@ export default function CoreAuditLog() {
                       {actionDetails.label}
                     </span>
                     <div style={{ color: "#8793aa", fontSize: 14, fontWeight: 500 }}>
-                      {log.created_at?.replace('T', ' ').split('.')[0]}
+                      {formatDateEC(log.created_at)}
                     </div>
                   </div>
                 </div>
                 <div style={{ fontSize: 15, marginBottom: 0 }}>
                   <b>Usuario:</b> <User size={13} style={{ verticalAlign: '-1px' }} /> {log.user_display_name || log.user_id || "-"}
                 </div>
-                <div style={{ fontSize: 15, color: "#373c6b", minHeight: 22, margin: "0 0 0 0", fontWeight: 600 }}>
+                <div style={{ fontSize: 15, color: "#373c6b", minHeight: 22, fontWeight: 600 }}>
                   <b>Descripción:</b> {log.description}
                 </div>
                 {isExpense && amount &&
@@ -159,7 +172,7 @@ export default function CoreAuditLog() {
                     fontSize: 17,
                     margin: "7px 0 2px"
                   }}>
-                    <FiDollarSign />{" "}Total:{' '}
+                    <FiDollarSign /> Total:
                     <span style={{color:"#c37e2c", fontWeight:900, marginLeft:3}}>{amount}</span>
                   </div>
                 }
