@@ -25,8 +25,21 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
 
       // Obtener datos del usuario operador desde localStorage
       const operador = getOperatorUser();
-      const userName = operador?.nombre || operador?.username || operador?.name || "N/A";
-      const userRole = operador?.role || operador?.rol || "Cajero";
+      
+      // 🔥 DEBUG: Descomentar para ver qué hay en localStorage
+      console.log('Operador desde localStorage:', operador);
+      
+      // Intentar obtener el nombre del operador de múltiples formas
+      const userName = operador?.nombre || 
+                       operador?.name || 
+                       operador?.username || 
+                       operador?.email?.split('@')[0] || 
+                       "N/A";
+      
+      const userRole = operador?.role || 
+                       operador?.rol || 
+                       operador?.cargo || 
+                       "Cajero/a";
 
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.width;
