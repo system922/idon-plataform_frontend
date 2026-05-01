@@ -1,142 +1,173 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { fetchWithAuth } from '../../config/apiBase';
+
+import PrintCashCloseButton from '../../components/PrintCashCloseButton';
+import PrintCashClosePdfButton from '../../components/PrintCashClosePdfButton';
+
 import '../../styles/CloseCash.css';
 
-// ===============================
-// HELPERS
-// ===============================
-const toNum = (v) => {
-  const n = Number(v);
-  return isNaN(n) ? 0 : n;
-};
+const toNum = (v) => isNaN(Number(v)) ? 0 : Number(v);
 
-const round2 = (n) =>
-  Math.round((n + Number.EPSILON) * 100) / 100;
-
-const money = (val) =>
-  toNum(val).toLocaleString('es-EC', {
+const money = (v) =>
+  toNum(v).toLocaleString('es-EC', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'USD'
   });
 
-// ===============================
-// COMPONENT
-// ===============================
 export default function CashRegisterClosePage() {
 
   const today = new Date().toLocaleDateString('en-CA', {
     timeZone: 'America/Guayaquil'
   });
 
-  // DATA
   const [datos, setDatos] = useState(null);
-  const [apertura, setApertura] = useState(null);
+  const [opening, setOpening] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // INPUTS
   const [efectivoFisico, setEfectivoFisico] = useState(0);
   const [transferFisico, setTransferFisico] = useState(0);
   const [tarjetaFisico, setTarjetaFisico] = useState(0);
 
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [closeSaved, setCloseSaved] = useState(null);
 
   // ===============================
-  // LOAD
+  // LOAD DATA
   // ===============================
   const load = useCallback(async () => {
-    try {
-      setLoading(true);
+    setLoading(true);
 
-      const [resSummary, resOpening] = await Promise.all([
+    try {
+      const [summaryRes, openingRes] = await Promise.all([
         fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`),
         fetchWithAuth(`/api/pos/cash-register/opening?date=${today}`)
       ]);
 
-      const dataSummary = await resSummary.json();
-      const dataOpening = resOpening.ok ? await resOpening.json() : null;
+      const summary = await summaryRes.json();
+      const openingData = openingRes.ok ? await openingRes.json() : null;
 
-      setDatos(dataSummary);
-      setApertura(dataOpening);
+      setDatos(summary);
+      setOpening(openingData);
 
     } catch (err) {
-      setError('Error cargando datos');
+      console.error(err);
     } finally {
       setLoading(false);
     }
   }, [today]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   // ===============================
   // CALCULOS
   // ===============================
-  const ventas = datos?.metodos || [];
-  const gastos = datos?.gastos || [];
 
-  const efectivoSistema = ventas.find(v => v.payment_method === 'cash')?.total_cobrado || 0;
-  const transferSistema = ventas.find(v => v.payment_method === 'transfer')?.total_cobrado || 0;
-  const tarjetaSistema  = ventas.find(v => v.payment_method === 'card')?.total_cobrado || 0;
+  const gastosTotal = (datos?.gastos || [])
+    .reduce((a, b) => a + toNum(b.monto), 0);
 
-  const gastosTotal = gastos.reduce((a, g) => a + toNum(g.monto), 0);
+  const cashVentas = datos?.metodos?.find(m => m.payment_method === 'cash')?.total_cobrado || 0;
+  const transferVentas = datos?.metodos?.find(m => m.payment_method === 'transfer')?.total_cobrado || 0;
+  const cardVentas = datos?.metodos?.find(m => m.payment_method === 'card')?.total_cobrado || 0;
 
-  const aperturaEfectivo = toNum(apertura?.total_efectivo);
+  // 🧠 APERTURA
+  const aperturaEfectivo = toNum(opening?.total_efectivo);
+  const aperturaBanca = toNum(opening?.monto_banca);
 
-  // 🔥 EFECTIVO REAL ESPERADO
+  // ===============================
+  // ESPERADO REAL
+  // ===============================
   const efectivoEsperado =
-    aperturaEfectivo +
-    toNum(efectivoSistema) -
-    gastosTotal;
+    aperturaEfectivo + toNum(cashVentas) - gastosTotal;
 
-  const diffCash = round2(toNum(efectivoFisico) - efectivoEsperado);
+  const transferEsperado =
+    aperturaBanca + toNum(transferVentas);
+
+  const tarjetaEsperado = toNum(cardVentas);
 
   // ===============================
-  // UI
+  // DIFERENCIAS
   // ===============================
-  if (loading) return <PageTemplate title="Caja">Cargando...</PageTemplate>;
+  const diffCash = toNum(efectivoFisico) - efectivoEsperado;
+  const diffTransfer = toNum(transferFisico) - transferEsperado;
+  const diffCard = toNum(tarjetaFisico) - tarjetaEsperado;
+
+  // ===============================
+  // GUARDAR
+  // ===============================
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const res = await fetchWithAuth('/api/pos/cash-register/closing', {
+      method: 'POST',
+      body: JSON.stringify({
+        efectivoFisico,
+        transferenciaFisico: transferFisico,
+        tarjetaFisico
+      })
+    });
+
+    const data = await res.json();
+    setCloseSaved(data);
+    alert("Cierre guardado correctamente");
+  };
+
+  if (loading) return <div>Cargando...</div>;
 
   return (
     <PageTemplate title="Cuadre de Caja">
 
       <div className="cash-grid">
 
-        {/* ================= LEFT ================= */}
+        {/* =========================
+            🟦 IZQUIERDA
+        ========================= */}
         <div className="left-panel">
 
           {/* APERTURA */}
           <div className="card">
-            <h3>APERTURA</h3>
-            <p className="amount">{money(aperturaEfectivo)}</p>
+            <h3>Apertura</h3>
+
+            <p>Efectivo: {money(aperturaEfectivo)}</p>
+            <p>Banca (transfer): {money(aperturaBanca)}</p>
+
+            <hr />
+
+            <p>
+              <strong>Total:</strong>{" "}
+              {money(aperturaEfectivo + aperturaBanca)}
+            </p>
           </div>
 
           {/* EGRESOS */}
           <div className="card">
-            <h3>EGRESOS</h3>
+            <h3>Egresos</h3>
 
-            {gastos.length === 0 && <p>No hay gastos</p>}
-
-            {gastos.map((g, i) => (
-              <div key={i} className="expense-item">
+            {(datos?.gastos || []).map((g, i) => (
+              <div key={i} className="row">
                 <span>{g.concepto}</span>
                 <span>{money(g.monto)}</span>
               </div>
             ))}
 
-            <div className="total">
-              Total: {money(gastosTotal)}
-            </div>
+            <hr />
+
+            <p>
+              <strong>Total:</strong> {money(gastosTotal)}
+            </p>
           </div>
 
         </div>
 
-        {/* ================= RIGHT ================= */}
+        {/* =========================
+            🟩 DERECHA (70%)
+        ========================= */}
         <div className="right-panel">
 
-          <div className="card big">
+          <form onSubmit={handleSubmit}>
 
-            <h3>CIERRE DE CAJA</h3>
-
-            <table>
+            <table className="cash-table">
               <thead>
                 <tr>
                   <th>Método</th>
@@ -149,44 +180,33 @@ export default function CashRegisterClosePage() {
               <tbody>
 
                 <tr>
-                  <td>EFECTIVO</td>
+                  <td>Efectivo</td>
                   <td>{money(efectivoEsperado)}</td>
                   <td>
-                    <input
-                      type="number"
-                      value={efectivoFisico}
-                      onChange={e => setEfectivoFisico(e.target.value)}
-                    />
+                    <input value={efectivoFisico}
+                      onChange={e => setEfectivoFisico(e.target.value)} />
                   </td>
-                  <td className={diffCash !== 0 ? 'danger' : ''}>
-                    {money(diffCash)}
-                  </td>
+                  <td>{money(diffCash)}</td>
                 </tr>
 
                 <tr>
-                  <td>TRANSFER</td>
-                  <td>{money(transferSistema)}</td>
+                  <td>Transfer</td>
+                  <td>{money(transferEsperado)}</td>
                   <td>
-                    <input
-                      type="number"
-                      value={transferFisico}
-                      onChange={e => setTransferFisico(e.target.value)}
-                    />
+                    <input value={transferFisico}
+                      onChange={e => setTransferFisico(e.target.value)} />
                   </td>
-                  <td>{money(toNum(transferFisico) - transferSistema)}</td>
+                  <td>{money(diffTransfer)}</td>
                 </tr>
 
                 <tr>
-                  <td>TARJETA</td>
-                  <td>{money(tarjetaSistema)}</td>
+                  <td>Tarjeta</td>
+                  <td>{money(tarjetaEsperado)}</td>
                   <td>
-                    <input
-                      type="number"
-                      value={tarjetaFisico}
-                      onChange={e => setTarjetaFisico(e.target.value)}
-                    />
+                    <input value={tarjetaFisico}
+                      onChange={e => setTarjetaFisico(e.target.value)} />
                   </td>
-                  <td>{money(toNum(tarjetaFisico) - tarjetaSistema)}</td>
+                  <td>{money(diffCard)}</td>
                 </tr>
 
               </tbody>
@@ -196,7 +216,29 @@ export default function CashRegisterClosePage() {
               Cerrar Caja
             </button>
 
-          </div>
+          </form>
+
+          {/* =========================
+              🖨️ PRINT + PDF
+          ========================= */}
+          {closeSaved && (
+            <div style={{ marginTop: 20 }}>
+
+              <PrintCashCloseButton
+                close={closeSaved}
+                datos={datos}
+                printerTicket={{ name: "POS-58", width: 32 }}
+                printerConnected={true}
+              />
+
+              <PrintCashClosePdfButton
+                close={closeSaved}
+                datos={datos}
+                opening={opening}
+              />
+
+            </div>
+          )}
 
         </div>
 
