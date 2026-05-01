@@ -12,19 +12,6 @@ function formatMoney(val) {
     : val;
 }
 
-// ✅ NUEVO: formateo correcto a Ecuador (una sola vez)
-function formatDateEC(date) {
-  if (!date) return "-";
-  try {
-    return new Date(date).toLocaleString('es-EC', {
-      timeZone: 'America/Guayaquil',
-      hour12: false
-    });
-  } catch {
-    return date;
-  }
-}
-
 function actionLabelStyle(action) {
   switch ((action || "").toLowerCase()) {
     case "drawer_expense":
@@ -41,9 +28,7 @@ function actionLabelStyle(action) {
 export default function CoreAuditLog() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = '';
-
-  // ── Carga de auditoría ─────────────────────────────────────────────────────
+  const [err, setErr] = useState('');
 
   const loadAuditLogs = async () => {
     setLoading(true);
@@ -51,17 +36,7 @@ export default function CoreAuditLog() {
     try {
       const res = await fetchWithAuth('/api/audit-log');
       const data = await res.json();
-
-      // ✅ OPTIMIZACIÓN: formatear fecha UNA sola vez
-      const logsFormatted = Array.isArray(data.logs)
-        ? data.logs.map(log => ({
-            ...log,
-            created_at_ec: formatDateEC(log.created_at)
-          }))
-        : [];
-
-      setLogs(logsFormatted);
-
+      setLogs(Array.isArray(data.logs) ? data.logs : []);
     } catch (error) {
       setLogs([]);
       setErr(error.message || 'Error al cargar auditoría.');
@@ -71,8 +46,6 @@ export default function CoreAuditLog() {
   };
 
   useEffect(() => { loadAuditLogs(); }, []);
-
-  // ── Render ─────────────────────────────────────────────────────────────────
 
   const headerAction = (
     <button onClick={loadAuditLogs} disabled={loading} style={{
@@ -166,9 +139,14 @@ export default function CoreAuditLog() {
                       {actionDetails.label}
                     </span>
 
-                    {/* ✅ USO CORRECTO */}
+                    {/* ✅ FECHA ECUADOR CORREGIDA */}
                     <div style={{ color: "#8793aa", fontSize: 14, fontWeight: 500 }}>
-                      {log.created_at_ec || log.created_at}
+                      {log.created_at
+                        ? new Date(log.created_at).toLocaleString('es-EC', {
+                            timeZone: 'America/Guayaquil',
+                            hour12: false
+                          })
+                        : "-"}
                     </div>
                   </div>
                 </div>
