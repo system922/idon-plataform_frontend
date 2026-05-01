@@ -12,7 +12,7 @@ import {
   FiDollarSign, FiClipboard, FiThermometer, FiTruck, FiGrid,
   FiCalendar, FiStar, FiShoppingBag, FiClock, FiUsers,
   FiUserCheck, FiMap, FiMapPin, FiList, FiGlobe, FiBell,
-  FiFileText, FiUser, FiAlertCircle, FiZap, FiMenu,
+  FiFileText, FiUser, FiAlertCircle, FiZap, FiMenu, FiInbox,
 } from 'react-icons/fi';
 import API_BASE, { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/BusinessLayout.css';
@@ -20,6 +20,7 @@ import '../../styles/BusinessLayout.css';
 import { BusinessContextProvider } from '../../admin/config/BusinessContext';
 import AperturaCajaPage from '../../pages/business/AperturaCajaPage';
 import { useAutoPrint } from '../../hooks/useAutoPrint';
+import { useCashDrawer } from '../../hooks/useCashDrawer';
 
 const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
 
@@ -50,13 +51,6 @@ const MOD_ICONS = {
   einvoicing:    <FiFileText    size={17}/>,
 };
 
-/**
- * Transforma la respuesta del API al formato de SidebarModern.
- *
- * Si el módulo tiene features (sub-ítems) → sección expandible.
- * Si solo tiene 1 página sin features → link directo.
- */
-// Convierte "Nombre de Página" → "nombre-de-pagina"
 const toSlug = (str = '') =>
   str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -68,29 +62,24 @@ function buildSidebarMenu(navData) {
     const icon  = MOD_ICONS[mod.code] || <FiZap size={17}/>;
     const pages = mod.pages || [];
 
-    // Normaliza el path del backend agregando el prefijo /app si falta
     const resolvePath = (rawPath, fallback) => {
       if (!rawPath) return fallback;
       return rawPath.startsWith('/app') ? rawPath : `/app${rawPath}`;
     };
 
-    // Módulo con múltiples páginas/features → sección con sub-ítems
     if (pages.length > 1) {
-      // Página principal del módulo (isMain o la primera con nombre/código "general")
       const mainPage =
         pages.find(p => p.isMain) ||
         pages.find(p => (p.code || '').split('.').pop() === 'general') ||
         pages[0];
 
       const mainPath = resolvePath(mainPage?.path, `/app/${mod.code}`);
-
-      // Excluir la página principal de los sub-ítems (ya actúa como destino del header)
       const subPages = pages.filter(p => p !== mainPage);
 
       return {
         section: mod.name,
         icon,
-        path: mainPath,   // ← ruta del header (para navegar al hacer click)
+        path: mainPath,
         items: subPages.map(page => ({
           label: page.name,
           path:  resolvePath(page.path, `/app/${mod.code}/${toSlug(page.name)}`),
@@ -99,7 +88,6 @@ function buildSidebarMenu(navData) {
       };
     }
 
-    // Módulo con 1 sola página → link directo
     const single = pages[0];
     return {
       label: mod.name,
@@ -109,9 +97,6 @@ function buildSidebarMenu(navData) {
   });
 }
 
-/* ══════════════════════════════════════════════════════════
-   BUSINESS LAYOUT
-══════════════════════════════════════════════════════════ */
 const getStoredBiz = () => {
   try { return JSON.parse(localStorage.getItem('selectedBusiness') || 'null'); }
   catch { return null; }
@@ -123,8 +108,49 @@ const isCashierRole = (user) => {
   return CASHIER_ROLES.some(r => role.includes(r));
 };
 
+function getOperatorUser() {
+  try {
+    return JSON.parse(localStorage.getItem('idonUser') || '{}');
+  } catch {
+    return {};
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   MODAL DE ALERTA DE APERTURA
+══════════════════════════════════════════════════════════ */
+function AlertaAperturaModal({ onAceptar, abriendo }) {
+  return (
+    <div className="apertura-alert-overlay">
+      <div className="apertura-alert-modal">
+        <div className="apertura-alert-icon">
+          <FiInbox size={48} color="#10b981" />
+        </div>
+        <h2 className="apertura-alert-title">Apertura de Caja Requerida</h2>
+        <p className="apertura-alert-message">
+          Debes registrar la apertura de caja antes de comenzar a operar.
+          Al presionar "Aceptar", se abrirá el cajón físico y podrás ingresar los datos iniciales.
+        </p>
+        <button
+          type="button"
+          className="apertura-alert-btn"
+          onClick={onAceptar}
+          disabled={abriendo}
+        >
+          {abriendo ? 'Abriendo caja...' : 'Aceptar y Abrir Caja'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   BUSINESS LAYOUT
+══════════════════════════════════════════════════════════ */
 export default function BusinessLayout({ user, onLogout }) {
   const navigate   = useNavigate();
+  const openDrawer = useCashDrawer();
+  
   const [navData,      setNavData]      = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
@@ -133,27 +159,36 @@ export default function BusinessLayout({ user, onLogout }) {
   const [isSuspended,  setIsSuspended]  = useState(false);
   const [selectedBiz,  setSelectedBiz]  = useState(getStoredBiz);
 
-  // ── Impresión automática de comandas (laptop del cajero/dueño) ───────────
   useAutoPrint({ businessId: selectedBiz?.id, enabled: !!selectedBiz?.id });
 
   // ── Apertura de caja ──────────────────────────────────────────────────────
-  const [aperturaChecked,  setAperturaChecked]  = useState(false);
-  const [aperturaHecha,    setAperturaHecha]     = useState(true);  // true = no bloquea hasta saber
+  const [aperturaChecked,     setAperturaChecked]     = useState(false);
+  const [aperturaHecha,       setAperturaHecha]       = useState(true);
+  const [mostrarAlerta,       setMostrarAlerta]       = useState(false);
+  const [mostrarFormulario,   setMostrarFormulario]   = useState(false);
+  const [abriendoCaja,        setAbriendoCaja]        = useState(false);
 
   const checkApertura = useCallback(async () => {
-    if (!isCashierRole(user)) { setAperturaChecked(true); setAperturaHecha(true); return; }
+    if (!isCashierRole(user)) { 
+      setAperturaChecked(true); 
+      setAperturaHecha(true); 
+      return; 
+    }
+    
     try {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
       const res   = await fetchWithAuth(`/api/pos/cash-register/opening?date=${today}`);
+      
       if (res.status === 200) {
-        setAperturaHecha(true);   // ya existe apertura hoy
+        setAperturaHecha(true);
       } else if (res.status === 404) {
-        setAperturaHecha(false);  // no existe → mostrar formulario
+        setAperturaHecha(false);
+        setMostrarAlerta(true); // Mostrar alerta en lugar del formulario directamente
       } else {
-        setAperturaHecha(true);   // error de servidor → no bloquear al cajero
+        setAperturaHecha(true);
       }
     } catch {
-      setAperturaHecha(true);     // error de red → no bloquear al cajero
+      setAperturaHecha(true);
     } finally {
       setAperturaChecked(true);
     }
@@ -161,15 +196,88 @@ export default function BusinessLayout({ user, onLogout }) {
 
   useEffect(() => { checkApertura(); }, [checkApertura]);
 
-  const handleAperturaCompleta = () => {
-    setAperturaHecha(true);
+  const handleAceptarAlerta = async () => {
+    setAbriendoCaja(true);
+
+    const operador = getOperatorUser();
+    const userName = operador?.nombre || operador?.name || operador?.username || operador?.email || 'Usuario';
+
+    try {
+      // 1. Guardar auditoría de intento de apertura
+      if (operador?.id) {
+        const auditPayload = {
+          user_id: operador.id,
+          table_name: "cash_drawer",
+          action: "intento_apertura_caja",
+          description: `${userName} inició el proceso de apertura de caja. Cajón físico abierto.`,
+          new_values: null,
+          reason: "Inicio de proceso de apertura"
+        };
+
+        await fetchWithAuth('/api/audit-log', {
+          method: 'POST',
+          body: JSON.stringify(auditPayload)
+        }).catch(err => console.warn('Error guardando auditoría inicial:', err));
+      }
+
+      // 2. Abrir cajón físico
+      const ok = await openDrawer();
+      
+      if (!ok) {
+        console.warn('No se pudo abrir la caja física');
+      }
+
+      // 3. Mostrar formulario de apertura
+      setMostrarAlerta(false);
+      setMostrarFormulario(true);
+
+    } catch (err) {
+      console.error('Error en apertura:', err);
+      // Continuar mostrando el formulario aunque falle algo
+      setMostrarAlerta(false);
+      setMostrarFormulario(true);
+    } finally {
+      setAbriendoCaja(false);
+    }
   };
-  // ─────────────────────────────────────────────────────────────────────────
+
+  const handleAperturaCompleta = async (data) => {
+    const operador = getOperatorUser();
+    const userName = operador?.nombre || operador?.name || operador?.username || operador?.email || 'Usuario';
+
+    // Guardar auditoría final de apertura completada
+    if (operador?.id && data) {
+      const totalEfectivo = data.total_efectivo || 0;
+      const montoBanca = data.monto_banca || 0;
+      const totalInicial = totalEfectivo + montoBanca;
+
+      const auditPayload = {
+        user_id: operador.id,
+        table_name: "cash_drawer",
+        action: "apertura_caja_completada",
+        description: `Apertura de caja completada por ${userName}. Efectivo: $${totalEfectivo.toFixed(2)}, Banca: $${montoBanca.toFixed(2)}, Total: $${totalInicial.toFixed(2)}${data.observaciones ? `. Observaciones: ${data.observaciones}` : ''}`,
+        new_values: {
+          total_efectivo: totalEfectivo,
+          monto_banca: montoBanca,
+          total_inicial: totalInicial,
+          observaciones: data.observaciones || null
+        },
+        reason: "Registro de Apertura"
+      };
+
+      await fetchWithAuth('/api/audit-log', {
+        method: 'POST',
+        body: JSON.stringify(auditPayload)
+      }).catch(err => console.warn('Error guardando auditoría final:', err));
+    }
+
+    setAperturaHecha(true);
+    setMostrarFormulario(false);
+  };
 
   useEffect(() => {
     const load = async () => {
       try {
-        // 1. Intentar verificar estado de suscripción (endpoint opcional)
         let suspended = false;
         try {
           const bizRes = await fetch(`${API_BASE}/api/business-status/my-businesses`, {
@@ -189,12 +297,8 @@ export default function BusinessLayout({ user, onLogout }) {
               }
             }
           }
-          // Si retorna 404 u otro error HTTP → simplemente ignorar, continuar sin suspensión
-        } catch {
-          // Error de red o JSON inválido → continuar sin suspensión
-        }
+        } catch {}
 
-        // 2. Cargar menú de navegación (siempre, a menos que esté suspendido)
         if (!suspended) {
           const navRes  = await fetch(`${API_BASE}/api/business-status/navigation`, {
             headers: { 'Authorization': `Bearer ${getToken()}` },
@@ -220,11 +324,18 @@ export default function BusinessLayout({ user, onLogout }) {
     navigate('/login');
   };
 
-  // ⬇️ AQUÍ Envolvemos TODO el layout con el Provider
   return (
     <BusinessContextProvider>
-      {/* Gate de apertura de caja para cajeros */}
-      {aperturaChecked && !aperturaHecha && (
+      {/* Alerta de apertura requerida */}
+      {aperturaChecked && mostrarAlerta && (
+        <AlertaAperturaModal 
+          onAceptar={handleAceptarAlerta}
+          abriendo={abriendoCaja}
+        />
+      )}
+
+      {/* Formulario de apertura de caja */}
+      {aperturaChecked && mostrarFormulario && (
         <AperturaCajaPage onAperturaCompleta={handleAperturaCompleta} />
       )}
 
@@ -239,8 +350,6 @@ export default function BusinessLayout({ user, onLogout }) {
         </div>
       ) : (
         <div className="business-layout">
-
-          {/* ── Overlay mobile ── */}
           {mobileOpen && (
             <div
               className="sidebar-mobile-overlay"
@@ -248,7 +357,6 @@ export default function BusinessLayout({ user, onLogout }) {
             />
           )}
 
-          {/* ── Sidebar ── */}
           <div className={`business-sidebar-wrapper ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
             <SidebarModern
               user={user}
@@ -260,9 +368,7 @@ export default function BusinessLayout({ user, onLogout }) {
             />
           </div>
 
-          {/* ── Contenido principal ── */}
           <div className="business-content-area">
-            {/* Topbar mobile con hamburguesa */}
             <div className="mobile-topbar">
               <span className="mobile-topbar-brand">
                 <span className="logo-white">ID</span><span className="logo-orange">ON</span>
@@ -276,7 +382,6 @@ export default function BusinessLayout({ user, onLogout }) {
               </button>
             </div>
 
-            {/* Contenido de la ruta activa */}
             <div className="business-content-inner">
               {error && (
                 <div className="business-error">

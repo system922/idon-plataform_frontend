@@ -28,6 +28,14 @@ function fmt(n) {
   return Number(n).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function getOperatorUser() {
+  try {
+    return JSON.parse(localStorage.getItem('idonUser') || '{}');
+  } catch {
+    return {};
+  }
+}
+
 export default function AperturaCajaPage({ onAperturaCompleta }) {
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
 
@@ -56,15 +64,26 @@ export default function AperturaCajaPage({ onAperturaCompleta }) {
     e.preventDefault();
     setError('');
     setSaving(true);
+
+    const operador = getOperatorUser();
+
     try {
-      const body = { date: today, monto_banca: parseFloat(montoBanca) || 0, observaciones: observ || null };
+      // 1. Guardar apertura de caja
+      const body = { 
+        date: today, 
+        monto_banca: parseFloat(montoBanca) || 0, 
+        observaciones: observ || null 
+      };
+      
       for (const d of [...MONEDAS, ...BILLETES]) {
         body[d.key] = parseInt(denoms[d.key], 10) || 0;
       }
-      const res  = await fetchWithAuth('/api/pos/cash-register/opening', {
+
+      const res = await fetchWithAuth('/api/pos/cash-register/opening', {
         method: 'POST',
         body: JSON.stringify(body),
       });
+      
       const data = await res.json();
 
       // 409 = la apertura ya fue registrada hoy → tratarlo como éxito
@@ -74,7 +93,38 @@ export default function AperturaCajaPage({ onAperturaCompleta }) {
       }
 
       if (!res.ok) throw new Error(data?.error || 'Error al guardar apertura');
+
+      // 2. Guardar auditoría
+      const userName = operador.nombre || operador.name || operador.username || operador.email || 'Usuario';
+      
+      const auditPayload = {
+        user_id: operador.id,
+        table_name: "cash_drawer",
+        action: "apertura_caja",
+        description: `Registro de Apertura de caja realizado por ${userName}. Efectivo inicial: $${totalEfectivo.toFixed(2)}, Banca inicial: $${(parseFloat(montoBanca) || 0).toFixed(2)}, Total: $${totalInicial.toFixed(2)}${observ ? `. Observaciones: ${observ}` : ''}`,
+        new_values: {
+          efectivo_inicial: totalEfectivo,
+          banca_inicial: parseFloat(montoBanca) || 0,
+          total_inicial: totalInicial,
+          denominaciones: denoms,
+          observaciones: observ || null
+        },
+        reason: "Registro de Apertura"
+      };
+
+      const auditRes = await fetchWithAuth('/api/audit-log', {
+        method: 'POST',
+        body: JSON.stringify(auditPayload)
+      });
+
+      if (!auditRes.ok) {
+        console.warn('Error guardando auditoría');
+        // No bloqueamos si falla la auditoría
+      }
+
+      // 3. Completar apertura
       onAperturaCompleta(data);
+
     } catch (err) {
       setError(err.message);
     } finally {
@@ -225,3 +275,4 @@ export default function AperturaCajaPage({ onAperturaCompleta }) {
     </div>
   );
 }
+
