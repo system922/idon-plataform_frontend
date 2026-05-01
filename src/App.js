@@ -119,8 +119,8 @@ function AppRoutes({ user, setUser, handleLogout }) {
               <Route path="payments"   element={<Payments />} />
               <Route path="users"      element={<Users />} />
               <Route path="roles"      element={<Roles />} />
-              <Route path="settings"                element={<Settings />} />
-              <Route path="audit"                  element={<Audit />} />
+              <Route path="settings"   element={<Settings />} />
+              <Route path="audit"      element={<Audit />} />
               <Route path="requests"   element={<Requests />} />
               <Route path="profile"    element={<ProfilePage user={user} />} />
             </Routes>
