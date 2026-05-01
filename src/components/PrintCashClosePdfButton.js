@@ -177,28 +177,134 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       doc.text(`TOTAL EGRESOS:`, 20, y);
       doc.text(`$${totalGastos.toFixed(2)}`, pageWidth - 20, y, { align: 'right' });
 
-      // ============ RESUMEN FINAL ============
+      // ============ CAJA ESPERADA (SISTEMA) ============
       y += 12;
       doc.setFillColor(52, 152, 219);
-      doc.rect(15, y - 5, pageWidth - 30, 25, 'F');
+      doc.rect(15, y - 5, pageWidth - 30, 28, 'F');
       
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
       
       y += 2;
-      doc.text(`Total Ventas:`, 20, y);
+      doc.text(`Apertura:`, 20, y);
+      doc.text(`$${totalApertura}`, pageWidth - 20, y, { align: 'right' });
+      
+      y += 6;
+      doc.text(`+ Ventas:`, 20, y);
       doc.text(`$${totalVentas.toFixed(2)}`, pageWidth - 20, y, { align: 'right' });
       
       y += 6;
-      doc.text(`Total Egresos:`, 20, y);
-      doc.text(`-$${totalGastos.toFixed(2)}`, pageWidth - 20, y, { align: 'right' });
+      doc.text(`- Egresos:`, 20, y);
+      doc.text(`$${totalGastos.toFixed(2)}`, pageWidth - 20, y, { align: 'right' });
       
       y += 8;
       doc.setFontSize(13);
-      const cajaFinal = (totalVentas - totalGastos).toFixed(2);
-      doc.text(`CAJA FINAL:`, 20, y);
-      doc.text(`$${cajaFinal}`, pageWidth - 20, y, { align: 'right' });
+      const cajaEsperada = (Number(totalApertura) + totalVentas - totalGastos).toFixed(2);
+      doc.text(`CAJA ESPERADA (Sistema):`, 20, y);
+      doc.text(`$${cajaEsperada}`, pageWidth - 20, y, { align: 'right' });
+
+      // ============ CONTEO FÍSICO ============
+      y += 15;
+      doc.setFillColor(46, 204, 113);
+      doc.rect(15, y - 5, pageWidth - 30, 8, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text("CONTEO FÍSICO DE CAJA", 18, y);
+
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(0, 0, 0);
+
+      const efectivoContado = Number(close?.cash_counted || 0).toFixed(2);
+      const transferenciaContada = Number(close?.transfer_counted || 0).toFixed(2);
+      const tarjetaContada = Number(close?.card_counted || 0).toFixed(2);
+      const propinaContada = Number(close?.tip_counted || 0).toFixed(2);
+      
+      doc.text(`Efectivo contado:`, 20, y);
+      doc.text(`$${efectivoContado}`, pageWidth - 20, y, { align: 'right' });
+      y += 6;
+      
+      doc.text(`Transferencias contadas:`, 20, y);
+      doc.text(`$${transferenciaContada}`, pageWidth - 20, y, { align: 'right' });
+      y += 6;
+      
+      doc.text(`Tarjetas contadas:`, 20, y);
+      doc.text(`$${tarjetaContada}`, pageWidth - 20, y, { align: 'right' });
+      y += 6;
+      
+      doc.text(`Propinas contadas:`, 20, y);
+      doc.text(`$${propinaContada}`, pageWidth - 20, y, { align: 'right' });
+      y += 6;
+      
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(11);
+      const totalContado = (Number(efectivoContado) + Number(transferenciaContada) + Number(tarjetaContada) + Number(propinaContada)).toFixed(2);
+      doc.text(`TOTAL CONTADO:`, 20, y);
+      doc.text(`$${totalContado}`, pageWidth - 20, y, { align: 'right' });
+
+      // ============ DIFERENCIA ============
+      y += 12;
+      const diferencia = (Number(totalContado) - Number(cajaEsperada)).toFixed(2);
+      const esSobrante = Number(diferencia) > 0;
+      const esCuadrado = Number(diferencia) === 0;
+      
+      // Color según diferencia
+      if (esCuadrado) {
+        doc.setFillColor(34, 197, 94); // Verde
+      } else if (esSobrante) {
+        doc.setFillColor(59, 130, 246); // Azul
+      } else {
+        doc.setFillColor(239, 68, 68); // Rojo
+      }
+      
+      doc.rect(15, y - 5, pageWidth - 30, 18, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      
+      y += 2;
+      doc.text(`Total esperado:`, 20, y);
+      doc.text(`$${cajaEsperada}`, pageWidth - 20, y, { align: 'right' });
+      
+      y += 6;
+      doc.text(`Total contado:`, 20, y);
+      doc.text(`$${totalContado}`, pageWidth - 20, y, { align: 'right' });
+      
+      y += 8;
+      doc.setFontSize(14);
+      const diferenciaTexto = esCuadrado ? 'CAJA CUADRADA' : esSobrante ? 'SOBRANTE' : 'FALTANTE';
+      doc.text(`${diferenciaTexto}:`, 20, y);
+      doc.text(`${Number(diferencia) > 0 ? '+' : ''}$${diferencia}`, pageWidth - 20, y, { align: 'right' });
+
+      // ============ OBSERVACIONES ============
+      if (close?.remarks) {
+        y += 15;
+        doc.setFillColor(236, 240, 241);
+        doc.rect(15, y - 5, pageWidth - 30, 8, 'F');
+        
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(52, 73, 94);
+        doc.text("OBSERVACIONES", 18, y);
+
+        y += 8;
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(0, 0, 0);
+        
+        // Dividir texto largo en múltiples líneas
+        const maxWidth = pageWidth - 40;
+        const lines = doc.splitTextToSize(close.remarks, maxWidth);
+        lines.forEach(line => {
+          doc.text(line, 20, y);
+          y += 5;
+        });
+      }
 
       // ============ PIE DE PÁGINA ============
       y += 15;
