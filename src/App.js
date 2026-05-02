@@ -28,13 +28,17 @@ import PendingApprovalPage  from './pages/PendingApprovalPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
 
+import TokenManager from './utils/tokenManager';
+import NotificationDisplay from './components/NotificationDisplay';
+import { NotificationProvider } from './context/NotificationContext';
+
 function RegisterPageWrapper({ setUser }) {
   const navigate = useNavigate();
   return (
     <RegisterPage
       onRegisterSuccess={(userData) => {
         setUser(userData);
-        localStorage.setItem('idonUser', JSON.stringify(userData));
+        TokenManager.setUser(userData);
       }}
       onNavigateToLogin={() => navigate('/login')}
     />
@@ -56,7 +60,7 @@ function AppRoutes({ user, setUser, handleLogout }) {
             <LoginPage
               onLogin={(userData) => {
                 setUser(userData);
-                localStorage.setItem('idonUser', JSON.stringify(userData));
+                TokenManager.setUser(userData);
               }}
               onNavigateToRegister={() => {}}
             />
@@ -190,10 +194,7 @@ function AppRoutes({ user, setUser, handleLogout }) {
 }
 
 function AppContent() {
-  const [user,    setUser]    = useState(() => {
-    try { return JSON.parse(localStorage.getItem('idonUser')) || null; }
-    catch { return null; }
-  });
+  const [user,    setUser]    = useState(() => TokenManager.getUser());
   const [loading, setLoading] = useState(true);
   const location  = useLocation();
   const navigate  = useNavigate();
@@ -205,10 +206,10 @@ function AppContent() {
   const PUBLIC_PATHS = ['/terms-and-conditions', '/privacy-policy', '/login', '/register'];
 
   useEffect(() => {
-    const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
+    const token = TokenManager.getToken();
     if (!token) {
       setUser(null);
-      localStorage.removeItem('idonUser');
+      TokenManager.clear();
     } else if (!PUBLIC_PATHS.includes(location.pathname)) {
       const lastPath = localStorage.getItem('lastPath');
       if (lastPath && lastPath !== location.pathname) {
@@ -220,10 +221,7 @@ function AppContent() {
 
   async function handleLogout() {
     setUser(null);
-    localStorage.removeItem('idonUser');
-    localStorage.removeItem('idonToken');
-    localStorage.removeItem('token');
-    localStorage.removeItem('selectedBusiness');
+    TokenManager.clear();
     navigate('/login', { replace: true });
   }
 
@@ -243,9 +241,12 @@ function AppShell() {
 function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <AuthProvider>
-        <AppShell />
-      </AuthProvider>
+      <NotificationProvider>
+        <AuthProvider>
+          <AppShell />
+          <NotificationDisplay />
+        </AuthProvider>
+      </NotificationProvider>
     </BrowserRouter>
   );
 }

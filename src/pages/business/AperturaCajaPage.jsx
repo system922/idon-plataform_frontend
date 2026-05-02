@@ -86,9 +86,9 @@ export default function AperturaCajaPage({ onAperturaCompleta }) {
       
       const data = await res.json();
 
-      // 409 = la apertura ya fue registrada hoy → tratarlo como éxito
+      // 409 = la apertura ya fue registrada hoy → obtener datos existentes
       if (res.status === 409) {
-        onAperturaCompleta(data);
+        onAperturaCompleta(data); // TODO: fix 409 handler
         return;
       }
 
