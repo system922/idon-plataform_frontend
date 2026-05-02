@@ -1372,6 +1372,7 @@ export default function PosCheckoutPage() {
                 </button>
               </div>
             </>
+            
           )}
         </div>
       </div>
