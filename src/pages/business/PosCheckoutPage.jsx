@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, DollarSign, CreditCard, Divide, Users, FileText } from 'react-feather';
+import { Check, X, DollarSign, CreditCard, Divide, Users } from 'react-feather';
 import PageTemplate from '../../components/PageTemplate';
 import OpenDrawerButton from '../../components/OpenDrawerButton';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
@@ -8,7 +8,7 @@ import { useQzTray } from '../../components/useQzTray';
 import { usePrinterService } from '../../services/usePrinterService';
 import '../../styles/CheckoutModern.css';
 
-export default function CheckoutModern() {
+export default function PosCheckoutPage() {
   const { selectedBusiness } = useBusinessContext();
   const { printerConnected, printerLoading, printerError } = useQzTray();
   const { print, getPrinterConfig, openCashDrawer } = usePrinterService();
@@ -27,7 +27,7 @@ export default function CheckoutModern() {
   const [selectedItems, setSelectedItems] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [clientApiLoading, setClientApiLoading] = useState(false);  
+  const [clientApiLoading, setClientApiLoading] = useState(false); // ✅ CRÍTICO: definido correctamente
 
   const [amountPaidRaw, setAmountPaidRaw] = useState('');
   const [amountPaid, setAmountPaid] = useState('');
@@ -39,7 +39,7 @@ export default function CheckoutModern() {
   const [refTransfer, setRefTransfer] = useState('');
   const [mixtoManual, setMixtoManual] = useState(new Set());
   
-  // NUEVO: Para pago dividido con múltiples clientes
+  // Para pago dividido con múltiples clientes
   const [splitCustomers, setSplitCustomers] = useState([]);
   const [generarFacturaSplit, setGenerarFacturaSplit] = useState(true);
 
@@ -82,7 +82,6 @@ export default function CheckoutModern() {
       setTransferPaid('');
       setTransferPaidRaw('');
       setSelectedItems([]);
-      // Inicializar con un cliente por defecto
       if (splitCustomers.length === 0) {
         setSplitCustomers([{
           id: Date.now(),
@@ -323,7 +322,6 @@ export default function CheckoutModern() {
       setError('Debe haber al menos un cliente para el pago dividido');
       return;
     }
-    // Devolver los items al pool de no asignados
     const customer = splitCustomers.find(c => c.id === customerId);
     if (customer && customer.items.length > 0) {
       setSelectedItems([...selectedItems, ...customer.items]);
@@ -340,12 +338,13 @@ export default function CheckoutModern() {
     }));
   };
 
-  const assignItemsToCustomer = (customerId, itemsToAssign) => {
+  const assignItemsToCustomer = (customerId) => {
+    if (selectedItems.length === 0) return;
     setSplitCustomers(splitCustomers.map(customer => {
       if (customer.id === customerId) {
         return {
           ...customer,
-          items: [...customer.items, ...itemsToAssign]
+          items: [...customer.items, ...selectedItems]
         };
       }
       return customer;
@@ -473,7 +472,7 @@ export default function CheckoutModern() {
       }
     }
 
-    // MIXTO (original)
+    // MIXTO
     if (selectedOrder && paymentMethod === 'mixto') {
       const cashAmt = parseFloat(amountPaid) || 0;
       const cardAmt = parseFloat(cardPaid) || 0;
@@ -527,7 +526,7 @@ export default function CheckoutModern() {
       return;
     }
 
-    // SPLIT - Pago dividido con múltiples clientes (NUEVO)
+    // SPLIT - Pago dividido con múltiples clientes
     if (selectedOrder && paymentMethod === 'split') {
       if (selectedItems.length > 0) {
         setError("Debes asignar todos los productos a un cliente antes de pagar");
@@ -600,7 +599,7 @@ export default function CheckoutModern() {
       return;
     }
 
-    // NORMAL (original - no split)
+    // NORMAL (no split)
     if (selectedOrder && paymentMethod !== 'split') {
       const paid = parseFloat(amountPaid) || 0;
 
@@ -651,7 +650,7 @@ export default function CheckoutModern() {
     }
   };
 
-  // ── Factura electrónica (original pero con tax_rate real) ─────────────────
+  // ── Factura electrónica ─────────────────────────────────────────────────
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
   async function emitirFactura(order, custCedula, custNombre, method) {
@@ -799,7 +798,7 @@ export default function CheckoutModern() {
     >
       <div className="checkout-modern-main">
         <div className="checkout-modern-card">
-          {/* Combobox y cliente - ORIGINAL */}
+          {/* Combobox y cliente */}
           <div className="cmbx-row" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <label className="label" style={{ minWidth: 50, flex: '0 0 50px' }}>Orden:</label>
             <select
@@ -858,11 +857,11 @@ export default function CheckoutModern() {
           {error && <div style={{ fontSize: 12, color: '#e11d48', fontWeight: 800, marginTop: 6 }}>{error}</div>}
           {success && <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 800, marginTop: 6 }}>{success}</div>}
           {printerError && <div style={{ fontSize: 12, color: '#f59e0b', fontWeight: 800, marginTop: 6 }}>⚠️ {printerError}</div>}
-          
+
           {/* Contenido si hay orden seleccionada */}
           {selectedOrder && (
             <>
-              {/* Métodos de Pago - ORIGINAL con botón Dividido nuevo */}
+              {/* Métodos de Pago */}
               <div className="pay-methods">
                 <button
                   className={paymentMethod === 'cash' ? "pay-btn selected" : "pay-btn"}
@@ -896,7 +895,7 @@ export default function CheckoutModern() {
                 </button>
               </div>
 
-              {/* Opción de facturación para SPLIT - NUEVO */}
+              {/* Opción de facturación para SPLIT */}
               {paymentMethod === 'split' && (
                 <div style={{ margin: '12px 0', padding: '12px', background: '#f0f0ff', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
@@ -978,7 +977,7 @@ export default function CheckoutModern() {
                   </div>
                 )}
 
-                {/* Items SIN checkboxes para otros métodos - ORIGINAL */}
+                {/* Items SIN checkboxes para otros métodos */}
                 {paymentMethod !== 'split' && (
                   <div className="order-items">
                     {(selectedOrder.items || []).map((item, idx) => (
@@ -997,7 +996,7 @@ export default function CheckoutModern() {
                   </div>
                 )}
 
-                {/* Sección de Clientes para SPLIT - NUEVO */}
+                {/* Sección de Clientes para SPLIT */}
                 {paymentMethod === 'split' && (
                   <div style={{ marginTop: 20, borderTop: '2px solid #e0e0e0', paddingTop: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -1127,10 +1126,11 @@ export default function CheckoutModern() {
 
                     {/* Botón para asignar productos al cliente seleccionado */}
                     {selectedItems.length > 0 && splitCustomers.length > 0 && (
-                      <div style={{ marginTop: 12 }}>
+                      <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <select
                           id="clienteSelect"
-                          style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc', marginRight: 8 }}
+                          style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}
+                          defaultValue={splitCustomers[0]?.id}
                         >
                           {splitCustomers.map((customer, idx) => (
                             <option key={customer.id} value={customer.id}>
@@ -1142,7 +1142,7 @@ export default function CheckoutModern() {
                           onClick={() => {
                             const select = document.getElementById('clienteSelect');
                             const customerId = parseInt(select.value);
-                            assignItemsToCustomer(customerId, [...selectedItems]);
+                            assignItemsToCustomer(customerId);
                           }}
                           style={{
                             background: '#28a745',
@@ -1153,14 +1153,14 @@ export default function CheckoutModern() {
                             cursor: 'pointer'
                           }}
                         >
-                          Asignar productos seleccionados a este cliente
+                          Asignar {selectedItems.length} producto(s) a este cliente
                         </button>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Totales - ORIGINAL para métodos que no son split */}
+                {/* Totales - para métodos que no son split */}
                 {paymentMethod !== 'split' && (
                   <div className="totals-footer">
                     <div className="sub-iva-total">
@@ -1178,7 +1178,7 @@ export default function CheckoutModern() {
                   </div>
                 )}
 
-                {/* Totales para Split - NUEVO */}
+                {/* Totales para Split */}
                 {paymentMethod === 'split' && selectedItems.length > 0 && (
                   <div className="totals-footer" style={{ marginTop: 16 }}>
                     <div className="sub-iva-total">
@@ -1197,7 +1197,7 @@ export default function CheckoutModern() {
                 )}
               </div>
 
-              {/* Campos de monto según método - ORIGINAL completo */}
+              {/* Campos de monto según método */}
               <div className="pay-input-row" style={{ gap: 24, flexWrap: 'wrap', alignItems: 'center', margin: '20px 0' }}>
                 {/* EFECTIVO */}
                 {paymentMethod === 'cash' && (
@@ -1209,7 +1209,6 @@ export default function CheckoutModern() {
                         className="input-pay"
                         style={{ color: 'rgb(0, 0, 0)', background: '#ffffff', fontWeight: 'bold', fontSize: 18, border: '1.8px solid #000000' }}
                         inputMode="numeric"
-                        pattern="[0-9.,]*"
                         value={amountPaidRaw === '0' || amountPaidRaw === '' ? '' : (parseInt(amountPaidRaw, 10) / 100).toFixed(2)}
                         onChange={e => {
                           let digits = e.target.value.replace(/\D/g, '');
@@ -1233,7 +1232,7 @@ export default function CheckoutModern() {
                   <>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#d7d6fc', borderRadius: '9px', padding: '7px 18px' }}>
                       <label style={{ fontWeight: 900, color: '#231c41', fontSize: 18 }}>Monto:</label>
-                      <span style={{ color: '#090', background: '#eafffd', fontWeight: 'bold', fontSize: 18, border: '1.8px solid #b2d9cf', borderRadius: 6, padding: '4px 14px', minWidth: 90, display: 'inline-block', textAlign: 'right' }}>
+                      <span style={{ color: '#090', background: '#eafffd', fontWeight: 'bold', fontSize: 18, border: '1.8px solid #b2d9cf', borderRadius: 6, padding: '4px 14px', minWidth: 90, textAlign: 'right' }}>
                         {fmt(total)}
                       </span>
                     </div>
@@ -1253,7 +1252,7 @@ export default function CheckoutModern() {
                   </>
                 )}
 
-                {/* MIXTO - ORIGINAL */}
+                {/* MIXTO */}
                 {paymentMethod === 'mixto' && (
                   <>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#d7d6fc', borderRadius: '9px', padding: '7px 18px' }}>
@@ -1263,7 +1262,6 @@ export default function CheckoutModern() {
                         className="input-pay"
                         style={{ color: '#090', background: '#eafffd', fontWeight: 'bold', fontSize: 18, border: '1.8px solid #b2d9cf' }}
                         inputMode="numeric"
-                        pattern="[0-9.,]*"
                         value={amountPaidRaw === '0' || amountPaidRaw === '' ? '' : (parseInt(amountPaidRaw, 10) / 100).toFixed(2)}
                         onChange={e => {
                           let digits = e.target.value.replace(/\D/g, '');
@@ -1281,7 +1279,6 @@ export default function CheckoutModern() {
                         type="text"
                         className="input-pay"
                         inputMode="numeric"
-                        pattern="[0-9.,]*"
                         style={{ background: '#eafffd', fontWeight: 'bold', fontSize: 18, border: '1.8px solid #b2d9cf' }}
                         value={transferPaidRaw === '0' || transferPaidRaw === '' ? '' : (parseInt(transferPaidRaw, 10) / 100).toFixed(2)}
                         onChange={e => {
@@ -1308,7 +1305,6 @@ export default function CheckoutModern() {
                         type="text"
                         className="input-pay"
                         inputMode="numeric"
-                        pattern="[0-9.,]*"
                         style={{ background: '#eafffd', fontWeight: 'bold', fontSize: 18, border: '1.8px solid #b2d9cf' }}
                         value={cardPaidRaw === '0' || cardPaidRaw === '' ? '' : (parseInt(cardPaidRaw, 10) / 100).toFixed(2)}
                         onChange={e => {
@@ -1348,13 +1344,13 @@ export default function CheckoutModern() {
                 )}
               </div>
 
-              {/* Botones acciones - ORIGINAL con validación para split */}
+              {/* Botones acciones */}
               <div className="actions-row">
                 <button
                   className="btn-guardar"
                   disabled={printLoading || (
                     paymentMethod === 'split'
-                      ? selectedItems.length > 0  // Si hay items sin asignar, no se puede pagar
+                      ? selectedItems.length > 0
                       : paymentMethod === 'cash'
                         ? (!amountPaid || parseFloat(amountPaid) < total)
                         : paymentMethod === 'card' || paymentMethod === 'transfer'
