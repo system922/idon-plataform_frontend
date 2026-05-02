@@ -1371,8 +1371,9 @@ export default function PosCheckoutPage() {
                   <X size={16} /> Cancelar
                 </button>
               </div>
+              
             </>
-            
+
           )}
         </div>
       </div>
