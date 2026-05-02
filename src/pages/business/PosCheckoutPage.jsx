@@ -27,7 +27,7 @@ export default function PosCheckoutPage() {
   const [selectedItems, setSelectedItems] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [clientApiLoading, setClientApiLoading] = useState(false); // ✅ CRÍTICO: definido correctamente
+  const [clientApiLoading, setClientApiLoading] = useState(false);
 
   const [amountPaidRaw, setAmountPaidRaw] = useState('');
   const [amountPaid, setAmountPaid] = useState('');
@@ -365,54 +365,59 @@ export default function PosCheckoutPage() {
     setSelectedItems([...selectedItems, itemId]);
   };
 
-  // ── SPLIT - Cálculo de totals con tax_rate REAL ────────────────────────────
+  // ── SPLIT - CORREGIDO: SOLO SUMA, NO RECALCULA ────────────────────────────
   
+  // Subtotal de los productos seleccionados (USA line_total del backend)
   const getSplitSubtotal = () => {
     if (!selectedOrder || paymentMethod !== 'split') return 0;
 
     return selectedOrder.items
       .filter(i => selectedItems.includes(i.id) && !i.paid)
       .reduce((sum, i) => {
-        return sum + (Number(i.unit_price) * i.quantity);
+        // El subtotal real es el line_total sin IVA
+        // Si el backend no envía subtotal por item, lo calculamos
+        const subtotal = Number(i.subtotal) || (Number(i.unit_price) * i.quantity);
+        return sum + subtotal;
       }, 0);
   };
 
+  // ✅ CORREGIDO: Usa tax_amount que ya viene del backend
   const getSplitTax = () => {
     if (!selectedOrder || paymentMethod !== 'split') return 0;
 
     return selectedOrder.items
       .filter(i => selectedItems.includes(i.id) && !i.paid)
       .reduce((sum, i) => {
-        const taxRate = Number(i.tax_rate) || 0;
-        const itemSubtotal = Number(i.unit_price) * i.quantity;
-        const itemTax = (itemSubtotal * taxRate) / 100;
-        return sum + round2(itemTax);
+        // Usar tax_amount del item si existe, sino calcular con line_total - subtotal
+        let taxAmount = Number(i.tax_amount);
+        if (isNaN(taxAmount) || taxAmount === 0) {
+          const subtotal = Number(i.unit_price) * i.quantity;
+          const lineTotal = Number(i.line_total);
+          taxAmount = lineTotal - subtotal;
+        }
+        return sum + taxAmount;
       }, 0);
   };
 
+  // Total a pagar = subtotal + iva (usando valores del backend)
   const getPaymentTotal = () => getSplitSubtotal() + getSplitTax();
 
   const getCustomerTotal = (customer) => {
     if (!selectedOrder) return 0;
     
-    let subtotal = 0;
-    let tax = 0;
+    let total = 0;
     
     customer.items.forEach(itemId => {
       const item = selectedOrder.items.find(i => i.id === itemId);
       if (item && !item.paid) {
-        const itemSubtotal = Number(item.unit_price) * item.quantity;
-        const taxRate = Number(item.tax_rate) || 0;
-        const itemTax = (itemSubtotal * taxRate) / 100;
-        subtotal += itemSubtotal;
-        tax += itemTax;
+        total += Number(item.line_total || (item.unit_price * item.quantity));
       }
     });
     
-    return subtotal + tax;
+    return total;
   };
 
-  // ── Totales de la orden completa ──────────────────────────────────────────
+  // ── Totales de la orden completa (vienen del backend) ─────────────────────
   const subtotal = selectedOrder ? Number(selectedOrder.subtotal || 0) : 0;
   const iva = selectedOrder ? Number(selectedOrder.tax_amount || 0) : 0;
   const total = selectedOrder ? Number(selectedOrder.total || 0) : 0;
@@ -664,15 +669,14 @@ export default function PosCheckoutPage() {
       const qty = item.quantity || 1;
       const price = parseFloat(item.unit_price) || 0;
       const subtotal = qty * price;
-      const taxRate = parseFloat(item.tax_rate) || 0;
-      const taxAmount = (subtotal * taxRate) / 100;
+      // Usar tax_amount del item si existe
+      const taxAmount = parseFloat(item.tax_amount) || 0;
 
       return {
         description: item.product_name || item.name || 'Producto',
         qty: qty,
         unit_price: price,
         subtotal: subtotal,
-        tax_rate: taxRate,
         tax_amount: taxAmount
       };
     });
@@ -680,9 +684,6 @@ export default function PosCheckoutPage() {
     const subtotalTotal = itemsPayload.reduce((sum, i) => sum + i.subtotal, 0);
     const ivaTotal = itemsPayload.reduce((sum, i) => sum + i.tax_amount, 0);
     const totalFactura = subtotalTotal + ivaTotal;
-
-    const uniqueTaxRates = [...new Set(itemsPayload.map(i => i.tax_rate))];
-    const mainTaxRate = uniqueTaxRates.length === 1 ? uniqueTaxRates[0] : 0;
 
     try {
       const res = await fetchWithAuth('/api/einvoicing/invoices/emit', {
@@ -697,7 +698,6 @@ export default function PosCheckoutPage() {
           },
           items: itemsPayload,
           subtotal: subtotalTotal,
-          iva_rate: mainTaxRate,
           iva_amount: ivaTotal,
           total: totalFactura,
           forma_pago: FORMA_PAGO_MAP[method] || '01',
@@ -735,18 +735,14 @@ export default function PosCheckoutPage() {
           : 0;
 
       const itemsToPrint = (order.items || []).map(item => {
-        const qty = item.quantity || 1;
-        const price = parseFloat(item.unit_price) || 0;
-        const subtotal = qty * price;
-        const taxRate = parseFloat(item.tax_rate) || 0;
-        const taxAmount = (subtotal * taxRate) / 100;
-
+        const subtotal = Number(item.unit_price) * item.quantity;
+        const taxAmount = Number(item.tax_amount) || 0;
+        
         return {
           description: item.product_name || item.name || 'Producto',
-          quantity: qty,
-          price: price,
+          quantity: item.quantity,
+          price: item.unit_price,
           total: subtotal,
-          tax_rate: taxRate,
           tax_amount: taxAmount
         };
       });
@@ -965,7 +961,7 @@ export default function PosCheckoutPage() {
                             )}
                           </span>
                           <span className="item-amt" style={{ fontWeight: selectedItems.includes(item.id) ? '700' : '600' }}>
-                            {fmt(item.unit_price * item.quantity)}
+                            {fmt(item.line_total || (item.unit_price * item.quantity))}
                           </span>
                         </div>
                     ))}
@@ -990,7 +986,7 @@ export default function PosCheckoutPage() {
                             </span>
                           )}
                         </span>
-                        <span className="item-amt">{fmt(item.unit_price * item.quantity)}</span>
+                        <span className="item-amt">{fmt(item.line_total || (item.unit_price * item.quantity))}</span>
                       </div>
                     ))}
                   </div>
@@ -1082,7 +1078,7 @@ export default function PosCheckoutPage() {
                                 }}>
                                   <span>{item.quantity}x {item.product_name}</span>
                                   <div>
-                                    <span style={{ marginRight: 12 }}>{fmt(item.unit_price * item.quantity)}</span>
+                                    <span style={{ marginRight: 12 }}>{fmt(item.line_total || (item.unit_price * item.quantity))}</span>
                                     <button
                                       onClick={() => removeItemFromCustomer(customer.id, itemId)}
                                       style={{ background: '#ff6666', color: 'white', border: 'none', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: 11 }}
@@ -1371,9 +1367,7 @@ export default function PosCheckoutPage() {
                   <X size={16} /> Cancelar
                 </button>
               </div>
-              
             </>
-
           )}
         </div>
       </div>
