@@ -194,7 +194,7 @@ export const businessRoutes = (
         COMPRAS  /app/purchases
     ──────────────────────────────────────────────── */}
     <Route path="purchases"                   element={<GenericFeaturePage moduleName="Compras" />} />
-    <Route path="purchases.history"           element={<PurchasesHistory />} />
+    <Route path="purchases/purchases.history" element={<PurchasesHistory />} />
     <Route path="purchases/:feature"          element={<GenericFeaturePage moduleName="Compras" />} />
 
     {/* ────────────────────────────────────────────────

@@ -431,7 +431,7 @@ export default function PosCheckoutPage() {
 
     console.log('=== EMITIR FACTURA ===');
     console.log('Order ID:', order.id);
-    console.log('Items a facturar:', order.items);
+    console.log('Items a facturar:', order.items.length);
 
     const itemsPayload = (order.items || []).map(item => {
       const qty = item.quantity || 1;
@@ -537,7 +537,7 @@ export default function PosCheckoutPage() {
     }
   };
 
-  // ── COBRAR COMENSAL ────────────────────────────────────────────────────────
+  // ── COBRAR COMENSAL (VERSIÓN CORREGIDA) ────────────────────────────────────
   const cobrarComensal = async (comensal) => {
     if (comensal.items.length === 0) {
       setError('Este comensal no tiene productos asignados');
@@ -594,9 +594,15 @@ export default function PosCheckoutPage() {
         await imprimirTicket(partialOrder, totalComensal, comensal.montoRecibido - totalComensal, invoiceNum, 'split', nombre);
         setSuccess(`Factura generada para ${nombre}`);
       } else {
+        // Guardar los items COMPLETOS en el historial
+        const itemsCompletos = comensal.items.map(itemId => {
+          const itemCompleto = selectedOrder?.items?.find(i => i.id === itemId);
+          return itemCompleto;
+        }).filter(i => i);
+        
         setPagosRegistrados(prev => [...prev, {
           cliente: { cedula, nombre, email },
-          items: comensal.items,
+          items: itemsCompletos,
           total: totalComensal,
           metodoPago: comensal.metodoPago
         }]);
@@ -607,28 +613,30 @@ export default function PosCheckoutPage() {
       
       const ordenActualizada = await recargarOrden();
       
-      // Verificar si ya se completó el pago total
       const pagoTotalCompletado = nuevoTotalPagado === totalOrden;
       
       if (pagoTotalCompletado) {
-        // Reconstruir todos los items desde el historial de pagos
-        const todosLosItemsIds = pagosRegistrados.flatMap(p => p.items);
-        
+        // Recolectar TODOS los items desde pagosRegistrados
         let itemsFinales = [];
-        // Primero intentar desde orden actualizada
-        if (ordenActualizada?.items) {
-          for (const itemId of todosLosItemsIds) {
-            const itemEncontrado = ordenActualizada.items.find(i => i.id === itemId);
-            if (itemEncontrado) itemsFinales.push(itemEncontrado);
+        for (const pago of pagosRegistrados) {
+          if (pago.items && pago.items.length > 0) {
+            itemsFinales.push(...pago.items);
           }
         }
-        // Si no, usar selectedOrder
-        if (itemsFinales.length === 0 && selectedOrder?.items) {
-          for (const itemId of todosLosItemsIds) {
-            const itemEncontrado = selectedOrder.items.find(i => i.id === itemId);
-            if (itemEncontrado) itemsFinales.push(itemEncontrado);
+        
+        // También incluir los items del pago actual si no se agregaron aún
+        if (!facturaIndividual) {
+          const itemsActuales = comensal.items.map(itemId => {
+            return selectedOrder?.items?.find(i => i.id === itemId);
+          }).filter(i => i);
+          for (const item of itemsActuales) {
+            if (!itemsFinales.some(i => i.id === item.id)) {
+              itemsFinales.push(item);
+            }
           }
         }
+        
+        console.log('📦 Items finales para factura:', itemsFinales.length);
         
         if (itemsFinales.length > 0) {
           const ordenCompleta = { ...selectedOrder, items: itemsFinales };
