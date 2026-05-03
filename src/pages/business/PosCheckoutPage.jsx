@@ -441,11 +441,15 @@ export default function PosCheckoutPage() {
         
         // Usar fetchWithAuth que ya tiene la URL base
         const product = await fetchWithAuth(`/api/products/${item.product_id}`);
-        console.log(`✅ Producto obtenido:`, product);
+        console.log(`✅ Producto COMPLETO:`, JSON.stringify(product, null, 2));
+        console.log(`📊 product.price: ${product?.price}`);
+        console.log(`📊 product.selling_price: ${product?.selling_price}`);
+        console.log(`📊 product.tax_rate: ${product?.tax_rate}`);
+        console.log(`📊 product.name: ${product?.name}`);
         
         const qty = item.quantity || 1;
-        // Tu backend devuelve 'price' (selling_price)
-        const precioSinIVA = Number(product?.price) || 0;
+        // Intentar diferentes nombres de campo
+        const precioSinIVA = Number(product?.price) || Number(product?.selling_price) || 0;
         const montoIVA = Number(product?.tax_rate) || 0;
         const subtotalItem = precioSinIVA * qty;
         const ivaItem = montoIVA * qty;
@@ -484,6 +488,7 @@ export default function PosCheckoutPage() {
     console.log('  Subtotal:', subtotalTotal);
     console.log('  IVA Total:', ivaTotal);
     console.log('  Total:', totalFactura);
+    console.log('  Items payload:', itemsPayload);
 
     if (itemsPayload.length === 0) {
       console.error('❌ No hay items para facturar');
@@ -498,7 +503,12 @@ export default function PosCheckoutPage() {
         email: email || null,
         tipo_identificacion: tipoId,
       },
-      items: itemsPayload,
+      items: itemsPayload.map(i => ({
+        ...i,
+        unit_price: Number(i.unit_price).toFixed(2),
+        subtotal: Number(i.subtotal).toFixed(2),
+        tax_amount: Number(i.tax_amount).toFixed(2)
+      })),
       subtotal: Number(subtotalTotal).toFixed(2),
       iva_amount: Number(ivaTotal).toFixed(2),
       total: Number(totalFactura).toFixed(2),
@@ -508,7 +518,6 @@ export default function PosCheckoutPage() {
     console.log('📤 Payload enviado a facturación:', JSON.stringify(payload, null, 2));
 
     try {
-      // Usar fetchWithAuth para enviar la factura
       const result = await fetchWithAuth('/api/einvoicing/invoices/emit', {
         method: 'POST',
         body: JSON.stringify(payload),
