@@ -321,7 +321,7 @@ export default function PosCheckoutPage() {
   };
 
   const actualizarComensal = (id, campo, valor) => {
-    setClientesDivididos(clientesDivididos.map(comensal => 
+    setClientesDivididos(prev => prev.map(comensal => 
       comensal.id === id ? { ...comensal, [campo]: valor } : comensal
     ));
   };
@@ -342,7 +342,7 @@ export default function PosCheckoutPage() {
       return;
     }
     
-    setClientesDivididos(clientesDivididos.map(comensal => 
+    setClientesDivididos(prev => prev.map(comensal => 
       comensal.id === idComensal 
         ? { ...comensal, items: [...comensal.items, ...itemsNoPagados] }
         : comensal
@@ -353,7 +353,7 @@ export default function PosCheckoutPage() {
   };
 
   const quitarItemDeComensal = (idComensal, itemId) => {
-    setClientesDivididos(clientesDivididos.map(comensal => 
+    setClientesDivididos(prev => prev.map(comensal => 
       comensal.id === idComensal 
         ? { ...comensal, items: comensal.items.filter(id => id !== itemId) }
         : comensal
@@ -362,7 +362,6 @@ export default function PosCheckoutPage() {
   };
 
   const handleSelectItem = (itemId) => {
-    // Verificar si el item ya está pagado
     const item = selectedOrder?.items.find(i => i.id === itemId);
     if (item?.paid) {
       setError('Este producto ya fue pagado');
@@ -420,141 +419,6 @@ export default function PosCheckoutPage() {
   const totalOrden = selectedOrder ? Number(selectedOrder.total || 0) : 0;
   const changeNormal = Math.max(0, (parseFloat(amountPaid) || 0) - totalOrden);
 
-  const mixtoCardAmt = parseFloat(cardPaid) || 0;
-  const mixtoTransferAmt = parseFloat(transferPaid) || 0;
-  const mixtoCashAmt = parseFloat(amountPaid) || 0;
-  const mixtoCashNeeded = Math.round(Math.max(0, totalOrden - mixtoCardAmt - mixtoTransferAmt) * 100) / 100;
-  const mixtoChange = Math.max(0, mixtoCashAmt - mixtoCashNeeded);
-  const mixtoReady = mixtoCashAmt >= mixtoCashNeeded && (mixtoCardAmt + mixtoTransferAmt + mixtoCashNeeded) > 0;
-
-  // ── COBRAR COMENSAL ────────────────────────────────────────────────────────
-  const cobrarComensal = async (comensal) => {
-    if (comensal.items.length === 0) {
-      setError('Este comensal no tiene productos asignados');
-      return;
-    }
-
-    const totalComensal = calcularTotalComensal(comensal);
-    
-    if (comensal.metodoPago === 'cash' && comensal.montoRecibido < totalComensal) {
-      setError(`Monto insuficiente. Total: ${fmt(totalComensal)}, Recibido: ${fmt(comensal.montoRecibido)}`);
-      return;
-    }
-
-    setPrintLoading(true);
-    
-    try {
-      let cedula = '9999999999';
-      let nombre = 'CONSUMIDOR FINAL';
-      let email = null;
-      
-      // Solo si es factura individual, usar los datos del comensal
-      if (facturaIndividual) {
-        cedula = comensal.cedula?.trim() || '9999999999';
-        nombre = comensal.nombre?.trim() || 'CONSUMIDOR FINAL';
-        email = comensal.email || null;
-      }
-      
-      let clienteId = await guardarCliente(cedula, nombre, email);
-      
-      // Registrar pago en el backend
-      await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/pay-items`, {
-        method: 'POST',
-        body: JSON.stringify({
-          item_ids: comensal.items,
-          amount_paid: totalComensal,
-          payment_method: comensal.metodoPago,
-          cliente_id: clienteId,
-          reference_number: comensal.metodoPago !== 'cash' ? (comensal.referencia || null) : null,
-          notes: `${orderNotes} - Comensal: ${nombre}`
-        }),
-      });
-      
-      // Actualizar total pagado acumulado
-      const nuevoTotalPagado = totalPagadoAcumulado + totalComensal;
-      setTotalPagadoAcumulado(nuevoTotalPagado);
-      
-      // Si es factura individual, emitir factura AHORA
-      if (facturaIndividual) {
-        const partialOrder = {
-          ...selectedOrder,
-          items: selectedOrder.items.filter(i => comensal.items.includes(i.id))
-        };
-        await emitirFactura(partialOrder, cedula, nombre, 'split');
-        await imprimirTicket(partialOrder, totalComensal, comensal.montoRecibido - totalComensal, null, 'split', nombre);
-        setSuccess(`Factura generada para ${nombre}`);
-      } else {
-        // Guardar en historial para factura única al final
-        setPagosRegistrados(prev => [...prev, {
-          items: comensal.items,
-          total: totalComensal,
-          metodoPago: comensal.metodoPago
-        }]);
-        setSuccess(`Pago registrado para comensal`);
-      }
-      
-      // ELIMINAR este comensal de la lista (ya pagó)
-      setClientesDivididos(clientesDivididos.filter(c => c.id !== comensal.id));
-      
-      // RECARGAR la orden para actualizar productos pagados
-      const ordenActualizada = await recargarOrden();
-      
-      if (ordenActualizada) {
-        const productosPendientes = ordenActualizada.items.filter(i => !i.paid);
-        
-        // Si no quedan productos pendientes O el total pagado es igual al total de la orden
-        if (productosPendientes.length === 0 || nuevoTotalPagado >= totalOrden) {
-          // Si NO es factura individual y hay pagos registrados, generar UNA SOLA factura
-          if (!facturaIndividual && pagosRegistrados.length > 0) {
-            const todosLosItems = pagosRegistrados.flatMap(p => p.items);
-            const ordenCompleta = { ...selectedOrder, items: todosLosItems };
-            const clientePrincipal = { cedula: clienteCedula || '9999999999', nombre: clienteNombre || 'CONSUMIDOR FINAL' };
-            await emitirFactura(ordenCompleta, clientePrincipal.cedula, clientePrincipal.nombre, 'split');
-            await imprimirTicket(ordenCompleta, totalOrden, 0, null, 'split', 'FACTURA FINAL');
-            setSuccess('Factura final generada con todos los productos');
-          }
-          
-          // Cerrar la orden
-          await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
-            method: 'PATCH',
-            body: JSON.stringify({
-              status: 'paid',
-              payment_method: 'split',
-              amount_paid: totalOrden,
-              notes: orderNotes
-            }),
-          });
-          setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
-          setSelectedOrder(null);
-          setClientesDivididos([]);
-          setPagosRegistrados([]);
-          setTotalPagadoAcumulado(0);
-          setSuccess('Orden completada y factura generada');
-        } else {
-          // Crear un nuevo comensal por defecto para el siguiente
-          setClientesDivididos([{
-            id: Date.now(),
-            cedula: '',
-            nombre: '',
-            email: '',
-            items: [],
-            metodoPago: 'cash',
-            montoRecibido: 0,
-            referencia: ''
-          }]);
-          setSelectedItems([]);
-          setSuccess(`Pago completado. Quedan ${productosPendientes.length} productos por pagar.`);
-        }
-      }
-      
-    } catch (err) {
-      console.error('Error al cobrar comensal:', err);
-      setError(err.message);
-    } finally {
-      setPrintLoading(false);
-    }
-  };
-
   // ── FACTURA ELECTRÓNICA ─────────────────────────────────────────────────
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
@@ -604,6 +468,8 @@ export default function PosCheckoutPage() {
         console.log('Factura emitida:', data.invoice_number);
         return data.invoice_number || null;
       }
+      const errData = await res.json().catch(() => ({}));
+      console.error('Error al emitir factura:', errData);
       return null;
     } catch (e) {
       console.error('Error al emitir factura:', e);
@@ -640,11 +506,131 @@ export default function PosCheckoutPage() {
         payment: { cash: paid, card: 0, other: 0 },
         printerFooter: printerConfig.footer,
       }, true);
-      if (result.success) setSuccess(result.message);
-      else setError(result.error);
+      if (result.success) {
+        setSuccess(result.message);
+      } else {
+        setError(result.error);
+      }
     } catch (err) {
       console.error('Error imprimiendo:', err);
       setError('Error al imprimir');
+    }
+  };
+
+  // ── COBRAR COMENSAL ────────────────────────────────────────────────────────
+  const cobrarComensal = async (comensal) => {
+    if (comensal.items.length === 0) {
+      setError('Este comensal no tiene productos asignados');
+      return;
+    }
+
+    const totalComensal = calcularTotalComensal(comensal);
+    
+    if (comensal.metodoPago === 'cash' && comensal.montoRecibido < totalComensal) {
+      setError(`Monto insuficiente. Total: ${fmt(totalComensal)}, Recibido: ${fmt(comensal.montoRecibido)}`);
+      return;
+    }
+
+    setPrintLoading(true);
+    
+    try {
+      let cedula = '9999999999';
+      let nombre = 'CONSUMIDOR FINAL';
+      let email = null;
+      
+      if (facturaIndividual) {
+        cedula = comensal.cedula?.trim() || '9999999999';
+        nombre = comensal.nombre?.trim() || 'CONSUMIDOR FINAL';
+        email = comensal.email || null;
+      }
+      
+      let clienteId = await guardarCliente(cedula, nombre, email);
+      
+      await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/pay-items`, {
+        method: 'POST',
+        body: JSON.stringify({
+          item_ids: comensal.items,
+          amount_paid: totalComensal,
+          payment_method: comensal.metodoPago,
+          cliente_id: clienteId,
+          reference_number: comensal.metodoPago !== 'cash' ? (comensal.referencia || null) : null,
+          notes: `${orderNotes} - Comensal: ${nombre}`
+        }),
+      });
+      
+      const nuevoTotalPagado = totalPagadoAcumulado + totalComensal;
+      setTotalPagadoAcumulado(nuevoTotalPagado);
+      
+      if (facturaIndividual) {
+        const partialOrder = {
+          ...selectedOrder,
+          items: selectedOrder.items.filter(i => comensal.items.includes(i.id))
+        };
+        await emitirFactura(partialOrder, cedula, nombre, 'split');
+        await imprimirTicket(partialOrder, totalComensal, comensal.montoRecibido - totalComensal, null, 'split', nombre);
+        setSuccess(`Factura generada para ${nombre}`);
+      } else {
+        setPagosRegistrados(prev => [...prev, {
+          items: comensal.items,
+          total: totalComensal,
+          metodoPago: comensal.metodoPago
+        }]);
+        setSuccess(`Pago registrado para comensal`);
+      }
+      
+      setClientesDivididos(prev => prev.filter(c => c.id !== comensal.id));
+      
+      const ordenActualizada = await recargarOrden();
+      
+      if (ordenActualizada) {
+        const productosPendientes = ordenActualizada.items.filter(i => !i.paid);
+        
+        if (productosPendientes.length === 0 || nuevoTotalPagado >= totalOrden) {
+          if (!facturaIndividual && pagosRegistrados.length > 0) {
+            const todosLosItems = pagosRegistrados.flatMap(p => p.items);
+            const ordenCompleta = { ...selectedOrder, items: todosLosItems };
+            const clientePrincipal = { cedula: clienteCedula || '9999999999', nombre: clienteNombre || 'CONSUMIDOR FINAL' };
+            await emitirFactura(ordenCompleta, clientePrincipal.cedula, clientePrincipal.nombre, 'split');
+            await imprimirTicket(ordenCompleta, totalOrden, 0, null, 'split', 'FACTURA FINAL');
+            setSuccess('Factura final generada con todos los productos');
+          }
+          
+          await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              status: 'paid',
+              payment_method: 'split',
+              amount_paid: totalOrden,
+              notes: orderNotes
+            }),
+          });
+          setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
+          setSelectedOrder(null);
+          setClientesDivididos([]);
+          setPagosRegistrados([]);
+          setTotalPagadoAcumulado(0);
+          setSuccess('Orden completada y factura generada');
+        } else {
+          setClientesDivididos([{
+            id: Date.now(),
+            cedula: '',
+            nombre: '',
+            email: '',
+            items: [],
+            metodoPago: 'cash',
+            montoRecibido: 0,
+            referencia: ''
+          }]);
+          setSelectedItems([]);
+          setSuccess(`Pago completado. Quedan ${productosPendientes.length} productos por pagar.`);
+        }
+      }
+      
+    } catch (err) {
+      console.error('Error al cobrar comensal:', err);
+      setError(err.message);
+    } finally {
+      setPrintLoading(false);
     }
   };
 
@@ -772,16 +758,14 @@ export default function PosCheckoutPage() {
               {orders.map(order => (
                 <option key={order.id} value={order.id}>
                   {order.mesa_numero ? `Mesa ${order.mesa_numero}` : order.order_type === 'delivery' ? 'DELIVERY' : 'PARA LLEVAR'} - #{order.order_number || order.id}
-                  {order.items?.filter(i => !i.paid).length > 0 && ` (${order.items.filter(i => !i.paid).length} pendientes)`}
                 </option>
               ))}
             </select>
 
-            {/* Campos de cliente - SOLO visibles en modo normal o cuando NO hay factura individual */}
             {(!modoDividido || (modoDividido && !facturaIndividual)) && (
               <>
                 <label className="label">Cliente:</label>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                     <input 
                       type="text" 
@@ -846,7 +830,7 @@ export default function PosCheckoutPage() {
                 </button>
               </div>
 
-              {/* Checkbox para factura individual - SOLO visible en modo dividido */}
+              {/* Checkbox para factura individual */}
               {modoDividido && (
                 <div className="factura-opcion">
                   <label>
@@ -904,7 +888,6 @@ export default function PosCheckoutPage() {
                       <div className="sub-iva-total"><span><strong>TOTAL:</strong></span><span><strong>{fmt(totalOrden)}</strong></span></div>
                     </div>
 
-                    {/* Selector de método de pago */}
                     <div className="metodo-pago-seleccion">
                       <button className={metodoPagoNormal === 'cash' ? "selected" : ""} onClick={() => setMetodoPagoNormal('cash')}>💰 Efectivo</button>
                       <button className={metodoPagoNormal === 'card' ? "selected" : ""} onClick={() => setMetodoPagoNormal('card')}>💳 Tarjeta</button>
@@ -912,7 +895,6 @@ export default function PosCheckoutPage() {
                       <button className={metodoPagoNormal === 'mixto' ? "selected" : ""} onClick={() => setMetodoPagoNormal('mixto')}>🔄 Mixto</button>
                     </div>
 
-                    {/* Campos según método */}
                     {metodoPagoNormal === 'cash' && (
                       <div className="pay-input-row">
                         <div><label>Recibido:</label>
@@ -941,7 +923,6 @@ export default function PosCheckoutPage() {
                 {/* ==================== MODO DIVIDIDO ==================== */}
                 {modoDividido && (
                   <>
-                    {/* Productos disponibles para asignar - solo los NO pagados */}
                     <div className="order-items">
                       <div className="section-title">📦 Productos pendientes:</div>
                       {selectedOrder.items.filter(item => !item.paid).map((item, idx) => (
@@ -971,7 +952,6 @@ export default function PosCheckoutPage() {
                       </div>
                     )}
 
-                    {/* Lista de comensales */}
                     <div className="clientes-container">
                       <div className="clientes-header">
                         <span>👥 Comensales</span>
@@ -993,30 +973,36 @@ export default function PosCheckoutPage() {
                               )}
                             </div>
 
-                            {/* Datos del comensal - SOLO visibles si es factura individual */}
                             {facturaIndividual ? (
                               <div className="comensal-datos">
                                 <div className="busqueda-container">
                                   <input 
                                     type="text" 
                                     placeholder="Cédula/RUC" 
-                                    value={comensal.cedula}
-                                    onChange={e => actualizarComensal(comensal.id, 'cedula', e.target.value.replace(/\D/g, '').slice(0, 13))}
-                                    onBlur={e => onClienteCedulaBlurOrEnter(e, true, comensal.id)}
-                                    onKeyPress={e => onClienteCedulaBlurOrEnter(e, true, comensal.id)}
+                                    value={comensal.cedula || ''}
+                                    onChange={e => {
+                                      const val = e.target.value.replace(/\D/g, '').slice(0, 13);
+                                      actualizarComensal(comensal.id, 'cedula', val);
+                                      if (val.length === 10 || val.length === 13) {
+                                        buscarClientePorDocumento(val, true, comensal.id);
+                                      } else {
+                                        actualizarComensal(comensal.id, 'nombre', '');
+                                        actualizarComensal(comensal.id, 'email', '');
+                                      }
+                                    }}
                                   />
                                   {clientApiLoading && <div className="spinner-small"></div>}
                                 </div>
                                 <input 
                                   type="text" 
                                   placeholder="Nombre completo" 
-                                  value={comensal.nombre}
+                                  value={comensal.nombre || ''}
                                   onChange={e => actualizarComensal(comensal.id, 'nombre', e.target.value)} 
                                 />
                                 <input 
                                   type="email" 
                                   placeholder="Email (factura)" 
-                                  value={comensal.email}
+                                  value={comensal.email || ''}
                                   onChange={e => actualizarComensal(comensal.id, 'email', e.target.value)} 
                                 />
                               </div>
@@ -1026,7 +1012,6 @@ export default function PosCheckoutPage() {
                               </div>
                             )}
 
-                            {/* Productos asignados al comensal */}
                             <div className="productos-asignados">
                               <span>Productos asignados:</span>
                               {comensal.items.map(itemId => {
@@ -1044,7 +1029,6 @@ export default function PosCheckoutPage() {
                               {comensal.items.length === 0 && <span className="empty-text">Sin productos</span>}
                             </div>
 
-                            {/* Método de pago del comensal */}
                             <div className="metodo-pago-comensal">
                               <select value={comensal.metodoPago} onChange={e => actualizarComensal(comensal.id, 'metodoPago', e.target.value)}>
                                 <option value="cash">💰 Efectivo</option>
@@ -1063,7 +1047,6 @@ export default function PosCheckoutPage() {
                               )}
                             </div>
 
-                            {/* Totales y botón cobrar */}
                             <div className="comensal-totales">
                               <div>
                                 <div>Subtotal: <strong>{fmt(subtotalC)}</strong></div>
@@ -1085,7 +1068,6 @@ export default function PosCheckoutPage() {
                         );
                       })}
 
-                      {/* Asignar productos seleccionados */}
                       {selectedItems.length > 0 && clientesDivididos.length > 0 && (
                         <div className="asignar-container">
                           <select className="asignar-select" id="comensalSelect">
@@ -1107,7 +1089,6 @@ export default function PosCheckoutPage() {
                 )}
               </div>
 
-              {/* Botones principales */}
               <div className="actions-row">
                 <button
                   className="btn-guardar"
@@ -1130,7 +1111,6 @@ export default function PosCheckoutPage() {
                 </button>
               </div>
 
-              {/* Historial de pagos (solo cuando NO es factura individual) */}
               {modoDividido && !facturaIndividual && pagosRegistrados.length > 0 && (
                 <div className="historial-pagos">
                   <div className="historial-titulo">📋 Pagos realizados:</div>
