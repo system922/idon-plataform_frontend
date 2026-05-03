@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import '../styles/AddItemModal.css';
 
 export default function AddItemModal({
@@ -12,7 +12,7 @@ export default function AddItemModal({
   notasItem,
   setNotasItem,
   agregarItem,
-  categorias,  // Asegúrate de pasar las categorías desde el componente padre
+  categorias,
 }) {
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
 

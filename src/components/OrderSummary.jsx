@@ -1,5 +1,4 @@
 import React from 'react';
-import { FiSave } from 'react-icons/fi';
 
 export default function OrderSummary({
   subtotal,
@@ -13,7 +12,7 @@ export default function OrderSummary({
   guardarOrden
 }) {
   return (
-    <div className="summary-sticky">
+    <div className="order-summary">
       <div className="summary-row">
         <span>Subtotal</span>
         <span>${subtotal.toFixed(2)}</span>
@@ -22,26 +21,23 @@ export default function OrderSummary({
         <span>IVA ({ivaLabel})</span>
         <span>${ivaAmount.toFixed(2)}</span>
       </div>
-      <div className="summary-total">
+      <div className="summary-row total">
         <span>Total</span>
         <span>${totalConIva.toFixed(2)}</span>
       </div>
-      <div className="summary-hint">
-        El cobro se realiza en la pantalla <strong>Cobrar</strong>.
+      
+      <div className="summary-note">
+        <small>El cobro se realiza en la pantalla Cobrar.</small>
       </div>
 
-      {items.length > 0 && (
-        <button
-          className="btn btn-success btn-block"
-          onClick={guardarOrden}
-          disabled={guardando || (orderType === 'dine_in' && !numeroMesa)}
-          style={{ marginTop: '1rem', width: '100%' }}
-          type="button"
-        >
-          <FiSave size={14} />
-          {guardando ? 'Enviando...' : 'Enviar a cocina'}
-        </button>
-      )}
+      <button
+        className="btn-send-kitchen"
+        onClick={guardarOrden}
+        disabled={guardando || items.length === 0 || (orderType === 'dine_in' && !numeroMesa)}
+        type="button"
+      >
+        {guardando ? 'Enviando...' : 'Enviar a cocina'}
+      </button>
     </div>
   );
 }

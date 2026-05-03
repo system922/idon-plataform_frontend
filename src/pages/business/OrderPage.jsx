@@ -21,7 +21,7 @@ export default function TakeOrderPageNew() {
   const [showAddItemModal,      setShowAddItemModal     ] = useState(false);
   const [productoSeleccionado,  setProductoSeleccionado ] = useState(null);
   const [cantidadItem,          setCantidadItem         ] = useState(1);
-  const [notasItem,             setNotesItem            ] = useState('');
+  const [notasItem,             setNotasItem            ] = useState('');
 
   // ── Carga inicial ─────────────────────────────────────────────────────────
 
@@ -71,21 +71,30 @@ export default function TakeOrderPageNew() {
       setError('Selecciona un producto y cantidad válida');
       return;
     }
-    const precio   = Number(productoSeleccionado.price) || 0;
+    const precio = Number(productoSeleccionado.price) || 0;
     const cantidad = parseInt(cantidadItem, 10);
-    setItems(prev => [...prev, {
-      id:           Date.now(),
-      product_id:   productoSeleccionado.id,      // ✅ product_id (lo que espera el backend)
-      product_name: productoSeleccionado.name,   // ✅ product_name
-      quantity:     cantidad,                     // ✅ quantity
-      unit_price:   precio,                       // ✅ unit_price
-      line_total:   precio * cantidad,            // ✅ line_total
-      notes:        notasItem,
-    }]);
+    
+    const nuevoItem = {
+      id:         Date.now(),
+      // Para ItemsList (visualización)
+      nombre:     productoSeleccionado.name,
+      precio:     precio,
+      cantidad:   cantidad,
+      subtotal:   precio * cantidad,
+      notas:      notasItem,
+      // Para el backend
+      product_id:   productoSeleccionado.id,
+      product_name: productoSeleccionado.name,
+      quantity:     cantidad,
+      unit_price:   precio,
+      line_total:   precio * cantidad,
+    };
+    
+    setItems(prev => [...prev, nuevoItem]);
     setShowAddItemModal(false);
     setProductoSeleccionado(null);
     setCantidadItem(1);
-    setNotesItem('');
+    setNotasItem('');
     setError('');
   }
 
@@ -93,7 +102,7 @@ export default function TakeOrderPageNew() {
 
   // ── Totales ───────────────────────────────────────────────────────────────
 
-  const subtotal    = useMemo(() => items.reduce((s, i) => s + (Number(i.line_total) || 0), 0), [items]);
+  const subtotal    = useMemo(() => items.reduce((s, i) => s + (Number(i.line_total) || Number(i.subtotal) || 0), 0), [items]);
   const ivaAmount   = useMemo(() => subtotal * (Number.isFinite(vatRate) ? vatRate : 0.12), [subtotal, vatRate]);
   const totalConIva = useMemo(() => subtotal + ivaAmount, [subtotal, ivaAmount]);
   const ivaLabel    = useMemo(() => `${Math.round((vatRate || 0) * 1000) / 10}%`, [vatRate]);
@@ -101,11 +110,13 @@ export default function TakeOrderPageNew() {
   // ── Guardar orden ─────────────────────────────────────────────────────────
 
   async function guardarOrden() {
+    // Validación para "dine_in"
     if (orderType === 'dine_in' && !numeroMesa) {
       setError('Debe ingresar un número de mesa');
       return;
     }
 
+    // Validación para asegurar que haya al menos un ítem
     if (items.length === 0) {
       setError('Debe agregar al menos un ítem');
       return;
@@ -142,7 +153,7 @@ export default function TakeOrderPageNew() {
         quantity:     item.quantity,
         unit_price:   item.unit_price,
         line_total:   item.line_total,
-        notes:        item.notes || null,
+        notes:        item.notas || null,
       }));
 
       // Guardar orden
@@ -227,7 +238,7 @@ export default function TakeOrderPageNew() {
           cantidadItem={cantidadItem}
           setCantidadItem={setCantidadItem}
           notasItem={notasItem}
-          setNotasItem={setNotesItem}
+          setNotasItem={setNotasItem}
           agregarItem={agregarItem}
           categorias={categorias}
         />
