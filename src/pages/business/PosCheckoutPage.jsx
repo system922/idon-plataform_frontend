@@ -429,21 +429,69 @@ export default function PosCheckoutPage() {
     const tipoId = isCF ? '07' : isRUC ? '04' : '05';
     const email = foundCliente?.email || clienteEmail.trim() || null;
 
-    const itemsPayload = (order.items || []).map(item => {
-      const qty = item.quantity || 1;
-      const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
-      const montoIVA = Number(item.tax_rate) || 0;
-      return {
-        description: item.product_name || item.name || 'Producto',
-        qty: qty,
-        unit_price: precioSinIVA,
-        subtotal: qty * precioSinIVA,
-        tax_amount: qty * montoIVA
-      };
-    });
+    // 🔥 Obtener datos reales de cada producto desde la API
+    const itemsPayload = [];
+    
+    for (const item of (order.items || [])) {
+      try {
+        // Obtener el producto desde la base de datos
+        const productRes = await fetchWithAuth(`/api/products/${item.product_id}`);
+        
+        if (!productRes.ok) {
+          console.error(`Producto no encontrado: ${item.product_id}`);
+          // Usar datos del item como fallback
+          const qty = item.quantity || 1;
+          const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
+          const montoIVA = Number(item.tax_rate) || 0;
+          
+          itemsPayload.push({
+            description: item.product_name || 'Producto',
+            qty: qty,
+            unit_price: precioSinIVA,
+            subtotal: qty * precioSinIVA,
+            tax_amount: qty * montoIVA
+          });
+          continue;
+        }
+        
+        const product = await productRes.json();
+        const qty = item.quantity || 1;
+        const precioSinIVA = Number(product.selling_price) || 0;
+        const montoIVA = Number(product.tax_rate) || 0;
+        
+        itemsPayload.push({
+          description: product.name || item.product_name || 'Producto',
+          qty: qty,
+          unit_price: precioSinIVA,
+          subtotal: qty * precioSinIVA,
+          tax_amount: qty * montoIVA
+        });
+      } catch (err) {
+        console.error(`Error obteniendo producto ${item.product_id}:`, err);
+        // Fallback con datos del item
+        const qty = item.quantity || 1;
+        const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
+        const montoIVA = Number(item.tax_rate) || 0;
+        
+        itemsPayload.push({
+          description: item.product_name || 'Producto',
+          qty: qty,
+          unit_price: precioSinIVA,
+          subtotal: qty * precioSinIVA,
+          tax_amount: qty * montoIVA
+        });
+      }
+    }
 
     const subtotalTotal = itemsPayload.reduce((sum, i) => sum + i.subtotal, 0);
     const ivaTotal = itemsPayload.reduce((sum, i) => sum + i.tax_amount, 0);
+    const totalFactura = subtotalTotal + ivaTotal;
+
+    // Si no hay items, no emitir factura
+    if (itemsPayload.length === 0) {
+      console.error('No hay items para facturar');
+      return null;
+    }
 
     try {
       const res = await fetchWithAuth('/api/einvoicing/invoices/emit', {
@@ -453,26 +501,28 @@ export default function PosCheckoutPage() {
           customer: {
             name: isCF ? 'CONSUMIDOR FINAL' : (custNombre || ''),
             ruc: isCF ? '9999999999999' : cedula,
-            email,
+            email: email || null,
             tipo_identificacion: tipoId,
           },
           items: itemsPayload,
           subtotal: subtotalTotal,
           iva_amount: ivaTotal,
-          total: subtotalTotal + ivaTotal,
+          total: totalFactura,
           forma_pago: FORMA_PAGO_MAP[method] || '01',
         }),
       });
+      
       if (res.ok) {
         const data = await res.json();
-        console.log('Factura emitida:', data.invoice_number);
+        console.log('✅ Factura emitida:', data);
         return data.invoice_number || null;
       }
+      
       const errData = await res.json().catch(() => ({}));
-      console.error('Error al emitir factura:', errData);
+      console.error('❌ Error al emitir factura:', errData.error || errData);
       return null;
     } catch (e) {
-      console.error('Error al emitir factura:', e);
+      console.error('❌ Error al emitir factura:', e);
       return null;
     }
   }
@@ -481,19 +531,58 @@ export default function PosCheckoutPage() {
   const imprimirTicket = async (order, paid, cambio, invoiceNumber = null, splitMode = null, customerName = null) => {
     try {
       const printerConfig = await getPrinterConfig('printer_main');
-      const itemsToPrint = (order.items || []).map(item => {
-        const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
-        const montoIVA = Number(item.tax_rate) || 0;
-        return {
-          description: item.product_name || item.name || 'Producto',
-          quantity: item.quantity,
-          price: precioSinIVA,
-          total: precioSinIVA * item.quantity,
-          tax_amount: montoIVA * item.quantity
-        };
-      });
+      
+      // 🔥 Obtener datos reales de cada producto para la impresión
+      const itemsToPrint = [];
+      
+      for (const item of (order.items || [])) {
+        try {
+          const productRes = await fetchWithAuth(`/api/products/${item.product_id}`);
+          
+          if (productRes.ok) {
+            const product = await productRes.json();
+            const precioSinIVA = Number(product.selling_price) || 0;
+            const montoIVA = Number(product.tax_rate) || 0;
+            const subtotal = precioSinIVA * item.quantity;
+            const ivaTotal = montoIVA * item.quantity;
+            
+            itemsToPrint.push({
+              description: product.name || item.product_name || 'Producto',
+              quantity: item.quantity,
+              price: precioSinIVA,
+              total: subtotal,
+              tax_amount: ivaTotal
+            });
+          } else {
+            // Fallback
+            const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
+            const montoIVA = Number(item.tax_rate) || 0;
+            itemsToPrint.push({
+              description: item.product_name || 'Producto',
+              quantity: item.quantity,
+              price: precioSinIVA,
+              total: precioSinIVA * item.quantity,
+              tax_amount: montoIVA * item.quantity
+            });
+          }
+        } catch (err) {
+          console.error(`Error obteniendo producto ${item.product_id}:`, err);
+          const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
+          const montoIVA = Number(item.tax_rate) || 0;
+          itemsToPrint.push({
+            description: item.product_name || 'Producto',
+            quantity: item.quantity,
+            price: precioSinIVA,
+            total: precioSinIVA * item.quantity,
+            tax_amount: montoIVA * item.quantity
+          });
+        }
+      }
+      
       const printSubtotal = itemsToPrint.reduce((sum, i) => sum + i.total, 0);
       const printTax = itemsToPrint.reduce((sum, i) => sum + i.tax_amount, 0);
+      const printTotal = printSubtotal + printTax;
+      
       const result = await print('printer_main', 'invoice', {
         bizInfo,
         invoice: { number: invoiceNumber || order.order_number || order.id, date: new Date().toISOString() },
@@ -502,10 +591,11 @@ export default function PosCheckoutPage() {
         subtotal: printSubtotal,
         tax: printTax,
         taxRate: 0,
-        total: printSubtotal + printTax,
+        total: printTotal,
         payment: { cash: paid, card: 0, other: 0 },
         printerFooter: printerConfig.footer,
       }, true);
+      
       if (result.success) {
         setSuccess(result.message);
       } else {
