@@ -379,13 +379,25 @@ export default function PosCheckoutPage() {
       setError('No hay productos seleccionados');
       return;
     }
+    
+    // Filtrar solo items NO pagados
+    const itemsNoPagados = selectedItems.filter(itemId => {
+      const item = selectedOrder.items.find(i => i.id === itemId);
+      return item && !item.paid;
+    });
+    
+    if (itemsNoPagados.length === 0) {
+      setError('Los productos seleccionados ya fueron pagados');
+      return;
+    }
+    
     setSplitClientes(splitClientes.map(cliente => 
       cliente.id === idCliente 
-        ? { ...cliente, items: [...cliente.items, ...selectedItems] }
+        ? { ...cliente, items: [...cliente.items, ...itemsNoPagados] }
         : cliente
     ));
     setSelectedItems([]);
-    setSuccess(`${selectedItems.length} producto(s) asignado(s)`);
+    setSuccess(`${itemsNoPagados.length} producto(s) asignado(s)`);
     setTimeout(() => setSuccess(''), 2000);
   };
 
@@ -520,15 +532,17 @@ export default function PosCheckoutPage() {
 
       // Verificar pagos válidos
       let pagosInvalidos = false;
+      let clienteConPagoInsuficiente = null;
       for (const cliente of splitClientes) {
         if (cliente.items.length > 0 && cliente.montoRecibido < calcularTotalCliente(cliente)) {
           pagosInvalidos = true;
+          clienteConPagoInsuficiente = cliente.nombre || 'Cliente';
           break;
         }
       }
       
       if (pagosInvalidos) {
-        setError(`Uno o más clientes tienen pago insuficiente`);
+        setError(`${clienteConPagoInsuficiente} tiene pago insuficiente`);
         setPrintLoading(false);
         return;
       }
@@ -577,7 +591,7 @@ export default function PosCheckoutPage() {
           }
         }
         
-        // Recargar la orden para ver productos actualizados
+        // 🔄 RECARGAR LA ORDEN para obtener los productos actualizados (los pagados ya no aparecerán)
         const res = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}`);
         const ordenActualizada = await res.json();
         setSelectedOrder(ordenActualizada);
@@ -614,7 +628,7 @@ export default function PosCheckoutPage() {
           setSplitClientes([]);
           setPagosRealizados([]);
         } else {
-          // Limpiar para el siguiente grupo de clientes
+          // Crear nuevo cliente por defecto para el siguiente grupo
           setSplitClientes([{
             id: Date.now(),
             nombre: '',
@@ -625,11 +639,14 @@ export default function PosCheckoutPage() {
             montoRecibido: 0,
             referencia: ''
           }]);
+          
+          // Limpiar selección
+          setSelectedItems([]);
+          setSuccess(`Pagos completados. Quedan ${productosPendientes.length} productos por pagar.`);
         }
         
-        setSelectedItems([]);
-        
       } catch (err) {
+        console.error('Error en pago dividido:', err);
         setError(err.message);
       } finally {
         setPrintLoading(false);
