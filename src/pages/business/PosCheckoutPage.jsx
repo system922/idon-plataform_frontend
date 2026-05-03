@@ -295,7 +295,8 @@ export default function PosCheckoutPage() {
     setTransferPaidRaw(String(Math.round(vals.transfer * 100)));
   };
 
-  // ── SPLIT - Cálculo de totals ────────────────────────────────────────────
+  // ── SPLIT - Cálculo de totals (SOLO MODIFICADO ESTO) ──────────────────────
+  // Ahora: selling_price = precio sin IVA, tax_rate = monto del IVA por unidad
   
   const getSplitSubtotal = () => {
     if (!selectedOrder || paymentMethod !== 'split') return 0;
@@ -303,7 +304,9 @@ export default function PosCheckoutPage() {
     return selectedOrder.items
       .filter(i => selectedItems.includes(i.id) && !i.paid)
       .reduce((sum, i) => {
-        return sum + (Number(i.unit_price) * i.quantity);
+        // Usar selling_price (precio sin IVA) si existe, si no usar unit_price
+        const precioSinIVA = Number(i.selling_price) || Number(i.unit_price) || 0;
+        return sum + (precioSinIVA * i.quantity);
       }, 0);
   };
 
@@ -313,10 +316,9 @@ export default function PosCheckoutPage() {
     return selectedOrder.items
       .filter(i => selectedItems.includes(i.id) && !i.paid)
       .reduce((sum, i) => {
-        const taxRate = Number(i.tax_rate) || 0;
-        const itemSubtotal = Number(i.unit_price) * i.quantity;
-        const itemTax = (itemSubtotal * taxRate) / 100;
-        return sum + round2(itemTax);
+        // tax_rate es el monto del IVA por unidad (NO es porcentaje)
+        const montoIVA = Number(i.tax_rate) || 0;
+        return sum + (montoIVA * i.quantity);
       }, 0);
   };
 
@@ -436,9 +438,7 @@ export default function PosCheckoutPage() {
       return;
     }
 
-    // ============================================================
-    // SPLIT - MODIFICADO
-    // ============================================================
+    // SPLIT - Pago dividido con múltiples clientes
     if (selectedOrder && paymentMethod === 'split') {
       if (selectedItems.length === 0) {
         setError("Selecciona los productos que pagará este cliente");
@@ -614,27 +614,23 @@ export default function PosCheckoutPage() {
 
     const itemsPayload = (order.items || []).map(item => {
       const qty = item.quantity || 1;
-      const price = parseFloat(item.unit_price) || 0;
-      const subtotal = qty * price;
-      const taxRate = parseFloat(item.tax_rate) || 0;
-      const taxAmount = (subtotal * taxRate) / 100;
+      const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
+      const montoIVA = Number(item.tax_rate) || 0;
+      const subtotal = qty * precioSinIVA;
+      const ivaTotal = qty * montoIVA;
 
       return {
         description: item.product_name || item.name || 'Producto',
         qty: qty,
-        unit_price: price,
+        unit_price: precioSinIVA,
         subtotal: subtotal,
-        tax_rate: taxRate,
-        tax_amount: taxAmount
+        tax_amount: ivaTotal
       };
     });
 
     const subtotalTotal = itemsPayload.reduce((sum, i) => sum + i.subtotal, 0);
     const ivaTotal = itemsPayload.reduce((sum, i) => sum + i.tax_amount, 0);
     const totalFactura = subtotalTotal + ivaTotal;
-
-    const uniqueTaxRates = [...new Set(itemsPayload.map(i => i.tax_rate))];
-    const mainTaxRate = uniqueTaxRates.length === 1 ? uniqueTaxRates[0] : 0;
 
     try {
       const res = await fetchWithAuth('/api/einvoicing/invoices/emit', {
@@ -649,7 +645,6 @@ export default function PosCheckoutPage() {
           },
           items: itemsPayload,
           subtotal: subtotalTotal,
-          iva_rate: mainTaxRate,
           iva_amount: ivaTotal,
           total: totalFactura,
           forma_pago: FORMA_PAGO_MAP[method] || '01',
@@ -687,16 +682,17 @@ export default function PosCheckoutPage() {
           : 0;
 
       const itemsToPrint = (order.items || []).map(item => {
-        const subtotal = Number(item.unit_price) * item.quantity;
-        const taxRate = Number(item.tax_rate) || 0;
-        const taxAmount = (subtotal * taxRate) / 100;
+        const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
+        const montoIVA = Number(item.tax_rate) || 0;
+        const subtotal = precioSinIVA * item.quantity;
+        const ivaTotal = montoIVA * item.quantity;
         
         return {
           description: item.product_name || item.name || 'Producto',
           quantity: item.quantity,
-          price: item.unit_price,
+          price: precioSinIVA,
           total: subtotal,
-          tax_amount: taxAmount
+          tax_amount: ivaTotal
         };
       });
 
@@ -838,8 +834,7 @@ export default function PosCheckoutPage() {
                   className={paymentMethod === 'split' ? "pay-btn selected" : "pay-btn"}
                   onClick={() => setPaymentMethod('split')}
                 >
-                  <Users size={15} /> Dividido
-                </button>
+                  <Users size={15} /> Dividido                </button>
               </div>
 
               {/* Opción de facturación para SPLIT - SOLO AGREGADO */}
@@ -904,12 +899,12 @@ export default function PosCheckoutPage() {
                             {item.quantity}x {item.product_name || item.name}
                             {item.tax_rate > 0 && (
                               <span style={{ fontSize: 10, color: '#666', marginLeft: 8 }}>
-                                (IVA {item.tax_rate}%)
+                                (IVA {item.tax_rate})
                               </span>
                             )}
                           </span>
                           <span className="item-amt" style={{ fontWeight: selectedItems.includes(item.id) ? '700' : '600' }}>
-                            {fmt(item.unit_price * item.quantity)}
+                            {fmt((Number(item.selling_price) || Number(item.unit_price)) * item.quantity)}
                           </span>
                         </div>
                     ))}
@@ -930,11 +925,11 @@ export default function PosCheckoutPage() {
                           {item.quantity}x {item.product_name || item.name}
                           {item.tax_rate > 0 && (
                             <span style={{ fontSize: 10, color: '#666', marginLeft: 8 }}>
-                              (IVA {item.tax_rate}%)
+                              (IVA {item.tax_rate})
                             </span>
                           )}
                         </span>
-                        <span className="item-amt">{fmt(item.unit_price * item.quantity)}</span>
+                        <span className="item-amt">{fmt((Number(item.selling_price) || Number(item.unit_price)) * item.quantity)}</span>
                       </div>
                     ))}
                   </div>
