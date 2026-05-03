@@ -419,7 +419,7 @@ export default function PosCheckoutPage() {
   const totalOrden = selectedOrder ? Number(selectedOrder.total || 0) : 0;
   const changeNormal = Math.max(0, (parseFloat(amountPaid) || 0) - totalOrden);
 
-  // ── FACTURA ELECTRÓNICA ─────────────────────────────────────────────────
+  // ── FACTURA ELECTRÓNICA (CORREGIDA - usa datos del item directamente) ──────
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
   async function emitirFactura(order, custCedula, custNombre, method) {
@@ -502,42 +502,25 @@ export default function PosCheckoutPage() {
     }
   }
 
-  // ── IMPRESIÓN ──────────────────────────────────────────────────────────
+  // ── IMPRESIÓN (CORREGIDA - usa datos del item directamente) ────────────────
   const imprimirTicket = async (order, paid, cambio, invoiceNumber = null, splitMode = null, customerName = null) => {
     try {
       const printerConfig = await getPrinterConfig('printer_main');
       
-      const itemsToPrint = [];
-      
-      for (const item of (order.items || [])) {
-        try {
-          // Usar fetchWithAuth para obtener el producto
-          const product = await fetchWithAuth(`/api/products/${item.product_id}`);
-          const precioSinIVA = Number(product?.price) || 0;
-          const montoIVA = Number(product?.tax_rate) || 0;
-          const subtotal = precioSinIVA * item.quantity;
-          const ivaTotal = montoIVA * item.quantity;
-          
-          itemsToPrint.push({
-            description: product?.name || item.product_name || 'Producto',
-            quantity: item.quantity,
-            price: precioSinIVA,
-            total: subtotal,
-            tax_amount: ivaTotal
-          });
-        } catch (err) {
-          console.error(`Error obteniendo producto ${item.product_id}:`, err);
-          const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
-          const montoIVA = Number(item.tax_rate) || 0;
-          itemsToPrint.push({
-            description: item.product_name || 'Producto',
-            quantity: item.quantity,
-            price: precioSinIVA,
-            total: precioSinIVA * item.quantity,
-            tax_amount: montoIVA * item.quantity
-          });
-        }
-      }
+      const itemsToPrint = (order.items || []).map(item => {
+        const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
+        const montoIVA = Number(item.tax_rate) || 0;
+        const subtotal = precioSinIVA * item.quantity;
+        const ivaTotal = montoIVA * item.quantity;
+        
+        return {
+          description: item.product_name || 'Producto',
+          quantity: item.quantity,
+          price: precioSinIVA,
+          total: subtotal,
+          tax_amount: ivaTotal
+        };
+      });
       
       const printSubtotal = itemsToPrint.reduce((sum, i) => sum + i.total, 0);
       const printTax = itemsToPrint.reduce((sum, i) => sum + i.tax_amount, 0);
@@ -567,7 +550,7 @@ export default function PosCheckoutPage() {
     }
   };
 
-  // ── COBRAR COMENSAL ────────────────────────────────────────────────────────
+  // ── COBRAR COMENSAL (CORREGIDO) ────────────────────────────────────────────
   const cobrarComensal = async (comensal) => {
     if (comensal.items.length === 0) {
       setError('Este comensal no tiene productos asignados');
@@ -716,7 +699,7 @@ export default function PosCheckoutPage() {
     }
   };
 
-  // ── PAGO NORMAL ──────────────────────────────────────────────────────────
+  // ── PAGO NORMAL (CORREGIDO) ────────────────────────────────────────────────
   const pagoNormal = async () => {
     setPrintLoading(true);
     try {
