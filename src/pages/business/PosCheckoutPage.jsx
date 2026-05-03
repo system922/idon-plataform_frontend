@@ -439,17 +439,36 @@ export default function PosCheckoutPage() {
       try {
         console.log(`🔍 Obteniendo producto ID: ${item.product_id}`);
         
-        // Usar fetchWithAuth que ya tiene la URL base
-        const product = await fetchWithAuth(`/api/products/${item.product_id}`);
-        console.log(`✅ Producto COMPLETO:`, JSON.stringify(product, null, 2));
-        console.log(`📊 product.price: ${product?.price}`);
-        console.log(`📊 product.selling_price: ${product?.selling_price}`);
-        console.log(`📊 product.tax_rate: ${product?.tax_rate}`);
-        console.log(`📊 product.name: ${product?.name}`);
+        // Hacer petición manual para ver el error
+        const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
+        const selectedBusiness = JSON.parse(localStorage.getItem('selectedBusiness') || '{}');
+        const schemaName = selectedBusiness.schemaName || selectedBusiness.slug;
+        
+        const url = `/api/products/${item.product_id}`;
+        console.log(`📡 URL: ${url}`);
+        console.log(`📡 Schema: ${schemaName}`);
+        
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'X-DB-Name': schemaName || ''
+          }
+        });
+        
+        console.log(`📡 Response status: ${response.status}`);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Error ${response.status}: ${errorText}`);
+          throw new Error(`Producto no encontrado: ${item.product_id}`);
+        }
+        
+        const product = await response.json();
+        console.log(`✅ Producto obtenido:`, product);
         
         const qty = item.quantity || 1;
-        // Intentar diferentes nombres de campo
-        const precioSinIVA = Number(product?.price) || Number(product?.selling_price) || 0;
+        const precioSinIVA = Number(product?.selling_price) || Number(product?.price) || 0;
         const montoIVA = Number(product?.tax_rate) || 0;
         const subtotalItem = precioSinIVA * qty;
         const ivaItem = montoIVA * qty;
@@ -465,7 +484,6 @@ export default function PosCheckoutPage() {
         });
       } catch (err) {
         console.error(`❌ Error obteniendo producto ${item.product_id}:`, err);
-        // Fallback con datos del item
         const qty = item.quantity || 1;
         const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
         const montoIVA = Number(item.tax_rate) || 0;
@@ -484,12 +502,6 @@ export default function PosCheckoutPage() {
     const ivaTotal = itemsPayload.reduce((sum, i) => sum + i.tax_amount, 0);
     const totalFactura = subtotalTotal + ivaTotal;
 
-    console.log('📊 RESUMEN FACTURA:');
-    console.log('  Subtotal:', subtotalTotal);
-    console.log('  IVA Total:', ivaTotal);
-    console.log('  Total:', totalFactura);
-    console.log('  Items payload:', itemsPayload);
-
     if (itemsPayload.length === 0) {
       console.error('❌ No hay items para facturar');
       return null;
@@ -499,7 +511,7 @@ export default function PosCheckoutPage() {
       order_id: order.id,
       customer: {
         name: isCF ? 'CONSUMIDOR FINAL' : (custNombre || ''),
-        ruc: isCF ? '9999999999999' : cedula,
+        ruc: isCF ? '9999999999' : cedula,
         email: email || null,
         tipo_identificacion: tipoId,
       },
@@ -518,15 +530,31 @@ export default function PosCheckoutPage() {
     console.log('📤 Payload enviado a facturación:', JSON.stringify(payload, null, 2));
 
     try {
-      const result = await fetchWithAuth('/api/einvoicing/invoices/emit', {
+      const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
+      const selectedBusiness = JSON.parse(localStorage.getItem('selectedBusiness') || '{}');
+      const schemaName = selectedBusiness.schemaName || selectedBusiness.slug;
+      
+      const res = await fetch('/api/einvoicing/invoices/emit', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-DB-Name': schemaName || ''
+        },
         body: JSON.stringify(payload),
       });
       
-      console.log('✅ Factura emitida exitosamente:', result);
-      return result?.invoice_number || null;
+      if (res.ok) {
+        const data = await res.json();
+        console.log('✅ Factura emitida exitosamente:', data);
+        return data.invoice_number || null;
+      }
+      
+      const errData = await res.json().catch(() => ({}));
+      console.error('❌ Error del servidor:', errData);
+      return null;
     } catch (e) {
-      console.error('❌ Error al emitir factura:', e);
+      console.error('❌ Error de red:', e);
       return null;
     }
   }
