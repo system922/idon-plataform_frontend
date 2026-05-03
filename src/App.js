@@ -28,17 +28,13 @@ import PendingApprovalPage  from './pages/PendingApprovalPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
 
-import TokenManager from './utils/tokenManager';
-import NotificationDisplay from './components/NotificationDisplay';
-import { NotificationProvider } from './context/NotificationContext';
-
 function RegisterPageWrapper({ setUser }) {
   const navigate = useNavigate();
   return (
     <RegisterPage
       onRegisterSuccess={(userData) => {
         setUser(userData);
-        TokenManager.setUser(userData);
+        localStorage.setItem('idonUser', JSON.stringify(userData));
       }}
       onNavigateToLogin={() => navigate('/login')}
     />
@@ -60,7 +56,7 @@ function AppRoutes({ user, setUser, handleLogout }) {
             <LoginPage
               onLogin={(userData) => {
                 setUser(userData);
-                TokenManager.setUser(userData);
+                localStorage.setItem('idonUser', JSON.stringify(userData));
               }}
               onNavigateToRegister={() => {}}
             />
@@ -123,8 +119,8 @@ function AppRoutes({ user, setUser, handleLogout }) {
               <Route path="payments"   element={<Payments />} />
               <Route path="users"      element={<Users />} />
               <Route path="roles"      element={<Roles />} />
-              <Route path="settings"   element={<Settings />} />
-              <Route path="audit"      element={<Audit />} />
+              <Route path="settings"                element={<Settings />} />
+              <Route path="audit"                  element={<Audit />} />
               <Route path="requests"   element={<Requests />} />
               <Route path="profile"    element={<ProfilePage user={user} />} />
             </Routes>
@@ -194,7 +190,10 @@ function AppRoutes({ user, setUser, handleLogout }) {
 }
 
 function AppContent() {
-  const [user,    setUser]    = useState(() => TokenManager.getUser());
+  const [user,    setUser]    = useState(() => {
+    try { return JSON.parse(localStorage.getItem('idonUser')) || null; }
+    catch { return null; }
+  });
   const [loading, setLoading] = useState(true);
   const location  = useLocation();
   const navigate  = useNavigate();
@@ -206,10 +205,10 @@ function AppContent() {
   const PUBLIC_PATHS = ['/terms-and-conditions', '/privacy-policy', '/login', '/register'];
 
   useEffect(() => {
-    const token = TokenManager.getToken();
+    const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
     if (!token) {
       setUser(null);
-      TokenManager.clear();
+      localStorage.removeItem('idonUser');
     } else if (!PUBLIC_PATHS.includes(location.pathname)) {
       const lastPath = localStorage.getItem('lastPath');
       if (lastPath && lastPath !== location.pathname) {
@@ -221,7 +220,10 @@ function AppContent() {
 
   async function handleLogout() {
     setUser(null);
-    TokenManager.clear();
+    localStorage.removeItem('idonUser');
+    localStorage.removeItem('idonToken');
+    localStorage.removeItem('token');
+    localStorage.removeItem('selectedBusiness');
     navigate('/login', { replace: true });
   }
 
@@ -241,12 +243,9 @@ function AppShell() {
 function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <NotificationProvider>
-        <AuthProvider>
-          <AppShell />
-          <NotificationDisplay />
-        </AuthProvider>
-      </NotificationProvider>
+      <AuthProvider>
+        <AppShell />
+      </AuthProvider>
     </BrowserRouter>
   );
 }
