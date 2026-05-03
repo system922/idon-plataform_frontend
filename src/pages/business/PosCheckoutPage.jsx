@@ -16,7 +16,7 @@ export default function PosCheckoutPage() {
   const [orders, setOrders] = useState([]);
   const [bizInfo, setBizInfo] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [modoDividido, setModoDividido] = useState(false); // false = normal, true = cuenta dividida
   const [foundCliente, setFoundCliente] = useState(null);
   const [clienteCedula, setClienteCedula] = useState('9999999999');
   const [clienteNombre, setClienteNombre] = useState('');
@@ -39,12 +39,11 @@ export default function PosCheckoutPage() {
   const [refTransfer, setRefTransfer] = useState('');
   const [mixtoManual, setMixtoManual] = useState(new Set());
   
-  // Control de facturación
+  // Control de cuenta dividida
   const [facturaIndividual, setFacturaIndividual] = useState(false);
   const [pagosRealizados, setPagosRealizados] = useState([]);
-  
-  // Clientes para pago dividido
-  const [splitClientes, setSplitClientes] = useState([]);
+  const [clientesDivididos, setClientesDivididos] = useState([]);
+  const [clienteActual, setClienteActual] = useState(null);
 
   // ── Helper para redondear ─────────────────────────────────────────────────
   const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -56,40 +55,13 @@ export default function PosCheckoutPage() {
 
   useEffect(() => {
     if (!selectedOrder) return;
-    const t = paymentMethod === 'split' ? getPaymentTotal() : Number(selectedOrder.total || 0);
-    if (paymentMethod === 'card') {
-      setAmountPaid(t.toFixed(2));
-      setCardPaid(t.toFixed(2));
-      setCardPaidRaw(String(Math.round(t * 100)));
-      setTransferPaid('');
-      setTransferPaidRaw('');
-    } else if (paymentMethod === 'transfer') {
-      setAmountPaid(t.toFixed(2));
-      setTransferPaid(t.toFixed(2));
-      setTransferPaidRaw(String(Math.round(t * 100)));
-      setCardPaid('');
-      setCardPaidRaw('');
-    } else if (paymentMethod === 'mixto') {
-      setAmountPaid('');
-      setAmountPaidRaw('');
-      setCardPaid('');
-      setCardPaidRaw('');
-      setTransferPaid('');
-      setTransferPaidRaw('');
-      setMixtoManual(new Set());
-    } else if (paymentMethod === 'split') {
-      setAmountPaid('');
-      setAmountPaidRaw('');
-      setCardPaid('');
-      setCardPaidRaw('');
-      setTransferPaid('');
-      setTransferPaidRaw('');
+    if (modoDividido) {
       setSelectedItems([]);
-      if (splitClientes.length === 0) {
-        setSplitClientes([{
+      if (clientesDivididos.length === 0 && facturaIndividual) {
+        setClientesDivididos([{
           id: Date.now(),
-          nombre: '',
           cedula: '',
+          nombre: '',
           email: '',
           items: [],
           metodoPago: 'cash',
@@ -98,7 +70,7 @@ export default function PosCheckoutPage() {
         }]);
       }
     }
-  }, [paymentMethod, selectedOrder]);
+  }, [modoDividido, selectedOrder]);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   const fmt = (n) => `$${parseFloat(n || 0).toFixed(2)}`;
@@ -121,8 +93,10 @@ export default function PosCheckoutPage() {
     setMixtoManual(new Set());
     setSelectedItems([]);
     setPagosRealizados([]);
-    setSplitClientes([]);
+    setClientesDivididos([]);
+    setModoDividido(false);
     setFacturaIndividual(false);
+    setClienteActual(null);
   };
 
   const loadOrders = async () => {
@@ -140,35 +114,50 @@ export default function PosCheckoutPage() {
     }
   };
 
-  const buscarClientePorDocumento = async (documento) => {
+  const buscarClientePorDocumento = async (documento, esParaClienteDividido = false, clienteId = null) => {
     setClientApiLoading(true);
     setError('');
     setSuccess('');
-    setFoundCliente(null);
 
     if (!documento || (documento.length !== 10 && documento.length !== 13)) {
-      setClienteNombre('');
+      if (esParaClienteDividido && clienteId) {
+        actualizarClienteDividido(clienteId, 'nombre', '');
+        actualizarClienteDividido(clienteId, 'email', '');
+      } else {
+        setClienteNombre('');
+      }
       setClientApiLoading(false);
       return;
     }
 
     try {
-      let res;
       const docType = documento.length === 13 ? 'ruc' : 'cedula';
-
-      res = await fetchWithAuth(`/api/customers/by-document?document_number=${documento}&document_type=${docType}`);
+      const res = await fetchWithAuth(`/api/customers/by-document?document_number=${documento}&document_type=${docType}`);
 
       if (res.ok) {
         const data = await res.json();
         if (data?.nombre || data?.name) {
-          setClienteNombre(data.nombre || data.name);
-          setClienteEmail(data.email || '');
-          setFoundCliente({ ...data, tipo: docType });
+          const nombre = data.nombre || data.name;
+          const email = data.email || '';
+          
+          if (esParaClienteDividido && clienteId) {
+            actualizarClienteDividido(clienteId, 'nombre', nombre);
+            actualizarClienteDividido(clienteId, 'email', email);
+          } else {
+            setClienteNombre(nombre);
+            setClienteEmail(email);
+            setFoundCliente({ ...data, tipo: docType });
+          }
         }
       } else {
-        setClienteEmail('');
-        setFoundCliente(null);
-        await buscarNombreEnPadronEcuador(documento.slice(0, 10));
+        if (esParaClienteDividido && clienteId) {
+          actualizarClienteDividido(clienteId, 'nombre', '');
+          actualizarClienteDividido(clienteId, 'email', '');
+        } else {
+          setClienteEmail('');
+          setFoundCliente(null);
+          await buscarNombreEnPadronEcuador(documento.slice(0, 10), esParaClienteDividido, clienteId);
+        }
       }
     } catch (err) {
       console.error('Error buscando cliente:', err);
@@ -177,7 +166,7 @@ export default function PosCheckoutPage() {
     }
   };
 
-  const buscarNombreEnPadronEcuador = async (cedula10) => {
+  const buscarNombreEnPadronEcuador = async (cedula10, esParaClienteDividido = false, clienteId = null) => {
     try {
       const proxyUrl = 'https://infoplacas.herokuapp.com/';
       const targetUrl = 'https://si.secap.gob.ec/sisecap/logeo_web/json/busca_persona_registro_civil.php';
@@ -193,11 +182,18 @@ export default function PosCheckoutPage() {
       if (textResponse) {
         const json = JSON.parse(textResponse);
         if (json?.nombres) {
-          setClienteNombre((json.nombres + ' ' + (json.apellidos || '')).trim());
+          const nombreCompleto = (json.nombres + ' ' + (json.apellidos || '')).trim();
+          if (esParaClienteDividido && clienteId) {
+            actualizarClienteDividido(clienteId, 'nombre', nombreCompleto);
+          } else {
+            setClienteNombre(nombreCompleto);
+          }
         }
       }
     } catch {
-      setClienteNombre('');
+      if (!esParaClienteDividido) {
+        setClienteNombre('');
+      }
     }
   };
 
@@ -248,20 +244,25 @@ export default function PosCheckoutPage() {
     setFoundCliente(null);
     setOrderNotes(o?.notes || '');
     setAmountPaid('');
-    setPaymentMethod('cash');
     setSelectedItems([]);
     setPagosRealizados([]);
-    setSplitClientes([]);
+    setClientesDivididos([]);
+    setModoDividido(false);
     setFacturaIndividual(false);
+    setClienteActual(null);
     setError('');
   };
 
-  const onClienteCedulaBlurOrEnter = (e) => {
+  const onClienteCedulaBlurOrEnter = (e, esParaClienteDividido = false, clienteId = null) => {
+    const cedula = esParaClienteDividido ? 
+      (clientesDivididos.find(c => c.id === clienteId)?.cedula || '') : 
+      clienteCedula;
+      
     if (
       (e.type === "blur" || (e.type === "keypress" && e.key === "Enter")) &&
-      (clienteCedula.length === 10 || clienteCedula.length === 13)
+      (cedula.length === 10 || cedula.length === 13)
     ) {
-      buscarClientePorDocumento(clienteCedula);
+      buscarClientePorDocumento(cedula, esParaClienteDividido, clienteId);
     }
   };
 
@@ -312,10 +313,9 @@ export default function PosCheckoutPage() {
     setTransferPaidRaw(String(Math.round(vals.transfer * 100)));
   };
 
-  // ── SPLIT - Cálculo de totals usando selling_price y tax_rate ────────────
-  
+  // ── Cálculo de totals ────────────────────────────────────────────────────
   const getSplitSubtotal = () => {
-    if (!selectedOrder || paymentMethod !== 'split') return 0;
+    if (!selectedOrder || !modoDividido) return 0;
 
     return selectedOrder.items
       .filter(i => selectedItems.includes(i.id) && !i.paid)
@@ -326,7 +326,7 @@ export default function PosCheckoutPage() {
   };
 
   const getSplitTax = () => {
-    if (!selectedOrder || paymentMethod !== 'split') return 0;
+    if (!selectedOrder || !modoDividido) return 0;
 
     return selectedOrder.items
       .filter(i => selectedItems.includes(i.id) && !i.paid)
@@ -338,15 +338,16 @@ export default function PosCheckoutPage() {
 
   const getPaymentTotal = () => getSplitSubtotal() + getSplitTax();
 
-  // ── Funciones para manejar clientes en pago dividido ──────────────────────
+  // ── Funciones para cuenta dividida ────────────────────────────────────────
   
-  const agregarClienteSplit = () => {
-    setSplitClientes([
-      ...splitClientes,
+  const agregarClienteDividido = () => {
+    const nuevoId = Date.now();
+    setClientesDivididos([
+      ...clientesDivididos,
       {
-        id: Date.now(),
-        nombre: '',
+        id: nuevoId,
         cedula: '',
+        nombre: '',
         email: '',
         items: [],
         metodoPago: 'cash',
@@ -356,22 +357,22 @@ export default function PosCheckoutPage() {
     ]);
   };
 
-  const actualizarClienteSplit = (id, campo, valor) => {
-    setSplitClientes(splitClientes.map(cliente => 
-      cliente.id === id ? { ...cliente, [campo]: valor } : cliente
-    ));
-  };
-
-  const eliminarClienteSplit = (id) => {
-    if (splitClientes.length === 1) {
+  const eliminarClienteDividido = (id) => {
+    if (clientesDivididos.length === 1) {
       setError('Debe haber al menos un cliente');
       return;
     }
-    const cliente = splitClientes.find(c => c.id === id);
+    const cliente = clientesDivididos.find(c => c.id === id);
     if (cliente && cliente.items.length > 0) {
       setSelectedItems([...selectedItems, ...cliente.items]);
     }
-    setSplitClientes(splitClientes.filter(c => c.id !== id));
+    setClientesDivididos(clientesDivididos.filter(c => c.id !== id));
+  };
+
+  const actualizarClienteDividido = (id, campo, valor) => {
+    setClientesDivididos(clientesDivididos.map(cliente => 
+      cliente.id === id ? { ...cliente, [campo]: valor } : cliente
+    ));
   };
 
   const asignarItemsACliente = (idCliente) => {
@@ -380,7 +381,6 @@ export default function PosCheckoutPage() {
       return;
     }
     
-    // Filtrar solo items NO pagados
     const itemsNoPagados = selectedItems.filter(itemId => {
       const item = selectedOrder.items.find(i => i.id === itemId);
       return item && !item.paid;
@@ -391,7 +391,7 @@ export default function PosCheckoutPage() {
       return;
     }
     
-    setSplitClientes(splitClientes.map(cliente => 
+    setClientesDivididos(clientesDivididos.map(cliente => 
       cliente.id === idCliente 
         ? { ...cliente, items: [...cliente.items, ...itemsNoPagados] }
         : cliente
@@ -402,7 +402,7 @@ export default function PosCheckoutPage() {
   };
 
   const quitarItemDeCliente = (idCliente, itemId) => {
-    setSplitClientes(splitClientes.map(cliente => 
+    setClientesDivididos(clientesDivididos.map(cliente => 
       cliente.id === idCliente 
         ? { ...cliente, items: cliente.items.filter(id => id !== itemId) }
         : cliente
@@ -410,18 +410,34 @@ export default function PosCheckoutPage() {
     setSelectedItems([...selectedItems, itemId]);
   };
 
-  const calcularTotalCliente = (cliente) => {
+  const calcularSubtotalCliente = (cliente) => {
     if (!selectedOrder) return 0;
-    let total = 0;
+    let subtotal = 0;
     cliente.items.forEach(itemId => {
       const item = selectedOrder.items.find(i => i.id === itemId);
       if (item && !item.paid) {
         const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
-        const montoIVA = Number(item.tax_rate) || 0;
-        total += (precioSinIVA + montoIVA) * item.quantity;
+        subtotal += precioSinIVA * item.quantity;
       }
     });
-    return total;
+    return subtotal;
+  };
+
+  const calcularIVACliente = (cliente) => {
+    if (!selectedOrder) return 0;
+    let iva = 0;
+    cliente.items.forEach(itemId => {
+      const item = selectedOrder.items.find(i => i.id === itemId);
+      if (item && !item.paid) {
+        const montoIVA = Number(item.tax_rate) || 0;
+        iva += montoIVA * item.quantity;
+      }
+    });
+    return iva;
+  };
+
+  const calcularTotalCliente = (cliente) => {
+    return calcularSubtotalCliente(cliente) + calcularIVACliente(cliente);
   };
 
   const calcularCambioCliente = (cliente) => {
@@ -434,7 +450,7 @@ export default function PosCheckoutPage() {
   const iva = selectedOrder ? Number(selectedOrder.tax_amount || 0) : 0;
   const total = selectedOrder ? Number(selectedOrder.total || 0) : 0;
 
-  const totalAPagar = paymentMethod === 'split' ? getPaymentTotal() : total;
+  const totalAPagar = !modoDividido ? total : getPaymentTotal();
   const change = Math.max(0, (parseFloat(amountPaid) || 0) - totalAPagar);
 
   const mixtoCardAmt = parseFloat(cardPaid) || 0;
@@ -453,77 +469,176 @@ export default function PosCheckoutPage() {
     });
   };
 
+  // ── Métodos de pago para cuenta normal ────────────────────────────────────
+  const [metodoPagoNormal, setMetodoPagoNormal] = useState('cash');
+
   // ── Cobro/Guardar ──────────────────────────────────────────────────────────
   const handlePayment = async () => {
     setPrintLoading(true);
     setError('');
     setSuccess('');
 
-    // MIXTO (pago mixto normal)
-    if (selectedOrder && paymentMethod === 'mixto') {
-      const cashAmt = parseFloat(amountPaid) || 0;
-      const cardAmt = parseFloat(cardPaid) || 0;
-      const transferAmt = parseFloat(transferPaid) || 0;
-      const cashNeeded = Math.round(Math.max(0, total - cardAmt - transferAmt) * 100) / 100;
-
-      if (cashAmt < cashNeeded) {
-        setError(`Falta ${fmt(cashNeeded - cashAmt)} en efectivo`);
-        setPrintLoading(false);
+    // ── MODO NORMAL (no dividido) ──────────────────────────────────────────
+    if (!modoDividido && selectedOrder) {
+      if (metodoPagoNormal === 'cash') {
+        const paid = parseFloat(amountPaid) || 0;
+        if (paid < total) {
+          setError(`El pago debe ser al menos ${fmt(total)}`);
+          setPrintLoading(false);
+          return;
+        }
+        
+        try {
+          const res = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              status: 'paid',
+              payment_method: 'cash',
+              amount_paid: total,
+              customer_id: await guardarClienteSiNoExiste(clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', clienteEmail || null),
+              customer_name: clienteNombre,
+              customer_document_number: clienteCedula,
+              notes: orderNotes
+            }),
+          });
+          if (!res.ok) throw new Error('Error al completar pago');
+          
+          const invoiceNum = await emitirFactura(selectedOrder, clienteCedula, clienteNombre, 'cash');
+          await handlePrintReceipt(selectedOrder, paid, change, invoiceNum);
+          setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
+          await resetForm();
+          setSuccess('Pago completado');
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setPrintLoading(false);
+        }
         return;
       }
+      
+      if (metodoPagoNormal === 'card') {
+        const paid = total;
+        const refNum = refCard;
+        
+        try {
+          const res = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              status: 'paid',
+              payment_method: 'card',
+              amount_paid: total,
+              reference_number: refNum,
+              customer_id: await guardarClienteSiNoExiste(clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', clienteEmail || null),
+              customer_name: clienteNombre,
+              customer_document_number: clienteCedula,
+              notes: orderNotes
+            }),
+          });
+          if (!res.ok) throw new Error('Error al completar pago');
+          
+          const invoiceNum = await emitirFactura(selectedOrder, clienteCedula, clienteNombre, 'card');
+          await handlePrintReceipt(selectedOrder, paid, 0, invoiceNum);
+          setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
+          await resetForm();
+          setSuccess('Pago con tarjeta completado');
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setPrintLoading(false);
+        }
+        return;
+      }
+      
+      if (metodoPagoNormal === 'transfer') {
+        const paid = total;
+        const refNum = refTransfer;
+        
+        try {
+          const res = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              status: 'paid',
+              payment_method: 'transfer',
+              amount_paid: total,
+              reference_number: refNum,
+              customer_id: await guardarClienteSiNoExiste(clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', clienteEmail || null),
+              customer_name: clienteNombre,
+              customer_document_number: clienteCedula,
+              notes: orderNotes
+            }),
+          });
+          if (!res.ok) throw new Error('Error al completar pago');
+          
+          const invoiceNum = await emitirFactura(selectedOrder, clienteCedula, clienteNombre, 'transfer');
+          await handlePrintReceipt(selectedOrder, paid, 0, invoiceNum);
+          setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
+          await resetForm();
+          setSuccess('Pago con transferencia completado');
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setPrintLoading(false);
+        }
+        return;
+      }
+      
+      if (metodoPagoNormal === 'mixto') {
+        const cashAmt = parseFloat(amountPaid) || 0;
+        const cardAmt = parseFloat(cardPaid) || 0;
+        const transferAmt = parseFloat(transferPaid) || 0;
+        const cashNeeded = Math.round(Math.max(0, total - cardAmt - transferAmt) * 100) / 100;
 
-      const mixtoPayments = [];
-      if (cashNeeded > 0) mixtoPayments.push({ method: 'cash', amount: cashNeeded.toFixed(2), reference_number: null });
-      if (cardAmt > 0) mixtoPayments.push({ method: 'card', amount: cardAmt.toFixed(2), reference_number: refCard || null });
-      if (transferAmt > 0) mixtoPayments.push({ method: 'transfer', amount: transferAmt.toFixed(2), reference_number: refTransfer || null });
-
-      try {
-        const res = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            status: 'paid',
-            payment_method: 'mixto',
-            amount_paid: total,
-            payments: mixtoPayments,
-            customer_id: await guardarClienteSiNoExiste(clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', clienteEmail || null),
-            customer_name: clienteNombre,
-            customer_document_number: clienteCedula,
-            notes: orderNotes
-          }),
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          setError(err.error || 'Error al completar pago');
+        if (cashAmt < cashNeeded) {
+          setError(`Falta ${fmt(cashNeeded - cashAmt)} en efectivo`);
           setPrintLoading(false);
           return;
         }
 
-        const changeForPrint = cashAmt - cashNeeded;
-        const invoiceNum = await emitirFactura(selectedOrder, clienteCedula, clienteNombre, 'mixto');
-        await handlePrintReceipt(selectedOrder, total, changeForPrint, invoiceNum);
-        setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
-        await resetForm();
-        setTimeout(() => setSuccess(''), 1800);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setPrintLoading(false);
+        const mixtoPayments = [];
+        if (cashNeeded > 0) mixtoPayments.push({ method: 'cash', amount: cashNeeded.toFixed(2), reference_number: null });
+        if (cardAmt > 0) mixtoPayments.push({ method: 'card', amount: cardAmt.toFixed(2), reference_number: refCard || null });
+        if (transferAmt > 0) mixtoPayments.push({ method: 'transfer', amount: transferAmt.toFixed(2), reference_number: refTransfer || null });
+
+        try {
+          const res = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              status: 'paid',
+              payment_method: 'mixto',
+              amount_paid: total,
+              payments: mixtoPayments,
+              customer_id: await guardarClienteSiNoExiste(clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', clienteEmail || null),
+              customer_name: clienteNombre,
+              customer_document_number: clienteCedula,
+              notes: orderNotes
+            }),
+          });
+          if (!res.ok) throw new Error('Error al completar pago');
+          
+          const changeForPrint = cashAmt - cashNeeded;
+          const invoiceNum = await emitirFactura(selectedOrder, clienteCedula, clienteNombre, 'mixto');
+          await handlePrintReceipt(selectedOrder, total, changeForPrint, invoiceNum);
+          setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
+          await resetForm();
+          setSuccess('Pago mixto completado');
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setPrintLoading(false);
+        }
+        return;
       }
-      return;
     }
 
-    // SPLIT - Pago dividido
-    if (selectedOrder && paymentMethod === 'split') {
-      // Verificar que no haya productos sin asignar
+    // ── MODO CUENTA DIVIDIDA ─────────────────────────────────────────────────
+    if (modoDividido && selectedOrder) {
       if (selectedItems.length > 0) {
         setError("Asigna todos los productos a un cliente antes de pagar");
         setPrintLoading(false);
         return;
       }
       
-      // Verificar que haya al menos un cliente con productos
-      const clientesConItems = splitClientes.filter(c => c.items.length > 0);
+      const clientesConItems = clientesDivididos.filter(c => c.items.length > 0);
       if (clientesConItems.length === 0) {
         setError("Asigna al menos un producto a un cliente");
         setPrintLoading(false);
@@ -532,24 +647,17 @@ export default function PosCheckoutPage() {
 
       // Verificar pagos válidos
       let pagosInvalidos = false;
-      let clienteConPagoInsuficiente = null;
-      for (const cliente of splitClientes) {
+      for (const cliente of clientesDivididos) {
         if (cliente.items.length > 0 && cliente.montoRecibido < calcularTotalCliente(cliente)) {
           pagosInvalidos = true;
-          clienteConPagoInsuficiente = cliente.nombre || 'Cliente';
-          break;
+          setError(`${cliente.nombre || 'Cliente'} tiene pago insuficiente`);
+          setPrintLoading(false);
+          return;
         }
-      }
-      
-      if (pagosInvalidos) {
-        setError(`${clienteConPagoInsuficiente} tiene pago insuficiente`);
-        setPrintLoading(false);
-        return;
       }
 
       try {
-        // Procesar cada cliente
-        for (const cliente of splitClientes) {
+        for (const cliente of clientesDivididos) {
           if (cliente.items.length === 0) continue;
           
           const totalCliente = calcularTotalCliente(cliente);
@@ -557,7 +665,6 @@ export default function PosCheckoutPage() {
           let nombre = cliente.nombre?.trim() || 'CONSUMIDOR FINAL';
           let clienteId = await guardarClienteSiNoExiste(cedula, nombre, cliente.email || null, null);
           
-          // Registrar pago
           await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/pay-items`, {
             method: 'POST',
             body: JSON.stringify({
@@ -570,7 +677,7 @@ export default function PosCheckoutPage() {
             }),
           });
           
-          // Si es factura individual, generar factura AHORA
+          // Factura individual por cliente si está activado
           if (facturaIndividual) {
             const partialOrder = {
               ...selectedOrder,
@@ -580,7 +687,6 @@ export default function PosCheckoutPage() {
             await handlePrintReceipt(partialOrder, totalCliente, cliente.montoRecibido - totalCliente, null, 'split', nombre);
             setSuccess(`Factura generada para ${nombre}`);
           } else {
-            // Guardar en historial para factura única al final
             setPagosRealizados(prev => [...prev, {
               cliente: { cedula, nombre, email: cliente.email },
               items: cliente.items,
@@ -591,16 +697,15 @@ export default function PosCheckoutPage() {
           }
         }
         
-        // 🔄 RECARGAR LA ORDEN para obtener los productos actualizados (los pagados ya no aparecerán)
+        // Recargar orden
         const res = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}`);
         const ordenActualizada = await res.json();
         setSelectedOrder(ordenActualizada);
         
-        // Verificar si ya no quedan productos pendientes
         const productosPendientes = ordenActualizada.items.filter(i => !i.paid);
         
         if (productosPendientes.length === 0) {
-          // Si es factura única y hay pagos, generar UNA SOLA factura al final
+          // Factura única al final si está desactivada la individual
           if (!facturaIndividual && pagosRealizados.length > 0) {
             const todosLosItems = pagosRealizados.flatMap(p => p.items);
             const ordenCompleta = {
@@ -613,7 +718,6 @@ export default function PosCheckoutPage() {
             setSuccess('Factura final generada con todos los productos');
           }
           
-          // Cerrar la orden
           await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
             method: 'PATCH',
             body: JSON.stringify({
@@ -625,83 +729,30 @@ export default function PosCheckoutPage() {
           });
           setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
           setSelectedOrder(null);
-          setSplitClientes([]);
+          setClientesDivididos([]);
           setPagosRealizados([]);
         } else {
-          // Crear nuevo cliente por defecto para el siguiente grupo
-          setSplitClientes([{
+          setClientesDivididos([{
             id: Date.now(),
-            nombre: '',
             cedula: '',
+            nombre: '',
             email: '',
             items: [],
             metodoPago: 'cash',
             montoRecibido: 0,
             referencia: ''
           }]);
-          
-          // Limpiar selección
           setSelectedItems([]);
           setSuccess(`Pagos completados. Quedan ${productosPendientes.length} productos por pagar.`);
         }
         
       } catch (err) {
-        console.error('Error en pago dividido:', err);
+        console.error('Error en cuenta dividida:', err);
         setError(err.message);
       } finally {
         setPrintLoading(false);
       }
       return;
-    }
-
-    // NORMAL (no split)
-    if (selectedOrder && paymentMethod !== 'split') {
-      const paid = parseFloat(amountPaid) || 0;
-
-      if (paid < total) {
-        setError(`El pago debe ser al menos ${fmt(total)}`);
-        setPrintLoading(false);
-        return;
-      }
-
-      const refNum = paymentMethod === 'card' ? (refCard || null)
-        : paymentMethod === 'transfer' ? (refTransfer || null)
-          : null;
-
-      try {
-        const res = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            status: 'paid',
-            payment_method: paymentMethod,
-            amount_paid: total,
-            reference_number: refNum,
-            customer_id: await guardarClienteSiNoExiste(clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', clienteEmail || null),
-            customer_name: clienteNombre,
-            customer_document_number: clienteCedula,
-            notes: orderNotes
-          }),
-        });
-
-        if (!res.ok) {
-          const errData = await res.json();
-          setError(errData.error || 'Error al completar pago');
-          setPrintLoading(false);
-          return;
-        }
-
-        const invoiceNum = await emitirFactura(selectedOrder, clienteCedula, clienteNombre, paymentMethod);
-        await handlePrintReceipt(selectedOrder, paid, change, invoiceNum);
-        setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
-        setSelectedOrder(null);
-        setAmountPaid('');
-        setTimeout(() => setSuccess(''), 1800);
-        await resetForm();
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setPrintLoading(false);
-      }
     }
   };
 
@@ -834,14 +885,14 @@ export default function PosCheckoutPage() {
     >
       <div className="checkout-modern-main">
         <div className="checkout-modern-card">
-          {/* Combobox y cliente */}
+          {/* Selección de orden */}
           <div className="cmbx-row" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <label className="label" style={{ minWidth: 50, flex: '0 0 50px' }}>Orden:</label>
+            <label className="label" style={{ minWidth: 50 }}>Orden:</label>
             <select
               value={selectedOrder?.id || ''}
               onChange={e => handleSelectOrder(e.target.value)}
               className="combobox"
-              style={{ minWidth: 180, maxWidth: 180, flex: '1 1 180px' }}
+              style={{ minWidth: 180 }}
             >
               <option value="">Seleccionar No. Orden</option>
               {orders.map(order => (
@@ -851,40 +902,43 @@ export default function PosCheckoutPage() {
               ))}
             </select>
 
-            <label className="label" style={{ minWidth: 50, flex: '0 0 50px', marginLeft: 16 }}>Cliente:</label>
-            <input
-              className="client-inp"
-              type="text"
-              placeholder="Cédula/RUC"
-              value={clienteCedula}
-              onChange={e => setClienteCedula(e.target.value.replace(/\D/g, '').slice(0, 13))}
-              onBlur={onClienteCedulaBlurOrEnter}
-              onKeyPress={onClienteCedulaBlurOrEnter}
-              disabled={!selectedOrder}
-              style={{ minWidth: 120, maxWidth: 120, flex: '1 1 120px', marginLeft: 4 }}
-            />
-
-            <input
-              className="client-inp"
-              type="text"
-              placeholder="Nombre cliente (opcional)"
-              value={clienteNombre}
-              onChange={e => setClienteNombre(e.target.value)}
-              style={{ minWidth: 240, maxWidth: 300, flex: '2 1 240px', marginLeft: 6 }}
-            />
-
-            <input
-              className="client-inp"
-              type="email"
-              inputMode="email"
-              placeholder="✉ Email (factura)"
-              value={clienteEmail}
-              onChange={e => setClienteEmail(e.target.value)}
-              style={{
-                minWidth: 160, maxWidth: 200, flex: '1 1 160px', marginLeft: 4,
-                border: clienteEmail ? '1.5px solid #6842fe' : undefined
-              }}
-            />
+            {/* Datos del cliente principal - visibles cuando NO está en modo dividido */}
+            {!modoDividido && (
+              <>
+                <label className="label" style={{ marginLeft: 16 }}>Cliente:</label>
+                <div className="cliente-fields" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <input
+                    className="client-inp"
+                    type="text"
+                    placeholder="Cédula/RUC"
+                    value={clienteCedula}
+                    onChange={e => setClienteCedula(e.target.value.replace(/\D/g, '').slice(0, 13))}
+                    onBlur={onClienteCedulaBlurOrEnter}
+                    onKeyPress={e => onClienteCedulaBlurOrEnter(e)}
+                    disabled={!selectedOrder}
+                    style={{ minWidth: 120 }}
+                  />
+                  <input
+                    className="client-inp"
+                    type="text"
+                    placeholder="Nombre cliente"
+                    value={clienteNombre}
+                    onChange={e => setClienteNombre(e.target.value)}
+                    disabled={!selectedOrder}
+                    style={{ minWidth: 200 }}
+                  />
+                  <input
+                    className="client-inp"
+                    type="email"
+                    placeholder="Email (factura)"
+                    value={clienteEmail}
+                    onChange={e => setClienteEmail(e.target.value)}
+                    disabled={!selectedOrder}
+                    style={{ minWidth: 180 }}
+                  />
+                </div>
+              </>
+            )}
             <OpenDrawerButton />
           </div>
 
@@ -894,17 +948,72 @@ export default function PosCheckoutPage() {
 
           {selectedOrder && (
             <>
-              {/* Métodos de Pago */}
+              {/* Controles de pago */}
               <div className="pay-methods">
-                <button className={paymentMethod === 'cash' ? "pay-btn selected" : "pay-btn"} onClick={() => setPaymentMethod('cash')}><DollarSign size={15} /> Efectivo</button>
-                <button className={paymentMethod === 'transfer' ? "pay-btn selected" : "pay-btn"} onClick={() => setPaymentMethod('transfer')}><DollarSign size={15} /> Transferencia</button>
-                <button className={paymentMethod === 'card' ? "pay-btn selected" : "pay-btn"} onClick={() => setPaymentMethod('card')}><CreditCard size={15} /> Tarjeta</button>
-                <button className={paymentMethod === 'mixto' ? "pay-btn selected" : "pay-btn"} onClick={() => setPaymentMethod('mixto')}><Divide size={15} /> Mixto</button>
-                <button className={paymentMethod === 'split' ? "pay-btn selected" : "pay-btn"} onClick={() => setPaymentMethod('split')}><Users size={15} /> Dividido</button>
+                <button 
+                  className={!modoDividido && metodoPagoNormal === 'cash' ? "pay-btn selected" : "pay-btn"} 
+                  onClick={() => {
+                    setModoDividido(false);
+                    setMetodoPagoNormal('cash');
+                  }}
+                  disabled={modoDividido}
+                >
+                  <DollarSign size={15} /> Efectivo
+                </button>
+                <button 
+                  className={!modoDividido && metodoPagoNormal === 'transfer' ? "pay-btn selected" : "pay-btn"} 
+                  onClick={() => {
+                    setModoDividido(false);
+                    setMetodoPagoNormal('transfer');
+                  }}
+                  disabled={modoDividido}
+                >
+                  <DollarSign size={15} /> Transferencia
+                </button>
+                <button 
+                  className={!modoDividido && metodoPagoNormal === 'card' ? "pay-btn selected" : "pay-btn"} 
+                  onClick={() => {
+                    setModoDividido(false);
+                    setMetodoPagoNormal('card');
+                  }}
+                  disabled={modoDividido}
+                >
+                  <CreditCard size={15} /> Tarjeta
+                </button>
+                <button 
+                  className={!modoDividido && metodoPagoNormal === 'mixto' ? "pay-btn selected" : "pay-btn"} 
+                  onClick={() => {
+                    setModoDividido(false);
+                    setMetodoPagoNormal('mixto');
+                  }}
+                  disabled={modoDividido}
+                >
+                  <Divide size={15} /> Mixto
+                </button>
+                <button 
+                  className={modoDividido ? "pay-btn selected" : "pay-btn"} 
+                  onClick={() => {
+                    setModoDividido(true);
+                    if (clientesDivididos.length === 0) {
+                      setClientesDivididos([{
+                        id: Date.now(),
+                        cedula: '',
+                        nombre: '',
+                        email: '',
+                        items: [],
+                        metodoPago: 'cash',
+                        montoRecibido: 0,
+                        referencia: ''
+                      }]);
+                    }
+                  }}
+                >
+                  <Users size={15} /> Dividir Cuenta
+                </button>
               </div>
 
-              {/* Opción de facturación para SPLIT */}
-              {paymentMethod === 'split' && (
+              {/* Opción de facturación individual (solo en modo dividido) */}
+              {modoDividido && (
                 <div style={{ margin: '12px 0', padding: '12px', background: '#f0f0ff', borderRadius: 8 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
                     <input
@@ -915,18 +1024,6 @@ export default function PosCheckoutPage() {
                         if (!e.target.checked) {
                           setPagosRealizados([]);
                         }
-                        if (e.target.checked && splitClientes.length === 0) {
-                          setSplitClientes([{
-                            id: Date.now(),
-                            nombre: '',
-                            cedula: '',
-                            email: '',
-                            items: [],
-                            metodoPago: 'cash',
-                            montoRecibido: 0,
-                            referencia: ''
-                          }]);
-                        }
                       }}
                       style={{ width: 18, height: 18 }}
                     />
@@ -936,7 +1033,7 @@ export default function PosCheckoutPage() {
                   </label>
                   <span style={{ fontSize: 12, color: '#666', marginLeft: 30 }}>
                     {facturaIndividual 
-                      ? 'Cada cliente recibe su factura en el momento de pagar'
+                      ? 'Cada cliente recibe su factura con sus datos y productos'
                       : 'Se genera UNA SOLA factura cuando TODOS hayan pagado'}
                   </span>
                 </div>
@@ -949,13 +1046,18 @@ export default function PosCheckoutPage() {
                     {selectedOrder.mesa_numero ? `Mesa ${selectedOrder.mesa_numero}` : selectedOrder.order_type === 'delivery' ? 'DELIVERY' : 'PARA LLEVAR'}{' '}
                     <span style={{ fontWeight: 400, fontSize: 13, color: '#999' }}># {selectedOrder.order_number || selectedOrder.id}</span>
                   </b>
+                  {modoDividido && selectedItems.length > 0 && (
+                    <span style={{ fontWeight: 400, fontSize: 12, color: '#6842fe', marginLeft: 12 }}>
+                      ✓ {selectedItems.length} producto(s) seleccionado(s)
+                    </span>
+                  )}
                 </div>
 
-                {/* Items con checkboxes - SOLO para Split */}
-                {paymentMethod === 'split' && (
+                {/* Items - con checkboxes solo en modo dividido */}
+                {modoDividido && (
                   <div className="order-items">
                     <div style={{ fontWeight: 'bold', marginBottom: 8, fontSize: 14, color: '#333' }}>
-                      📦 Productos pendientes (selecciona para asignar a cada cliente):
+                      📦 Selecciona productos para asignar a cada cliente:
                     </div>
                     {selectedOrder.items.filter(item => !item.paid).map((item, idx) => (
                       <div key={idx} className="item-line" style={{
@@ -982,8 +1084,8 @@ export default function PosCheckoutPage() {
                   </div>
                 )}
 
-                {/* Items SIN checkboxes para otros métodos */}
-                {paymentMethod !== 'split' && (
+                {/* Items SIN checkboxes para modo normal */}
+                {!modoDividido && (
                   <div className="order-items">
                     {selectedOrder.items.filter(item => !item.paid).map((item, idx) => (
                       <div key={idx} className="item-line">
@@ -994,8 +1096,8 @@ export default function PosCheckoutPage() {
                   </div>
                 )}
 
-                {/* Totales selección para Split */}
-                {paymentMethod === 'split' && selectedItems.length > 0 && (
+                {/* Totales selección para modo dividido */}
+                {modoDividido && selectedItems.length > 0 && !facturaIndividual && (
                   <div className="totals-footer" style={{ marginTop: 16 }}>
                     <div className="sub-iva-total"><span>SUBTOTAL seleccionado:</span><span>{fmt(getSplitSubtotal())}</span></div>
                     <div className="sub-iva-total"><span>IVA seleccionado:</span><span>{fmt(getSplitTax())}</span></div>
@@ -1006,8 +1108,8 @@ export default function PosCheckoutPage() {
                   </div>
                 )}
 
-                {/* Totales - para métodos que no son split */}
-                {paymentMethod !== 'split' && (
+                {/* Totales modo normal */}
+                {!modoDividido && (
                   <div className="totals-footer">
                     <div className="sub-iva-total"><span>SUBTOTAL:</span><span>{fmt(subtotal)}</span></div>
                     <div className="sub-iva-total"><span>IVA:</span><span>{fmt(iva)}</span></div>
@@ -1018,51 +1120,79 @@ export default function PosCheckoutPage() {
                   </div>
                 )}
 
-                {/* Sección de Clientes para SPLIT */}
-                {paymentMethod === 'split' && (
-                  <div style={{ marginTop: 20, borderTop: '2px solid #e0e0e0', paddingTop: 16 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                      <span style={{ fontWeight: 'bold', fontSize: 16 }}>👥 Clientes / Comensales</span>
-                      <button onClick={agregarClienteSplit} style={{ background: '#6842fe', color: 'white', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>
+                {/* Sección de Clientes para cuenta dividida */}
+                {modoDividido && (
+                  <div className="clientes-container">
+                    <div className="clientes-header">
+                      <span>👥 Clientes / Comensales</span>
+                      <button onClick={agregarClienteDividido} className="btn-agregar-cliente">
                         + Agregar Cliente
                       </button>
                     </div>
                     
-                    {splitClientes.map((cliente, idx) => {
+                    {clientesDivididos.map((cliente, idx) => {
+                      const subtotalCliente = calcularSubtotalCliente(cliente);
+                      const ivaCliente = calcularIVACliente(cliente);
                       const totalCliente = calcularTotalCliente(cliente);
                       const cambioCliente = calcularCambioCliente(cliente);
                       const faltaCliente = totalCliente - cliente.montoRecibido;
                       
                       return (
-                        <div key={cliente.id} style={{ background: '#f9f9ff', border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 16 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                            <span style={{ fontWeight: 'bold' }}>🧑 Cliente {idx + 1}</span>
-                            {splitClientes.length > 1 && (
-                              <button onClick={() => eliminarClienteSplit(cliente.id)} style={{ background: '#ff4444', color: 'white', border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer', fontSize: 11 }}>
+                        <div key={cliente.id} className="cliente-card">
+                          <div className="cliente-header">
+                            <span className="cliente-titulo">🧑 Cliente {idx + 1}</span>
+                            {clientesDivididos.length > 1 && (
+                              <button onClick={() => eliminarClienteDividido(cliente.id)} className="btn-eliminar-cliente">
                                 Eliminar
                               </button>
                             )}
                           </div>
                           
                           {/* Datos del cliente */}
-                          <div style={{ display: 'flex', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-                            <input type="text" placeholder="Cédula/RUC" value={cliente.cedula} onChange={e => actualizarClienteSplit(cliente.id, 'cedula', e.target.value)} style={{ flex: 1, padding: 8, border: '1px solid #ccc', borderRadius: 4 }} />
-                            <input type="text" placeholder="Nombre completo" value={cliente.nombre} onChange={e => actualizarClienteSplit(cliente.id, 'nombre', e.target.value)} style={{ flex: 2, padding: 8, border: '1px solid #ccc', borderRadius: 4 }} />
-                            <input type="email" placeholder="Email (factura)" value={cliente.email} onChange={e => actualizarClienteSplit(cliente.id, 'email', e.target.value)} style={{ flex: 1, padding: 8, border: '1px solid #ccc', borderRadius: 4 }} />
+                          <div className="cliente-individual-fields">
+                            <input
+                              type="text"
+                              placeholder="Cédula/RUC"
+                              value={cliente.cedula}
+                              onChange={e => {
+                                const val = e.target.value.replace(/\D/g, '').slice(0, 13);
+                                actualizarClienteDividido(cliente.id, 'cedula', val);
+                              }}
+                              onKeyPress={e => {
+                                if (e.key === 'Enter') {
+                                  buscarClientePorDocumento(cliente.cedula, true, cliente.id);
+                                }
+                              }}
+                              onBlur={() => buscarClientePorDocumento(cliente.cedula, true, cliente.id)}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Nombre completo"
+                              value={cliente.nombre}
+                              onChange={e => actualizarClienteDividido(cliente.id, 'nombre', e.target.value)}
+                            />
+                            <input
+                              type="email"
+                              placeholder="Email (factura)"
+                              value={cliente.email}
+                              onChange={e => actualizarClienteDividido(cliente.id, 'email', e.target.value)}
+                            />
                           </div>
                           
                           {/* Productos asignados */}
-                          <div style={{ marginBottom: 12 }}>
-                            <span style={{ fontSize: 12, fontWeight: 'bold', color: '#666' }}>Productos asignados:</span>
+                          <div className="productos-asignados">
+                            <span>Productos asignados:</span>
                             <div style={{ marginTop: 6 }}>
                               {cliente.items.map(itemId => {
                                 const item = selectedOrder.items.find(i => i.id === itemId);
                                 return item ? (
-                                  <div key={itemId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', background: '#e8e8ff', borderRadius: 4, marginBottom: 4 }}>
-                                    <span>{item.quantity}x {item.product_name}</span>
+                                  <div key={itemId} className="producto-asignado">
+                                    <span className="producto-nombre">{item.quantity}x {item.product_name}</span>
                                     <div>
-                                      <span style={{ marginRight: 12 }}>{fmt((Number(item.selling_price) || Number(item.unit_price)) * item.quantity)}</span>
-                                      <button onClick={() => quitarItemDeCliente(cliente.id, itemId)} style={{ background: '#ff6666', color: 'white', border: 'none', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: 11 }}>Quitar</button>
+                                      <span className="producto-total">{fmt((Number(item.selling_price) || Number(item.unit_price)) * item.quantity)}</span>
+                                      <button onClick={() => quitarItemDeCliente(cliente.id, itemId)} className="btn-quitar-item">
+                                        Quitar
+                                      </button>
                                     </div>
                                   </div>
                                 ) : null;
@@ -1072,37 +1202,47 @@ export default function PosCheckoutPage() {
                           </div>
                           
                           {/* Método de pago del cliente */}
-                          <div style={{ marginBottom: 12, padding: 8, background: '#f0f0f0', borderRadius: 6 }}>
-                            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                              <span style={{ fontWeight: 'bold' }}>💳 Método de pago:</span>
-                              <select value={cliente.metodoPago} onChange={e => actualizarClienteSplit(cliente.id, 'metodoPago', e.target.value)} style={{ padding: 6, borderRadius: 4, border: '1px solid #ccc' }}>
-                                <option value="cash">Efectivo</option>
-                                <option value="card">Tarjeta</option>
-                                <option value="transfer">Transferencia</option>
-                              </select>
-                              
-                              <span style={{ fontWeight: 'bold' }}>💰 Monto recibido:</span>
-                              <input type="number" step="0.01" placeholder="0.00" value={cliente.montoRecibido || ''} onChange={e => actualizarClienteSplit(cliente.id, 'montoRecibido', parseFloat(e.target.value) || 0)} style={{ width: 120, padding: 6, borderRadius: 4, border: '1px solid #ccc' }} />
-                              
-                              {cliente.metodoPago !== 'cash' && (
-                                <>
-                                  <span style={{ fontWeight: 'bold' }}>📝 Referencia:</span>
-                                  <input type="text" placeholder="N° referencia" value={cliente.referencia || ''} onChange={e => actualizarClienteSplit(cliente.id, 'referencia', e.target.value)} style={{ width: 150, padding: 6, borderRadius: 4, border: '1px solid #ccc' }} />
-                                </>
-                              )}
-                            </div>
+                          <div className="metodo-pago-cliente">
+                            <select value={cliente.metodoPago} onChange={e => actualizarClienteDividido(cliente.id, 'metodoPago', e.target.value)}>
+                              <option value="cash">💰 Efectivo</option>
+                              <option value="card">💳 Tarjeta</option>
+                              <option value="transfer">🏦 Transferencia</option>
+                            </select>
+                            
+                            <span>Monto recibido:</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={cliente.montoRecibido || ''}
+                              onChange={e => actualizarClienteDividido(cliente.id, 'montoRecibido', parseFloat(e.target.value) || 0)}
+                              style={{ width: 120 }}
+                            />
+                            
+                            {cliente.metodoPago !== 'cash' && (
+                              <>
+                                <span>Referencia:</span>
+                                <input
+                                  type="text"
+                                  placeholder="N° referencia"
+                                  value={cliente.referencia || ''}
+                                  onChange={e => actualizarClienteDividido(cliente.id, 'referencia', e.target.value)}
+                                  style={{ width: 150 }}
+                                />
+                              </>
+                            )}
                           </div>
                           
                           {/* Totales del cliente */}
-                          <div style={{ paddingTop: 8, borderTop: '1px dashed #ccc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <div>Subtotal: <strong>{fmt(totalCliente - (totalCliente - (totalCliente / 1.15)))}</strong></div>
-                              <div>IVA: <strong>{fmt(totalCliente - (totalCliente / 1.15))}</strong></div>
+                          <div className="cliente-totales">
+                            <div className="cliente-subtotal-iva">
+                              <div>Subtotal: <strong>{fmt(subtotalCliente)}</strong></div>
+                              <div>IVA: <strong>{fmt(ivaCliente)}</strong></div>
                             </div>
-                            <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#6842fe' }}>Total: {fmt(totalCliente)}</div>
+                            <div className="cliente-total">
+                              <div className="cliente-total-valor">Total: {fmt(totalCliente)}</div>
                               {cliente.montoRecibido > 0 && (
-                                <div style={{ fontSize: 14, color: totalCliente <= cliente.montoRecibido ? '#16a34a' : '#e11d48' }}>
+                                <div className={totalCliente <= cliente.montoRecibido ? "cliente-cambio success" : "cliente-cambio error"}>
                                   {totalCliente <= cliente.montoRecibido 
                                     ? `💰 Cambio: ${fmt(cambioCliente)}` 
                                     : `⚠️ Falta: ${fmt(faltaCliente)}`}
@@ -1114,44 +1254,62 @@ export default function PosCheckoutPage() {
                       );
                     })}
                     
-                    {/* Botón para asignar productos seleccionados */}
-                    {selectedItems.length > 0 && splitClientes.length > 0 && (
-                      <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
-                        <select id="clienteSelect" style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}>
-                          {splitClientes.map((cliente, idx) => (
+                    {/* Botón para asignar productos */}
+                    {selectedItems.length > 0 && clientesDivididos.length > 0 && (
+                      <div className="asignar-container">
+                        <select
+                          id="clienteSelect"
+                          className="asignar-select"
+                          defaultValue={clientesDivididos[0]?.id}
+                        >
+                          {clientesDivididos.map((cliente, idx) => (
                             <option key={cliente.id} value={cliente.id}>
                               Cliente {idx + 1} {cliente.nombre && `- ${cliente.nombre}`}
                             </option>
                           ))}
                         </select>
-                        <button onClick={() => {
-                          const select = document.getElementById('clienteSelect');
-                          const clienteId = parseInt(select.value);
-                          asignarItemsACliente(clienteId);
-                        }} style={{ background: '#28a745', color: 'white', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}>
+                        <button
+                          onClick={() => {
+                            const select = document.getElementById('clienteSelect');
+                            const clienteId = parseInt(select.value);
+                            asignarItemsACliente(clienteId);
+                          }}
+                          className="btn-asignar"
+                        >
                           📦 Asignar {selectedItems.length} producto(s) a este cliente
                         </button>
                       </div>
                     )}
 
-                    {/* Advertencia de productos sin asignar */}
+                    {/* Advertencia */}
                     {selectedItems.length > 0 && (
-                      <div style={{ marginTop: 16, padding: 12, background: '#fff3cd', borderRadius: 6, textAlign: 'center' }}>
-                        <span style={{ color: '#856404' }}>⚠️ {selectedItems.length} producto(s) sin asignar. Selecciona un cliente y asigna los productos.</span>
+                      <div className="warning-box">
+                        ⚠️ {selectedItems.length} producto(s) sin asignar. Selecciona un cliente y asigna los productos.
                       </div>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Campos de monto para métodos normales */}
-              {paymentMethod !== 'split' && (
+              {/* Campos de pago para modo normal */}
+              {!modoDividido && (
                 <div className="pay-input-row" style={{ gap: 24, flexWrap: 'wrap', alignItems: 'center', margin: '20px 0' }}>
-                  {paymentMethod === 'cash' && (
+                  {metodoPagoNormal === 'cash' && (
                     <>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#fefefe', borderRadius: '9px', padding: '7px 18px' }}>
                         <label style={{ fontWeight: 900, fontSize: 18 }}>Recibido:</label>
-                        <input type="text" className="input-pay" inputMode="numeric" value={amountPaidRaw === '0' || amountPaidRaw === '' ? '' : (parseInt(amountPaidRaw, 10) / 100).toFixed(2)} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; setAmountPaidRaw(digits); setAmountPaid((parseInt(digits, 10) / 100).toFixed(2)); }} />
+                        <input
+                          type="text"
+                          className="input-pay"
+                          inputMode="numeric"
+                          value={amountPaidRaw === '0' || amountPaidRaw === '' ? '' : (parseInt(amountPaidRaw, 10) / 100).toFixed(2)}
+                          onChange={e => {
+                            let digits = e.target.value.replace(/\D/g, '');
+                            if (!digits) digits = '0';
+                            setAmountPaidRaw(digits);
+                            setAmountPaid((parseInt(digits, 10) / 100).toFixed(2));
+                          }}
+                        />
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#d7d6fc', borderRadius: '9px', padding: '7px 18px' }}>
                         <label style={{ fontWeight: 900, fontSize: 18 }}>Cambio:</label>
@@ -1160,18 +1318,33 @@ export default function PosCheckoutPage() {
                     </>
                   )}
 
-                  {(paymentMethod === 'card' || paymentMethod === 'transfer') && (
+                  {metodoPagoNormal === 'card' && (
                     <>
-                      <div><label>Monto:</label><span>{fmt(totalAPagar)}</span></div>
-                      <div><label>Referencia:</label><input type="text" value={paymentMethod === 'card' ? refCard : refTransfer} onChange={e => paymentMethod === 'card' ? setRefCard(e.target.value) : setRefTransfer(e.target.value)} /></div>
+                      <div><label>Referencia:</label>
+                        <input type="text" value={refCard} onChange={e => setRefCard(e.target.value)} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc', width: 200 }} />
+                      </div>
                     </>
                   )}
 
-                  {paymentMethod === 'mixto' && (
+                  {metodoPagoNormal === 'transfer' && (
                     <>
-                      <div><label>Efectivo:</label><input type="text" inputMode="numeric" value={amountPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); handleMixtoField('cash', digits); }} /></div>
-                      <div><label>Transferencia:</label><input type="text" inputMode="numeric" value={transferPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); handleMixtoField('transfer', digits); }} /></div>
-                      <div><label>Tarjeta:</label><input type="text" inputMode="numeric" value={cardPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); handleMixtoField('card', digits); }} /></div>
+                      <div><label>Referencia:</label>
+                        <input type="text" value={refTransfer} onChange={e => setRefTransfer(e.target.value)} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc', width: 200 }} />
+                      </div>
+                    </>
+                  )}
+
+                  {metodoPagoNormal === 'mixto' && (
+                    <>
+                      <div><label>Efectivo:</label>
+                        <input type="text" inputMode="numeric" value={amountPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); handleMixtoField('cash', digits); }} />
+                      </div>
+                      <div><label>Transferencia:</label>
+                        <input type="text" inputMode="numeric" value={transferPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); handleMixtoField('transfer', digits); }} />
+                      </div>
+                      <div><label>Tarjeta:</label>
+                        <input type="text" inputMode="numeric" value={cardPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); handleMixtoField('card', digits); }} />
+                      </div>
                     </>
                   )}
                 </div>
@@ -1182,25 +1355,22 @@ export default function PosCheckoutPage() {
                 <button
                   className="btn-guardar"
                   disabled={printLoading || (
-                    paymentMethod === 'split'
+                    modoDividido
                       ? selectedItems.length > 0
-                      : paymentMethod === 'cash'
+                      : metodoPagoNormal === 'cash'
                         ? (!amountPaid || parseFloat(amountPaid) < total)
-                        : paymentMethod === 'card' || paymentMethod === 'transfer'
-                          ? false
-                          : paymentMethod === 'mixto'
-                            ? !mixtoReady
-                            : false
+                        : false
                   )}
                   onClick={handlePayment}
                 >
-                  <Check size={16} /> {printLoading ? 'Procesando...' : 'GUARDAR'}
+                  <Check size={16} /> {printLoading ? 'Procesando...' : 'COBRAR'}
                 </button>
                 <button className="btn-cancelar" onClick={() => {
                   setSelectedOrder(null);
                   setSelectedItems([]);
-                  setSplitClientes([]);
+                  setClientesDivididos([]);
                   setPagosRealizados([]);
+                  setModoDividido(false);
                   setFacturaIndividual(false);
                 }}>
                   <X size={16} /> Cancelar
@@ -1208,13 +1378,15 @@ export default function PosCheckoutPage() {
               </div>
 
               {/* Historial de pagos para factura única */}
-              {paymentMethod === 'split' && !facturaIndividual && pagosRealizados.length > 0 && (
-                <div style={{ marginTop: 16, padding: 12, background: '#e8f5e9', borderRadius: 8 }}>
-                  <div style={{ fontWeight: 'bold', marginBottom: 8 }}>📋 Clientes que ya pagaron:</div>
+              {modoDividido && !facturaIndividual && pagosRealizados.length > 0 && (
+                <div className="historial-pagos">
+                  <div className="historial-titulo">📋 Clientes que ya pagaron:</div>
                   {pagosRealizados.map((pago, idx) => (
-                    <div key={idx} style={{ fontSize: 12 }}>• {pago.cliente.nombre} - ${pago.total.toFixed(2)} ({pago.items.length} productos)</div>
+                    <div key={idx} className="historial-item">
+                      • {pago.cliente.nombre} - ${pago.total.toFixed(2)} ({pago.items.length} productos)
+                    </div>
                   ))}
-                  <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                  <div className="historial-total">
                     Total pagado: ${pagosRealizados.reduce((sum, p) => sum + p.total, 0).toFixed(2)} / Total orden: ${total.toFixed(2)}
                   </div>
                 </div>

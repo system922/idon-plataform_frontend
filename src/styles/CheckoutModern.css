@@ -28,6 +28,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .cmbx-row .label {
@@ -47,10 +48,12 @@
   font-weight: 600;
 }
 
-.inputs-row {
+/* Campos de cliente principales */
+.cliente-fields {
   display: flex;
-  gap: 9px;
-  margin-top: 4px;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .client-inp {
@@ -61,6 +64,41 @@
   border: 1px solid rgba(255,255,255,0.10);
   color: #fff;
   font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.client-inp:focus {
+  outline: none;
+  border-color: #6842fe;
+  background: rgba(104,66,254,0.1);
+}
+
+.client-inp:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Campos de cliente individual en split */
+.cliente-individual-fields {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.cliente-individual-fields input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-width: 120px;
+  transition: all 0.2s ease;
+}
+
+.cliente-individual-fields input:focus {
+  outline: none;
+  border-color: #6842fe;
+  box-shadow: 0 0 0 2px rgba(104,66,254,0.2);
 }
 
 /* Detalle de orden */
@@ -111,7 +149,6 @@
   letter-spacing: .5px;
 }
 
-/* Checkbox personalizado para items */
 .item-line input[type="checkbox"] {
   width: 18px;
   height: 18px;
@@ -198,7 +235,7 @@
   transition: background 0.13s;
 }
 
-.pay-btn.selected, .pay-btn:focus {
+.pay-btn.selected {
   background: #000000;
   color: #ffffff;
   border: 1.5px solid #000000;
@@ -230,6 +267,42 @@
 }
 
 /* Tarjetas de clientes para pago dividido */
+.clientes-container {
+  margin-top: 20px;
+  border-top: 2px solid #e0e0e0;
+  padding-top: 16px;
+}
+
+.clientes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.clientes-header span {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.btn-agregar-cliente {
+  background: #6842fe;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s;
+}
+
+.btn-agregar-cliente:hover {
+  background: #5334cc;
+}
+
 .cliente-card {
   background: #f9f9ff;
   border: 1px solid #ddd;
@@ -269,21 +342,7 @@
   background: #cc0000;
 }
 
-.cliente-datos {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.cliente-datos input {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  min-width: 120px;
-}
-
+/* Productos asignados */
 .productos-asignados {
   margin-bottom: 12px;
 }
@@ -304,6 +363,15 @@
   margin-bottom: 4px;
 }
 
+.producto-nombre {
+  font-size: 13px;
+}
+
+.producto-total {
+  font-weight: bold;
+  font-size: 13px;
+}
+
 .btn-quitar-item {
   background: #ff6666;
   color: white;
@@ -312,13 +380,19 @@
   padding: 2px 8px;
   cursor: pointer;
   font-size: 11px;
+  margin-left: 8px;
 }
 
+/* Método de pago del cliente */
 .metodo-pago-cliente {
   margin-bottom: 12px;
   padding: 8px;
   background: #f0f0f0;
   border-radius: 6px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .metodo-pago-cliente select,
@@ -328,7 +402,57 @@
   border: 1px solid #ccc;
 }
 
+/* Totales del cliente */
+.cliente-totales {
+  padding-top: 8px;
+  border-top: 1px dashed #ccc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cliente-subtotal-iva {
+  font-size: 13px;
+}
+
+.cliente-total {
+  text-align: right;
+}
+
+.cliente-total-valor {
+  font-size: 18px;
+  font-weight: bold;
+  color: #6842fe;
+}
+
+.cliente-cambio {
+  font-size: 14px;
+}
+
+.cliente-cambio.success {
+  color: #16a34a;
+}
+
+.cliente-cambio.error {
+  color: #e11d48;
+}
+
 /* Botón asignar productos */
+.asignar-container {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.asignar-select {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
 .btn-asignar {
   background: #28a745;
   color: white;
@@ -337,6 +461,7 @@
   padding: 8px 16px;
   cursor: pointer;
   font-size: 12px;
+  transition: background 0.2s;
 }
 
 .btn-asignar:hover {
@@ -360,6 +485,30 @@
   border-radius: 6px;
   text-align: center;
   color: #155724;
+}
+
+/* Historial de pagos */
+.historial-pagos {
+  margin-top: 16px;
+  padding: 12px;
+  background: #e8f5e9;
+  border-radius: 8px;
+}
+
+.historial-titulo {
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.historial-item {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.historial-total {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
 }
 
 /* Acciones */
@@ -427,6 +576,22 @@
   z-index: 1000;
 }
 
+/* Loading spinner */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 0.6s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Scrollbar personalizada */
 .order-items::-webkit-scrollbar {
   width: 6px;
@@ -447,157 +612,41 @@
 }
 
 /* ── Responsive ── */
-
-/* Tablet ≤900px */
 @media (max-width: 900px) {
-  .checkout-modern-card { 
-    padding: 12px 16px; 
-  }
-
-  .cmbx-row {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  
-  .cmbx-row .client-inp {
-    min-width: 0 !important;
-    max-width: 100% !important;
-    flex: 1 1 120px !important;
-  }
-  
-  .cmbx-row .combobox {
-    min-width: 0 !important;
-    max-width: 100% !important;
-    flex: 1 1 160px !important;
-  }
-
-  .pay-input-row {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  
-  .cliente-datos input {
-    min-width: 100px;
-  }
+  .checkout-modern-card { padding: 12px 16px; }
+  .cmbx-row { flex-wrap: wrap; gap: 8px; }
+  .cmbx-row .client-inp { min-width: 0 !important; max-width: 100% !important; flex: 1 1 120px !important; }
+  .cmbx-row .combobox { min-width: 0 !important; max-width: 100% !important; flex: 1 1 160px !important; }
+  .cliente-fields { flex-direction: column; align-items: stretch; }
+  .cliente-individual-fields { flex-direction: column; }
+  .metodo-pago-cliente { flex-direction: column; align-items: stretch; }
+  .asignar-container { justify-content: center; }
 }
 
-/* Móvil ≤640px */
 @media (max-width: 640px) {
-  .checkout-modern-card { 
-    padding: 10px 12px; 
-    gap: 8px; 
-  }
-
-  .cmbx-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-  }
-  
-  .cmbx-row .label { 
-    min-width: unset !important; 
-    flex: unset !important; 
-    margin-left: 0 !important; 
-  }
-  
+  .checkout-modern-card { padding: 10px 12px; gap: 8px; }
+  .cmbx-row { flex-direction: column; align-items: stretch; gap: 6px; }
+  .cmbx-row .label { min-width: unset !important; flex: unset !important; margin-left: 0 !important; }
   .cmbx-row .client-inp,
-  .cmbx-row .combobox {
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    flex: unset !important;
-    margin-left: 0 !important;
-  }
-
-  .pay-methods {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-  }
-  
-  .pay-btn {
-    font-size: 12px;
-    padding: 8px 4px;
-    justify-content: center;
-    gap: 4px;
-  }
-
-  .pay-input-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-  
-  .pay-input-row > div {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .input-pay {
-    width: 100% !important;
-    flex: 1;
-    font-size: 16px;
-  }
-
-  .sub-iva-total {
-    font-size: 13px;
-    padding: 10px 12px;
-  }
-
-  .actions-row { 
-    flex-wrap: wrap; 
-    gap: 6px; 
-  }
-  
-  .btn-guardar { 
-    flex: 1; 
-    min-width: 120px; 
-    font-size: 15px; 
-    padding: 10px 16px; 
-  }
-  
-  .btn-cancelar { 
-    flex: 1; 
-    min-width: 80px; 
-    padding: 8px 16px; 
-  }
-  
-  .cliente-datos {
-    flex-direction: column;
-  }
-  
-  .cliente-datos input {
-    width: 100%;
-  }
+  .cmbx-row .combobox { width: 100% !important; min-width: 0 !important; max-width: 100% !important; flex: unset !important; margin-left: 0 !important; }
+  .pay-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .pay-btn { font-size: 12px; padding: 8px 4px; justify-content: center; gap: 4px; }
+  .pay-input-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .pay-input-row > div { width: 100%; justify-content: space-between; }
+  .input-pay { width: 100% !important; flex: 1; font-size: 16px; }
+  .sub-iva-total { font-size: 13px; padding: 10px 12px; }
+  .actions-row { flex-wrap: wrap; gap: 6px; }
+  .btn-guardar { flex: 1; min-width: 120px; font-size: 15px; padding: 10px 16px; }
+  .btn-cancelar { flex: 1; min-width: 80px; padding: 8px 16px; }
+  .cliente-datos { flex-direction: column; }
+  .cliente-datos input { width: 100%; }
 }
 
-/* Móvil pequeño ≤400px */
 @media (max-width: 400px) {
-  .checkout-modern-card { 
-    padding: 8px 10px; 
-  }
-  
-  .combobox { 
-    font-size: 13px; 
-    padding: 6px 8px; 
-  }
-  
-  .pay-methods { 
-    grid-template-columns: repeat(2, 1fr); 
-    gap: 5px; 
-  }
-  
-  .pay-btn { 
-    font-size: 11px; 
-    padding: 7px 2px; 
-  }
-  
-  .btn-guardar, .btn-cancelar { 
-    width: 100%; 
-    flex: none; 
-  }
-  
-  .sub-iva-total { 
-    font-size: 12px; 
-  }
+  .checkout-modern-card { padding: 8px 10px; }
+  .combobox { font-size: 13px; padding: 6px 8px; }
+  .pay-methods { grid-template-columns: repeat(2, 1fr); gap: 5px; }
+  .pay-btn { font-size: 11px; padding: 7px 2px; }
+  .btn-guardar, .btn-cancelar { width: 100%; flex: none; }
+  .sub-iva-total { font-size: 12px; }
 }
