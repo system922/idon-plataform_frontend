@@ -433,65 +433,23 @@ export default function PosCheckoutPage() {
     console.log('Order ID:', order.id);
     console.log('Items a facturar:', order.items);
 
-    const itemsPayload = [];
-    
-    for (const item of (order.items || [])) {
-      try {
-        console.log(`🔍 Obteniendo producto ID: ${item.product_id}`);
-        
-        // Usar fetchWithAuth - ya maneja token y X-DB-Name
-        const product = await fetchWithAuth(`/api/products/${item.product_id}`);
-        
-        if (!product.ok) {
-          // fetchWithAuth ya devuelve la respuesta, no el JSON directamente
-          // Necesitamos obtener el JSON
-          const productData = await product.json();
-          console.log(`✅ Producto obtenido:`, productData);
-          
-          const qty = item.quantity || 1;
-          const precioSinIVA = Number(productData.price) || Number(productData.selling_price) || 0;
-          const montoIVA = Number(productData.tax_rate) || 0;
-          
-          itemsPayload.push({
-            code: productData.code || 'PROD',
-            description: productData.name || item.product_name || 'Producto',
-            qty: qty,
-            unit_price: precioSinIVA,
-            subtotal: qty * precioSinIVA,
-            tax_amount: qty * montoIVA
-          });
-        } else {
-          // Fallback a datos del item
-          const qty = item.quantity || 1;
-          const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
-          const montoIVA = Number(item.tax_rate) || 0;
-          
-          itemsPayload.push({
-            code: 'PROD',
-            description: item.product_name || 'Producto',
-            qty: qty,
-            unit_price: precioSinIVA,
-            subtotal: qty * precioSinIVA,
-            tax_amount: qty * montoIVA
-          });
-        }
-      } catch (err) {
-        console.error(`❌ Error obteniendo producto ${item.product_id}:`, err);
-        // Fallback con datos del item
-        const qty = item.quantity || 1;
-        const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
-        const montoIVA = Number(item.tax_rate) || 0;
-        
-        itemsPayload.push({
-          code: 'PROD',
-          description: item.product_name || 'Producto',
-          qty: qty,
-          unit_price: precioSinIVA,
-          subtotal: qty * precioSinIVA,
-          tax_amount: qty * montoIVA
-        });
-      }
-    }
+    // Usar los datos del item directamente (ya vienen del JOIN con products)
+    const itemsPayload = (order.items || []).map(item => {
+      const qty = item.quantity || 1;
+      const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
+      const montoIVA = Number(item.tax_rate) || 0;
+      
+      console.log(`📦 Item: ${item.product_name}, Precio: ${precioSinIVA}, IVA: ${montoIVA}, Cantidad: ${qty}`);
+      
+      return {
+        code: item.product_code || 'PROD',
+        description: item.product_name || 'Producto',
+        qty: qty,
+        unit_price: precioSinIVA,
+        subtotal: qty * precioSinIVA,
+        tax_amount: qty * montoIVA
+      };
+    });
 
     const subtotalTotal = itemsPayload.reduce((sum, i) => sum + i.subtotal, 0);
     const ivaTotal = itemsPayload.reduce((sum, i) => sum + i.tax_amount, 0);
@@ -515,14 +473,7 @@ export default function PosCheckoutPage() {
         email: email || null,
         tipo_identificacion: tipoId,
       },
-      items: itemsPayload.map(i => ({
-        code: i.code,
-        description: i.description,
-        qty: i.qty,
-        unit_price: i.unit_price,
-        subtotal: i.subtotal,
-        tax_amount: i.tax_amount
-      })),
+      items: itemsPayload,
       subtotal: Number(subtotalTotal).toFixed(2),
       iva_amount: Number(ivaTotal).toFixed(2),
       total: Number(totalFactura).toFixed(2),
@@ -537,17 +488,14 @@ export default function PosCheckoutPage() {
         body: JSON.stringify(payload),
       });
       
-      console.log('✅ Respuesta del servidor:', result);
-      
-      if (result.ok) {
-        const data = await result.json();
-        console.log('✅ Factura emitida exitosamente:', data);
-        return data.invoice_number || null;
-      } else {
-        const errorData = await result.json().catch(() => ({}));
-        console.error('❌ Error del servidor:', errorData);
-        return null;
+      // fetchWithAuth ya devuelve el JSON directamente
+      if (result && result.invoice_number) {
+        console.log('✅ Factura emitida exitosamente:', result);
+        return result.invoice_number;
       }
+      
+      console.error('❌ Error del servidor:', result);
+      return null;
     } catch (e) {
       console.error('❌ Error al emitir factura:', e);
       return null;
@@ -640,14 +588,21 @@ export default function PosCheckoutPage() {
       let nombre = 'CONSUMIDOR FINAL';
       let email = null;
       
+      // Solo si es factura individual, usar datos del comensal
       if (facturaIndividual) {
         cedula = comensal.cedula?.trim() || '9999999999';
         nombre = comensal.nombre?.trim() || 'CONSUMIDOR FINAL';
         email = comensal.email || null;
+      } else {
+        // Para factura única, usar datos del cliente principal
+        cedula = clienteCedula?.trim() || '9999999999';
+        nombre = clienteNombre?.trim() || 'CONSUMIDOR FINAL';
+        email = clienteEmail?.trim() || null;
       }
       
       let clienteId = await guardarCliente(cedula, nombre, email);
       
+      // Registrar pago en el backend
       await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/pay-items`, {
         method: 'POST',
         body: JSON.stringify({
@@ -656,47 +611,68 @@ export default function PosCheckoutPage() {
           payment_method: comensal.metodoPago,
           cliente_id: clienteId,
           reference_number: comensal.metodoPago !== 'cash' ? (comensal.referencia || null) : null,
-          notes: `${orderNotes} - Comensal: ${nombre}`
+          notes: `${orderNotes} - ${nombre}`
         }),
       });
       
       const nuevoTotalPagado = totalPagadoAcumulado + totalComensal;
       setTotalPagadoAcumulado(nuevoTotalPagado);
       
+      // Si es factura individual, emitir factura AHORA
       if (facturaIndividual) {
         const partialOrder = {
           ...selectedOrder,
           items: selectedOrder.items.filter(i => comensal.items.includes(i.id))
         };
-        await emitirFactura(partialOrder, cedula, nombre, 'split');
-        await imprimirTicket(partialOrder, totalComensal, comensal.montoRecibido - totalComensal, null, 'split', nombre);
+        const invoiceNum = await emitirFactura(partialOrder, cedula, nombre, 'split');
+        await imprimirTicket(partialOrder, totalComensal, comensal.montoRecibido - totalComensal, invoiceNum, 'split', nombre);
         setSuccess(`Factura generada para ${nombre}`);
       } else {
+        // Guardar en historial para factura única al final
         setPagosRegistrados(prev => [...prev, {
+          cliente: { cedula, nombre, email },
           items: comensal.items,
           total: totalComensal,
           metodoPago: comensal.metodoPago
         }]);
-        setSuccess(`Pago registrado para comensal`);
+        setSuccess(`Pago registrado para ${nombre}`);
       }
       
+      // ELIMINAR este comensal de la lista
       setClientesDivididos(prev => prev.filter(c => c.id !== comensal.id));
       
+      // RECARGAR la orden para actualizar productos pagados
       const ordenActualizada = await recargarOrden();
       
       if (ordenActualizada) {
         const productosPendientes = ordenActualizada.items.filter(i => !i.paid);
         
-        if (productosPendientes.length === 0 || nuevoTotalPagado >= totalOrden) {
+        // Si no quedan productos pendientes
+        if (productosPendientes.length === 0) {
+          // Si es factura única y hay pagos registrados, generar UNA SOLA factura
           if (!facturaIndividual && pagosRegistrados.length > 0) {
-            const todosLosItems = pagosRegistrados.flatMap(p => p.items);
-            const ordenCompleta = { ...selectedOrder, items: todosLosItems };
-            const clientePrincipal = { cedula: clienteCedula || '9999999999', nombre: clienteNombre || 'CONSUMIDOR FINAL' };
+            // Recolectar TODOS los items pagados
+            const todosLosItemsIds = pagosRegistrados.flatMap(p => p.items);
+            const itemsConDatos = ordenActualizada.items.filter(i => todosLosItemsIds.includes(i.id));
+            
+            const ordenCompleta = {
+              ...selectedOrder,
+              items: itemsConDatos
+            };
+            
+            console.log('📦 Factura final - items:', ordenCompleta.items);
+            
+            const clientePrincipal = { 
+              cedula: clienteCedula || '9999999999', 
+              nombre: clienteNombre || 'CONSUMIDOR FINAL' 
+            };
+            
             await emitirFactura(ordenCompleta, clientePrincipal.cedula, clientePrincipal.nombre, 'split');
             await imprimirTicket(ordenCompleta, totalOrden, 0, null, 'split', 'FACTURA FINAL');
             setSuccess('Factura final generada con todos los productos');
           }
           
+          // Cerrar la orden
           await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
             method: 'PATCH',
             body: JSON.stringify({
@@ -711,18 +687,22 @@ export default function PosCheckoutPage() {
           setClientesDivididos([]);
           setPagosRegistrados([]);
           setTotalPagadoAcumulado(0);
-          setSuccess('Orden completada y factura generada');
+          setSuccess('Orden completada');
         } else {
-          setClientesDivididos([{
-            id: Date.now(),
-            cedula: '',
-            nombre: '',
-            email: '',
-            items: [],
-            metodoPago: 'cash',
-            montoRecibido: 0,
-            referencia: ''
-          }]);
+          // Crear un nuevo comensal para el siguiente grupo si no hay ninguno
+          const comensalesPendientes = clientesDivididos.filter(c => c.id !== comensal.id);
+          if (comensalesPendientes.length === 0) {
+            setClientesDivididos([{
+              id: Date.now(),
+              cedula: '',
+              nombre: '',
+              email: '',
+              items: [],
+              metodoPago: 'cash',
+              montoRecibido: 0,
+              referencia: ''
+            }]);
+          }
           setSelectedItems([]);
           setSuccess(`Pago completado. Quedan ${productosPendientes.length} productos por pagar.`);
         }
