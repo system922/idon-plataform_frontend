@@ -3,12 +3,11 @@ import PageTemplate from '../../components/PageTemplate';
 import {
   FiRefreshCw, FiPercent, FiDollarSign, FiPlus, FiX,
   FiCalendar, FiRepeat, FiClock, FiTag, FiEdit2, FiTrash2,
-  FiGift, FiTruck, FiUsers, FiShoppingBag, FiAward,
-  FiAlertCircle
+  FiGift, FiUsers, FiShoppingBag, FiAward,
+  FiAlertCircle, FiCopy
 } from "react-icons/fi";
 import { CheckCircle, XCircle } from "react-feather";
 import { fetchWithAuth } from '../../config/apiBase';
-import { DAY_NAMES, parseDays, isDiscountActive } from '../../utils/discountUtils';
 import '../../styles/PosDiscounts.css';
 
 // ─── Constantes ─────────────────────────
@@ -22,47 +21,30 @@ const DAYS = [
   { label: 'Sáb', value: 6 },
 ];
 
-const DISCOUNT_TYPES = {
-  PERCENTAGE: 'percentage',
-  FIXED: 'fixed',
-  BUY_X_GET_Y: 'buy_x_get_y',
-  BULK: 'bulk',
-  COUPON: 'coupon'
-};
-
-const PROMOTION_TYPES = {
-  FLASH_SALE: 'flash_sale',
-  SEASONAL: 'seasonal',
-  NEW_CUSTOMER: 'new_customer',
-  LOYALTY: 'loyalty',
-  BUNDLE: 'bundle'
-};
+const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 const EMPTY_FORM = {
   name: '',
+  description: '',
   type: 'percentage',
-  promotion_type: 'flash_sale',
   value: '',
+  applies_to: 'order',
   category_id: '',
-  product_ids: [],
-  schedule_type: 'always',
-  start_date: '',
-  end_date: '',
-  day_of_week: [],
+  product_id: '',
   min_amount: '',
   max_discount: '',
-  applicable_quantity: '',
-  buy_quantity: '',
-  get_quantity: '',
-  get_discount_percentage: '',
-  is_active: true,
-  description: '',
+  min_quantity: 1,
+  code: '',
   usage_limit: '',
-  used_count: 0,
-  customer_segment: 'all',
-  minimum_products: '',
+  days_of_week: [],
+  start_time: '',
+  end_time: '',
+  start_date: '',
+  end_date: '',
   stackable: false,
-  priority: 0
+  priority: 0,
+  customer_segment: 'all',
+  is_active: true
 };
 
 // ─── Helpers ─────────────────────────
@@ -71,15 +53,49 @@ const formatMoney = (val) =>
     ? val.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
     : val;
 
-const scheduleLabel = (d) => {
-  if (d.schedule_type === 'date_range') {
-    const from = d.start_date?.split('T')[0];
-    const to = d.end_date?.split('T')[0];
-    return from && to ? `${from} → ${to}` : from || to || 'Rango';
+const parseDays = (daysStr) => {
+  if (!daysStr) return [];
+  if (Array.isArray(daysStr)) return daysStr;
+  return daysStr.split(',').map(Number);
+};
+
+const isDiscountActive = (discount) => {
+  if (!discount.is_active) return false;
+  
+  const now = new Date();
+  
+  // Verificar fechas
+  if (discount.start_date && new Date(discount.start_date) > now) return false;
+  if (discount.end_date && new Date(discount.end_date) < now) return false;
+  
+  // Verificar días de semana
+  if (discount.days_of_week && discount.days_of_week.length > 0) {
+    const currentDay = now.getDay();
+    const days = parseDays(discount.days_of_week);
+    if (!days.includes(currentDay)) return false;
   }
-  if (d.schedule_type === 'weekly_day') {
-    const days = parseDays(d.day_of_week);
-    return days.length ? days.map(n => DAY_NAMES[n]).join(', ') : 'Días';
+  
+  // Verificar horario
+  if (discount.start_time && discount.end_time) {
+    const currentTime = now.toTimeString().slice(0, 5);
+    if (currentTime < discount.start_time || currentTime > discount.end_time) return false;
+  }
+  
+  return true;
+};
+
+const scheduleLabel = (d) => {
+  if (d.start_date && d.end_date) {
+    const from = new Date(d.start_date).toLocaleDateString();
+    const to = new Date(d.end_date).toLocaleDateString();
+    return `${from} → ${to}`;
+  }
+  if (d.days_of_week && d.days_of_week.length > 0) {
+    const days = parseDays(d.days_of_week);
+    return days.map(n => DAY_NAMES[n]).join(', ');
+  }
+  if (d.start_time && d.end_time) {
+    return `${d.start_time} - ${d.end_time}`;
   }
   return 'Siempre activo';
 };
@@ -95,26 +111,27 @@ const getDiscountTypeIcon = (type) => {
   }
 };
 
-const getPromotionTypeLabel = (type) => {
-  switch(type) {
-    case 'flash_sale': return 'Venta Relámpago';
-    case 'seasonal': return 'Temporada';
-    case 'new_customer': return 'Nuevos Clientes';
-    case 'loyalty': return 'Lealtad';
-    case 'bundle': return 'Paquete';
-    default: return 'General';
-  }
-};
-
-const ScheduleIcon = ({ type }) => {
-  if (type === 'date_range') return <FiCalendar />;
-  if (type === 'weekly_day') return <FiRepeat />;
+const ScheduleIcon = ({ scheduleType, discount }) => {
+  if (discount?.start_date && discount?.end_date) return <FiCalendar />;
+  if (discount?.days_of_week?.length > 0) return <FiRepeat />;
+  if (discount?.start_time) return <FiClock />;
   return <FiClock />;
 };
 
 // ─── MODAL ─────────────────────────
 function DiscountModal({ onClose, onSaved, discount = null }) {
-  const [form, setForm] = useState(discount || EMPTY_FORM);
+  const [form, setForm] = useState(() => {
+    if (discount) {
+      return {
+        ...EMPTY_FORM,
+        ...discount,
+        days_of_week: parseDays(discount.days_of_week),
+        product_id: discount.product_id || '',
+        category_id: discount.category_id || ''
+      };
+    }
+    return EMPTY_FORM;
+  });
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -145,44 +162,22 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
     loadData();
   }, []);
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const toggleDay = (day) => {
     setForm(f => ({
       ...f,
-      day_of_week: f.day_of_week.includes(day)
-        ? f.day_of_week.filter(d => d !== day)
-        : [...f.day_of_week, day],
-    }));
-  };
-
-  const toggleProduct = (productId) => {
-    setForm(f => ({
-      ...f,
-      product_ids: f.product_ids.includes(productId)
-        ? f.product_ids.filter(id => id !== productId)
-        : [...f.product_ids, productId]
+      days_of_week: f.days_of_week.includes(day)
+        ? f.days_of_week.filter(d => d !== day)
+        : [...f.days_of_week, day],
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validaciones
     if (!form.name || !form.value) {
       return setErr('Nombre y valor requeridos');
-    }
-
-    if (form.type === 'buy_x_get_y' && (!form.buy_quantity || !form.get_quantity)) {
-      return setErr('Para promociones 2x1, especifica cantidades');
-    }
-
-    if (form.schedule_type === 'weekly_day' && !form.day_of_week.length) {
-      return setErr('Selecciona al menos un día');
-    }
-
-    if (form.schedule_type === 'date_range' && (!form.start_date || !form.end_date)) {
-      return setErr('Selecciona fechas de inicio y fin');
     }
 
     setSaving(true);
@@ -190,18 +185,27 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
 
     try {
       const payload = {
-        ...form,
+        name: form.name,
+        description: form.description,
+        type: form.type,
         value: parseFloat(form.value),
+        applies_to: form.applies_to,
+        product_id: form.product_id || null,
+        category_id: form.category_id || null,
         min_amount: parseFloat(form.min_amount || 0),
         max_discount: form.max_discount ? parseFloat(form.max_discount) : null,
-        day_of_week: Array.isArray(form.day_of_week) 
-          ? form.day_of_week.join(',') 
-          : form.day_of_week,
-        product_ids: form.product_ids || [],
-        buy_quantity: form.buy_quantity ? parseInt(form.buy_quantity) : null,
-        get_quantity: form.get_quantity ? parseInt(form.get_quantity) : null,
+        min_quantity: parseInt(form.min_quantity) || 1,
+        code: form.code || null,
         usage_limit: form.usage_limit ? parseInt(form.usage_limit) : null,
-        priority: parseInt(form.priority) || 0
+        days_of_week: form.days_of_week.length ? form.days_of_week : null,
+        start_time: form.start_time || null,
+        end_time: form.end_time || null,
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
+        stackable: form.stackable,
+        priority: parseInt(form.priority) || 0,
+        customer_segment: form.customer_segment,
+        is_active: form.is_active
       };
 
       const url = discount ? `/api/discounts/${discount.id}` : '/api/discounts';
@@ -219,7 +223,6 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
 
       onSaved();
       onClose();
-
     } catch (e) {
       setErr(e.message || 'Error al guardar');
     } finally {
@@ -232,7 +235,6 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
       if (e.target === e.currentTarget) onClose();
     }}>
       <div className="modal modal-lg">
-
         <div className="modal-header">
           <div>
             <h2>{discount ? 'Editar Descuento' : 'Nuevo Descuento'}</h2>
@@ -263,7 +265,6 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
         </div>
 
         <form className="modal-body" onSubmit={handleSubmit}>
-
           {err && <div className="alert-error"><FiAlertCircle /> {err}</div>}
 
           {activeTab === 'basic' && (
@@ -273,7 +274,7 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                 <input 
                   className="input"
                   value={form.name}
-                  onChange={e => set('name', e.target.value)}
+                  onChange={e => setField('name', e.target.value)}
                   placeholder="Ej: Descuento de fin de semana"
                   required
                 />
@@ -284,8 +285,8 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                 <textarea 
                   className="input"
                   rows="2"
-                  value={form.description}
-                  onChange={e => set('description', e.target.value)}
+                  value={form.description || ''}
+                  onChange={e => setField('description', e.target.value)}
                   placeholder="Descripción de la promoción..."
                 />
               </div>
@@ -296,7 +297,7 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                   <select 
                     className="select"
                     value={form.type}
-                    onChange={e => set('type', e.target.value)}
+                    onChange={e => setField('type', e.target.value)}
                   >
                     <option value="percentage">Porcentaje (%)</option>
                     <option value="fixed">Monto fijo ($)</option>
@@ -314,87 +315,67 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                     min="0"
                     step="0.01"
                     value={form.value}
-                    onChange={e => set('value', e.target.value)}
+                    onChange={e => setField('value', e.target.value)}
                     placeholder={form.type === 'percentage' ? '10' : '5.00'}
                     required
                   />
                 </div>
               </div>
 
-              {form.type === 'buy_x_get_y' && (
-                <div className="form-row">
-                  <div>
-                    <label className="label">Comprar (cantidad)</label>
-                    <input 
-                      className="input"
-                      type="number"
-                      min="1"
-                      value={form.buy_quantity}
-                      onChange={e => set('buy_quantity', e.target.value)}
-                      placeholder="Ej: 2"
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Llevar (cantidad)</label>
-                    <input 
-                      className="input"
-                      type="number"
-                      min="1"
-                      value={form.get_quantity}
-                      onChange={e => set('get_quantity', e.target.value)}
-                      placeholder="Ej: 1"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="label">Tipo de promoción</label>
-                <select 
-                  className="select"
-                  value={form.promotion_type}
-                  onChange={e => set('promotion_type', e.target.value)}
-                >
-                  <option value="flash_sale">Venta Relámpago</option>
-                  <option value="seasonal">Promoción de Temporada</option>
-                  <option value="new_customer">Nuevos Clientes</option>
-                  <option value="loyalty">Programa de Lealtad</option>
-                  <option value="bundle">Paquete de Productos</option>
-                </select>
-              </div>
-
               <div>
                 <label className="label">Aplicar a</label>
                 <select 
                   className="select"
-                  value={form.category_id || ''}
-                  onChange={e => set('category_id', e.target.value)}
+                  value={form.applies_to}
+                  onChange={e => setField('applies_to', e.target.value)}
                 >
-                  <option value="">Todas las categorías</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
+                  <option value="order">Toda la orden</option>
+                  <option value="product">Producto específico</option>
+                  <option value="category">Categoría específica</option>
                 </select>
               </div>
 
-              {products.length > 0 && (
+              {form.applies_to === 'product' && (
                 <div>
-                  <label className="label">Productos específicos (opcional)</label>
-                  <div className="products-select">
-                    {products.slice(0, 10).map(product => (
-                      <label key={product.id} className="product-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={form.product_ids.includes(product.id)}
-                          onChange={() => toggleProduct(product.id)}
-                        />
-                        {product.name}
-                      </label>
+                  <label className="label">Producto</label>
+                  <select 
+                    className="select"
+                    value={form.product_id || ''}
+                    onChange={e => setField('product_id', e.target.value)}
+                  >
+                    <option value="">Seleccionar producto</option>
+                    {products.map(prod => (
+                      <option key={prod.id} value={prod.id}>{prod.name}</option>
                     ))}
-                    {products.length > 10 && (
-                      <small>+{products.length - 10} productos más...</small>
-                    )}
-                  </div>
+                  </select>
+                </div>
+              )}
+
+              {form.applies_to === 'category' && (
+                <div>
+                  <label className="label">Categoría</label>
+                  <select 
+                    className="select"
+                    value={form.category_id || ''}
+                    onChange={e => setField('category_id', e.target.value)}
+                  >
+                    <option value="">Seleccionar categoría</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {form.type === 'coupon' && (
+                <div>
+                  <label className="label">Código de cupón</label>
+                  <input 
+                    className="input"
+                    value={form.code || ''}
+                    onChange={e => setField('code', e.target.value.toUpperCase())}
+                    placeholder="EJ: DESCUENTO10"
+                  />
                 </div>
               )}
             </>
@@ -403,60 +384,63 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
           {activeTab === 'schedule' && (
             <>
               <div>
-                <label className="label">Programación</label>
-                <select 
-                  className="select"
-                  value={form.schedule_type}
-                  onChange={e => set('schedule_type', e.target.value)}
-                >
-                  <option value="always">Siempre activo</option>
-                  <option value="weekly_day">Días específicos</option>
-                  <option value="date_range">Rango de fechas</option>
-                </select>
+                <label className="label">Días de la semana</label>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {DAYS.map(d => (
+                    <button
+                      key={d.value}
+                      type="button"
+                      className={`day-btn ${form.days_of_week.includes(d.value) ? 'active' : ''}`}
+                      onClick={() => toggleDay(d.value)}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+                <small className="help-text">Dejar vacío para todos los días</small>
               </div>
 
-              {form.schedule_type === 'weekly_day' && (
+              <div className="form-row">
                 <div>
-                  <label className="label">Días de la semana</label>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {DAYS.map(d => (
-                      <button
-                        key={d.value}
-                        type="button"
-                        className={`day-btn ${form.day_of_week.includes(d.value) ? 'active' : ''}`}
-                        onClick={() => toggleDay(d.value)}
-                      >
-                        {d.label}
-                      </button>
-                    ))}
-                  </div>
+                  <label className="label">Hora inicio</label>
+                  <input 
+                    className="input" 
+                    type="time"
+                    value={form.start_time || ''}
+                    onChange={e => setField('start_time', e.target.value)}
+                  />
                 </div>
-              )}
+                <div>
+                  <label className="label">Hora fin</label>
+                  <input 
+                    className="input" 
+                    type="time"
+                    value={form.end_time || ''}
+                    onChange={e => setField('end_time', e.target.value)}
+                  />
+                </div>
+              </div>
 
-              {form.schedule_type === 'date_range' && (
-                <div className="form-row">
-                  <div>
-                    <label className="label">Fecha inicio</label>
-                    <input 
-                      className="input" 
-                      type="date"
-                      value={form.start_date?.split('T')[0] || ''}
-                      onChange={e => set('start_date', e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Fecha fin</label>
-                    <input 
-                      className="input" 
-                      type="date"
-                      value={form.end_date?.split('T')[0] || ''}
-                      onChange={e => set('end_date', e.target.value)}
-                      required
-                    />
-                  </div>
+              <div className="form-row">
+                <div>
+                  <label className="label">Fecha inicio</label>
+                  <input 
+                    className="input" 
+                    type="date"
+                    value={form.start_date?.split('T')[0] || ''}
+                    onChange={e => setField('start_date', e.target.value)}
+                  />
                 </div>
-              )}
+                <div>
+                  <label className="label">Fecha fin</label>
+                  <input 
+                    className="input" 
+                    type="date"
+                    value={form.end_date?.split('T')[0] || ''}
+                    onChange={e => setField('end_date', e.target.value)}
+                  />
+                </div>
+              </div>
             </>
           )}
 
@@ -471,7 +455,7 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                     min="0"
                     step="0.01"
                     value={form.min_amount}
-                    onChange={e => set('min_amount', e.target.value)}
+                    onChange={e => setField('min_amount', e.target.value)}
                     placeholder="0.00"
                   />
                 </div>
@@ -483,8 +467,8 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                     type="number"
                     min="0"
                     step="0.01"
-                    value={form.max_discount}
-                    onChange={e => set('max_discount', e.target.value)}
+                    value={form.max_discount || ''}
+                    onChange={e => setField('max_discount', e.target.value)}
                     placeholder="Ej: 50.00"
                   />
                 </div>
@@ -492,29 +476,41 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
 
               <div className="form-row">
                 <div>
+                  <label className="label">Cantidad mínima</label>
+                  <input 
+                    className="input" 
+                    type="number"
+                    min="1"
+                    value={form.min_quantity}
+                    onChange={e => setField('min_quantity', e.target.value)}
+                    placeholder="1"
+                  />
+                </div>
+
+                <div>
                   <label className="label">Límite de usos</label>
                   <input 
                     className="input" 
                     type="number"
                     min="1"
-                    value={form.usage_limit}
-                    onChange={e => set('usage_limit', e.target.value)}
+                    value={form.usage_limit || ''}
+                    onChange={e => setField('usage_limit', e.target.value)}
                     placeholder="Ilimitado"
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label className="label">Prioridad</label>
-                  <input 
-                    className="input" 
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={form.priority}
-                    onChange={e => set('priority', e.target.value)}
-                    placeholder="0-100"
-                  />
-                </div>
+              <div>
+                <label className="label">Prioridad</label>
+                <input 
+                  className="input" 
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={form.priority}
+                  onChange={e => setField('priority', e.target.value)}
+                  placeholder="0-100 (mayor = más prioritario)"
+                />
               </div>
 
               <div>
@@ -522,7 +518,7 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                 <select 
                   className="select"
                   value={form.customer_segment}
-                  onChange={e => set('customer_segment', e.target.value)}
+                  onChange={e => setField('customer_segment', e.target.value)}
                 >
                   <option value="all">Todos los clientes</option>
                   <option value="new">Nuevos clientes</option>
@@ -531,23 +527,23 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                 </select>
               </div>
 
-              <div className="form-row">
+              <div className="checkbox-group">
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
                     checked={form.stackable}
-                    onChange={e => set('stackable', e.target.checked)}
+                    onChange={e => setField('stackable', e.target.checked)}
                   />
                   Acumulable con otros descuentos
                 </label>
               </div>
 
-              <div>
+              <div className="checkbox-group">
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
                     checked={form.is_active}
-                    onChange={e => set('is_active', e.target.checked)}
+                    onChange={e => setField('is_active', e.target.checked)}
                   />
                   Activar descuento
                 </label>
@@ -563,7 +559,6 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
               {saving ? 'Guardando...' : discount ? 'Actualizar' : 'Guardar'}
             </button>
           </div>
-
         </form>
       </div>
     </div>
@@ -571,12 +566,11 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
 }
 
 // ─── CARD ─────────────────────────
-function DiscountCard({ d, onEdit, onDelete }) {
+function DiscountCard({ d, onEdit, onDelete, onDuplicate }) {
   const active = isDiscountActive(d);
 
   return (
     <div className={`discount-card ${!active ? 'inactive' : ''}`}>
-
       <div className="discount-header">
         <div className="discount-icon">
           {getDiscountTypeIcon(d.type)}
@@ -585,16 +579,23 @@ function DiscountCard({ d, onEdit, onDelete }) {
         <div style={{ flex: 1 }}>
           <div className="discount-title">{d.name}</div>
           <div className="discount-type">
-            {d.type === 'percentage' && `Porcentaje`}
-            {d.type === 'fixed' && `Monto fijo`}
-            {d.type === 'buy_x_get_y' && `Compra ${d.buy_quantity || 'X'}, lleva ${d.get_quantity || 'Y'}`}
-            {d.type === 'bulk' && `Volumen`}
-            {d.type === 'coupon' && `Cupón`}
-            {d.promotion_type && ` • ${getPromotionTypeLabel(d.promotion_type)}`}
+            {d.type === 'percentage' && `Porcentaje - ${d.value}%`}
+            {d.type === 'fixed' && `Monto fijo - ${formatMoney(d.value)}`}
+            {d.type === 'buy_x_get_y' && `Compra ${d.min_quantity || 'X'}, lleva gratis`}
+            {d.type === 'bulk' && `Volumen - ${d.value}%`}
+            {d.type === 'coupon' && `Cupón - ${d.code || 'Sin código'}`}
           </div>
         </div>
 
         <div className="discount-actions">
+          <button 
+            type="button"
+            className="icon-btn" 
+            onClick={() => onDuplicate(d)}
+            title="Duplicar"
+          >
+            <FiCopy size={16} />
+          </button>
           <button 
             type="button"
             className="icon-btn" 
@@ -615,7 +616,7 @@ function DiscountCard({ d, onEdit, onDelete }) {
       </div>
 
       <div className="discount-value">
-        {d.type === 'percentage' && `${d.value}%`}
+        {d.type === 'percentage' && `${d.value}% OFF`}
         {d.type === 'fixed' && formatMoney(d.value)}
         {d.type === 'buy_x_get_y' && `2x1`}
         {d.type === 'bulk' && `${d.value}% volumen`}
@@ -623,11 +624,11 @@ function DiscountCard({ d, onEdit, onDelete }) {
       </div>
 
       <div className="badge">
-        <FiTag /> {d.category_name || 'Todas las categorías'}
+        <FiTag /> {d.category_name || d.product_name || 'Todas las categorías'}
       </div>
 
       <div className="discount-info">
-        <ScheduleIcon type={d.schedule_type} />
+        <ScheduleIcon discount={d} />
         {scheduleLabel(d)}
       </div>
 
@@ -647,7 +648,6 @@ function DiscountCard({ d, onEdit, onDelete }) {
         {active ? <CheckCircle size={16} /> : <XCircle size={16} />}
         {active ? 'Activo' : 'Inactivo'}
       </div>
-
     </div>
   );
 }
@@ -659,7 +659,7 @@ export default function PosDiscounts() {
   const [err, setErr] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState(null);
-  const [filter, setFilter] = useState('all'); // all, active, inactive
+  const [filter, setFilter] = useState('all');
 
   const load = async () => {
     setLoading(true);
@@ -696,7 +696,7 @@ export default function PosDiscounts() {
     if (!window.confirm(`¿Eliminar el descuento "${discount.name}"? Esta acción no se puede deshacer.`)) return;
 
     try {
-      const res = await fetchWithAuth(`/api/discounts/${discount.id}`, {
+      const res = await fetchWithAuth(`/api/discounts/${discount.id}?hard_delete=true`, {
         method: 'DELETE',
       });
 
@@ -715,12 +715,28 @@ export default function PosDiscounts() {
 
     try {
       const duplicateData = {
-        ...discount,
         name: newName,
-        is_active: false,
-        used_count: 0
+        description: discount.description,
+        type: discount.type,
+        value: discount.value,
+        applies_to: discount.applies_to || 'order',
+        product_id: discount.product_id,
+        category_id: discount.category_id,
+        min_amount: discount.min_amount,
+        max_discount: discount.max_discount,
+        min_quantity: discount.min_quantity || 1,
+        code: discount.code,
+        usage_limit: discount.usage_limit,
+        days_of_week: discount.days_of_week,
+        start_time: discount.start_time,
+        end_time: discount.end_time,
+        start_date: discount.start_date,
+        end_date: discount.end_date,
+        stackable: discount.stackable,
+        priority: discount.priority,
+        customer_segment: discount.customer_segment || 'all',
+        is_active: false
       };
-      delete duplicateData.id;
 
       const res = await fetchWithAuth('/api/discounts', {
         method: 'POST',
@@ -780,7 +796,6 @@ export default function PosDiscounts() {
           </div>
         }
       >
-
         <div className="filters-bar">
           <div className="stats-badges">
             <span className="stat-badge">Total: {stats.total}</span>
@@ -839,7 +854,6 @@ export default function PosDiscounts() {
             ))}
           </div>
         )}
-
       </PageTemplate>
 
       {showModal && (
