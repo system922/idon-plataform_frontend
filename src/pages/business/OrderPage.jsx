@@ -21,7 +21,7 @@ export default function TakeOrderPageNew() {
   const [showAddItemModal,      setShowAddItemModal     ] = useState(false);
   const [productoSeleccionado,  setProductoSeleccionado ] = useState(null);
   const [cantidadItem,          setCantidadItem         ] = useState(1);
-  const [notasItem,             setNotasItem            ] = useState('');
+  const [notasItem,             setNotesItem            ] = useState('');
 
   // ── Carga inicial ─────────────────────────────────────────────────────────
 
@@ -43,9 +43,9 @@ export default function TakeOrderPageNew() {
 
   async function cargarCategorias() {
     try {
-      const res = await fetchWithAuth('/api/categories'); // API que retorna las categorías
+      const res = await fetchWithAuth('/api/categories');
       const data = await res.json();
-      setCategorias(data); // Guardamos las categorías en el estado
+      setCategorias(data);
     } catch (err) {
       setError('Error al cargar categorías');
     }
@@ -74,18 +74,18 @@ export default function TakeOrderPageNew() {
     const precio   = Number(productoSeleccionado.price) || 0;
     const cantidad = parseInt(cantidadItem, 10);
     setItems(prev => [...prev, {
-      id:         Date.now(),
-      productoId: productoSeleccionado.id,
-      nombre:     productoSeleccionado.name,
-      precio,
-      cantidad,
-      notas:      notasItem,
-      subtotal:   precio * cantidad,
+      id:           Date.now(),
+      product_id:   productoSeleccionado.id,      // ✅ product_id (lo que espera el backend)
+      product_name: productoSeleccionado.name,   // ✅ product_name
+      quantity:     cantidad,                     // ✅ quantity
+      unit_price:   precio,                       // ✅ unit_price
+      line_total:   precio * cantidad,            // ✅ line_total
+      notes:        notasItem,
     }]);
     setShowAddItemModal(false);
     setProductoSeleccionado(null);
     setCantidadItem(1);
-    setNotasItem('');
+    setNotesItem('');
     setError('');
   }
 
@@ -93,7 +93,7 @@ export default function TakeOrderPageNew() {
 
   // ── Totales ───────────────────────────────────────────────────────────────
 
-  const subtotal    = useMemo(() => items.reduce((s, i) => s + (Number(i.subtotal) || 0), 0), [items]);
+  const subtotal    = useMemo(() => items.reduce((s, i) => s + (Number(i.line_total) || 0), 0), [items]);
   const ivaAmount   = useMemo(() => subtotal * (Number.isFinite(vatRate) ? vatRate : 0.12), [subtotal, vatRate]);
   const totalConIva = useMemo(() => subtotal + ivaAmount, [subtotal, ivaAmount]);
   const ivaLabel    = useMemo(() => `${Math.round((vatRate || 0) * 1000) / 10}%`, [vatRate]);
@@ -101,16 +101,14 @@ export default function TakeOrderPageNew() {
   // ── Guardar orden ─────────────────────────────────────────────────────────
 
   async function guardarOrden() {
-    // ── Validación para "dine_in" ───────────────────────────────────────────────────
     if (orderType === 'dine_in' && !numeroMesa) {
       setError('Debe ingresar un número de mesa');
-      return; // No continuar con el guardado si no hay número de mesa
+      return;
     }
 
-    // ── Validación para asegurar que haya al menos un ítem ───────────────────────────
     if (items.length === 0) {
       setError('Debe agregar al menos un ítem');
-      return; // No continuar con el guardado si no hay ítems
+      return;
     }
 
     try {
@@ -137,14 +135,24 @@ export default function TakeOrderPageNew() {
         clienteId    = creado.id;
       }
 
+      // Formatear items para el backend
+      const itemsFormateados = items.map(item => ({
+        product_id:   item.product_id,
+        product_name: item.product_name,
+        quantity:     item.quantity,
+        unit_price:   item.unit_price,
+        line_total:   item.line_total,
+        notes:        item.notes || null,
+      }));
+
       // Guardar orden
       const res = await fetchWithAuth('/api/ordenes', {
         method: 'POST',
         body: JSON.stringify({
-          numero_mesa:    orderType === 'dine_in' ? parseInt(numeroMesa, 10) : null, // Solo pasa si es "dine_in"
+          numero_mesa:    orderType === 'dine_in' ? parseInt(numeroMesa, 10) : null,
           mesa_id:        mesaId,
           cliente_id:     clienteId,
-          items,
+          items:          itemsFormateados,
           notas,
           order_type:     orderType,
           vat_rate:       vatRate,
@@ -219,7 +227,7 @@ export default function TakeOrderPageNew() {
           cantidadItem={cantidadItem}
           setCantidadItem={setCantidadItem}
           notasItem={notasItem}
-          setNotasItem={setNotasItem}
+          setNotasItem={setNotesItem}
           agregarItem={agregarItem}
           categorias={categorias}
         />
