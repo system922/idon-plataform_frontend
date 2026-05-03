@@ -439,42 +439,21 @@ export default function PosCheckoutPage() {
       try {
         console.log(`🔍 Obteniendo producto ID: ${item.product_id}`);
         
-        // Obtener producto usando fetch directo
-        const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
-        const selectedBusiness = localStorage.getItem('selectedBusiness');
-        const business = selectedBusiness ? JSON.parse(selectedBusiness) : {};
-        const schemaName = business.schemaName || business.slug;
-        
-        const productUrl = `${API_BASE}/api/products/${item.product_id}`;
-        console.log(`📡 URL: ${productUrl}`);
-        
-        const productRes = await fetch(productUrl, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            ...(schemaName && { 'X-DB-Name': schemaName })
-          }
-        });
-        
-        if (!productRes.ok) {
-          console.error(`❌ Error ${productRes.status}: ${productRes.statusText}`);
-          throw new Error(`Producto no encontrado: ${item.product_id}`);
-        }
-        
-        const product = await productRes.json();
+        // Usar fetchWithAuth que ya tiene la URL base
+        const product = await fetchWithAuth(`/api/products/${item.product_id}`);
         console.log(`✅ Producto obtenido:`, product);
         
         const qty = item.quantity || 1;
         // Tu backend devuelve 'price' (selling_price)
-        const precioSinIVA = Number(product.price) || 0;
-        const montoIVA = Number(product.tax_rate) || 0;
+        const precioSinIVA = Number(product?.price) || 0;
+        const montoIVA = Number(product?.tax_rate) || 0;
         const subtotalItem = precioSinIVA * qty;
         const ivaItem = montoIVA * qty;
         
-        console.log(`📊 ${product.name}: Precio=${precioSinIVA}, IVA/unidad=${montoIVA}, Cantidad=${qty}, Subtotal=${subtotalItem}, IVA Total=${ivaItem}`);
+        console.log(`📊 ${product?.name}: Precio=${precioSinIVA}, IVA/unidad=${montoIVA}, Cantidad=${qty}, Subtotal=${subtotalItem}, IVA Total=${ivaItem}`);
         
         itemsPayload.push({
-          description: product.name || item.product_name || 'Producto',
+          description: product?.name || item.product_name || 'Producto',
           qty: qty,
           unit_price: precioSinIVA,
           subtotal: subtotalItem,
@@ -505,7 +484,6 @@ export default function PosCheckoutPage() {
     console.log('  Subtotal:', subtotalTotal);
     console.log('  IVA Total:', ivaTotal);
     console.log('  Total:', totalFactura);
-    console.log('  Items:', itemsPayload);
 
     if (itemsPayload.length === 0) {
       console.error('❌ No hay items para facturar');
@@ -527,35 +505,19 @@ export default function PosCheckoutPage() {
       forma_pago: FORMA_PAGO_MAP[method] || '01',
     };
 
-    console.log('📤 Payload enviado a /api/einvoicing/invoices/emit:', JSON.stringify(payload, null, 2));
+    console.log('📤 Payload enviado a facturación:', JSON.stringify(payload, null, 2));
 
     try {
-      const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
-      const selectedBusiness = localStorage.getItem('selectedBusiness');
-      const business = selectedBusiness ? JSON.parse(selectedBusiness) : {};
-      const schemaName = business.schemaName || business.slug;
-      
-      const res = await fetch(`${API_BASE}/api/einvoicing/invoices/emit`, {
+      // Usar fetchWithAuth para enviar la factura
+      const result = await fetchWithAuth('/api/einvoicing/invoices/emit', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          ...(schemaName && { 'X-DB-Name': schemaName })
-        },
         body: JSON.stringify(payload),
       });
       
-      if (res.ok) {
-        const data = await res.json();
-        console.log('✅ Factura emitida exitosamente:', data);
-        return data.invoice_number || null;
-      }
-      
-      const errData = await res.json().catch(() => ({}));
-      console.error('❌ Error del servidor al emitir factura:', errData);
-      return null;
+      console.log('✅ Factura emitida exitosamente:', result);
+      return result?.invoice_number || null;
     } catch (e) {
-      console.error('❌ Error de red al emitir factura:', e);
+      console.error('❌ Error al emitir factura:', e);
       return null;
     }
   }
@@ -564,39 +526,24 @@ export default function PosCheckoutPage() {
     try {
       const printerConfig = await getPrinterConfig('printer_main');
       
-      // 🔥 Obtener datos reales de cada producto para la impresión
       const itemsToPrint = [];
       
       for (const item of (order.items || [])) {
         try {
-          const productRes = await fetchWithAuth(`/api/products/${item.product_id}`);
+          // Usar fetchWithAuth para obtener el producto
+          const product = await fetchWithAuth(`/api/products/${item.product_id}`);
+          const precioSinIVA = Number(product?.price) || 0;
+          const montoIVA = Number(product?.tax_rate) || 0;
+          const subtotal = precioSinIVA * item.quantity;
+          const ivaTotal = montoIVA * item.quantity;
           
-          if (productRes.ok) {
-            const product = await productRes.json();
-            const precioSinIVA = Number(product.selling_price) || 0;
-            const montoIVA = Number(product.tax_rate) || 0;
-            const subtotal = precioSinIVA * item.quantity;
-            const ivaTotal = montoIVA * item.quantity;
-            
-            itemsToPrint.push({
-              description: product.name || item.product_name || 'Producto',
-              quantity: item.quantity,
-              price: precioSinIVA,
-              total: subtotal,
-              tax_amount: ivaTotal
-            });
-          } else {
-            // Fallback
-            const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
-            const montoIVA = Number(item.tax_rate) || 0;
-            itemsToPrint.push({
-              description: item.product_name || 'Producto',
-              quantity: item.quantity,
-              price: precioSinIVA,
-              total: precioSinIVA * item.quantity,
-              tax_amount: montoIVA * item.quantity
-            });
-          }
+          itemsToPrint.push({
+            description: product?.name || item.product_name || 'Producto',
+            quantity: item.quantity,
+            price: precioSinIVA,
+            total: subtotal,
+            tax_amount: ivaTotal
+          });
         } catch (err) {
           console.error(`Error obteniendo producto ${item.product_id}:`, err);
           const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
