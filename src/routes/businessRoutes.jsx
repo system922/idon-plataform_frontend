@@ -35,6 +35,8 @@ import OrderTable          from '../pages/business/OrdersTablesPage';
 import OrderHistory        from '../pages/business/OrdersHistoryPage';
 import OrdersKitchenScreenPage from '../pages/business/OrdersKitchenScreenPage';
 
+import PurchaseHistory            from '../pages/business/PurchasesHistory.jsx';
+
 
 import Attendance          from '../pages/business/EmployeesAttendancePage';
 import Employees           from '../pages/business/EmployeesPage';
@@ -56,6 +58,7 @@ import AccountingExpensesPage from '../pages/business/AccountingExpensesPage';
 import AccountingPayablePage  from '../pages/business/AccountingPayablePage';
 
 import EinvoicingInvoicesPage from '../pages/business/EinvoicingInvoicesPage';
+import PurchasesHistory from '../pages/business/PurchasesHistory.jsx';
 
 function OwnerRoute({ children }) {
   const user = (() => {
@@ -191,6 +194,7 @@ export const businessRoutes = (
         COMPRAS  /app/purchases
     ──────────────────────────────────────────────── */}
     <Route path="purchases"                   element={<GenericFeaturePage moduleName="Compras" />} />
+    <Route path="purchases.history"           element={<PurchasesHistory />} />
     <Route path="purchases/:feature"          element={<GenericFeaturePage moduleName="Compras" />} />
 
     {/* ────────────────────────────────────────────────

@@ -1,30 +1,52 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, RefreshCw, ArrowLeft, Check, Clipboard } from 'react-feather';
-import PageTemplate from '../../components/PageTemplate';
+import { Plus, RefreshCw, ArrowLeft, Check, Clipboard, AlertCircle } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
+import '../../styles/InventoryPhysicalPage.css';
 
-/* ─── shared styles ─────────────────────────────────────────────── */
+/* ─── shared styles (definiciones faltantes) ─────────────────────── */
 const inputStyle = {
-  width: '100%', padding: '9px 12px', borderRadius: 8,
+  width: '100%',
+  padding: '9px 12px',
+  borderRadius: 8,
   border: '1px solid rgba(255,255,255,0.12)',
-  background: 'rgba(0,0,0,0.3)', color: '#fff',
-  fontSize: 13, fontFamily: 'inherit', boxSizing: 'border-box',
+  background: 'rgba(0,0,0,0.3)',
+  color: '#fff',
+  fontSize: 13,
+  fontFamily: 'inherit',
+  boxSizing: 'border-box',
 };
+
 const btnPrimary = {
-  display: 'flex', alignItems: 'center', gap: 6,
-  padding: '9px 18px', background: '#6842fe', color: '#fff',
-  border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '9px 18px',
+  background: '#6842fe',
+  color: '#fff',
+  border: 'none',
+  borderRadius: 8,
+  cursor: 'pointer',
+  fontWeight: 700,
+  fontSize: 13,
 };
+
 const btnSecondary = {
-  display: 'flex', alignItems: 'center', gap: 6,
-  padding: '9px 14px', background: 'transparent', color: 'rgba(255,255,255,0.7)',
-  border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8,
-  cursor: 'pointer', fontWeight: 600, fontSize: 13,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '9px 14px',
+  background: 'transparent',
+  color: 'rgba(255,255,255,0.7)',
+  border: '1px solid rgba(255,255,255,0.15)',
+  borderRadius: 8,
+  cursor: 'pointer',
+  fontWeight: 600,
+  fontSize: 13,
 };
 
 const STATUS_STYLE = {
-  open:   { bg: 'rgba(16,185,129,0.15)',  color: '#10b981', label: 'Abierto'  },
-  closed: { bg: 'rgba(148,163,184,0.15)', color: '#94a3b8', label: 'Cerrado'  },
+  open: { bg: 'rgba(16,185,129,0.15)', color: '#10b981', label: 'Abierto' },
+  closed: { bg: 'rgba(148,163,184,0.15)', color: '#94a3b8', label: 'Cerrado' },
 };
 
 /* ─── New-inventory modal ────────────────────────────────────────── */
@@ -35,27 +57,14 @@ function NewInventoryModal({ categories, onClose, onCreate }) {
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
-      backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', zIndex: 1000, padding: 16,
-    }}>
-      <div style={{
-        background: 'linear-gradient(135deg,#1a1f2a 0%,#141920 100%)',
-        border: '1px solid rgba(104,66,254,0.25)', borderRadius: 16,
-        width: '100%', maxWidth: 460, display: 'flex', flexDirection: 'column',
-        boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
-      }}>
-        {/* header */}
-        <div style={{ padding: '22px 28px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          <h2 style={{ margin: 0, fontSize: 19, fontWeight: 800, color: '#fff' }}>Nuevo inventario físico</h2>
-          <p style={{ margin: '5px 0 0', fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
-            Selecciona las categorías a contar
-          </p>
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <div className="modal-header">
+          <h2 className="modal-title">Nuevo inventario físico</h2>
+          <p className="modal-subtitle">Selecciona las categorías a contar</p>
         </div>
 
-        {/* category list */}
-        <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 320, overflowY: 'auto' }}>
+        <div className="modal-body">
           {categories.length === 0 && (
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13 }}>No hay categorías registradas</p>
           )}
@@ -65,23 +74,25 @@ function NewInventoryModal({ categories, onClose, onCreate }) {
               <label
                 key={c.id}
                 onClick={() => toggle(c.id)}
+                className="category-item"
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 14px', borderRadius: 8, cursor: 'pointer',
                   border: `1px solid ${checked ? 'rgba(104,66,254,0.4)' : 'rgba(255,255,255,0.07)'}`,
                   background: checked ? 'rgba(104,66,254,0.1)' : 'rgba(255,255,255,0.02)',
-                  transition: 'all 0.15s',
                 }}
               >
-                <div style={{
-                  width: 18, height: 18, borderRadius: 4, flexShrink: 0,
-                  border: `2px solid ${checked ? '#6842fe' : 'rgba(255,255,255,0.2)'}`,
-                  background: checked ? '#6842fe' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {checked && <Check size={11} color="#fff" />}
+                <div
+                  className="category-checkbox"
+                  style={{
+                    border: `2px solid ${checked ? '#6842fe' : 'rgba(255,255,255,0.2)'}`,
+                    background: checked ? '#6842fe' : 'transparent',
+                  }}
+                >
+                  {checked && <Check className="check-icon" size={11} />}
                 </div>
-                <span style={{ fontSize: 13, color: checked ? '#fff' : 'rgba(255,255,255,0.7)', fontWeight: checked ? 600 : 400 }}>
+                <span className="category-name" style={{
+                  color: checked ? '#fff' : 'rgba(255,255,255,0.7)',
+                  fontWeight: checked ? 600 : 400
+                }}>
                   {c.name}
                 </span>
               </label>
@@ -89,8 +100,7 @@ function NewInventoryModal({ categories, onClose, onCreate }) {
           })}
         </div>
 
-        {/* footer */}
-        <div style={{ padding: '18px 28px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+        <div className="modal-footer">
           <button onClick={onClose} style={btnSecondary}>Cancelar</button>
           <button
             onClick={() => onCreate(selected)}
@@ -106,19 +116,63 @@ function NewInventoryModal({ categories, onClose, onCreate }) {
   );
 }
 
-/* ─── Page ───────────────────────────────────────────────────────── */
+/* ─── Page Template Component ─────────────────────────────────────── */
+function PageTemplate({ title, subtitle, children, loading, error, onRetry, headerAction }) {
+  if (loading) {
+    return (
+      <div className="inventory-page">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p className="loading-text">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="inventory-page">
+        <div className="error-container">
+          <AlertCircle size={48} className="error-icon" />
+          <p className="error-text">{error}</p>
+          <button onClick={onRetry} className="retry-button">
+            <RefreshCw size={14} /> Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="inventory-page">
+      <div className="inventory-header">
+        <div className="inventory-title-section">
+          <h1>{title}</h1>
+          {subtitle && <p className="inventory-subtitle">{subtitle}</p>}
+        </div>
+        {headerAction && <div className="inventory-actions">{headerAction}</div>}
+      </div>
+      <div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main Page Component ─────────────────────────────────────────── */
 export default function InventoryPhysicalPage() {
   const [inventories, setInventories] = useState([]);
-  const [categories, setCategories]   = useState([]);
-  const [active, setActive]           = useState(null);
-  const [items, setItems]             = useState([]);
-  const [modalOpen, setModalOpen]     = useState(false);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [active, setActive] = useState(null);
+  const [items, setItems] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const loadData = useCallback(async () => {
     try {
-      setLoading(true); setError(null);
+      setLoading(true);
+      setError(null);
       const [invRes, catRes] = await Promise.all([
         fetchWithAuth('/api/inventory'),
         fetchWithAuth('/api/categories'),
@@ -129,6 +183,7 @@ export default function InventoryPhysicalPage() {
       setCategories(Array.isArray(cat) ? cat : []);
     } catch (err) {
       setError('Error cargando inventarios');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -137,15 +192,25 @@ export default function InventoryPhysicalPage() {
   useEffect(() => { loadData(); }, [loadData]);
 
   async function createInventory(categoryIds) {
-    if (!categoryIds.length) { alert('Selecciona al menos una categoría'); return; }
+    if (!categoryIds.length) {
+      alert('Selecciona al menos una categoría');
+      return;
+    }
     try {
       const res = await fetchWithAuth('/api/inventory', {
-        method: 'POST', body: JSON.stringify({ categories: categoryIds }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categories: categoryIds }),
       });
-      if (!res.ok) throw new Error((await res.json()).error || 'Error al crear');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Error al crear');
+      }
       setModalOpen(false);
       loadData();
-    } catch (e) { alert(e.message); }
+    } catch (e) {
+      alert(e.message);
+    }
   }
 
   async function openInventory(inv) {
@@ -164,36 +229,50 @@ export default function InventoryPhysicalPage() {
   }
 
   async function updateItem(id, value) {
+    if (value < 0) return;
     try {
       await fetchWithAuth(`/api/inventory/${active.id}/items/${id}`, {
-        method: 'PUT', body: JSON.stringify({ counted_stock: value }),
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ counted_stock: value }),
       });
       setItems(prev => prev.map(i =>
         i.id === id
           ? { ...i, counted_stock: value, difference: value - i.system_stock, status: 'counted' }
           : i
       ));
-    } catch (e) { alert(e.message); }
+    } catch (e) {
+      alert(e.message);
+    }
   }
 
   async function closeInventory() {
     if (items.some(i => i.status === 'pending')) {
-      alert('Debes completar todos los productos'); return;
+      alert('Debes completar todos los productos');
+      return;
     }
     try {
-      const res = await fetchWithAuth(`/api/inventory/${active.id}/close`, { method: 'POST' });
-      if (!res.ok) throw new Error((await res.json()).error || 'Error al cerrar');
+      const res = await fetchWithAuth(`/api/inventory/${active.id}/close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Error al cerrar');
+      }
       setActive(null);
       loadData();
-    } catch (e) { alert(e.message); }
+    } catch (e) {
+      alert(e.message);
+    }
   }
 
-  const pending  = items.filter(i => i.status === 'pending').length;
-  const counted  = items.filter(i => i.status === 'counted').length;
+  const pending = items.filter(i => i.status === 'pending').length;
+  const counted = items.filter(i => i.status === 'counted').length;
   const progress = items.length ? Math.round((counted / items.length) * 100) : 0;
 
   const headerAction = (
-    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+    <div className="inventory-actions">
       {!active && (
         <button onClick={() => setModalOpen(true)} style={btnPrimary}>
           <Plus size={14} /> Nuevo inventario
@@ -216,23 +295,23 @@ export default function InventoryPhysicalPage() {
     >
       {/* ── LIST VIEW ── */}
       {!active && (
-        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, overflow: 'hidden' }}>
+        <div className="inventory-table-container">
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <table className="inventory-table">
               <thead>
-                <tr style={{ background: 'rgba(104,66,254,0.12)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                  {['ID', 'Estado', 'Fecha', 'Cerrado', ''].map(h => (
-                    <th key={h} style={{ padding: '12px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap' }}>
-                      {h}
-                    </th>
-                  ))}
+                <tr>
+                  <th>ID</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                  <th>Cerrado</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {inventories.length === 0 && (
                   <tr>
-                    <td colSpan={5} style={{ padding: 48, textAlign: 'center', color: 'rgba(255,255,255,0.3)' }}>
-                      <Clipboard size={32} style={{ display: 'block', margin: '0 auto 10px', opacity: 0.3 }} />
+                    <td colSpan={5} className="empty-state">
+                      <Clipboard size={32} className="empty-icon" />
                       No hay inventarios registrados
                     </td>
                   </tr>
@@ -240,31 +319,26 @@ export default function InventoryPhysicalPage() {
                 {inventories.map((inv, idx) => {
                   const st = STATUS_STYLE[inv.status] || STATUS_STYLE.open;
                   return (
-                    <tr
-                      key={inv.id}
-                      style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)', transition: 'background 0.15s', cursor: 'pointer' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(104,66,254,0.07)'}
-                      onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'}
-                    >
-                      <td style={{ padding: '11px 14px', color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace', fontSize: 11 }}>
+                    <tr key={inv.id}>
+                      <td style={{ color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace', fontSize: 11 }}>
                         #{String(inv.id).slice(0, 8)}
                       </td>
-                      <td style={{ padding: '11px 14px' }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: st.bg, color: st.color }}>
+                      <td>
+                        <span className={`status-badge status-badge-${inv.status}`}>
                           {st.label}
                         </span>
                       </td>
-                      <td style={{ padding: '11px 14px', color: 'rgba(255,255,255,0.65)' }}>
+                      <td style={{ color: 'rgba(255,255,255,0.65)' }}>
                         {new Date(inv.created_at).toLocaleString()}
                       </td>
-                      <td style={{ padding: '11px 14px', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                        {inv.closed_date ? new Date(inv.closed_date).toLocaleDateString() : '—'}
+                      <td style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                        {inv.closed_at ? new Date(inv.closed_at).toLocaleDateString() : '—'}
                       </td>
-                      <td style={{ padding: '11px 14px' }}>
+                      <td>
                         {inv.status !== 'closed' && (
                           <button
                             onClick={() => openInventory(inv)}
-                            style={{ padding: '6px 14px', background: 'rgba(104,66,254,0.15)', color: '#6842fe', border: '1px solid rgba(104,66,254,0.25)', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+                            className="open-inventory-btn"
                           >
                             Abrir
                           </button>
@@ -277,7 +351,7 @@ export default function InventoryPhysicalPage() {
             </table>
           </div>
           {inventories.length > 0 && (
-            <div style={{ padding: '10px 16px', fontSize: 12, color: 'rgba(255,255,255,0.3)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="table-footer">
               {inventories.length} inventario(s)
             </div>
           )}
@@ -287,75 +361,72 @@ export default function InventoryPhysicalPage() {
       {/* ── DETAIL VIEW ── */}
       {active && (
         <>
-          {/* top bar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+          <div className="detail-header">
             <button onClick={() => setActive(null)} style={btnSecondary}>
               <ArrowLeft size={14} /> Volver
             </button>
 
-            {/* progress */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>
-                <span style={{ color: '#10b981', fontWeight: 700 }}>{counted}</span> / {items.length} contados
+            <div className="progress-container">
+              <div className="progress-stats">
+                <span className="progress-count">{counted}</span> / {items.length} contados
               </div>
-              <div style={{ width: 120, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', borderRadius: 3, width: `${progress}%`, background: progress === 100 ? '#10b981' : '#6842fe', transition: 'width 0.3s' }} />
+              <div className="progress-bar-wrapper">
+                <div 
+                  className={`progress-bar ${progress === 100 ? 'progress-bar-green' : 'progress-bar-purple'}`}
+                  style={{ width: `${progress}%` }}
+                />
               </div>
-              <span style={{ fontSize: 12, color: progress === 100 ? '#10b981' : 'rgba(255,255,255,0.45)', fontWeight: 700 }}>{progress}%</span>
+              <span className={`progress-percentage ${progress === 100 ? 'progress-percentage-green' : 'progress-percentage-gray'}`}>
+                {progress}%
+              </span>
             </div>
 
             <button
               onClick={closeInventory}
               disabled={pending > 0}
-              style={{ ...btnPrimary, background: pending > 0 ? 'rgba(104,66,254,0.3)' : '#10b981', opacity: pending > 0 ? 0.6 : 1 }}
+              className={`btn-primary ${pending === 0 ? 'close-inventory-btn' : ''}`}
+              style={{ opacity: pending > 0 ? 0.6 : 1 }}
             >
               <Check size={14} /> Cerrar inventario
             </button>
           </div>
 
-          {/* items table */}
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, overflow: 'hidden' }}>
+          <div className="items-table-container">
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <table className="items-table">
                 <thead>
-                  <tr style={{ background: 'rgba(104,66,254,0.12)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                    {['Producto', 'Stock sistema', 'Conteo físico', 'Diferencia', 'Estado'].map(h => (
-                      <th key={h} style={{ padding: '12px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap' }}>
-                        {h}
-                      </th>
-                    ))}
+                  <tr>
+                    <th>Producto</th>
+                    <th>Stock sistema</th>
+                    <th>Conteo físico</th>
+                    <th>Diferencia</th>
+                    <th>Estado</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item, idx) => {
                     const diff = item.difference ?? 0;
-                    const diffColor = diff > 0 ? '#10b981' : diff < 0 ? '#ef4444' : 'rgba(255,255,255,0.4)';
+                    const diffClass = diff > 0 ? 'difference-positive' : diff < 0 ? 'difference-negative' : 'difference-zero';
                     return (
-                      <tr
-                        key={item.id}
-                        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}
-                      >
-                        <td style={{ padding: '11px 14px', color: '#fff', fontWeight: 600 }}>{item.product_name}</td>
-                        <td style={{ padding: '11px 14px', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>{item.system_stock}</td>
-                        <td style={{ padding: '11px 14px' }}>
+                      <tr key={item.id}>
+                        <td className="product-name">{item.product_name}</td>
+                        <td className="system-stock">{item.system_stock}</td>
+                        <td>
                           <input
                             type="number"
                             min="0"
                             value={item.counted_stock ?? ''}
                             onChange={e => updateItem(item.id, Number(e.target.value))}
                             placeholder="—"
-                            style={{ ...inputStyle, width: 100, padding: '7px 10px' }}
+                            className="count-input"
+                            style={inputStyle}
                           />
                         </td>
-                        <td style={{ padding: '11px 14px', fontWeight: 700, color: diffColor }}>
+                        <td className={diffClass}>
                           {item.status === 'counted' ? (diff > 0 ? `+${diff}` : diff) : '—'}
                         </td>
-                        <td style={{ padding: '11px 14px' }}>
-                          <span style={{
-                            fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 20,
-                            background: item.status === 'counted' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
-                            color: item.status === 'counted' ? '#10b981' : '#f59e0b',
-                          }}>
+                        <td>
+                          <span className={`item-status-badge item-status-${item.status}`}>
                             {item.status === 'counted' ? 'Contado' : 'Pendiente'}
                           </span>
                         </td>
@@ -365,7 +436,7 @@ export default function InventoryPhysicalPage() {
                 </tbody>
               </table>
             </div>
-            <div style={{ padding: '10px 16px', fontSize: 12, color: 'rgba(255,255,255,0.3)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="table-footer">
               {items.length} productos · {pending} pendiente(s)
             </div>
           </div>

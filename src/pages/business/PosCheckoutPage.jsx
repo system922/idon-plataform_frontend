@@ -419,7 +419,7 @@ export default function PosCheckoutPage() {
   const totalOrden = selectedOrder ? Number(selectedOrder.total || 0) : 0;
   const changeNormal = Math.max(0, (parseFloat(amountPaid) || 0) - totalOrden);
 
-  // ── FACTURA ELECTRÓNICA (CORREGIDA - usa datos del item directamente) ──────
+  // ── FACTURA ELECTRÓNICA ─────────────────────────────────────────────────
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
   async function emitirFactura(order, custCedula, custNombre, method) {
@@ -433,13 +433,10 @@ export default function PosCheckoutPage() {
     console.log('Order ID:', order.id);
     console.log('Items a facturar:', order.items);
 
-    // Usar los datos del item directamente (ya vienen del JOIN con products)
     const itemsPayload = (order.items || []).map(item => {
       const qty = item.quantity || 1;
       const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
       const montoIVA = Number(item.tax_rate) || 0;
-      
-      console.log(`📦 Item: ${item.product_name}, Precio: ${precioSinIVA}, IVA: ${montoIVA}, Cantidad: ${qty}`);
       
       return {
         code: item.product_code || 'PROD',
@@ -454,11 +451,6 @@ export default function PosCheckoutPage() {
     const subtotalTotal = itemsPayload.reduce((sum, i) => sum + i.subtotal, 0);
     const ivaTotal = itemsPayload.reduce((sum, i) => sum + i.tax_amount, 0);
     const totalFactura = subtotalTotal + ivaTotal;
-
-    console.log('📊 RESUMEN FACTURA:');
-    console.log('  Subtotal:', subtotalTotal);
-    console.log('  IVA Total:', ivaTotal);
-    console.log('  Total:', totalFactura);
 
     if (itemsPayload.length === 0) {
       console.error('❌ No hay items para facturar');
@@ -480,8 +472,6 @@ export default function PosCheckoutPage() {
       forma_pago: FORMA_PAGO_MAP[method] || '01',
     };
 
-    console.log('📤 Payload enviado a facturación:', JSON.stringify(payload, null, 2));
-
     try {
       const result = await fetchWithAuth('/api/einvoicing/invoices/emit', {
         method: 'POST',
@@ -489,11 +479,9 @@ export default function PosCheckoutPage() {
       });
       
       if (result && result.invoice_number) {
-        console.log('✅ Factura emitida exitosamente:', result);
+        console.log('✅ Factura emitida:', result.invoice_number);
         return result.invoice_number;
       }
-      
-      console.error('❌ Error del servidor:', result);
       return null;
     } catch (e) {
       console.error('❌ Error al emitir factura:', e);
@@ -501,7 +489,7 @@ export default function PosCheckoutPage() {
     }
   }
 
-  // ── IMPRESIÓN (CORREGIDA - usa datos del item directamente) ────────────────
+  // ── IMPRESIÓN ──────────────────────────────────────────────────────────
   const imprimirTicket = async (order, paid, cambio, invoiceNumber = null, splitMode = null, customerName = null) => {
     try {
       const printerConfig = await getPrinterConfig('printer_main');
@@ -549,7 +537,7 @@ export default function PosCheckoutPage() {
     }
   };
 
-  // ── COBRAR COMENSAL (CORREGIDO) ────────────────────────────────────────────
+  // ── COBRAR COMENSAL ────────────────────────────────────────────────────────
   const cobrarComensal = async (comensal) => {
     if (comensal.items.length === 0) {
       setError('Este comensal no tiene productos asignados');
@@ -619,56 +607,41 @@ export default function PosCheckoutPage() {
       
       const ordenActualizada = await recargarOrden();
       
-      // 🔥 VERIFICAR SI YA SE COMPLETÓ EL PAGO TOTAL (DEBE SER EXACTAMENTE IGUAL)
+      // Verificar si ya se completó el pago total
       const pagoTotalCompletado = nuevoTotalPagado === totalOrden;
       
-      console.log('📊 VERIFICACIÓN DE PAGO:');
-      console.log('  Total pagado acumulado:', nuevoTotalPagado);
-      console.log('  Total orden:', totalOrden);
-      console.log('  Pago completado (exactamente igual):', pagoTotalCompletado);
-      console.log('  Pagos registrados:', pagosRegistrados.length);
-      
-      // Si el pago está completado, generar factura final
       if (pagoTotalCompletado) {
-        console.log('🎉 PAGO TOTAL COMPLETADO - Generando factura final...');
-        
-        // Reconstruir TODOS los items desde el historial de pagos
+        // Reconstruir todos los items desde el historial de pagos
         const todosLosItemsIds = pagosRegistrados.flatMap(p => p.items);
         
-        // Obtener los items completos desde la orden original
         let itemsFinales = [];
-        for (const itemId of todosLosItemsIds) {
-          const itemOriginal = selectedOrder?.items?.find(i => i.id === itemId);
-          if (itemOriginal) {
-            itemsFinales.push(itemOriginal);
+        // Primero intentar desde orden actualizada
+        if (ordenActualizada?.items) {
+          for (const itemId of todosLosItemsIds) {
+            const itemEncontrado = ordenActualizada.items.find(i => i.id === itemId);
+            if (itemEncontrado) itemsFinales.push(itemEncontrado);
+          }
+        }
+        // Si no, usar selectedOrder
+        if (itemsFinales.length === 0 && selectedOrder?.items) {
+          for (const itemId of todosLosItemsIds) {
+            const itemEncontrado = selectedOrder.items.find(i => i.id === itemId);
+            if (itemEncontrado) itemsFinales.push(itemEncontrado);
           }
         }
         
-        console.log('📦 Items para factura final:', itemsFinales.length);
-        
         if (itemsFinales.length > 0) {
-          const ordenCompleta = {
-            ...selectedOrder,
-            items: itemsFinales
-          };
-          
+          const ordenCompleta = { ...selectedOrder, items: itemsFinales };
           const clientePrincipal = { 
             cedula: clienteCedula || '9999999999', 
             nombre: clienteNombre || 'CONSUMIDOR FINAL' 
           };
           
-          // Generar factura final
           const invoiceNum = await emitirFactura(ordenCompleta, clientePrincipal.cedula, clientePrincipal.nombre, 'split');
-          console.log('✅ Factura final emitida:', invoiceNum);
-          
-          // Imprimir ticket final
           await imprimirTicket(ordenCompleta, totalOrden, 0, invoiceNum, 'split', 'FACTURA FINAL');
           setSuccess('✅ Factura final generada con todos los productos');
-        } else {
-          console.warn('⚠️ No se encontraron items para la factura final');
         }
         
-        // Cerrar la orden
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
           body: JSON.stringify({
@@ -688,8 +661,6 @@ export default function PosCheckoutPage() {
         
       } else if (ordenActualizada) {
         const productosPendientes = ordenActualizada.items.filter(i => !i.paid);
-        
-        // Crear un nuevo comensal para el siguiente
         const comensalesPendientes = clientesDivididos.filter(c => c.id !== comensal.id);
         if (comensalesPendientes.length === 0) {
           setClientesDivididos([{
@@ -715,7 +686,7 @@ export default function PosCheckoutPage() {
     }
   };
 
-  // ── PAGO NORMAL (CORREGIDO) ────────────────────────────────────────────────
+  // ── PAGO NORMAL ──────────────────────────────────────────────────────────
   const pagoNormal = async () => {
     setPrintLoading(true);
     try {
@@ -952,7 +923,7 @@ export default function PosCheckoutPage() {
                   )}
                 </div>
 
-                {/* ==================== MODO NORMAL ==================== */}
+                {/* MODO NORMAL */}
                 {!modoDividido && (
                   <>
                     <div className="order-items">
@@ -1001,7 +972,7 @@ export default function PosCheckoutPage() {
                   </>
                 )}
 
-                {/* ==================== MODO DIVIDIDO ==================== */}
+                {/* MODO DIVIDIDO */}
                 {modoDividido && (
                   <>
                     <div className="order-items">
