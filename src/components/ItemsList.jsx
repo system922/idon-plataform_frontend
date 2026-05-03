@@ -1,9 +1,10 @@
 import React from 'react';
-import { FiTrash2 } from 'react-icons/fi';
+import { FiTrash2, FiEdit2 } from 'react-icons/fi';  // 👈 AGREGAR FiEdit2
 
 export default function ItemsList({
   items,
-  eliminarItem
+  eliminarItem,
+  abrirEditarItem  // 👈 NUEVA PROP
 }) {
   return (
     <div className="items-body">
@@ -27,14 +28,24 @@ export default function ItemsList({
               </div>
               <div className="item-right">
                 <div className="item-price">${(Number(item.subtotal) || 0).toFixed(2)}</div>
-                <button
-                  className="icon-btn"
-                  onClick={() => eliminarItem(item.id)}
-                  title="Eliminar"
-                  type="button"
-                >
-                  <FiTrash2 size={18} />
-                </button>
+                <div className="item-actions">
+                  <button
+                    className="icon-btn edit-btn"
+                    onClick={() => abrirEditarItem(item)}
+                    title="Editar"
+                    type="button"
+                  >
+                    <FiEdit2 size={16} />
+                  </button>
+                  <button
+                    className="icon-btn delete-btn"
+                    onClick={() => eliminarItem(item.id)}
+                    title="Eliminar"
+                    type="button"
+                  >
+                    <FiTrash2 size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           ))}

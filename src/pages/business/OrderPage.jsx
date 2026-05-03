@@ -3,6 +3,7 @@ import PageTemplate from '../../components/PageTemplate';
 import OrderHeader from '../../components/OrderHeader';
 import ItemsSection from '../../components/ItemsSection';
 import AddItemModal from '../../components/AddItemModal';
+import EditItemModal from '../../components/EditItemModal';
 import { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/CreateOrder.css';
 
@@ -19,9 +20,11 @@ export default function TakeOrderPageNew() {
   const [orderType,             setOrderType            ] = useState('dine_in');
   const [items,                 setItems                ] = useState([]);
   const [showAddItemModal,      setShowAddItemModal     ] = useState(false);
+  const [showEditItemModal,     setShowEditItemModal    ] = useState(false);  // 👈 NUEVO
   const [productoSeleccionado,  setProductoSeleccionado ] = useState(null);
   const [cantidadItem,          setCantidadItem         ] = useState(1);
   const [notasItem,             setNotasItem            ] = useState('');
+  const [itemEditando,          setItemEditando         ] = useState(null);   // 👈 NUEVO
 
   // ── Carga inicial ─────────────────────────────────────────────────────────
 
@@ -76,13 +79,11 @@ export default function TakeOrderPageNew() {
     
     const nuevoItem = {
       id:         Date.now(),
-      // Para ItemsList (visualización)
       nombre:     productoSeleccionado.name,
       precio:     precio,
       cantidad:   cantidad,
       subtotal:   precio * cantidad,
       notas:      notasItem,
-      // Para el backend
       product_id:   productoSeleccionado.id,
       product_name: productoSeleccionado.name,
       quantity:     cantidad,
@@ -92,6 +93,55 @@ export default function TakeOrderPageNew() {
     
     setItems(prev => [...prev, nuevoItem]);
     setShowAddItemModal(false);
+    setProductoSeleccionado(null);
+    setCantidadItem(1);
+    setNotasItem('');
+    setError('');
+  }
+
+  // 👈 NUEVA FUNCIÓN: Abrir modal de edición
+  function abrirEditarItem(item) {
+    setItemEditando(item);
+    setProductoSeleccionado({
+      id: item.product_id,
+      name: item.nombre,
+      price: item.precio
+    });
+    setCantidadItem(item.cantidad);
+    setNotasItem(item.notas || '');
+    setShowEditItemModal(true);
+  }
+
+  // 👈 NUEVA FUNCIÓN: Guardar cambios del item editado
+  function guardarEdicionItem() {
+    if (!productoSeleccionado || cantidadItem <= 0) {
+      setError('Selecciona un producto y cantidad válida');
+      return;
+    }
+    
+    const precio = Number(productoSeleccionado.price) || 0;
+    const cantidad = parseInt(cantidadItem, 10);
+    
+    const itemActualizado = {
+      ...itemEditando,
+      nombre:     productoSeleccionado.name,
+      precio:     precio,
+      cantidad:   cantidad,
+      subtotal:   precio * cantidad,
+      notas:      notasItem,
+      product_id:   productoSeleccionado.id,
+      product_name: productoSeleccionado.name,
+      quantity:     cantidad,
+      unit_price:   precio,
+      line_total:   precio * cantidad,
+    };
+    
+    setItems(prev => prev.map(item => 
+      item.id === itemEditando.id ? itemActualizado : item
+    ));
+    
+    setShowEditItemModal(false);
+    setItemEditando(null);
     setProductoSeleccionado(null);
     setCantidadItem(1);
     setNotasItem('');
@@ -110,13 +160,11 @@ export default function TakeOrderPageNew() {
   // ── Guardar orden ─────────────────────────────────────────────────────────
 
   async function guardarOrden() {
-    // Validación para "dine_in"
     if (orderType === 'dine_in' && !numeroMesa) {
       setError('Debe ingresar un número de mesa');
       return;
     }
 
-    // Validación para asegurar que haya al menos un ítem
     if (items.length === 0) {
       setError('Debe agregar al menos un ítem');
       return;
@@ -125,7 +173,6 @@ export default function TakeOrderPageNew() {
     try {
       setGuardando(true);
 
-      // Buscar o crear Consumidor Final
       const CF_CEDULA = '9999999999';
       const CF_NOMBRE = 'CONSUMIDOR FINAL';
       let clienteId   = null;
@@ -146,7 +193,6 @@ export default function TakeOrderPageNew() {
         clienteId    = creado.id;
       }
 
-      // Formatear items para el backend
       const itemsFormateados = items.map(item => ({
         product_id:   item.product_id,
         product_name: item.product_name,
@@ -156,7 +202,6 @@ export default function TakeOrderPageNew() {
         notes:        item.notas || null,
       }));
 
-      // Guardar orden
       const res = await fetchWithAuth('/api/ordenes', {
         method: 'POST',
         body: JSON.stringify({
@@ -217,6 +262,7 @@ export default function TakeOrderPageNew() {
           <ItemsSection
             items={items}
             eliminarItem={eliminarItem}
+            abrirEditarItem={abrirEditarItem}  // 👈 PASAR LA FUNCIÓN
             setShowAddItemModal={setShowAddItemModal}
             subtotal={subtotal}
             ivaAmount={ivaAmount}
@@ -240,6 +286,21 @@ export default function TakeOrderPageNew() {
           notasItem={notasItem}
           setNotasItem={setNotasItem}
           agregarItem={agregarItem}
+          categorias={categorias}
+        />
+
+        {/* 👈 NUEVO MODAL DE EDICIÓN */}
+        <EditItemModal
+          showEditItemModal={showEditItemModal}
+          setShowEditItemModal={setShowEditItemModal}
+          productos={productos}
+          productoSeleccionado={productoSeleccionado}
+          setProductoSeleccionado={setProductoSeleccionado}
+          cantidadItem={cantidadItem}
+          setCantidadItem={setCantidadItem}
+          notasItem={notasItem}
+          setNotasItem={setNotasItem}
+          guardarEdicionItem={guardarEdicionItem}
           categorias={categorias}
         />
       </div>

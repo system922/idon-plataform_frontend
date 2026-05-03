@@ -6,6 +6,7 @@ import OrderSummary from './OrderSummary';
 export default function ItemsSection({
   items,
   eliminarItem,
+  abrirEditarItem,  // 👈 NUEVA PROP
   setShowAddItemModal,
   subtotal,
   ivaAmount,
@@ -40,6 +41,7 @@ export default function ItemsSection({
       <ItemsList
         items={items}
         eliminarItem={eliminarItem}
+        abrirEditarItem={abrirEditarItem}  // 👈 PASAR FUNCIÓN
       />
 
       <OrderSummary
