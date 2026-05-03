@@ -439,56 +439,51 @@ export default function PosCheckoutPage() {
       try {
         console.log(`🔍 Obteniendo producto ID: ${item.product_id}`);
         
-        // Hacer petición manual para ver el error
-        const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
-        const selectedBusiness = JSON.parse(localStorage.getItem('selectedBusiness') || '{}');
-        const schemaName = selectedBusiness.schemaName || selectedBusiness.slug;
+        // Usar fetchWithAuth - ya maneja token y X-DB-Name
+        const product = await fetchWithAuth(`/api/products/${item.product_id}`);
         
-        const url = `/api/products/${item.product_id}`;
-        console.log(`📡 URL: ${url}`);
-        console.log(`📡 Schema: ${schemaName}`);
-        
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'X-DB-Name': schemaName || ''
-          }
-        });
-        
-        console.log(`📡 Response status: ${response.status}`);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`❌ Error ${response.status}: ${errorText}`);
-          throw new Error(`Producto no encontrado: ${item.product_id}`);
+        if (!product.ok) {
+          // fetchWithAuth ya devuelve la respuesta, no el JSON directamente
+          // Necesitamos obtener el JSON
+          const productData = await product.json();
+          console.log(`✅ Producto obtenido:`, productData);
+          
+          const qty = item.quantity || 1;
+          const precioSinIVA = Number(productData.price) || Number(productData.selling_price) || 0;
+          const montoIVA = Number(productData.tax_rate) || 0;
+          
+          itemsPayload.push({
+            code: productData.code || 'PROD',
+            description: productData.name || item.product_name || 'Producto',
+            qty: qty,
+            unit_price: precioSinIVA,
+            subtotal: qty * precioSinIVA,
+            tax_amount: qty * montoIVA
+          });
+        } else {
+          // Fallback a datos del item
+          const qty = item.quantity || 1;
+          const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
+          const montoIVA = Number(item.tax_rate) || 0;
+          
+          itemsPayload.push({
+            code: 'PROD',
+            description: item.product_name || 'Producto',
+            qty: qty,
+            unit_price: precioSinIVA,
+            subtotal: qty * precioSinIVA,
+            tax_amount: qty * montoIVA
+          });
         }
-        
-        const product = await response.json();
-        console.log(`✅ Producto obtenido:`, product);
-        
-        const qty = item.quantity || 1;
-        const precioSinIVA = Number(product?.selling_price) || Number(product?.price) || 0;
-        const montoIVA = Number(product?.tax_rate) || 0;
-        const subtotalItem = precioSinIVA * qty;
-        const ivaItem = montoIVA * qty;
-        
-        console.log(`📊 ${product?.name}: Precio=${precioSinIVA}, IVA/unidad=${montoIVA}, Cantidad=${qty}, Subtotal=${subtotalItem}, IVA Total=${ivaItem}`);
-        
-        itemsPayload.push({
-          description: product?.name || item.product_name || 'Producto',
-          qty: qty,
-          unit_price: precioSinIVA,
-          subtotal: subtotalItem,
-          tax_amount: ivaItem
-        });
       } catch (err) {
         console.error(`❌ Error obteniendo producto ${item.product_id}:`, err);
+        // Fallback con datos del item
         const qty = item.quantity || 1;
         const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
         const montoIVA = Number(item.tax_rate) || 0;
         
         itemsPayload.push({
+          code: 'PROD',
           description: item.product_name || 'Producto',
           qty: qty,
           unit_price: precioSinIVA,
@@ -501,6 +496,11 @@ export default function PosCheckoutPage() {
     const subtotalTotal = itemsPayload.reduce((sum, i) => sum + i.subtotal, 0);
     const ivaTotal = itemsPayload.reduce((sum, i) => sum + i.tax_amount, 0);
     const totalFactura = subtotalTotal + ivaTotal;
+
+    console.log('📊 RESUMEN FACTURA:');
+    console.log('  Subtotal:', subtotalTotal);
+    console.log('  IVA Total:', ivaTotal);
+    console.log('  Total:', totalFactura);
 
     if (itemsPayload.length === 0) {
       console.error('❌ No hay items para facturar');
@@ -516,10 +516,12 @@ export default function PosCheckoutPage() {
         tipo_identificacion: tipoId,
       },
       items: itemsPayload.map(i => ({
-        ...i,
-        unit_price: Number(i.unit_price).toFixed(2),
-        subtotal: Number(i.subtotal).toFixed(2),
-        tax_amount: Number(i.tax_amount).toFixed(2)
+        code: i.code,
+        description: i.description,
+        qty: i.qty,
+        unit_price: i.unit_price,
+        subtotal: i.subtotal,
+        tax_amount: i.tax_amount
       })),
       subtotal: Number(subtotalTotal).toFixed(2),
       iva_amount: Number(ivaTotal).toFixed(2),
@@ -530,34 +532,28 @@ export default function PosCheckoutPage() {
     console.log('📤 Payload enviado a facturación:', JSON.stringify(payload, null, 2));
 
     try {
-      const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
-      const selectedBusiness = JSON.parse(localStorage.getItem('selectedBusiness') || '{}');
-      const schemaName = selectedBusiness.schemaName || selectedBusiness.slug;
-      
-      const res = await fetch('/api/einvoicing/invoices/emit', {
+      const result = await fetchWithAuth('/api/einvoicing/invoices/emit', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-DB-Name': schemaName || ''
-        },
         body: JSON.stringify(payload),
       });
       
-      if (res.ok) {
-        const data = await res.json();
+      console.log('✅ Respuesta del servidor:', result);
+      
+      if (result.ok) {
+        const data = await result.json();
         console.log('✅ Factura emitida exitosamente:', data);
         return data.invoice_number || null;
+      } else {
+        const errorData = await result.json().catch(() => ({}));
+        console.error('❌ Error del servidor:', errorData);
+        return null;
       }
-      
-      const errData = await res.json().catch(() => ({}));
-      console.error('❌ Error del servidor:', errData);
-      return null;
     } catch (e) {
-      console.error('❌ Error de red:', e);
+      console.error('❌ Error al emitir factura:', e);
       return null;
     }
   }
+
   // ── IMPRESIÓN ──────────────────────────────────────────────────────────
   const imprimirTicket = async (order, paid, cambio, invoiceNumber = null, splitMode = null, customerName = null) => {
     try {
