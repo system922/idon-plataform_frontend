@@ -1,108 +1,240 @@
-/* Fondo general */
+/* ============================================
+   CHECKOUT MODERN - ESTILOS PROFESIONALES
+   ============================================ */
+
+/* Variables globales */
+:root {
+  --primary-color: #6842fe;
+  --primary-dark: #5334cc;
+  --primary-light: #8a6eff;
+  --success-color: #28a745;
+  --success-dark: #1e7e34;
+  --danger-color: #dc3545;
+  --danger-dark: #c82333;
+  --warning-color: #ffc107;
+  --warning-dark: #e0a800;
+  --info-color: #17a2b8;
+  --gray-100: #f8f9fa;
+  --gray-200: #e9ecef;
+  --gray-300: #dee2e6;
+  --gray-400: #ced4da;
+  --gray-500: #adb5bd;
+  --gray-600: #6c757d;
+  --gray-700: #495057;
+  --gray-800: #343a40;
+  --gray-900: #212529;
+  --border-radius-sm: 4px;
+  --border-radius: 8px;
+  --border-radius-lg: 12px;
+  --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --box-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --transition: all 0.2s ease;
+}
+
+/* ============================================
+   LAYOUT PRINCIPAL
+   ============================================ */
+
 .checkout-modern-main {
   min-height: auto;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.05);
-  padding-top: 0px;
-  border-radius: 10px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+  padding: 20px;
+  border-radius: var(--border-radius);
 }
 
-/* Card principal */
 .checkout-modern-card {
   width: 100%;
-  min-height: 100%;
+  max-width: 1400px;
   background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 13px rgba(0, 0, 0, 0.1);
-  padding: 16px 24px;
-  margin-bottom: 0;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--box-shadow-lg);
+  padding: 24px 28px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  transition: var(--transition);
 }
 
-/* Inputs fila arriba */
+/* ============================================
+   CABECERA Y SELECTOR DE ORDEN
+   ============================================ */
+
 .cmbx-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
+  background: var(--gray-100);
+  padding: 16px 20px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--gray-300);
 }
 
 .cmbx-row .label {
-  font-weight: 800;
-  color: #333;
-  margin-right: 3px;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-right: 4px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .combobox {
   flex: 1;
+  min-width: 200px;
   font-size: 14px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
+  padding: 10px 14px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--gray-400);
   background: white;
-  color: #333;
+  color: var(--gray-800);
   font-weight: 500;
-  min-width: 180px;
+  transition: var(--transition);
+  cursor: pointer;
 }
 
-.client-inp, .cliente-fields input {
-  font-size: 13px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: white;
-  border: 1px solid #ddd;
-  color: #333;
-  font-weight: 500;
-  transition: all 0.2s ease;
+.combobox:hover {
+  border-color: var(--primary-color);
 }
 
-.client-inp:focus, .cliente-fields input:focus {
+.combobox:focus {
   outline: none;
-  border-color: #6842fe;
-  box-shadow: 0 0 0 2px rgba(104, 66, 254, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(104, 66, 254, 0.1);
 }
 
+/* Campos de cliente */
+.cliente-fields {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.cliente-fields input,
+.client-inp {
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: var(--border-radius);
+  background: white;
+  border: 1px solid var(--gray-400);
+  color: var(--gray-800);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.cliente-fields input:focus,
+.client-inp:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(104, 66, 254, 0.1);
+}
+
+.cliente-fields input:disabled,
 .client-inp:disabled {
-  background: #f5f5f5;
-  color: #999;
+  background: var(--gray-200);
+  color: var(--gray-600);
   cursor: not-allowed;
 }
 
-/* Detalle de orden */
+/* ============================================
+   BOTONES DE MÉTODO DE PAGO
+   ============================================ */
+
+.pay-methods {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.pay-btn {
+  flex: 1;
+  background: white;
+  border: 2px solid var(--gray-300);
+  color: var(--gray-700);
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: var(--border-radius);
+  padding: 12px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pay-btn:hover {
+  background: var(--gray-100);
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.pay-btn.selected {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(104, 66, 254, 0.3);
+}
+
+/* ============================================
+   DETALLE DE ORDEN
+   ============================================ */
+
 .order-details {
-  border-radius: 10px;
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  padding: 16px;
+  border-radius: var(--border-radius);
+  background: var(--gray-100);
+  border: 1px solid var(--gray-300);
+  padding: 20px;
   margin-bottom: 4px;
 }
 
 .order-head {
   font-weight: 700;
-  color: #333;
-  font-size: 16px;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #e9ecef;
+  color: var(--gray-800);
+  font-size: 18px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--gray-300);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
+.badge {
+  background: var(--primary-color);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Items de la orden */
 .order-items {
-  margin-bottom: 8px;
-  max-height: 300px;
+  margin-bottom: 12px;
+  max-height: 400px;
   overflow-y: auto;
+  border-radius: var(--border-radius);
 }
 
 .item-line {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
-  border-bottom: 1px solid #eee;
-  transition: background 0.2s ease;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--gray-300);
+  transition: var(--transition);
+  gap: 12px;
 }
 
 .item-line:hover {
@@ -110,547 +242,381 @@
 }
 
 .item-line input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   cursor: pointer;
-  accent-color: #6842fe;
+  accent-color: var(--primary-color);
   margin-right: 12px;
 }
 
+.item-line input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .item-amt {
+  font-weight: 700;
+  color: var(--gray-800);
+  font-size: 15px;
+}
+
+.paid-badge {
+  background: var(--success-color);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
   font-weight: 600;
-  color: #333;
+  margin-left: 12px;
+}
+
+.section-title {
+  font-weight: 700;
+  margin-bottom: 12px;
+  font-size: 15px;
+  color: var(--gray-800);
+  padding: 8px 12px;
+  background: var(--gray-200);
+  border-radius: var(--border-radius);
 }
 
 /* Totales */
 .totals-footer {
-  margin-top: 16px;
-  padding-top: 8px;
-  border-top: 1px solid #e9ecef;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 2px solid var(--gray-300);
 }
 
 .sub-iva-total {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 8px;
-  padding: 8px;
-  font-size: 14px;
+  padding: 10px 16px;
+  font-size: 15px;
+  background: white;
+  border-radius: var(--border-radius);
+  margin-bottom: 8px;
 }
 
 .sub-iva-total span:first-child {
-  color: #666;
+  color: var(--gray-700);
+  font-weight: 500;
 }
 
 .sub-iva-total span:last-child {
-  font-weight: 600;
-  color: #333;
+  font-weight: 700;
+  color: var(--gray-800);
 }
 
-/* Métodos de pago */
-.pay-methods {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
-  flex-wrap: wrap;
+.totals-footer.small {
+  margin-top: 12px;
+  padding-top: 8px;
 }
 
-.pay-btn {
-  flex: 1;
-  background: #f0f0f0;
-  border: 1px solid #ddd;
-  color: #333;
-  font-weight: 600;
-  font-size: 14px;
-  border-radius: 8px;
-  padding: 10px 0;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-}
+/* ============================================
+   COMENSALES (CUENTA DIVIDIDA)
+   ============================================ */
 
-.pay-btn.selected {
-  background: #6842fe;
-  color: white;
-  border-color: #6842fe;
-}
-
-.pay-btn:hover:not(.selected) {
-  background: #e9ecef;
-  transform: translateY(-1px);
-}
-
-/* Pago monto */
-.pay-input-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 16px;
-  flex-wrap: wrap;
-}
-
-.input-pay {
-  width: 120px;
-  font-size: 16px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-weight: 500;
-  color: #333;
-  background: white;
-}
-
-.input-pay:focus {
-  outline: none;
-  border-color: #6842fe;
-}
-
-/* Tarjetas de comensales */
 .clientes-container {
-  margin-top: 20px;
-  border-top: 2px solid #e9ecef;
-  padding-top: 16px;
+  margin-top: 24px;
+  border-top: 2px solid var(--gray-300);
+  padding-top: 20px;
 }
 
 .clientes-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .clientes-header span {
-  font-weight: bold;
-  font-size: 16px;
-  color: #333;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--gray-800);
 }
 
 .btn-add {
-  background: #6842fe;
+  background: var(--primary-color);
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
+  border-radius: var(--border-radius);
+  padding: 10px 20px;
   cursor: pointer;
   font-size: 13px;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 6px;
-  transition: background 0.2s;
+  gap: 8px;
+  transition: var(--transition);
 }
 
 .btn-add:hover {
-  background: #5334cc;
+  background: var(--primary-dark);
+  transform: translateY(-2px);
 }
 
+/* Tarjeta de comensal */
 .comensal-card {
   background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-  transition: box-shadow 0.2s ease;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius-lg);
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: var(--transition);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .comensal-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--box-shadow);
+  border-color: var(--primary-light);
 }
 
 .comensal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .comensal-titulo {
-  font-weight: bold;
-  font-size: 15px;
-  color: #333;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--gray-800);
+  background: var(--gray-100);
+  padding: 6px 14px;
+  border-radius: 20px;
 }
 
-.btn-delete {
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 12px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background 0.2s;
+.comensal-sin-datos {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--gray-100);
+  border-radius: var(--border-radius);
+  text-align: center;
+  border: 1px dashed var(--gray-400);
 }
 
-.btn-delete:hover {
-  background: #c82333;
+.comensal-numero {
+  font-weight: 600;
+  color: var(--gray-700);
+  font-size: 14px;
 }
 
-/* Datos del comensal */
+/* Datos del comensal (factura individual) */
 .comensal-datos {
   display: flex;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
 .comensal-datos input {
   flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  min-width: 150px;
+  padding: 10px 14px;
+  border: 1px solid var(--gray-400);
+  border-radius: var(--border-radius);
   font-size: 13px;
-  min-width: 120px;
-  transition: border-color 0.2s;
+  transition: var(--transition);
 }
 
 .comensal-datos input:focus {
   outline: none;
-  border-color: #6842fe;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(104, 66, 254, 0.1);
 }
 
 .busqueda-container {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
+  flex: 1;
+  min-width: 150px;
+}
+
+.busqueda-container input {
   flex: 1;
 }
 
 .spinner-small {
-  width: 18px;
-  height: 18px;
-  border: 2px solid #e9ecef;
-  border-top-color: #6842fe;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--gray-300);
+  border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Productos asignados */
 .productos-asignados {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .productos-asignados > span {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: #666;
+  color: var(--gray-700);
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
 .producto-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  margin-bottom: 6px;
+  padding: 10px 14px;
+  background: #f3f0ff;
+  border-radius: var(--border-radius);
+  margin-bottom: 8px;
+  transition: var(--transition);
+}
+
+.producto-item:hover {
+  background: #e8e4ff;
 }
 
 .producto-item span {
-  font-size: 13px;
-  color: #333;
+  font-size: 14px;
+  color: var(--gray-800);
 }
 
 .btn-quitar {
-  background: #ffc107;
-  color: #333;
+  background: var(--danger-color);
+  color: white;
   border: none;
-  border-radius: 6px;
-  padding: 4px 10px;
+  border-radius: var(--border-radius-sm);
+  padding: 4px 12px;
   cursor: pointer;
   font-size: 11px;
+  font-weight: 600;
   margin-left: 12px;
-  transition: background 0.2s;
+  transition: var(--transition);
 }
 
 .btn-quitar:hover {
-  background: #e0a800;
+  background: var(--danger-dark);
 }
 
 .empty-text {
-  font-size: 12px;
-  color: #999;
+  color: var(--gray-500);
+  font-size: 13px;
   font-style: italic;
+  padding: 8px;
+  display: inline-block;
 }
 
 /* Método de pago del comensal */
 .metodo-pago-comensal {
-  margin-bottom: 12px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  background: var(--gray-100);
+  padding: 12px 16px;
+  border-radius: var(--border-radius);
+  margin-bottom: 16px;
 }
 
 .metodo-pago-comensal select,
 .metodo-pago-comensal input {
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
+  padding: 8px 12px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--gray-400);
   font-size: 13px;
+  transition: var(--transition);
 }
 
 .metodo-pago-comensal select:focus,
 .metodo-pago-comensal input:focus {
   outline: none;
-  border-color: #6842fe;
+  border-color: var(--primary-color);
+}
+
+.metodo-pago-comensal span {
+  font-weight: 600;
+  color: var(--gray-700);
+  font-size: 13px;
 }
 
 /* Totales del comensal */
 .comensal-totales {
-  padding-top: 12px;
-  border-top: 1px solid #e9ecef;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-top: 1px solid var(--gray-300);
+  padding-top: 16px;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
 }
 
-.comensal-subtotal-iva {
+.comensal-totales > div:first-child {
   font-size: 13px;
 }
 
-.comensal-subtotal-iva strong {
-  color: #333;
-}
-
-.comensal-total {
-  text-align: right;
+.comensal-totales strong {
+  color: var(--gray-800);
 }
 
 .total-valor {
-  font-size: 18px;
-  font-weight: bold;
-  color: #6842fe;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary-color);
 }
 
 .cambio-success {
+  color: var(--success-color);
   font-size: 12px;
-  color: #28a745;
+  font-weight: 600;
+  margin-top: 4px;
 }
 
 .cambio-error {
+  color: var(--danger-color);
   font-size: 12px;
-  color: #dc3545;
+  font-weight: 600;
+  margin-top: 4px;
 }
 
 .btn-cobrar {
-  margin-top: 8px;
-  background: #28a745;
+  background: var(--success-color);
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
+  border-radius: var(--border-radius);
+  padding: 10px 20px;
+  margin-top: 12px;
   cursor: pointer;
-  font-size: 13px;
+  font-weight: 600;
+  font-size: 14px;
   width: 100%;
-  transition: background 0.2s;
+  transition: var(--transition);
 }
 
 .btn-cobrar:hover:not(:disabled) {
-  background: #1e7e34;
+  background: var(--success-dark);
+  transform: translateY(-2px);
 }
 
 .btn-cobrar:disabled {
-  background: #ccc;
+  background: var(--gray-500);
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-/* Botón asignar productos */
-.asignar-container {
-  margin-top: 16px;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-}
+/* ============================================
+   MÉTODO DE PAGO NORMAL
+   ============================================ */
 
-.asignar-select {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  background: white;
-  font-size: 13px;
-}
-
-.btn-asignar {
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 20px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: background 0.2s;
-}
-
-.btn-asignar:hover {
-  background: #0069d9;
-}
-
-/* Advertencia */
-.warning-box {
-  margin-top: 16px;
-  padding: 12px;
-  background: #fff3cd;
-  border-radius: 8px;
-  text-align: center;
-  color: #856404;
-  font-size: 13px;
-}
-
-.success-box {
-  margin-top: 16px;
-  padding: 12px;
-  background: #d4edda;
-  border-radius: 8px;
-  text-align: center;
-  color: #155724;
-  font-size: 13px;
-}
-
-/* Historial de pagos */
-.historial-pagos {
-  margin-top: 16px;
-  padding: 12px;
-  background: #e8f5e9;
-  border-radius: 8px;
-}
-
-.historial-titulo {
-  font-weight: bold;
-  margin-bottom: 8px;
-  font-size: 13px;
-  color: #2e7d32;
-}
-
-.historial-item {
-  font-size: 12px;
-  padding: 4px 0;
-  color: #555;
-}
-
-.historial-total {
-  font-size: 12px;
-  color: #666;
-  margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1px solid #c8e6c9;
-}
-
-/* Acciones */
-.actions-row {
-  margin-top: 8px;
-  display: flex;
-  gap: 12px;
-  justify-content: flex-start;
-  align-items: center;
-}
-
-.btn-guardar {
-  background: #28a745;
-  color: white;
-  font-weight: 600;
-  font-size: 15px;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 32px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-guardar:disabled {
-  background: #ccc;
-  color: #666;
-  cursor: not-allowed;
-}
-
-.btn-guardar:hover:not(:disabled) {
-  background: #1e7e34;
-  transform: translateY(-1px);
-}
-
-.btn-cancelar {
-  background: #dc3545;
-  color: white;
-  font-weight: 500;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 28px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-cancelar:hover {
-  background: #c82333;
-  transform: translateY(-1px);
-}
-
-/* Mensajes de error y éxito */
-.error-msg {
-  font-size: 13px;
-  color: #dc3545;
-  font-weight: 500;
-  margin-top: 6px;
-}
-
-.success-msg {
-  font-size: 13px;
-  color: #28a745;
-  font-weight: 500;
-  margin-top: 6px;
-}
-
-/* Empty state */
-.empty-state {
-  text-align: center;
-  padding: 32px;
-  color: #28a745;
-  font-size: 14px;
-}
-
-.section-title {
-  font-weight: bold;
-  margin-bottom: 12px;
-  font-size: 14px;
-  color: #333;
-}
-
-/* Factura opción */
-.factura-opcion {
-  margin: 12px 0;
-  padding: 12px;
-  background: #f0f0ff;
-  border-radius: 10px;
-}
-
-.factura-opcion label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  font-weight: 600;
-  color: #333;
-}
-
-.factura-opcion small {
-  display: block;
-  margin-left: 28px;
-  font-size: 12px;
-  color: #666;
-  margin-top: 4px;
-}
-
-/* Método de pago selección */
 .metodo-pago-seleccion {
   display: flex;
   gap: 10px;
@@ -660,218 +626,298 @@
 
 .metodo-pago-seleccion button {
   flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  padding: 10px 16px;
+  border: 2px solid var(--gray-300);
+  border-radius: var(--border-radius);
   background: white;
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.2s;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.metodo-pago-seleccion button:hover {
+  border-color: var(--primary-color);
+  background: var(--gray-100);
 }
 
 .metodo-pago-seleccion button.selected {
-  background: #6842fe;
+  background: var(--primary-color);
   color: white;
-  border-color: #6842fe;
+  border-color: var(--primary-color);
 }
 
-.metodo-pago-seleccion button:hover:not(.selected) {
-  background: #f8f9fa;
-  border-color: #6842fe;
+.pay-input-row {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--gray-100);
+  border-radius: var(--border-radius);
+}
+
+.pay-input-row > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pay-input-row label {
+  font-weight: 600;
+  color: var(--gray-700);
+  font-size: 14px;
+}
+
+.pay-input-row input {
+  padding: 10px 14px;
+  border: 1px solid var(--gray-400);
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  width: 120px;
+  transition: var(--transition);
+}
+
+.pay-input-row input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.pay-row {
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pay-row label {
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.pay-row input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--gray-400);
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+}
+
+.pay-row input:focus {
+  outline: none;
+  border-color: var(--primary-color);
 }
 
 /* ============================================
-   RESPONSIVE
+   ASIGNAR PRODUCTOS
    ============================================ */
 
-/* Tablet (max-width: 900px) */
-@media (max-width: 900px) {
-  .checkout-modern-card {
-    padding: 12px 16px;
-  }
-  
-  .cmbx-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .cmbx-row .label {
-    margin-left: 0 !important;
-  }
-  
-  .cmbx-row .combobox,
-  .cmbx-row .client-inp,
-  .cmbx-row .cliente-fields input {
-    width: 100%;
-  }
-  
-  .cliente-fields {
-    flex-direction: column;
-  }
-  
-  .pay-methods {
-    flex-wrap: wrap;
-  }
-  
-  .pay-btn {
-    min-width: calc(33% - 6px);
-  }
-  
-  .comensal-datos {
-    flex-direction: column;
-  }
-  
-  .asignar-container {
-    justify-content: center;
-  }
+.asignar-container {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 16px;
+  flex-wrap: wrap;
 }
 
-/* Móvil (max-width: 640px) */
-@media (max-width: 640px) {
-  .checkout-modern-card {
-    padding: 10px 12px;
-  }
-  
-  .pay-methods {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-  
-  .pay-btn {
-    min-width: auto;
-    padding: 8px 4px;
-    font-size: 12px;
-  }
-  
-  .pay-input-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .pay-input-row > div {
-    width: 100%;
-  }
-  
-  .input-pay {
-    width: 100%;
-  }
-  
-  .sub-iva-total {
-    font-size: 13px;
-  }
-  
-  .actions-row {
-    flex-direction: column;
-  }
-  
-  .btn-guardar,
-  .btn-cancelar {
-    width: 100%;
-  }
-  
-  .comensal-totales {
-    flex-direction: column;
-    text-align: left;
-  }
-  
-  .comensal-total {
-    text-align: left;
-    margin-top: 8px;
-  }
-  
-  .metodo-pago-comensal > div {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-  
-  .metodo-pago-comensal select,
-  .metodo-pago-comensal input {
-    width: 100%;
-  }
-  
-  .btn-cobrar {
-    width: 100%;
-  }
+.asignar-select {
+  padding: 10px 16px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--gray-400);
+  background: white;
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 150px;
 }
 
-/* Móvil pequeño (max-width: 480px) */
-@media (max-width: 480px) {
-  .checkout-modern-card {
-    padding: 8px 10px;
-  }
-  
-  .order-head {
-    font-size: 14px;
-  }
-  
-  .item-line {
-    font-size: 12px;
-    padding: 6px 8px;
-  }
-  
-  .pay-methods {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
-  }
-  
-  .pay-btn {
-    font-size: 11px;
-    padding: 6px 2px;
-  }
-  
-  .sub-iva-total {
-    font-size: 12px;
-    padding: 6px;
-  }
-  
-  .comensal-card {
-    padding: 12px;
-  }
-  
-  .comensal-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  
-  .total-valor {
-    font-size: 16px;
-  }
-  
-  .factura-opcion label {
-    font-size: 13px;
-  }
-  
-  .asignar-container {
-    flex-direction: column;
-  }
-  
-  .asignar-select {
-    width: 100%;
-  }
-  
-  .btn-asignar {
-    width: 100%;
-  }
+.btn-asignar {
+  background: var(--info-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 10px 24px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: var(--transition);
 }
 
-/* Scrollbar personalizada */
-.order-items::-webkit-scrollbar {
-  width: 6px;
+.btn-asignar:hover {
+  background: #138496;
+  transform: translateY(-2px);
 }
 
-.order-items::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
+/* ============================================
+   FACTURA OPCIÓN
+   ============================================ */
+
+.factura-opcion {
+  background: linear-gradient(135deg, #f0f0ff 0%, #e8e4ff 100%);
+  padding: 16px 20px;
+  border-radius: var(--border-radius);
+  margin: 12px 0;
+  border: 1px solid rgba(104, 66, 254, 0.2);
 }
 
-.order-items::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
+.factura-opcion label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--gray-800);
 }
 
-.order-items::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
+.factura-opcion input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
 }
+
+.factura-opcion small {
+  margin-left: 32px;
+  display: block;
+  font-size: 12px;
+  color: var(--gray-600);
+  margin-top: 6px;
+}
+
+/* ============================================
+   HISTORIAL DE PAGOS
+   ============================================ */
+
+.historial-pagos {
+  background: #e8f5e9;
+  padding: 16px 20px;
+  border-radius: var(--border-radius);
+  margin-top: 20px;
+  border-left: 4px solid var(--success-color);
+}
+
+.historial-titulo {
+  font-weight: 700;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--success-dark);
+  text-transform: uppercase;
+}
+
+.historial-item {
+  font-size: 13px;
+  padding: 6px 0;
+  color: var(--gray-700);
+  border-bottom: 1px solid #c8e6c9;
+}
+
+.historial-total {
+  font-size: 13px;
+  color: var(--gray-700);
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #c8e6c9;
+  font-weight: 600;
+}
+
+.historial-completado {
+  background: var(--success-color);
+  color: white;
+  padding: 10px;
+  border-radius: var(--border-radius);
+  text-align: center;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ============================================
+   BOTONES DE ACCIÓN
+   ============================================ */
+
+.actions-row {
+  margin-top: 8px;
+  display: flex;
+  gap: 16px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.btn-guardar {
+  background: var(--success-color);
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 12px 36px;
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-guardar:hover:not(:disabled) {
+  background: var(--success-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.btn-guardar:disabled {
+  background: var(--gray-500);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-cancelar {
+  background: var(--danger-color);
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 12px 32px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-cancelar:hover {
+  background: var(--danger-dark);
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   MENSAJES Y ESTADOS
+   ============================================ */
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--success-color);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.warning-box {
+  background: #fff3cd;
+  padding: 14px 20px;
+  border-radius: var(--border-radius);
+  text-align: center;
+  color: #856404;
+  font-size: 13px;
+  margin-top: 16px;
+  border-left: 4px solid var(--warning-color);
+}
+
+.error-msg {
+  color: var(--danger-color);
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 8px;
+  padding: 10px;
+  background: #ffe5e5;
+  border-radius: var(--border-radius);
+}
+
+.success-msg {
+  color: var(--success-color);

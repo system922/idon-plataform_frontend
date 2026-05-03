@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, DollarSign, CreditCard, Divide, Users, Search } from 'react-feather';
+import { Check, X, DollarSign, CreditCard, Divide, Users } from 'react-feather';
 import PageTemplate from '../../components/PageTemplate';
 import OpenDrawerButton from '../../components/OpenDrawerButton';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
@@ -43,6 +43,7 @@ export default function PosCheckoutPage() {
   const [clientesDivididos, setClientesDivididos] = useState([]);
   const [pagosRegistrados, setPagosRegistrados] = useState([]);
   const [metodoPagoNormal, setMetodoPagoNormal] = useState('cash');
+  const [totalPagadoAcumulado, setTotalPagadoAcumulado] = useState(0);
 
   const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
@@ -84,6 +85,7 @@ export default function PosCheckoutPage() {
     setSelectedItems([]);
     setClientesDivididos([]);
     setPagosRegistrados([]);
+    setTotalPagadoAcumulado(0);
     setModoDividido(false);
     setFacturaIndividual(false);
     setMetodoPagoNormal('cash');
@@ -229,6 +231,7 @@ export default function PosCheckoutPage() {
     setSelectedItems([]);
     setClientesDivididos([]);
     setPagosRegistrados([]);
+    setTotalPagadoAcumulado(0);
     setModoDividido(false);
     setFacturaIndividual(false);
     setError('');
@@ -359,6 +362,12 @@ export default function PosCheckoutPage() {
   };
 
   const handleSelectItem = (itemId) => {
+    // Verificar si el item ya está pagado
+    const item = selectedOrder?.items.find(i => i.id === itemId);
+    if (item?.paid) {
+      setError('Este producto ya fue pagado');
+      return;
+    }
     setSelectedItems(prev => prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]);
   };
 
@@ -461,6 +470,10 @@ export default function PosCheckoutPage() {
         }),
       });
       
+      // Actualizar total pagado acumulado
+      const nuevoTotalPagado = totalPagadoAcumulado + totalComensal;
+      setTotalPagadoAcumulado(nuevoTotalPagado);
+      
       // Si es factura individual, emitir factura AHORA
       if (facturaIndividual) {
         const partialOrder = {
@@ -489,8 +502,8 @@ export default function PosCheckoutPage() {
       if (ordenActualizada) {
         const productosPendientes = ordenActualizada.items.filter(i => !i.paid);
         
-        // Si no quedan productos pendientes
-        if (productosPendientes.length === 0) {
+        // Si no quedan productos pendientes O el total pagado es igual al total de la orden
+        if (productosPendientes.length === 0 || nuevoTotalPagado >= totalOrden) {
           // Si NO es factura individual y hay pagos registrados, generar UNA SOLA factura
           if (!facturaIndividual && pagosRegistrados.length > 0) {
             const todosLosItems = pagosRegistrados.flatMap(p => p.items);
@@ -515,7 +528,8 @@ export default function PosCheckoutPage() {
           setSelectedOrder(null);
           setClientesDivididos([]);
           setPagosRegistrados([]);
-          setSuccess('Orden completada');
+          setTotalPagadoAcumulado(0);
+          setSuccess('Orden completada y factura generada');
         } else {
           // Crear un nuevo comensal por defecto para el siguiente
           setClientesDivididos([{
@@ -587,6 +601,7 @@ export default function PosCheckoutPage() {
       });
       if (res.ok) {
         const data = await res.json();
+        console.log('Factura emitida:', data.invoice_number);
         return data.invoice_number || null;
       }
       return null;
@@ -757,6 +772,7 @@ export default function PosCheckoutPage() {
               {orders.map(order => (
                 <option key={order.id} value={order.id}>
                   {order.mesa_numero ? `Mesa ${order.mesa_numero}` : order.order_type === 'delivery' ? 'DELIVERY' : 'PARA LLEVAR'} - #{order.order_number || order.id}
+                  {order.items?.filter(i => !i.paid).length > 0 && ` (${order.items.filter(i => !i.paid).length} pendientes)`}
                 </option>
               ))}
             </select>
@@ -839,7 +855,6 @@ export default function PosCheckoutPage() {
                       checked={facturaIndividual} 
                       onChange={e => {
                         setFacturaIndividual(e.target.checked);
-                        // Reiniciar comensales cuando cambia el modo
                         setClientesDivididos([{
                           id: Date.now(), 
                           cedula: '', 
@@ -926,14 +941,23 @@ export default function PosCheckoutPage() {
                 {/* ==================== MODO DIVIDIDO ==================== */}
                 {modoDividido && (
                   <>
-                    {/* Productos disponibles para asignar */}
+                    {/* Productos disponibles para asignar - solo los NO pagados */}
                     <div className="order-items">
                       <div className="section-title">📦 Productos pendientes:</div>
                       {selectedOrder.items.filter(item => !item.paid).map((item, idx) => (
-                        <div key={idx} className="item-line" style={{ background: selectedItems.includes(item.id) ? '#f3f0ff' : 'transparent' }}>
-                          <input type="checkbox" checked={selectedItems.includes(item.id)} onChange={() => handleSelectItem(item.id)} />
+                        <div key={idx} className="item-line" style={{ 
+                          background: selectedItems.includes(item.id) ? '#f3f0ff' : 'transparent',
+                          opacity: item.paid ? 0.5 : 1
+                        }}>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedItems.includes(item.id)} 
+                            onChange={() => handleSelectItem(item.id)}
+                            disabled={item.paid}
+                          />
                           <span>{item.quantity}x {item.product_name}</span>
                           <span className="item-amt">{fmt((Number(item.selling_price) || Number(item.unit_price)) * item.quantity)}</span>
+                          {item.paid && <span className="paid-badge">✔ PAGADO</span>}
                         </div>
                       ))}
                       {selectedOrder.items.filter(item => !item.paid).length === 0 && (
@@ -1052,7 +1076,7 @@ export default function PosCheckoutPage() {
                                     {cambio >= 0 ? `💰 Cambio: ${fmt(cambio)}` : `⚠️ Falta: ${fmt(Math.abs(cambio))}`}
                                   </div>
                                 )}
-                                <button className="btn-cobrar" onClick={() => cobrarComensal(comensal)} disabled={comensal.montoRecibido < totalC}>
+                                <button className="btn-cobrar" onClick={() => cobrarComensal(comensal)} disabled={comensal.montoRecibido < totalC || comensal.items.length === 0}>
                                   💵 Cobrar a este comensal
                                 </button>
                               </div>
@@ -1099,6 +1123,7 @@ export default function PosCheckoutPage() {
                   setClientesDivididos([]);
                   setSelectedItems([]);
                   setPagosRegistrados([]);
+                  setTotalPagadoAcumulado(0);
                   setModoDividido(false);
                 }}>
                   <X size={16} /> Cancelar
@@ -1113,6 +1138,9 @@ export default function PosCheckoutPage() {
                     <div key={idx} className="historial-item">• Pago {idx + 1} - {fmt(pago.total)} ({pago.items.length} productos)</div>
                   ))}
                   <div className="historial-total">Total pagado: {fmt(pagosRegistrados.reduce((s, p) => s + p.total, 0))} / Total orden: {fmt(totalOrden)}</div>
+                  {totalPagadoAcumulado >= totalOrden && (
+                    <div className="historial-completado">✅ ¡Pago completado! La factura se generará automáticamente.</div>
+                  )}
                 </div>
               )}
             </>
@@ -1147,6 +1175,7 @@ export default function PosCheckoutPage() {
         .btn-asignar { background: #007bff; color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; }
         .warning-box { background: #fff3cd; padding: 12px; border-radius: 6px; text-align: center; color: #856404; margin-top: 12px; }
         .historial-pagos { background: #e8f5e9; padding: 12px; border-radius: 8px; margin-top: 16px; }
+        .historial-completado { background: #28a745; color: white; padding: 8px; border-radius: 6px; text-align: center; margin-top: 8px; font-size: 12px; }
         .factura-opcion { background: #f0f0ff; padding: 12px; border-radius: 8px; margin: 12px 0; }
         .factura-opcion label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; }
         .factura-opcion small { margin-left: 26px; display: block; font-size: 12px; color: #666; margin-top: 4px; }
@@ -1165,6 +1194,7 @@ export default function PosCheckoutPage() {
         .clientes-container { margin-top: 20px; border-top: 2px solid #e0e0e0; padding-top: 16px; }
         .clientes-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .btn-add { background: #6842fe; color: white; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 12px; }
+        .paid-badge { background: #28a745; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px; }
       `}</style>
     </PageTemplate>
   );
