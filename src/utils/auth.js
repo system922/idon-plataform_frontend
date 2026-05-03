@@ -2,6 +2,7 @@
 // Helpers para login/logout/me con soporte multi-tenant
 
 import API_BASE from '../config/apiBase';
+import TokenManager from '../utils/tokenManager';
 
 export async function loginApi(email, password, businessId = null) {
   // Usar /owner-login para TODOS los usuarios ya que valida en cascada:
@@ -47,7 +48,10 @@ export async function loginApi(email, password, businessId = null) {
   const tokenVal = data.token || data.accessToken || (data.access_token ? data.access_token : null);
   const refreshTokenVal = data.refreshToken || data.refresh_token || null;
 
+  // ✅ Usar TokenManager para guardar el token principal
   if (tokenVal) {
+    TokenManager.setToken(tokenVal);
+    // También guardar en formato legacy por compatibilidad temporal
     try { localStorage.setItem('idonToken', tokenVal); } catch {}
     try { localStorage.setItem('token', tokenVal); } catch {}
   }
@@ -56,9 +60,11 @@ export async function loginApi(email, password, businessId = null) {
     try { localStorage.setItem('refreshToken', refreshTokenVal); } catch {}
   }
 
-  // Guardar información del usuario
+  // Guardar información del usuario usando TokenManager
   const userInfo = data.user || {};
   if (userInfo || data.type) {
+    TokenManager.setUser(userInfo);
+    // También guardar en formato legacy por compatibilidad
     localStorage.setItem('idonUser', JSON.stringify(userInfo));
   }
 
@@ -90,21 +96,25 @@ export function fireToast(message, severity = 'info') {
 }
 
 export function clearSession() {
-  localStorage.removeItem('idonUser');
+  // ✅ Usar TokenManager para limpiar todo
+  TokenManager.clear();
+  // Limpiar también otros items legacy
   localStorage.removeItem('idonToken');
   localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
   localStorage.removeItem('access_token');
+  localStorage.removeItem('refreshToken');
   localStorage.removeItem('selectedBusiness');
   localStorage.removeItem('dbName');
   localStorage.removeItem('userRole');
   localStorage.removeItem('activeModules');
   localStorage.removeItem('activeFeatures');
+  localStorage.removeItem('userBusinesses');
+  localStorage.removeItem('idonUser');
 }
 
 export async function logoutApi() {
   try {
-    const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
+    const token = TokenManager.getToken();
     await fetch(`${API_BASE}/api/auth/logout`, {
       method: 'POST',
       headers: {
@@ -120,7 +130,7 @@ export async function logoutApi() {
 }
 
 export async function meApi() {
-  const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
+  const token = TokenManager.getToken();
   if (!token) return null;
 
   try {
@@ -139,13 +149,15 @@ export async function meApi() {
     if (!data.user) return null;
 
     // Preservar datos existentes del usuario (businessId, schemaName, etc.)
-    const existingUser = JSON.parse(localStorage.getItem('idonUser') || '{}');
+    const existingUser = TokenManager.getUser() || {};
     const mergedUser = {
       ...existingUser,        // Datos previos (negocio seleccionado, etc.)
       ...data.user,           // Actualizar con datos frescos del servidor (nombre, email, etc.)
       token: token
     };
 
+    // ✅ Usar TokenManager para guardar
+    TokenManager.setUser(mergedUser);
     localStorage.setItem('idonUser', JSON.stringify(mergedUser));
     
     // 🔐 Guardar rol del usuario (3-CAPAS)
@@ -250,8 +262,11 @@ async function refreshAccessTokenFlow() {
       return null;
     }
 
+    // ✅ Usar TokenManager para guardar el nuevo token
+    TokenManager.setToken(data.accessToken);
     localStorage.setItem('idonToken', data.accessToken);
     localStorage.setItem('token', data.accessToken);
+    
     // (opcional) si backend devuelve refresh token actualizarlo
     if (data.refreshToken) {
       localStorage.setItem('refreshToken', data.refreshToken);
@@ -264,7 +279,7 @@ async function refreshAccessTokenFlow() {
 }
 
 export async function fetchProtected(path, opts = {}) {
-  const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
+  const token = TokenManager.getToken();
   const selectedBusinessStr = localStorage.getItem('selectedBusiness');
   const userStr = localStorage.getItem('idonUser');
   
