@@ -429,35 +429,38 @@ export default function PosCheckoutPage() {
     const tipoId = isCF ? '07' : isRUC ? '04' : '05';
     const email = foundCliente?.email || clienteEmail.trim() || null;
 
+    console.log('📋 Orden ID:', order.id);
+    console.log('📦 Items a facturar:', order.items);
+
     // 🔥 Obtener datos reales de cada producto desde la API
     const itemsPayload = [];
     
     for (const item of (order.items || [])) {
       try {
-        // Obtener el producto desde la base de datos
-        const productRes = await fetchWithAuth(`/api/products/${item.product_id}`);
+        console.log(`🔍 Buscando producto ID: ${item.product_id}`);
         
-        if (!productRes.ok) {
-          console.error(`Producto no encontrado: ${item.product_id}`);
-          // Usar datos del item como fallback
-          const qty = item.quantity || 1;
-          const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
-          const montoIVA = Number(item.tax_rate) || 0;
-          
-          itemsPayload.push({
-            description: item.product_name || 'Producto',
-            qty: qty,
-            unit_price: precioSinIVA,
-            subtotal: qty * precioSinIVA,
-            tax_amount: qty * montoIVA
-          });
-          continue;
+        // Obtener el producto desde la base de datos usando fetchWithAuth
+        const response = await fetchWithAuth(`/api/products/${item.product_id}`);
+        
+        console.log(`📡 Status response: ${response.status}`);
+        
+        // fetchWithAuth ya devuelve el JSON directamente, no necesitas .json()
+        // Pero depende de cómo esté implementado fetchWithAuth
+        let product;
+        if (response && typeof response.json === 'function') {
+          product = await response.json();
+        } else {
+          product = response;
         }
         
-        const product = await productRes.json();
+        console.log(`✅ Producto obtenido:`, product);
+        
         const qty = item.quantity || 1;
-        const precioSinIVA = Number(product.selling_price) || 0;
+        // Tu backend devuelve: price (selling_price), tax_rate
+        const precioSinIVA = Number(product.price) || Number(product.selling_price) || 0;
         const montoIVA = Number(product.tax_rate) || 0;
+        
+        console.log(`📊 Producto: ${product.name}, Precio sin IVA: ${precioSinIVA}, IVA por unidad: ${montoIVA}, Cantidad: ${qty}`);
         
         itemsPayload.push({
           description: product.name || item.product_name || 'Producto',
@@ -467,7 +470,7 @@ export default function PosCheckoutPage() {
           tax_amount: qty * montoIVA
         });
       } catch (err) {
-        console.error(`Error obteniendo producto ${item.product_id}:`, err);
+        console.error(`❌ Error obteniendo producto ${item.product_id}:`, err);
         // Fallback con datos del item
         const qty = item.quantity || 1;
         const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
@@ -487,39 +490,47 @@ export default function PosCheckoutPage() {
     const ivaTotal = itemsPayload.reduce((sum, i) => sum + i.tax_amount, 0);
     const totalFactura = subtotalTotal + ivaTotal;
 
-    // Si no hay items, no emitir factura
+    console.log('📊 Resumen factura:');
+    console.log('  - Subtotal:', subtotalTotal);
+    console.log('  - IVA:', ivaTotal);
+    console.log('  - Total:', totalFactura);
+
     if (itemsPayload.length === 0) {
-      console.error('No hay items para facturar');
+      console.error('❌ No hay items para facturar');
       return null;
     }
+
+    const payload = {
+      order_id: order.id,
+      customer: {
+        name: isCF ? 'CONSUMIDOR FINAL' : (custNombre || ''),
+        ruc: isCF ? '9999999999999' : cedula,
+        email: email || null,
+        tipo_identificacion: tipoId,
+      },
+      items: itemsPayload,
+      subtotal: subtotalTotal,
+      iva_amount: ivaTotal,
+      total: totalFactura,
+      forma_pago: FORMA_PAGO_MAP[method] || '01',
+    };
+
+    console.log('📤 Enviando a facturación:', JSON.stringify(payload, null, 2));
 
     try {
       const res = await fetchWithAuth('/api/einvoicing/invoices/emit', {
         method: 'POST',
-        body: JSON.stringify({
-          order_id: order.id,
-          customer: {
-            name: isCF ? 'CONSUMIDOR FINAL' : (custNombre || ''),
-            ruc: isCF ? '9999999999999' : cedula,
-            email: email || null,
-            tipo_identificacion: tipoId,
-          },
-          items: itemsPayload,
-          subtotal: subtotalTotal,
-          iva_amount: ivaTotal,
-          total: totalFactura,
-          forma_pago: FORMA_PAGO_MAP[method] || '01',
-        }),
+        body: JSON.stringify(payload),
       });
       
-      if (res.ok) {
+      if (res && res.ok) {
         const data = await res.json();
         console.log('✅ Factura emitida:', data);
         return data.invoice_number || null;
       }
       
-      const errData = await res.json().catch(() => ({}));
-      console.error('❌ Error al emitir factura:', errData.error || errData);
+      const errData = await res?.json().catch(() => ({}));
+      console.error('❌ Error al emitir factura:', errData?.error || errData);
       return null;
     } catch (e) {
       console.error('❌ Error al emitir factura:', e);
