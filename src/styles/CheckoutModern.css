@@ -1,8 +1,6 @@
 /* ============================================
-   CHECKOUT MODERN - ESTILOS PROFESIONALES
+   VARIABLES GLOBALES
    ============================================ */
-
-/* Variables globales */
 :root {
   --primary-color: #6842fe;
   --primary-dark: #5334cc;
@@ -14,70 +12,57 @@
   --warning-color: #ffc107;
   --warning-dark: #e0a800;
   --info-color: #17a2b8;
-  --gray-100: #f8f9fa;
-  --gray-200: #e9ecef;
-  --gray-300: #dee2e6;
-  --gray-400: #ced4da;
-  --gray-500: #adb5bd;
-  --gray-600: #6c757d;
-  --gray-700: #495057;
-  --gray-800: #343a40;
-  --gray-900: #212529;
-  --border-radius-sm: 4px;
-  --border-radius: 8px;
-  --border-radius-lg: 12px;
-  --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  --box-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --gray-light: #f8f9fa;
+  --gray-medium: #e9ecef;
+  --gray-dark: #6c757d;
+  --text-dark: #333;
+  --text-light: #666;
+  --border-radius: 12px;
+  --border-radius-sm: 8px;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.1);
   --transition: all 0.2s ease;
 }
 
 /* ============================================
    LAYOUT PRINCIPAL
    ============================================ */
-
 .checkout-modern-main {
-  min-height: auto;
+  min-height: 100vh;
   display: flex;
   align-items: flex-start;
   justify-content: center;
   background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
   padding: 20px;
-  border-radius: var(--border-radius);
 }
 
 .checkout-modern-card {
   width: 100%;
   max-width: 1400px;
-  background: #ffffff;
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--box-shadow-lg);
-  padding: 24px 28px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+  padding: 24px 32px;
   transition: var(--transition);
 }
 
 /* ============================================
-   CABECERA Y SELECTOR DE ORDEN
+   HEADER Y SELECTORES
    ============================================ */
-
 .cmbx-row {
   display: flex;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  background: var(--gray-100);
-  padding: 16px 20px;
-  border-radius: var(--border-radius);
-  border: 1px solid var(--gray-300);
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--gray-medium);
 }
 
 .cmbx-row .label {
   font-weight: 700;
-  color: var(--gray-800);
-  margin-right: 4px;
+  color: var(--text-dark);
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -88,10 +73,10 @@
   min-width: 200px;
   font-size: 14px;
   padding: 10px 14px;
-  border-radius: var(--border-radius);
-  border: 1px solid var(--gray-400);
+  border-radius: var(--border-radius-sm);
+  border: 1.5px solid var(--gray-medium);
   background: white;
-  color: var(--gray-800);
+  color: var(--text-dark);
   font-weight: 500;
   transition: var(--transition);
   cursor: pointer;
@@ -107,7 +92,6 @@
   box-shadow: 0 0 0 3px rgba(104, 66, 254, 0.1);
 }
 
-/* Campos de cliente */
 .cliente-fields {
   display: flex;
   gap: 12px;
@@ -115,51 +99,46 @@
   align-items: center;
 }
 
-.cliente-fields input,
-.client-inp {
-  font-size: 13px;
+.cliente-fields input {
   padding: 10px 14px;
-  border-radius: var(--border-radius);
-  background: white;
-  border: 1px solid var(--gray-400);
-  color: var(--gray-800);
-  font-weight: 500;
+  border-radius: var(--border-radius-sm);
+  border: 1.5px solid var(--gray-medium);
+  font-size: 14px;
   transition: var(--transition);
+  background: white;
 }
 
-.cliente-fields input:focus,
-.client-inp:focus {
+.cliente-fields input:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(104, 66, 254, 0.1);
 }
 
-.cliente-fields input:disabled,
-.client-inp:disabled {
-  background: var(--gray-200);
-  color: var(--gray-600);
+.cliente-fields input:disabled {
+  background: var(--gray-light);
   cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* ============================================
-   BOTONES DE MÉTODO DE PAGO
+   MÉTODOS DE PAGO
    ============================================ */
-
 .pay-methods {
   display: flex;
-  gap: 10px;
-  margin-top: 4px;
+  gap: 12px;
+  margin: 16px 0;
   flex-wrap: wrap;
 }
 
 .pay-btn {
   flex: 1;
+  min-width: 100px;
   background: white;
-  border: 2px solid var(--gray-300);
-  color: var(--gray-700);
+  border: 2px solid var(--gray-medium);
+  color: var(--text-dark);
   font-weight: 600;
   font-size: 14px;
-  border-radius: var(--border-radius);
+  border-radius: var(--border-radius-sm);
   padding: 12px 16px;
   cursor: pointer;
   display: flex;
@@ -167,47 +146,43 @@
   justify-content: center;
   gap: 8px;
   transition: var(--transition);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .pay-btn:hover {
-  background: var(--gray-100);
   border-color: var(--primary-color);
   transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .pay-btn.selected {
   background: var(--primary-color);
-  color: white;
   border-color: var(--primary-color);
-  box-shadow: 0 4px 12px rgba(104, 66, 254, 0.3);
+  color: white;
 }
 
 /* ============================================
    DETALLE DE ORDEN
    ============================================ */
-
 .order-details {
   border-radius: var(--border-radius);
-  background: var(--gray-100);
-  border: 1px solid var(--gray-300);
+  background: var(--gray-light);
+  border: 1px solid var(--gray-medium);
   padding: 20px;
-  margin-bottom: 4px;
+  margin: 16px 0;
 }
 
 .order-head {
   font-weight: 700;
-  color: var(--gray-800);
+  color: var(--text-dark);
   font-size: 18px;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 2px solid var(--gray-300);
+  border-bottom: 2px solid var(--gray-medium);
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .badge {
@@ -216,23 +191,30 @@
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
-/* Items de la orden */
 .order-items {
-  margin-bottom: 12px;
-  max-height: 400px;
+  max-height: 350px;
   overflow-y: auto;
-  border-radius: var(--border-radius);
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-weight: 600;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .item-line {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--gray-300);
+  padding: 12px;
+  border-bottom: 1px solid var(--gray-medium);
   transition: var(--transition);
   gap: 12px;
 }
@@ -242,11 +224,10 @@
 }
 
 .item-line input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
   accent-color: var(--primary-color);
-  margin-right: 12px;
 }
 
 .item-line input[type="checkbox"]:disabled {
@@ -255,71 +236,190 @@
 }
 
 .item-amt {
-  font-weight: 700;
-  color: var(--gray-800);
-  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dark);
+  min-width: 80px;
+  text-align: right;
 }
 
 .paid-badge {
   background: var(--success-color);
   color: white;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
   font-weight: 600;
-  margin-left: 12px;
+  margin-left: 8px;
 }
 
-.section-title {
-  font-weight: 700;
-  margin-bottom: 12px;
-  font-size: 15px;
-  color: var(--gray-800);
-  padding: 8px 12px;
-  background: var(--gray-200);
-  border-radius: var(--border-radius);
-}
-
-/* Totales */
+/* ============================================
+   TOTALES
+   ============================================ */
 .totals-footer {
-  margin-top: 20px;
+  margin-top: 16px;
   padding-top: 16px;
-  border-top: 2px solid var(--gray-300);
+  border-top: 2px solid var(--gray-medium);
 }
 
 .sub-iva-total {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
-  font-size: 15px;
-  background: white;
-  border-radius: var(--border-radius);
-  margin-bottom: 8px;
+  padding: 10px 0;
+  font-size: 14px;
 }
 
 .sub-iva-total span:first-child {
-  color: var(--gray-700);
-  font-weight: 500;
+  color: var(--text-light);
 }
 
 .sub-iva-total span:last-child {
-  font-weight: 700;
-  color: var(--gray-800);
+  font-weight: 600;
+  color: var(--text-dark);
 }
 
-.totals-footer.small {
-  margin-top: 12px;
-  padding-top: 8px;
+.sub-iva-total:last-child {
+  border-top: 1px solid var(--gray-medium);
+  margin-top: 8px;
+  padding-top: 12px;
+  font-size: 16px;
+}
+
+.sub-iva-total:last-child span:last-child {
+  color: var(--primary-color);
+  font-size: 18px;
+}
+
+/* ============================================
+   MÉTODO DE PAGO NORMAL
+   ============================================ */
+.metodo-pago-seleccion {
+  display: flex;
+  gap: 12px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.metodo-pago-seleccion button {
+  flex: 1;
+  padding: 10px 16px;
+  border: 2px solid var(--gray-medium);
+  border-radius: var(--border-radius-sm);
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.metodo-pago-seleccion button:hover {
+  border-color: var(--primary-color);
+}
+
+.metodo-pago-seleccion button.selected {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.pay-input-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--gray-light);
+  border-radius: var(--border-radius-sm);
+}
+
+.pay-input-row > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pay-input-row label {
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.input-pay {
+  width: 120px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--gray-medium);
+  border-radius: var(--border-radius-sm);
+  font-size: 16px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.input-pay:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(104, 66, 254, 0.1);
+}
+
+.pay-row {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--gray-light);
+  border-radius: var(--border-radius-sm);
+}
+
+.pay-row label {
+  font-weight: 600;
+  margin-right: 12px;
+}
+
+.pay-row input {
+  padding: 8px 12px;
+  border: 1.5px solid var(--gray-medium);
+  border-radius: var(--border-radius-sm);
+  width: 250px;
+}
+
+/* ============================================
+   FACTURA OPCIÓN
+   ============================================ */
+.factura-opcion {
+  margin: 16px 0;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0f0ff 0%, #e8e8ff 100%);
+  border-radius: var(--border-radius);
+  border-left: 4px solid var(--primary-color);
+}
+
+.factura-opcion label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.factura-opcion input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+.factura-opcion small {
+  margin-left: 28px;
+  display: block;
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 6px;
 }
 
 /* ============================================
    COMENSALES (CUENTA DIVIDIDA)
    ============================================ */
-
 .clientes-container {
   margin-top: 24px;
-  border-top: 2px solid var(--gray-300);
+  border-top: 2px solid var(--gray-medium);
   padding-top: 20px;
 }
 
@@ -328,49 +428,45 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 12px;
 }
 
 .clientes-header span {
   font-weight: 700;
   font-size: 18px;
-  color: var(--gray-800);
+  color: var(--text-dark);
 }
 
 .btn-add {
   background: var(--primary-color);
   color: white;
   border: none;
-  border-radius: var(--border-radius);
-  padding: 10px 20px;
+  border-radius: var(--border-radius-sm);
+  padding: 8px 16px;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   transition: var(--transition);
 }
 
 .btn-add:hover {
   background: var(--primary-dark);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
-/* Tarjeta de comensal */
 .comensal-card {
   background: white;
-  border: 1px solid var(--gray-300);
-  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--gray-medium);
+  border-radius: var(--border-radius);
   padding: 20px;
   margin-bottom: 20px;
   transition: var(--transition);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .comensal-card:hover {
-  box-shadow: var(--box-shadow);
+  box-shadow: var(--shadow-md);
   border-color: var(--primary-light);
 }
 
@@ -379,35 +475,44 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 10px;
 }
 
 .comensal-titulo {
   font-weight: 700;
   font-size: 16px;
-  color: var(--gray-800);
-  background: var(--gray-100);
-  padding: 6px 14px;
-  border-radius: 20px;
+  color: var(--text-dark);
+}
+
+.btn-delete {
+  background: var(--danger-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.btn-delete:hover {
+  background: var(--danger-dark);
 }
 
 .comensal-sin-datos {
   margin-bottom: 16px;
   padding: 12px;
-  background: var(--gray-100);
-  border-radius: var(--border-radius);
+  background: linear-gradient(135deg, #f5f5f5 0%, #e9ecef 100%);
+  border-radius: var(--border-radius-sm);
   text-align: center;
-  border: 1px dashed var(--gray-400);
 }
 
 .comensal-numero {
   font-weight: 600;
-  color: var(--gray-700);
+  color: var(--text-dark);
   font-size: 14px;
 }
 
-/* Datos del comensal (factura individual) */
 .comensal-datos {
   display: flex;
   gap: 12px;
@@ -417,12 +522,12 @@
 
 .comensal-datos input {
   flex: 1;
-  min-width: 150px;
-  padding: 10px 14px;
-  border: 1px solid var(--gray-400);
-  border-radius: var(--border-radius);
-  font-size: 13px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--gray-medium);
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
   transition: var(--transition);
+  min-width: 150px;
 }
 
 .comensal-datos input:focus {
@@ -436,29 +541,24 @@
   gap: 8px;
   align-items: center;
   flex: 1;
-  min-width: 150px;
-}
-
-.busqueda-container input {
-  flex: 1;
 }
 
 .spinner-small {
   width: 20px;
   height: 20px;
-  border: 2px solid var(--gray-300);
+  border: 2px solid var(--gray-medium);
   border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
-/* Productos asignados */
+/* ============================================
+   PRODUCTOS ASIGNADOS
+   ============================================ */
 .productos-asignados {
   margin-bottom: 16px;
 }
@@ -466,106 +566,95 @@
 .productos-asignados > span {
   font-size: 13px;
   font-weight: 600;
-  color: var(--gray-700);
+  color: var(--text-light);
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .producto-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 14px;
-  background: #f3f0ff;
-  border-radius: var(--border-radius);
-  margin-bottom: 8px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #e8e8ff 0%, #f0f0ff 100%);
+  border-radius: var(--border-radius-sm);
+  margin-bottom: 6px;
   transition: var(--transition);
 }
 
 .producto-item:hover {
-  background: #e8e4ff;
-}
-
-.producto-item span {
-  font-size: 14px;
-  color: var(--gray-800);
+  background: linear-gradient(135deg, #e0e0ff 0%, #e8e8ff 100%);
 }
 
 .btn-quitar {
-  background: var(--danger-color);
-  color: white;
+  background: var(--warning-color);
+  color: var(--text-dark);
   border: none;
-  border-radius: var(--border-radius-sm);
-  padding: 4px 12px;
+  border-radius: 6px;
+  padding: 4px 10px;
   cursor: pointer;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   margin-left: 12px;
   transition: var(--transition);
 }
 
 .btn-quitar:hover {
-  background: var(--danger-dark);
+  background: var(--warning-dark);
 }
 
-.empty-text {
-  color: var(--gray-500);
-  font-size: 13px;
-  font-style: italic;
-  padding: 8px;
-  display: inline-block;
-}
-
-/* Método de pago del comensal */
+/* ============================================
+   MÉTODO DE PAGO DEL COMENSAL
+   ============================================ */
 .metodo-pago-comensal {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   align-items: center;
-  background: var(--gray-100);
-  padding: 12px 16px;
-  border-radius: var(--border-radius);
+  background: var(--gray-light);
+  padding: 12px;
+  border-radius: var(--border-radius-sm);
   margin-bottom: 16px;
 }
 
-.metodo-pago-comensal select,
+.metodo-pago-comensal select {
+  padding: 8px 12px;
+  border-radius: var(--border-radius-sm);
+  border: 1.5px solid var(--gray-medium);
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+}
+
 .metodo-pago-comensal input {
   padding: 8px 12px;
-  border-radius: var(--border-radius);
-  border: 1px solid var(--gray-400);
-  font-size: 13px;
-  transition: var(--transition);
-}
-
-.metodo-pago-comensal select:focus,
-.metodo-pago-comensal input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-}
-
-.metodo-pago-comensal span {
-  font-weight: 600;
-  color: var(--gray-700);
+  border: 1.5px solid var(--gray-medium);
+  border-radius: var(--border-radius-sm);
+  width: 120px;
   font-size: 13px;
 }
 
-/* Totales del comensal */
+/* ============================================
+   TOTALES DEL COMENSAL
+   ============================================ */
 .comensal-totales {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid var(--gray-300);
+  border-top: 1px dashed var(--gray-medium);
   padding-top: 16px;
-  flex-wrap: wrap;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .comensal-totales > div:first-child {
   font-size: 13px;
 }
 
-.comensal-totales strong {
-  color: var(--gray-800);
+.comensal-totales > div:first-child strong {
+  color: var(--text-dark);
 }
 
 .total-valor {
@@ -577,14 +666,12 @@
 .cambio-success {
   color: var(--success-color);
   font-size: 12px;
-  font-weight: 600;
   margin-top: 4px;
 }
 
 .cambio-error {
   color: var(--danger-color);
   font-size: 12px;
-  font-weight: 600;
   margin-top: 4px;
 }
 
@@ -592,128 +679,30 @@
   background: var(--success-color);
   color: white;
   border: none;
-  border-radius: var(--border-radius);
-  padding: 10px 20px;
-  margin-top: 12px;
+  border-radius: var(--border-radius-sm);
+  padding: 8px 16px;
+  margin-top: 10px;
   cursor: pointer;
+  font-size: 13px;
   font-weight: 600;
-  font-size: 14px;
   width: 100%;
   transition: var(--transition);
 }
 
 .btn-cobrar:hover:not(:disabled) {
   background: var(--success-dark);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .btn-cobrar:disabled {
-  background: var(--gray-500);
+  background: var(--gray-dark);
   cursor: not-allowed;
   opacity: 0.6;
 }
 
 /* ============================================
-   MÉTODO DE PAGO NORMAL
-   ============================================ */
-
-.metodo-pago-seleccion {
-  display: flex;
-  gap: 10px;
-  margin: 16px 0;
-  flex-wrap: wrap;
-}
-
-.metodo-pago-seleccion button {
-  flex: 1;
-  padding: 10px 16px;
-  border: 2px solid var(--gray-300);
-  border-radius: var(--border-radius);
-  background: white;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: var(--transition);
-}
-
-.metodo-pago-seleccion button:hover {
-  border-color: var(--primary-color);
-  background: var(--gray-100);
-}
-
-.metodo-pago-seleccion button.selected {
-  background: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-}
-
-.pay-input-row {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin: 16px 0;
-  padding: 16px;
-  background: var(--gray-100);
-  border-radius: var(--border-radius);
-}
-
-.pay-input-row > div {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.pay-input-row label {
-  font-weight: 600;
-  color: var(--gray-700);
-  font-size: 14px;
-}
-
-.pay-input-row input {
-  padding: 10px 14px;
-  border: 1px solid var(--gray-400);
-  border-radius: var(--border-radius);
-  font-size: 14px;
-  width: 120px;
-  transition: var(--transition);
-}
-
-.pay-input-row input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-}
-
-.pay-row {
-  margin: 16px 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.pay-row label {
-  font-weight: 600;
-  color: var(--gray-700);
-}
-
-.pay-row input {
-  flex: 1;
-  padding: 10px 14px;
-  border: 1px solid var(--gray-400);
-  border-radius: var(--border-radius);
-  transition: var(--transition);
-}
-
-.pay-row input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-}
-
-/* ============================================
    ASIGNAR PRODUCTOS
    ============================================ */
-
 .asignar-container {
   display: flex;
   gap: 12px;
@@ -724,148 +713,109 @@
 
 .asignar-select {
   padding: 10px 16px;
-  border-radius: var(--border-radius);
-  border: 1px solid var(--gray-400);
+  border-radius: var(--border-radius-sm);
+  border: 1.5px solid var(--gray-medium);
   background: white;
-  font-size: 13px;
   cursor: pointer;
-  min-width: 150px;
+  font-size: 14px;
 }
 
 .btn-asignar {
   background: var(--info-color);
   color: white;
   border: none;
-  border-radius: var(--border-radius);
-  padding: 10px 24px;
+  border-radius: var(--border-radius-sm);
+  padding: 10px 20px;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   transition: var(--transition);
 }
 
 .btn-asignar:hover {
   background: #138496;
-  transform: translateY(-2px);
-}
-
-/* ============================================
-   FACTURA OPCIÓN
-   ============================================ */
-
-.factura-opcion {
-  background: linear-gradient(135deg, #f0f0ff 0%, #e8e4ff 100%);
-  padding: 16px 20px;
-  border-radius: var(--border-radius);
-  margin: 12px 0;
-  border: 1px solid rgba(104, 66, 254, 0.2);
-}
-
-.factura-opcion label {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  font-weight: 700;
-  color: var(--gray-800);
-}
-
-.factura-opcion input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  accent-color: var(--primary-color);
-}
-
-.factura-opcion small {
-  margin-left: 32px;
-  display: block;
-  font-size: 12px;
-  color: var(--gray-600);
-  margin-top: 6px;
 }
 
 /* ============================================
    HISTORIAL DE PAGOS
    ============================================ */
-
 .historial-pagos {
-  background: #e8f5e9;
-  padding: 16px 20px;
-  border-radius: var(--border-radius);
   margin-top: 20px;
-  border-left: 4px solid var(--success-color);
+  padding: 16px;
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  border-radius: var(--border-radius);
 }
 
 .historial-titulo {
   font-weight: 700;
   margin-bottom: 12px;
   font-size: 14px;
-  color: var(--success-dark);
+  color: #2e7d32;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .historial-item {
   font-size: 13px;
   padding: 6px 0;
-  color: var(--gray-700);
-  border-bottom: 1px solid #c8e6c9;
+  color: var(--text-dark);
+  border-bottom: 1px dashed #a5d6a7;
 }
 
 .historial-total {
   font-size: 13px;
-  color: var(--gray-700);
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid #c8e6c9;
   font-weight: 600;
+  color: var(--text-dark);
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 2px solid #a5d6a7;
 }
 
 .historial-completado {
   background: var(--success-color);
   color: white;
   padding: 10px;
-  border-radius: var(--border-radius);
+  border-radius: var(--border-radius-sm);
   text-align: center;
   margin-top: 12px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* ============================================
    BOTONES DE ACCIÓN
    ============================================ */
-
 .actions-row {
-  margin-top: 8px;
   display: flex;
   gap: 16px;
   justify-content: flex-start;
-  align-items: center;
+  margin-top: 24px;
+  flex-wrap: wrap;
 }
 
 .btn-guardar {
   background: var(--success-color);
   color: white;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 15px;
   border: none;
-  border-radius: var(--border-radius);
-  padding: 12px 36px;
+  border-radius: var(--border-radius-sm);
+  padding: 12px 32px;
   cursor: pointer;
   transition: var(--transition);
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .btn-guardar:hover:not(:disabled) {
   background: var(--success-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-guardar:disabled {
-  background: var(--gray-500);
+  background: var(--gray-dark);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -875,10 +825,13 @@
   color: white;
   font-weight: 600;
   border: none;
-  border-radius: var(--border-radius);
-  padding: 12px 32px;
+  border-radius: var(--border-radius-sm);
+  padding: 12px 28px;
   cursor: pointer;
   transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .btn-cancelar:hover {
@@ -887,37 +840,245 @@
 }
 
 /* ============================================
-   MENSAJES Y ESTADOS
+   MENSAJES
    ============================================ */
+.error-msg {
+  font-size: 13px;
+  color: var(--danger-color);
+  font-weight: 600;
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: #ffe5e5;
+  border-radius: var(--border-radius-sm);
+  border-left: 3px solid var(--danger-color);
+}
+
+.success-msg {
+  font-size: 13px;
+  color: var(--success-color);
+  font-weight: 600;
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: #e5ffe5;
+  border-radius: var(--border-radius-sm);
+  border-left: 3px solid var(--success-color);
+}
+
+.warning-box {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fff3cd;
+  border-radius: var(--border-radius-sm);
+  text-align: center;
+  color: #856404;
+  font-size: 13px;
+  border-left: 3px solid var(--warning-color);
+}
 
 .empty-state {
   text-align: center;
   padding: 40px;
   color: var(--success-color);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
 }
 
-.warning-box {
-  background: #fff3cd;
-  padding: 14px 20px;
-  border-radius: var(--border-radius);
-  text-align: center;
-  color: #856404;
-  font-size: 13px;
-  margin-top: 16px;
-  border-left: 4px solid var(--warning-color);
+.empty-text {
+  font-size: 12px;
+  color: var(--gray-dark);
+  font-style: italic;
 }
 
-.error-msg {
-  color: var(--danger-color);
-  font-size: 13px;
-  font-weight: 600;
-  margin-top: 8px;
-  padding: 10px;
-  background: #ffe5e5;
-  border-radius: var(--border-radius);
+/* ============================================
+   SCROLLBAR PERSONALIZADA
+   ============================================ */
+.order-items::-webkit-scrollbar {
+  width: 8px;
 }
 
-.success-msg {
-  color: var(--success-color);
+.order-items::-webkit-scrollbar-track {
+  background: var(--gray-medium);
+  border-radius: 4px;
+}
+
+.order-items::-webkit-scrollbar-thumb {
+  background: var(--primary-light);
+  border-radius: 4px;
+}
+
+.order-items::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 1024px) {
+  .checkout-modern-card {
+    padding: 20px 24px;
+  }
+  
+  .comensal-datos {
+    flex-direction: column;
+  }
+  
+  .comensal-datos input {
+    width: 100%;
+  }
+  
+  .busqueda-container {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .checkout-modern-main {
+    padding: 12px;
+  }
+  
+  .checkout-modern-card {
+    padding: 16px 20px;
+  }
+  
+  .cmbx-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .cmbx-row .label {
+    margin-left: 0;
+  }
+  
+  .combobox {
+    width: 100%;
+  }
+  
+  .cliente-fields {
+    flex-direction: column;
+  }
+  
+  .cliente-fields input {
+    width: 100%;
+  }
+  
+  .pay-methods {
+    flex-direction: column;
+  }
+  
+  .pay-btn {
+    width: 100%;
+  }
+  
+  .metodo-pago-seleccion {
+    flex-direction: column;
+  }
+  
+  .pay-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .pay-input-row > div {
+    justify-content: space-between;
+  }
+  
+  .input-pay {
+    width: 100%;
+  }
+  
+  .comensal-totales {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .asignar-container {
+    justify-content: center;
+  }
+  
+  .actions-row {
+    flex-direction: column;
+  }
+  
+  .btn-guardar,
+  .btn-cancelar {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .checkout-modern-card {
+    padding: 12px 16px;
+  }
+  
+  .order-head {
+    font-size: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .item-line {
+    font-size: 13px;
+    padding: 8px;
+  }
+  
+  .item-amt {
+    min-width: 70px;
+  }
+  
+  .sub-iva-total {
+    font-size: 13px;
+  }
+  
+  .comensal-card {
+    padding: 16px;
+  }
+  
+  .metodo-pago-comensal {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .metodo-pago-comensal select,
+  .metodo-pago-comensal input {
+    width: 100%;
+  }
+  
+  .total-valor {
+    font-size: 18px;
+  }
+}
+
+/* ============================================
+   ANIMACIONES
+   ============================================ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.comensal-card {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.btn-cobrar:active {
+  animation: pulse 0.2s ease;
+}
