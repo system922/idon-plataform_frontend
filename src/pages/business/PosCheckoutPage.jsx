@@ -381,21 +381,16 @@ export default function PosCheckoutPage() {
       }, 0);
   };
 
-  // ✅ CORREGIDO: Usa tax_amount que ya viene del backend
   const getSplitTax = () => {
     if (!selectedOrder || paymentMethod !== 'split') return 0;
 
     return selectedOrder.items
-      .filter(i => selectedItems.includes(i.id) && !i.paid)
+      .filter(i => selectedItems.includes(i.id))
       .reduce((sum, i) => {
-        // Usar tax_amount del item si existe, sino calcular con line_total - subtotal
-        let taxAmount = Number(i.tax_amount);
-        if (isNaN(taxAmount) || taxAmount === 0) {
-          const subtotal = Number(i.unit_price) * i.quantity;
-          const lineTotal = Number(i.line_total);
-          taxAmount = lineTotal - subtotal;
-        }
-        return sum + taxAmount;
+        const taxRate = Number(i.tax_rate) || 0;
+        const itemSubtotal = Number(i.unit_price) * i.quantity;
+        const itemTax = (itemSubtotal * taxRate) / 100;
+        return sum + round2(itemTax);
       }, 0);
   };
 
