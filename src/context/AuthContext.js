@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { useNavigate, useLocation } from 'react-router-dom';
 import SessionTimeoutModal from '../components/SessionTimeoutModal';
 import { authService } from '../services/authService';
-import TokenManager from '../utils/tokenManager';
 
 const AuthContext = createContext();
 
@@ -19,11 +18,22 @@ export const AuthProvider = ({ children }) => {
 
   const PUBLIC_PATHS = ['/terms-and-conditions', '/privacy-policy', '/login', '/register'];
 
+  // Helper: decode JWT and get exp
+  function getTokenExpiration(token) {
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp ? payload.exp * 1000 : null;
+    } catch {
+      return null;
+    }
+  }
+
   // Check token/user on mount and on token change
   useEffect(() => {
-    const storedUser = TokenManager.getUser();
-    const storedToken = TokenManager.getToken();
-    if (storedUser) setUser(storedUser);
+    const storedUser = localStorage.getItem('idonUser');
+    const storedToken = localStorage.getItem('authToken');
+    if (storedUser) setUser(JSON.parse(storedUser));
     if (storedToken) setToken(storedToken);
     setLoading(false);
   }, []);
@@ -37,49 +47,53 @@ export const AuthProvider = ({ children }) => {
       }
       return;
     }
-
-    // Check if token is expired
-    if (TokenManager.isTokenExpired(token)) {
+    const exp = getTokenExpiration(token);
+    if (!exp) {
+      setShowTimeoutModal(false);
+      if (!PUBLIC_PATHS.includes(location.pathname)) {
+        navigate('/login');
+      }
+      return;
+    }
+    const now = Date.now();
+    const msLeft = exp - now;
+    if (msLeft <= 0) {
+      setShowTimeoutModal(false);
       logout();
       navigate('/login');
       return;
     }
-
-    const timeRemaining = TokenManager.getTokenTimeRemaining(token);
-    const TWO_MINUTES = 2 * 60 * 1000;
-
     // Show modal 2 min before expiration
-    if (timeRemaining < TWO_MINUTES) {
-      setSecondsLeft(Math.floor(timeRemaining / 1000));
+    if (msLeft < 2 * 60 * 1000) {
+      setSecondsLeft(Math.floor(msLeft / 1000));
       setShowTimeoutModal(true);
     } else {
       setShowTimeoutModal(false);
     }
-
     // Timer to update seconds left
     clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
-      const timeRemaining = TokenManager.getTokenTimeRemaining(token);
-
-      if (timeRemaining <= 0) {
+      const now2 = Date.now();
+      const msLeft2 = exp - now2;
+      if (msLeft2 <= 0) {
         setShowTimeoutModal(false);
         logout();
         clearInterval(timerRef.current);
         if (!PUBLIC_PATHS.includes(location.pathname)) {
           navigate('/login');
         }
-      } else if (timeRemaining < TWO_MINUTES) {
-        setSecondsLeft(Math.floor(timeRemaining / 1000));
+      } else if (msLeft2 < 2 * 60 * 1000) {
+        setSecondsLeft(Math.floor(msLeft2 / 1000));
         setShowTimeoutModal(true);
       }
     }, 1000);
-
     return () => clearInterval(timerRef.current);
     // eslint-disable-next-line
   }, [token, user]);
 
   // Handler: extend session (simulate refresh)
   const handleExtendSession = async () => {
+    // You should call a refresh endpoint here. For now, just reload the page or re-login.
     setShowTimeoutModal(false);
     window.location.reload();
   };
@@ -97,9 +111,8 @@ export const AuthProvider = ({ children }) => {
       if (!result.user.userType && (result.user.role === 'super_admin' || result.user.role === 'admin' || result.user.is_admin)) {
         result.user.userType = 'admin_idon';
       }
-      TokenManager.setUser(result.user);
+      localStorage.setItem('idonUser', JSON.stringify(result.user));
     }
-    TokenManager.setToken(result.token);
     setUser(result.user);
     setToken(result.token);
     return result;
@@ -118,9 +131,8 @@ export const AuthProvider = ({ children }) => {
       if (!result.user.userType && (result.user.role === 'super_admin' || result.user.role === 'admin' || result.user.is_admin)) {
         result.user.userType = 'admin_idon';
       }
-      TokenManager.setUser(result.user);
+      localStorage.setItem('idonUser', JSON.stringify(result.user));
     }
-    TokenManager.setToken(result.token);
     setUser(result.user);
     setToken(result.token);
     return result;
@@ -128,10 +140,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     authService.logout();
-    TokenManager.clear();
     setUser(null);
     setToken(null);
     setShowTimeoutModal(false);
+    localStorage.removeItem('idonUser');
   };
 
   return (
