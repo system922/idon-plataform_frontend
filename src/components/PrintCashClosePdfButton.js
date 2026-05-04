@@ -1,3 +1,5 @@
+import React, { useState } from 'react';
+import { FiFileText, FiAlertCircle, FiCheckCircle, FiDownload } from 'react-icons/fi';
 import jsPDF from "jspdf";
 import { fetchWithAuth } from '../config/apiBase';
 
@@ -10,9 +12,16 @@ function getOperatorUser() {
   }
 }
 
-export default function PrintCashClosePdfButton({ close, opening, summary }) {
+export default function PrintCashClosePdfButton({ close, opening, summary, className }) {
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const download = async () => {
+    setGenerating(true);
+    setError('');
+    setSuccess('');
+
     try {
       // Obtener datos del negocio desde el endpoint
       const settingsRes = await fetchWithAuth('/api/settings');
@@ -26,10 +35,6 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       // Obtener datos del usuario operador desde localStorage
       const operador = getOperatorUser();
       
-      // 🔥 DEBUG: Descomentar para ver qué hay en localStorage
-      console.log('Operador desde localStorage:', operador);
-      
-      // Intentar obtener el nombre del operador de múltiples formas
       const userName = operador?.nombre || 
                        operador?.name || 
                        operador?.username || 
@@ -46,7 +51,7 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       const pageHeight = doc.internal.pageSize.height;
       let y = 20;
 
-      // ============ ENCABEZADO AZUL ============
+      // ============ ENCABEZADO ============
       doc.setFillColor(41, 128, 185);
       doc.rect(0, 0, pageWidth, 40, 'F');
       
@@ -202,7 +207,7 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       const diferencia = totalContado - cajaEsperada;
       const esCuadrado = Math.abs(diferencia) < 0.01;
 
-      // ============ CONTEO FÍSICO - BLOQUE VERDE UNIFICADO ============
+      // ============ CONTEO FÍSICO ============
       y += 10;
       const alturaBloque = 50;
       
@@ -234,7 +239,6 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       doc.text(`Propinas contadas:`, 18, y);
       doc.text(`$${propinaContada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
       
-      // Línea separadora dentro del bloque verde
       y += 7;
       doc.setDrawColor(255, 255, 255);
       doc.setLineWidth(0.3);
@@ -256,7 +260,6 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       doc.text(diferenciaTexto, 18, y);
       doc.text(`$${Math.abs(diferencia).toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
-      // Resetear color de línea
       doc.setDrawColor(0, 0, 0);
       doc.setLineWidth(0.1);
 
@@ -301,15 +304,43 @@ export default function PrintCashClosePdfButton({ close, opening, summary }) {
       const nombreArchivo = `cierre-caja-${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(nombreArchivo);
 
+      setSuccess('PDF generado correctamente');
+      setTimeout(() => setSuccess(''), 3000);
+
     } catch (error) {
       console.error('Error al generar el PDF:', error);
-      alert('Error al generar el reporte. Por favor, intenta nuevamente.');
+      setError(error.message || 'Error al generar el PDF');
+    } finally {
+      setGenerating(false);
     }
   };
 
   return (
-    <button id="btn-pdf" className="btn-pdf" onClick={download}>
-      📄 Descargar PDF
-    </button>
+    <div className="pdf-button-wrapper">
+      <button 
+        className={className || "btn-pdf-modern"} 
+        onClick={download}
+        disabled={generating}
+        type="button"
+      >
+        <FiFileText className="btn-icon" />
+        {generating ? 'Generando PDF...' : 'Descargar'}
+        <FiDownload className="btn-icon-right" />
+      </button>
+      
+      {error && (
+        <div className="pdf-error">
+          <FiAlertCircle size={14} />
+          <span>{error}</span>
+        </div>
+      )}
+      
+      {success && (
+        <div className="pdf-success">
+          <FiCheckCircle size={14} />
+          <span>{success}</span>
+        </div>
+      )}
+    </div>
   );
 }

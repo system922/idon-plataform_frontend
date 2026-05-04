@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { fetchWithAuth } from '../../config/apiBase';
+import { FiDollarSign, FiAlertCircle, FiBox, FiCreditCard, FiFileText, FiX } from 'react-icons/fi';
 import '../../styles/AperturaCaja.css';
 
 // Denominaciones del sistema monetario Ecuador (USD)
@@ -11,6 +12,7 @@ const MONEDAS = [
   { key: 'moneda_050', label: '50¢', valor: 0.50 },
   { key: 'moneda_100', label: '$1',  valor: 1.00 },
 ];
+
 const BILLETES = [
   { key: 'billete_1',   label: '$1',   valor: 1   },
   { key: 'billete_5',   label: '$5',   valor: 5   },
@@ -36,7 +38,7 @@ function getOperatorUser() {
   }
 }
 
-export default function AperturaCajaPage({ onAperturaCompleta }) {
+export default function AperturaCajaPage({ onAperturaCompleta, onClose }) {
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
 
   const [denoms,     setDenoms]     = useState(INIT_DENOMS);
@@ -68,7 +70,6 @@ export default function AperturaCajaPage({ onAperturaCompleta }) {
     const operador = getOperatorUser();
 
     try {
-      // 1. Guardar apertura de caja
       const body = { 
         date: today, 
         monto_banca: parseFloat(montoBanca) || 0, 
@@ -86,15 +87,13 @@ export default function AperturaCajaPage({ onAperturaCompleta }) {
       
       const data = await res.json();
 
-      // 409 = la apertura ya fue registrada hoy → obtener datos existentes
       if (res.status === 409) {
-        onAperturaCompleta(data); // TODO: fix 409 handler
+        onAperturaCompleta(data);
         return;
       }
 
       if (!res.ok) throw new Error(data?.error || 'Error al guardar apertura');
 
-      // 2. Guardar auditoría
       const userName = operador.nombre || operador.name || operador.username || operador.email || 'Usuario';
       
       const auditPayload = {
@@ -112,17 +111,11 @@ export default function AperturaCajaPage({ onAperturaCompleta }) {
         reason: "Registro de Apertura"
       };
 
-      const auditRes = await fetchWithAuth('/api/audit-log', {
+      await fetchWithAuth('/api/audit-log', {
         method: 'POST',
         body: JSON.stringify(auditPayload)
-      });
+      }).catch(console.warn);
 
-      if (!auditRes.ok) {
-        console.warn('Error guardando auditoría');
-        // No bloqueamos si falla la auditoría
-      }
-
-      // 3. Completar apertura
       onAperturaCompleta(data);
 
     } catch (err) {
@@ -135,94 +128,107 @@ export default function AperturaCajaPage({ onAperturaCompleta }) {
   return (
     <div className="apertura-overlay">
       <div className="apertura-modal">
+        {/* Botón cerrar */}
+        {onClose && (
+          <button className="apertura-close" onClick={onClose}>
+            <FiX size={20} />
+          </button>
+        )}
 
         {/* Cabecera */}
         <div className="apertura-header">
           <div className="apertura-header-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="2" y="7" width="20" height="14" rx="2"/>
-              <path d="M16 7V5a2 2 0 0 0-4 0v2"/>
-              <line x1="12" y1="12" x2="12" y2="16"/>
-              <line x1="10" y1="14" x2="14" y2="14"/>
-            </svg>
+            <FiDollarSign size={28} />
           </div>
           <div>
             <h2 className="apertura-title">Apertura de Caja</h2>
             <p className="apertura-subtitle">
-              {new Date().toLocaleDateString('es-EC', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              {new Date().toLocaleDateString('es-EC', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                timeZone: 'America/Guayaquil'
+              })}
             </p>
           </div>
         </div>
 
         <p className="apertura-info">
-          Cuenta el efectivo físico que tienes en caja al inicio del día. Ingresa la cantidad de piezas por cada denominación.
+          Cuenta el efectivo físico que tienes en caja al inicio del día. 
+          Ingresa la cantidad de piezas por cada denominación.
         </p>
 
-        {error && <div className="apertura-error">{error}</div>}
+        {error && (
+          <div className="apertura-error">
+            <FiAlertCircle size={16} /> {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} autoComplete="off">
-
           {/* Monedas */}
-          <div className="apertura-section-label">
-            <span className="apertura-badge apertura-badge--coin">Monedas</span>
-          </div>
-          <div className="apertura-denom-grid">
-            {MONEDAS.map(d => {
-              const qty      = parseInt(denoms[d.key], 10) || 0;
-              const subtotal = qty * d.valor;
-              return (
-                <div key={d.key} className="apertura-denom-card">
-                  <span className="apertura-denom-label">{d.label}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    inputMode="numeric"
-                    placeholder="0"
-                    value={denoms[d.key]}
-                    onChange={e => handleDenom(d.key, e.target.value)}
-                    className="apertura-denom-input"
-                  />
-                  <span className="apertura-denom-sub">${fmt(subtotal)}</span>
-                </div>
-              );
-            })}
+          <div className="apertura-section">
+            <div className="apertura-section-header">
+              <FiBox size={14} />
+              <span>Monedas</span>
+            </div>
+            <div className="apertura-denom-grid">
+              {MONEDAS.map(d => {
+                const qty = parseInt(denoms[d.key], 10) || 0;
+                const subtotal = qty * d.valor;
+                return (
+                  <div key={d.key} className="apertura-denom-card">
+                    <span className="apertura-denom-label">{d.label}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      inputMode="numeric"
+                      placeholder="0"
+                      value={denoms[d.key]}
+                      onChange={e => handleDenom(d.key, e.target.value)}
+                      className="apertura-denom-input"
+                    />
+                    <span className="apertura-denom-sub">${fmt(subtotal)}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Billetes */}
-          <div className="apertura-section-label" style={{ marginTop: 20 }}>
-            <span className="apertura-badge apertura-badge--bill">Billetes</span>
-          </div>
-          <div className="apertura-denom-grid">
-            {BILLETES.map(d => {
-              const qty      = parseInt(denoms[d.key], 10) || 0;
-              const subtotal = qty * d.valor;
-              return (
-                <div key={d.key} className="apertura-denom-card">
-                  <span className="apertura-denom-label">{d.label}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    inputMode="numeric"
-                    placeholder="0"
-                    value={denoms[d.key]}
-                    onChange={e => handleDenom(d.key, e.target.value)}
-                    className="apertura-denom-input"
-                  />
-                  <span className="apertura-denom-sub">${fmt(subtotal)}</span>
-                </div>
-              );
-            })}
+          <div className="apertura-section">
+            <div className="apertura-section-header">
+              <FiCreditCard size={14} />
+              <span>Billetes</span>
+            </div>
+            <div className="apertura-denom-grid">
+              {BILLETES.map(d => {
+                const qty = parseInt(denoms[d.key], 10) || 0;
+                const subtotal = qty * d.valor;
+                return (
+                  <div key={d.key} className="apertura-denom-card">
+                    <span className="apertura-denom-label">{d.label}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      inputMode="numeric"
+                      placeholder="0"
+                      value={denoms[d.key]}
+                      onChange={e => handleDenom(d.key, e.target.value)}
+                      className="apertura-denom-input"
+                    />
+                    <span className="apertura-denom-sub">${fmt(subtotal)}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Banco */}
-          <div className="apertura-bank-row">
-            <div className="apertura-bank-label">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="10" width="18" height="11" rx="2"/>
-                <path d="M3 10l9-7 9 7"/>
-                <line x1="12" y1="10" x2="12" y2="21"/>
-              </svg>
-              Monto en banca al iniciar el día
+          <div className="apertura-bank-card">
+            <div className="apertura-bank-header">
+              <FiFileText size={14} />
+              <span>Monto en banca al iniciar el día</span>
             </div>
             <div className="apertura-bank-input-wrap">
               <span className="apertura-bank-prefix">$</span>
@@ -244,7 +250,7 @@ export default function AperturaCajaPage({ onAperturaCompleta }) {
             placeholder="Observaciones (opcional)"
             value={observ}
             onChange={e => setObserv(e.target.value)}
-            rows={2}
+            rows={3}
           />
 
           {/* Totales */}
@@ -275,4 +281,3 @@ export default function AperturaCajaPage({ onAperturaCompleta }) {
     </div>
   );
 }
-

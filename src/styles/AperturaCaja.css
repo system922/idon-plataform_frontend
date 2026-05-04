@@ -1,30 +1,68 @@
-/* ── AperturaCaja.css ── */
+/* ──────────────────────────────────────────────────────────────
+   APERTURA DE CAJA - MODAL OVERLAY
+   ────────────────────────────────────────────────────────────── */
 
-/* Overlay pantalla completa que bloquea el resto de la UI */
+/* Overlay pantalla completa */
 .apertura-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(10, 12, 18, 0.92);
-  backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* 🔥 importante */
+  align-items: center;
   padding: 20px;
-  overflow-y: auto;
 }
 
-/* Tarjeta modal */
+/* Botón cerrar */
+.apertura-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-radius: 8px;
+  color: #a0a0b8;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.apertura-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Tarjeta modal - MÁS ANCHA */
 .apertura-modal {
-  background: #13161f;
-  border: 1px solid #1e2535;
-  border-radius: 16px;
+  background: #18181b;
+  border: 1.5px solid #26272b;
+  border-radius: 20px;
   width: 100%;
-  max-width: 900px; /* desktop */
-  height: auto;
+  max-width: 850px;
   max-height: 90vh;
-  padding: 20px;
   overflow-y: auto;
+  position: relative;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+/* Scrollbar */
+.apertura-modal::-webkit-scrollbar {
+  width: 5px;
+}
+
+.apertura-modal::-webkit-scrollbar-track {
+  background: #1f1f24;
+  border-radius: 3px;
+}
+
+.apertura-modal::-webkit-scrollbar-thumb {
+  background: #10b981;
+  border-radius: 3px;
 }
 
 /* Cabecera */
@@ -32,188 +70,200 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 6px;
+  padding: 18px 24px 14px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .apertura-header-icon {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   border-radius: 12px;
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  flex-shrink: 0;
+}
+
+.apertura-header-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
 .apertura-title {
   font-size: 20px;
-  font-weight: 700;
-  color: #f1f5f9;
-  margin: 0 0 2px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 3px 0;
 }
 
 .apertura-subtitle {
   font-size: 12px;
-  color: #64748b;
+  color: #7a7a96;
   margin: 0;
   text-transform: capitalize;
 }
 
 /* Info */
 .apertura-info {
-  font-size: 13px;
-  color: #94a3b8;
-  margin: 14px 0 18px;
-  line-height: 1.5;
+  font-size: 12px;
+  color: #a0a0b8;
+  margin: 14px 24px 18px 24px;
+  line-height: 1.4;
 }
 
 /* Error */
 .apertura-error {
   background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #f87171;
+  color: #fca5a5;
   border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 13px;
-  margin-bottom: 16px;
-}
-
-/* Labels de sección */
-.apertura-section-label {
-  margin-bottom: 10px;
-}
-
-.apertura-badge {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 3px 10px;
-  border-radius: 20px;
-}
-
-.apertura-badge--coin {
-  background: rgba(234, 179, 8, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(234, 179, 8, 0.25);
-}
-
-.apertura-badge--bill {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.25);
-}
-
-/* Grid de denominaciones */
-.apertura-denom-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-}
-
-.apertura-denom-card {
-  background: #0f1219;
-  border: 1px solid #1e2535;
-  border-radius: 10px;
-  padding: 6px 10px;
-  display: grid;
-  grid-template-columns: 1fr 50px 80px;
+  padding: 8px 12px;
+  margin: 0 24px 16px 24px;
+  font-size: 12px;
+  display: flex;
   align-items: center;
   gap: 8px;
 }
 
+/* Formulario */
+.apertura-modal form {
+  padding: 0 24px 24px 24px;
+}
+
+/* Secciones */
+.apertura-section {
+  margin-bottom: 18px;
+}
+
+.apertura-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #10b981;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.apertura-section-header svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Grid de denominaciones - MÁS COLUMNAS EN PANTALLAS GRANDES */
+.apertura-denom-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.apertura-denom-card {
+  background: #1f1f24;
+  border: 1px solid #26272b;
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
 
 .apertura-denom-card:focus-within {
-  border-color: #22c55e;
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
 .apertura-denom-label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  color: #e2e8f0;
-  min-width: 60px;
+  color: #e0e0e8;
+  min-width: 32px;
 }
 
 .apertura-denom-input {
-  width: 100%;
-  max-width: 50px;
-  height: 30px;
-
-  background: #1a1f2e;
-  border: 1px solid #2a3040;
-  border-radius: 6px;
-
-  font-size: 13px;
+  width: 55px;
+  padding: 5px 4px;
+  background: #0f0f14;
+  border: 1px solid #33333d;
+  border-radius: 5px;
+  font-size: 12px;
   font-weight: 600;
-  color: #f1f5f9;
-
+  color: #fff;
   text-align: center;
-  padding: 2px 4px;
+  transition: all 0.2s ease;
+}
+
+.apertura-denom-input:focus {
+  outline: none;
+  border-color: #10b981;
 }
 
 .apertura-denom-input::-webkit-outer-spin-button,
 .apertura-denom-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
-}
-
-.apertura-denom-input:focus {
-  border-color: #22c55e;
+  margin: 0;
 }
 
 .apertura-denom-sub {
-  font-size: 13px;
-  color: #22c55e;
+  font-size: 12px;
   font-weight: 700;
+  color: #10b981;
+  min-width: 45px;
   text-align: right;
-  min-width: 70px;
 }
 
-/* Fila de banco */
-.apertura-bank-row {
-  margin-top: 20px;
-  background: #0f1219;
-  border: 1px solid #1e2535;
-  border-radius: 10px;
-  padding: 14px 16px;
+/* Banco */
+.apertura-bank-card {
+  background: #1f1f24;
+  border: 1px solid #26272b;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
   flex-wrap: wrap;
+  gap: 10px;
 }
 
-.apertura-bank-label {
+.apertura-bank-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 12px;
   font-weight: 600;
-  color: #94a3b8;
+  color: #a0a0b8;
+}
+
+.apertura-bank-header svg {
+  width: 13px;
+  height: 13px;
+  color: #10b981;
 }
 
 .apertura-bank-input-wrap {
   display: flex;
   align-items: center;
-  background: #1a1f2e;
-  border: 1px solid #2a3040;
-  border-radius: 8px;
+  background: #0f0f14;
+  border: 1px solid #33333d;
+  border-radius: 6px;
   overflow: hidden;
-  min-width: 120px;
 }
 
 .apertura-bank-prefix {
-  padding: 0 8px;
-  font-size: 14px;
+  padding: 0 10px;
+  font-size: 13px;
   font-weight: 700;
-  color: #64748b;
-  background: #131820;
-  align-self: stretch;
+  color: #7a7a96;
+  background: #1a1a1f;
+  height: 100%;
   display: flex;
   align-items: center;
-  border-right: 1px solid #2a3040;
+  border-right: 1px solid #33333d;
 }
 
 .apertura-bank-input {
@@ -221,98 +271,106 @@
   border: none;
   outline: none;
   padding: 8px 10px;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
-  color: #f1f5f9;
-  width: 110px;
-  -moz-appearance: textfield;
+  color: #fff;
+  width: 100px;
+}
+
+.apertura-bank-input:focus {
+  outline: none;
 }
 
 .apertura-bank-input::-webkit-outer-spin-button,
 .apertura-bank-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
+  margin: 0;
 }
 
 /* Observaciones */
 .apertura-obs {
   width: 100%;
-  margin-top: 14px;
-  background: #0f1219;
-  border: 1px solid #1e2535;
+  background: #1f1f24;
+  border: 1px solid #26272b;
   border-radius: 8px;
   padding: 10px 12px;
-  font-size: 13px;
-  color: #94a3b8;
-  outline: none;
+  font-size: 12px;
+  color: #e0e0e8;
+  font-family: 'Inter', sans-serif;
   resize: vertical;
+  transition: all 0.2s ease;
+  margin-bottom: 18px;
   box-sizing: border-box;
-  font-family: inherit;
 }
 
 .apertura-obs:focus {
-  border-color: #22c55e;
-  color: #e2e8f0;
+  outline: none;
+  border-color: #10b981;
+}
+
+.apertura-obs::placeholder {
+  color: #7a7a96;
 }
 
 /* Totales */
 .apertura-totals {
-  margin-top: 18px;
-  background: #0a0d14;
-  border: 1px solid #1e2535;
-  border-radius: 10px;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  background: #1f1f24;
+  border: 1px solid #26272b;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
 }
 
 .apertura-total-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 5px 0;
   font-size: 13px;
-  color: #64748b;
+  color: #a0a0b8;
 }
 
 .apertura-total-val {
   font-weight: 700;
-  color: #94a3b8;
+  color: #e0e0e8;
 }
 
 .apertura-total-row--main {
-  padding-top: 10px;
-  border-top: 1px solid #1e2535;
-  font-size: 15px;
-  color: #e2e8f0;
+  margin-top: 5px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
 }
 
 .apertura-total-val--main {
-  font-size: 20px;
-  color: #22c55e;
+  font-size: 18px;
+  font-weight: 800;
+  color: #10b981;
 }
 
 /* Botón submit */
 .apertura-submit {
-  margin-top: 20px;
   width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: #fff;
-  font-size: 15px;
-  font-weight: 700;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  letter-spacing: 0.02em;
-  transition: opacity 0.15s, transform 0.1s;
+  transition: all 0.2s ease;
 }
 
 .apertura-submit:hover:not(:disabled) {
-  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .apertura-submit:active:not(:disabled) {
-  transform: scale(0.99);
+  transform: translateY(0);
 }
 
 .apertura-submit:disabled {
@@ -321,38 +379,90 @@
 }
 
 /* Responsive */
-@media (max-width: 480px) {
-
-  .apertura-modal {
-    border-radius: 12px;
-    padding: 16px;
-  }
-
+@media (min-width: 1200px) {
   .apertura-denom-grid {
-    grid-template-columns: 1fr; /* 🔥 una columna */
+    grid-template-columns: repeat(4, 1fr);
   }
+}
 
-  .apertura-denom-card {
-    grid-template-columns: 1fr 45px 70px;
-    padding: 8px;
+@media (min-width: 900px) and (max-width: 1199px) {
+  .apertura-denom-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
+}
 
-  .apertura-denom-input {
-    max-width: 45px;
-    height: 28px;
-    font-size: 13px;
+@media (min-width: 600px) and (max-width: 899px) {
+  .apertura-denom-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
+}
 
-  .apertura-bank-row {
+@media (max-width: 599px) {
+  .apertura-modal {
+    max-width: 95%;
+  }
+  
+  .apertura-denom-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .apertura-bank-card {
     flex-direction: column;
     align-items: stretch;
   }
-
+  
   .apertura-bank-input-wrap {
     width: 100%;
   }
-
+  
   .apertura-bank-input {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .apertura-header {
+    padding: 14px 16px 10px 16px;
+    gap: 10px;
+  }
+  
+  .apertura-header-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .apertura-header-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .apertura-title {
+    font-size: 18px;
+  }
+  
+  .apertura-subtitle {
+    font-size: 10px;
+  }
+  
+  .apertura-info {
+    margin: 10px 16px 12px 16px;
+    font-size: 11px;
+  }
+  
+  .apertura-modal form {
+    padding: 0 16px 16px 16px;
+  }
+  
+  .apertura-denom-card {
+    padding: 5px 8px;
+  }
+  
+  .apertura-denom-input {
+    width: 50px;
+  }
+  
+  .apertura-close {
+    top: 12px;
+    right: 12px;
   }
 }

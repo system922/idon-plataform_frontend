@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FiPrinter, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import qz from 'qz-tray';
 import { buildCashCloseText } from '../Helper/buildCashCloseText';
 
@@ -12,10 +13,12 @@ export default function PrintCashCloseButtonAdvanced({
 }) {
   const [printing, setPrinting] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handlePrint = async () => {
     // Limpiar errores previos
     setError('');
+    setSuccess('');
 
     // Validaciones
     if (!printerTicket || !printerTicket.name) {
@@ -65,12 +68,8 @@ export default function PrintCashCloseButtonAdvanced({
         }
       ]);
 
-      console.log('✅ Cierre de caja impreso correctamente');
-
-      // Opcional: Mostrar mensaje de éxito
-      setTimeout(() => {
-        alert('✅ Cierre de caja impreso correctamente');
-      }, 100);
+      setSuccess('✅ Cierre de caja impreso correctamente');
+      setTimeout(() => setSuccess(''), 3000);
 
     } catch (err) {
       console.error('Error imprimiendo cierre de caja:', err);
@@ -143,27 +142,28 @@ export default function PrintCashCloseButtonAdvanced({
   };
 
   return (
-    <div>
+    <div className="print-button-wrapper">
       <button 
-        className={className || "modern-btn btn-print"} 
+        className={className || "btn-print-modern"} 
         onClick={handlePrint}
         disabled={printing}
         type="button"
       >
-        {printing ? '🖨️ Imprimiendo...' : '🖨️ Imprimir Cierre de Caja'}
+        <FiPrinter className="btn-icon" />
+        {printing ? 'Imprimiendo...' : 'Imprimir'}
       </button>
       
       {error && (
-        <div style={{
-          marginTop: '10px',
-          padding: '10px',
-          background: 'rgba(239, 68, 68, 0.15)',
-          border: '1px solid rgba(239, 68, 68, 0.4)',
-          borderRadius: '8px',
-          color: '#fecaca',
-          fontSize: '13px'
-        }}>
-          ⚠️ {error}
+        <div className="print-error">
+          <FiAlertCircle size={14} />
+          <span>{error}</span>
+        </div>
+      )}
+      
+      {success && (
+        <div className="print-success">
+          <FiCheckCircle size={14} />
+          <span>{success}</span>
         </div>
       )}
     </div>

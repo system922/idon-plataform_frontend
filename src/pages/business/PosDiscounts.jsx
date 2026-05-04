@@ -143,7 +143,7 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
       try {
         const [categoriesRes, productsRes] = await Promise.all([
           fetchWithAuth('/api/categories'),
-          fetchWithAuth('/api/products?limit=100')
+          fetchWithAuth('/api/products')
         ]);
         
         if (categoriesRes.ok) {

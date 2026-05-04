@@ -14,7 +14,7 @@ import AuditLogs           from '../pages/business/AuditPage';
 
 
 import CloseCashPage       from '../pages/business/PosCashRegisterPage.jsx';
-import AperturaCajaPage    from '../pages/business/AperturaCajaPage.jsx';
+import AperturaCajaPage    from '../pages/business/PosAperturaCajaPage.jsx';
 import ReceiptPrint        from '../pages/business/ReceiptPrintPage';
 import Checkout            from '../pages/business/PosCheckoutPage';
 import PosDiscounts from '../pages/business/PosDiscounts.jsx';
@@ -93,7 +93,7 @@ export const businessRoutes = (
     {/* ────────────────────────────────────────────────
         PUNTO DE VENTA  /app/pos
     ──────────────────────────────────────────────── */}
-    <Route path="pos/pos.cash_register"          element={<CloseCashPage />} />
+    
     <Route path="pos/apertura-caja"              element={<AperturaCajaPage onAperturaCompleta={() => {}} />} />
     <Route path="pos/pos.einvoicing"             element={<EinvoicingInvoicesPage />} />
     <Route path="pos/pos.receipt_print"          element={<ReceiptPrint />} />

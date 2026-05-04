@@ -9,7 +9,7 @@ import {
   FiChevronDown, FiLogOut, FiUser, FiAlertCircle,
   FiGrid, FiBarChart2, FiBriefcase, FiLayers,
   FiCreditCard, FiUsers, FiSettings, FiChevronUp,
-  FiShield, FiMenu,
+  FiShield, FiMenu, FiLock, FiUnlock,
 } from 'react-icons/fi';
 import '../styles/SidebarModern.css';
 
@@ -195,18 +195,34 @@ function UserCard({ user, onLogout, isCollapsed, onMobileClose }) {
 /* ─────────────────────────────────────────────
    SIDEBAR PRINCIPAL
 ───────────────────────────────────────────── */
-export default function SidebarModern({ user, menu, onLogout, collapsed, setCollapsed, onMobileClose }) {
+export default function SidebarModern({ 
+  user, 
+  menu, 
+  onLogout, 
+  collapsed, 
+  setCollapsed, 
+  onMobileClose,
+  onCerrarCaja,      // 👈 NUEVA PROp
+  onAbrirCaja,       // 👈 NUEVA PROp
+  aperturaHecha      // 👈 NUEVA PROp
+}) {
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState({});
   const [logoError, setLogoError] = useState(false);
 
+  // Filtrar el menú para no mostrar duplicados de apertura/cierre
   const sidebarMenu = Array.isArray(menu)
-    ? menu.map(section =>
-        section.subitems
-          ? { section: section.label, icon: section.icon, items: section.subitems }
-          : section
-      )
+    ? menu
+        .filter(section => {
+          const label = section.label || section.section || '';
+          return label !== 'Cerrar Caja' && label !== 'Abrir Caja' && label !== 'Cierre de Caja';
+        })
+        .map(section =>
+          section.subitems
+            ? { section: section.label, icon: section.icon, items: section.subitems }
+            : section
+        )
     : [];
 
   const handleToggle   = (key) => setExpandedSections(p => ({ ...p, [key]: !p[key] }));
@@ -216,13 +232,25 @@ export default function SidebarModern({ user, menu, onLogout, collapsed, setColl
   };
   const currentPath    = location.pathname;
 
+  // Manejadores para caja
+  const handleAbrirCajaClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onAbrirCaja) onAbrirCaja();
+  };
+
+  const handleCerrarCajaClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onCerrarCaja) onCerrarCaja();
+  };
+
   return (
     <div className={`sidebar-modern ${collapsed ? 'collapsed' : ''}`}>
 
       {/* ── HEADER / LOGO ── */}
       <div className={`sidebar-header ${collapsed ? 'collapsed-header' : ''}`}>
         <div className="sidebar-logo-block">
-          {/* Logo IDON con fallback a letra "I" */}
           <div className="sidebar-logo-icon">
             {!logoError ? (
               <img
@@ -274,6 +302,33 @@ export default function SidebarModern({ user, menu, onLogout, collapsed, setColl
           <div className="sidebar-empty">
             <FiAlertCircle size={22} />
             {!collapsed && <p>Sin módulos configurados</p>}
+          </div>
+        )}
+
+        {/* ── SEPARADOR ── */}
+        <div className="sidebar-divider-custom"></div>
+
+        {/* ── BOTÓN ABRIR CAJA (solo si no hay apertura) ── */}
+        {!aperturaHecha && onAbrirCaja && (
+          <div
+            className="menu-item sidebar-caja-abrir"
+            onClick={handleAbrirCajaClick}
+            title={collapsed ? 'Abrir Caja' : ''}
+          >
+            <span className="menu-icon"><FiUnlock size={17} /></span>
+            {!collapsed && <span className="menu-label">Abrir Caja</span>}
+          </div>
+        )}
+
+        {/* ── BOTÓN CERRAR CAJA (solo si hay apertura) ── */}
+        {aperturaHecha && onCerrarCaja && (
+          <div
+            className="menu-item sidebar-caja-cerrar"
+            onClick={handleCerrarCajaClick}
+            title={collapsed ? 'Cerrar Caja' : ''}
+          >
+            <span className="menu-icon"><FiLock size={17} /></span>
+            {!collapsed && <span className="menu-label">Cuadrar Caja</span>}
           </div>
         )}
       </div>

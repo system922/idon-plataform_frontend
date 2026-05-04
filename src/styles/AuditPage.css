@@ -1,0 +1,440 @@
+/* ──────────────────────────────────────────────────────────────
+   AUDIT LOG PAGE - TEMA OSCURO CONSISTENTE
+   ────────────────────────────────────────────────────────────── */
+
+/* Header con acciones */
+.audit-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Botón de filtro */
+.filter-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: #a0a0b8;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(249, 115, 22, 0.4);
+  color: #f97316;
+}
+
+.filter-toggle-btn.active {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: #f97316;
+  color: #f97316;
+}
+
+/* Barra de filtro */
+.audit-filter-bar {
+  background: #1f1f24;
+  border: 1px solid #26272b;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  animation: filterSlideDown 0.3s ease-out;
+}
+
+@keyframes filterSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #a0a0b8;
+}
+
+.filter-date-input {
+  padding: 8px 12px;
+  background: #18181b;
+  border: 1px solid #26272b;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-date-input:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+}
+
+.filter-clear-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #f87171;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
+
+.filter-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+}
+
+.filter-active {
+  color: #f97316;
+}
+
+.filter-active strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+.filter-all {
+  color: #7a7a96;
+}
+
+.filter-count {
+  color: #10b981;
+  font-weight: 600;
+}
+
+/* Grid de tarjetas */
+.audit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* Tarjeta individual */
+.audit-card {
+  background: #18181b;
+  border: 1px solid #26272b;
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.25s ease;
+  cursor: default;
+}
+
+.audit-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Header de la tarjeta */
+.audit-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+/* Ícono de la acción */
+.audit-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.audit-card-icon svg {
+  width: 22px;
+  height: 22px;
+  color: white;
+}
+
+/* Información de la acción */
+.audit-card-info {
+  flex: 1;
+}
+
+.audit-card-action {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.audit-card-date {
+  font-size: 12px;
+  color: #7a7a96;
+  font-weight: 500;
+}
+
+/* Usuario */
+.audit-card-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #a0a0b8;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.audit-card-user svg {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+/* Descripción */
+.audit-card-description {
+  font-size: 13px;
+  color: #e0e0e8;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.audit-card-description strong {
+  color: #10b981;
+  font-weight: 700;
+}
+
+/* Monto */
+.audit-card-amount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.audit-card-amount strong {
+  font-size: 16px;
+  font-weight: 800;
+  margin-left: auto;
+}
+
+/* Estado vacío */
+.audit-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px;
+  background: #18181b;
+  border: 1.5px solid #26272b;
+  border-radius: 16px;
+  color: #7a7a96;
+}
+
+.audit-empty-icon {
+  display: block;
+  margin: 0 auto 16px;
+  opacity: 0.3;
+  color: #666;
+}
+
+.audit-empty span {
+  font-size: 14px;
+  color: #888;
+}
+
+/* Alertas */
+.alert {
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  border-left: 4px solid;
+  animation: alertSlideIn 0.4s ease-out;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.alert-error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border-color: #ef4444;
+}
+
+@keyframes alertSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Botón de actualizar */
+.dashboard-refresh-btn-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(249, 115, 22, 0.05) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  border-radius: 10px;
+  color: #f97316;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  letter-spacing: 0.3px;
+}
+
+.dashboard-refresh-btn-header:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.25) 0%, rgba(249, 115, 22, 0.15) 100%);
+  border-color: #f97316;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
+  color: #fb923c;
+}
+
+.dashboard-refresh-btn-header:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .audit-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .audit-card {
+    padding: 16px;
+  }
+  
+  .audit-card-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .audit-card-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .audit-card-action {
+    font-size: 14px;
+  }
+  
+  .filter-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-group {
+    justify-content: space-between;
+  }
+  
+  .filter-clear-btn {
+    align-self: flex-start;
+  }
+  
+  .audit-header-actions {
+    gap: 8px;
+  }
+  
+  .filter-toggle-btn span {
+    display: none;
+  }
+  
+  .filter-toggle-btn {
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .audit-card {
+    padding: 14px;
+  }
+  
+  .audit-card-icon {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .audit-card-action {
+    font-size: 13px;
+  }
+  
+  .dashboard-refresh-btn-header span {
+    display: none;
+  }
+  
+  .dashboard-refresh-btn-header {
+    padding: 8px 12px;
+  }
+  
+  .filter-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .filter-date-input {
+    width: 100%;
+  }
+}

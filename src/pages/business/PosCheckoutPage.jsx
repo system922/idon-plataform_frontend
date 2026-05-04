@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, DollarSign, CreditCard, Divide, Users } from 'react-feather';
+import { Check, X, DollarSign, Users } from 'react-feather';
 import PageTemplate from '../../components/PageTemplate';
+import {
+  FiX,
+  FiGrid,
+  FiCreditCard,
+  FiSmartphone,
+  FiPlus,
+  FiUsers as FiUsersIcon,
+  FiCheck
+} from 'react-icons/fi';
+import { FaHandHoldingDollar } from "react-icons/fa6";
+import { BsCurrencyExchange } from "react-icons/bs";
+import { FaMoneyBillTransfer } from "react-icons/fa6";
+import { CiWarning } from "react-icons/ci";
+import { IoFileTrayFull } from "react-icons/io5";
 import OpenDrawerButton from '../../components/OpenDrawerButton';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
 import { fetchWithAuth } from '../../config/apiBase';
@@ -10,8 +24,8 @@ import '../../styles/CheckoutModern.css';
 
 export default function PosCheckoutPage() {
   const { selectedBusiness } = useBusinessContext();
-  const { printerConnected, printerLoading, printerError } = useQzTray();
-  const { print, getPrinterConfig, openCashDrawer } = usePrinterService();
+  const { printerError } = useQzTray();
+  const { print, getPrinterConfig } = usePrinterService();
 
   const [orders, setOrders] = useState([]);
   const [bizInfo, setBizInfo] = useState(null);
@@ -37,15 +51,12 @@ export default function PosCheckoutPage() {
   const [refCard, setRefCard] = useState('');
   const [refTransfer, setRefTransfer] = useState('');
   const [mixtoManual, setMixtoManual] = useState(new Set());
-  
-  // Control de cuenta dividida
+
   const [facturaIndividual, setFacturaIndividual] = useState(false);
   const [clientesDivididos, setClientesDivididos] = useState([]);
   const [pagosRegistrados, setPagosRegistrados] = useState([]);
   const [metodoPagoNormal, setMetodoPagoNormal] = useState('cash');
   const [totalPagadoAcumulado, setTotalPagadoAcumulado] = useState(0);
-
-  const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
   useEffect(() => {
     loadOrders();
@@ -131,7 +142,6 @@ export default function PosCheckoutPage() {
         if (data?.nombre || data?.name) {
           const nombre = data.nombre || data.name;
           const email = data.email || '';
-          
           if (esParaComensal && comensalId) {
             actualizarComensal(comensalId, 'nombre', nombre);
             actualizarComensal(comensalId, 'email', email);
@@ -163,13 +173,11 @@ export default function PosCheckoutPage() {
       const proxyUrl = 'https://infoplacas.herokuapp.com/';
       const targetUrl = 'https://si.secap.gob.ec/sisecap/logeo_web/json/busca_persona_registro_civil.php';
       const postData = new URLSearchParams({ documento: cedula10, tipo: '1' });
-
       const response = await fetch(proxyUrl + targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: postData
       });
-
       const textResponse = await response.text();
       if (textResponse) {
         const json = JSON.parse(textResponse);
@@ -197,17 +205,10 @@ export default function PosCheckoutPage() {
           return existe[0].id;
         }
       }
-
       const res = await fetchWithAuth('/api/customers', {
         method: 'POST',
-        body: JSON.stringify({
-          nombre,
-          cedula: documento,
-          email,
-          tipo_documento
-        }),
+        body: JSON.stringify({ nombre, cedula: documento, email, tipo_documento }),
       });
-
       if (res.ok) {
         const cliente = await res.json();
         return cliente.id;
@@ -254,7 +255,7 @@ export default function PosCheckoutPage() {
     else newManual.add(field);
     setMixtoManual(newManual);
 
-    const vals = {
+    let vals = {
       cash: field === 'cash' ? value : (parseFloat(amountPaid) || 0),
       card: field === 'card' ? value : (parseFloat(cardPaid) || 0),
       transfer: field === 'transfer' ? value : (parseFloat(transferPaid) || 0),
@@ -290,8 +291,7 @@ export default function PosCheckoutPage() {
     setTransferPaidRaw(String(Math.round(vals.transfer * 100)));
   };
 
-  // ── Funciones para cuenta dividida ────────────────────────────────────────
-  
+  // Funciones para cuenta dividida
   const agregarComensal = () => {
     setClientesDivididos([
       ...clientesDivididos,
@@ -303,7 +303,10 @@ export default function PosCheckoutPage() {
         items: [],
         metodoPago: 'cash',
         montoRecibido: 0,
-        referencia: ''
+        referencia: '',
+        cashAmount: 0,
+        cardAmount: 0,
+        transferAmount: 0,
       }
     ]);
   };
@@ -321,9 +324,24 @@ export default function PosCheckoutPage() {
   };
 
   const actualizarComensal = (id, campo, valor) => {
-    setClientesDivididos(prev => prev.map(comensal => 
+    setClientesDivididos(prev => prev.map(comensal =>
       comensal.id === id ? { ...comensal, [campo]: valor } : comensal
     ));
+  };
+
+  const actualizarMontoMixtoComensal = (id, tipo, valor) => {
+    setClientesDivididos(prev => prev.map(comensal => {
+      if (comensal.id === id) {
+        const newComensal = { ...comensal };
+        if (tipo === 'cash') newComensal.cashAmount = valor;
+        if (tipo === 'card') newComensal.cardAmount = valor;
+        if (tipo === 'transfer') newComensal.transferAmount = valor;
+        const totalPagado = (newComensal.cashAmount || 0) + (newComensal.cardAmount || 0) + (newComensal.transferAmount || 0);
+        newComensal.montoRecibido = totalPagado;
+        return newComensal;
+      }
+      return comensal;
+    }));
   };
 
   const asignarItemsAComensal = (idComensal) => {
@@ -331,19 +349,16 @@ export default function PosCheckoutPage() {
       setError('No hay productos seleccionados');
       return;
     }
-    
     const itemsNoPagados = selectedItems.filter(itemId => {
-      const item = selectedOrder.items.find(i => i.id === itemId);
+      const item = selectedOrder?.items.find(i => i.id === itemId);
       return item && !item.paid;
     });
-    
     if (itemsNoPagados.length === 0) {
       setError('Los productos seleccionados ya fueron pagados');
       return;
     }
-    
-    setClientesDivididos(prev => prev.map(comensal => 
-      comensal.id === idComensal 
+    setClientesDivididos(prev => prev.map(comensal =>
+      comensal.id === idComensal
         ? { ...comensal, items: [...comensal.items, ...itemsNoPagados] }
         : comensal
     ));
@@ -353,8 +368,8 @@ export default function PosCheckoutPage() {
   };
 
   const quitarItemDeComensal = (idComensal, itemId) => {
-    setClientesDivididos(prev => prev.map(comensal => 
-      comensal.id === idComensal 
+    setClientesDivididos(prev => prev.map(comensal =>
+      comensal.id === idComensal
         ? { ...comensal, items: comensal.items.filter(id => id !== itemId) }
         : comensal
     ));
@@ -367,7 +382,9 @@ export default function PosCheckoutPage() {
       setError('Este producto ya fue pagado');
       return;
     }
-    setSelectedItems(prev => prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]);
+    setSelectedItems(prev =>
+      prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
+    );
   };
 
   const getSplitSubtotal = () => {
@@ -388,74 +405,58 @@ export default function PosCheckoutPage() {
 
   const calcularSubtotalComensal = (comensal) => {
     if (!selectedOrder) return 0;
-    let subtotal = 0;
-    comensal.items.forEach(itemId => {
+    return comensal.items.reduce((sum, itemId) => {
       const item = selectedOrder.items.find(i => i.id === itemId);
-      if (item && !item.paid) {
-        subtotal += (Number(item.selling_price) || Number(item.unit_price)) * item.quantity;
-      }
-    });
-    return subtotal;
+      return sum + (item ? (Number(item.selling_price) || Number(item.unit_price)) * item.quantity : 0);
+    }, 0);
   };
 
   const calcularIVAComensal = (comensal) => {
     if (!selectedOrder) return 0;
-    let iva = 0;
-    comensal.items.forEach(itemId => {
+    return comensal.items.reduce((sum, itemId) => {
       const item = selectedOrder.items.find(i => i.id === itemId);
-      if (item && !item.paid) {
-        iva += (Number(item.tax_rate) || 0) * item.quantity;
-      }
-    });
-    return iva;
+      return sum + (item ? (Number(item.tax_rate) || 0) * item.quantity : 0);
+    }, 0);
   };
 
-  const calcularTotalComensal = (comensal) => {
-    return calcularSubtotalComensal(comensal) + calcularIVAComensal(comensal);
-  };
+  const calcularTotalComensal = (comensal) => calcularSubtotalComensal(comensal) + calcularIVAComensal(comensal);
 
   const subtotalOrden = selectedOrder ? Number(selectedOrder.subtotal || 0) : 0;
   const ivaOrden = selectedOrder ? Number(selectedOrder.tax_amount || 0) : 0;
   const totalOrden = selectedOrder ? Number(selectedOrder.total || 0) : 0;
   const changeNormal = Math.max(0, (parseFloat(amountPaid) || 0) - totalOrden);
+  const totalPagadoMixto = (parseFloat(amountPaid) || 0) + (parseFloat(cardPaid) || 0) + (parseFloat(transferPaid) || 0);
+  const faltanteMixto = Math.max(0, totalOrden - totalPagadoMixto);
+  const cambioMixto = Math.max(0, totalPagadoMixto - totalOrden);
 
-  // ── FACTURA ELECTRÓNICA ─────────────────────────────────────────────────
+  // Factura electrónica
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
   async function emitirFactura(order, custCedula, custNombre, method) {
-    const cedula = custCedula && custCedula.trim() !== '' ? custCedula : '9999999999';
+    const cedula = custCedula?.trim() || '9999999999';
     const isCF = cedula === '9999999999' || cedula === '9999999999999';
     const isRUC = !isCF && cedula.length === 13;
     const tipoId = isCF ? '07' : isRUC ? '04' : '05';
     const email = foundCliente?.email || clienteEmail.trim() || null;
 
-    console.log('=== EMITIR FACTURA ===');
-    console.log('Order ID:', order.id);
-    console.log('Items a facturar:', order.items.length);
-
     const itemsPayload = (order.items || []).map(item => {
       const qty = item.quantity || 1;
       const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
       const montoIVA = Number(item.tax_rate) || 0;
-      
       return {
         code: item.product_code || 'PROD',
         description: item.product_name || 'Producto',
-        qty: qty,
+        qty,
         unit_price: precioSinIVA,
         subtotal: qty * precioSinIVA,
         tax_amount: qty * montoIVA
       };
     });
-
-    const subtotalTotal = itemsPayload.reduce((sum, i) => sum + i.subtotal, 0);
-    const ivaTotal = itemsPayload.reduce((sum, i) => sum + i.tax_amount, 0);
+    const subtotalTotal = itemsPayload.reduce((s, i) => s + i.subtotal, 0);
+    const ivaTotal = itemsPayload.reduce((s, i) => s + i.tax_amount, 0);
     const totalFactura = subtotalTotal + ivaTotal;
 
-    if (itemsPayload.length === 0) {
-      console.error('❌ No hay items para facturar');
-      return null;
-    }
+    if (itemsPayload.length === 0) return null;
 
     const payload = {
       order_id: order.id,
@@ -466,54 +467,41 @@ export default function PosCheckoutPage() {
         tipo_identificacion: tipoId,
       },
       items: itemsPayload,
-      subtotal: Number(subtotalTotal).toFixed(2),
-      iva_amount: Number(ivaTotal).toFixed(2),
-      total: Number(totalFactura).toFixed(2),
+      subtotal: subtotalTotal.toFixed(2),
+      iva_amount: ivaTotal.toFixed(2),
+      total: totalFactura.toFixed(2),
       forma_pago: FORMA_PAGO_MAP[method] || '01',
     };
 
     try {
-      const result = await fetchWithAuth('/api/einvoicing/invoices/emit', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-      
-      if (result && result.invoice_number) {
-        console.log('✅ Factura emitida:', result.invoice_number);
-        return result.invoice_number;
-      }
-      return null;
+      const result = await fetchWithAuth('/api/einvoicing/invoices/emit', { method: 'POST', body: JSON.stringify(payload) });
+      return result?.invoice_number || null;
     } catch (e) {
-      console.error('❌ Error al emitir factura:', e);
+      console.error('Error al emitir factura:', e);
       return null;
     }
   }
 
-  // ── IMPRESIÓN ──────────────────────────────────────────────────────────
+  // Impresión
   const imprimirTicket = async (order, paid, cambio, invoiceNumber = null, splitMode = null, customerName = null) => {
     try {
       const printerConfig = await getPrinterConfig('printer_main');
-      
       const itemsToPrint = (order.items || []).map(item => {
         const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
         const montoIVA = Number(item.tax_rate) || 0;
-        const subtotal = precioSinIVA * item.quantity;
-        const ivaTotal = montoIVA * item.quantity;
-        
         return {
           description: item.product_name || 'Producto',
           quantity: item.quantity,
           price: precioSinIVA,
-          total: subtotal,
-          tax_amount: ivaTotal
+          total: precioSinIVA * item.quantity,
+          tax_amount: montoIVA * item.quantity
         };
       });
-      
-      const printSubtotal = itemsToPrint.reduce((sum, i) => sum + i.total, 0);
-      const printTax = itemsToPrint.reduce((sum, i) => sum + i.tax_amount, 0);
+      const printSubtotal = itemsToPrint.reduce((s, i) => s + i.total, 0);
+      const printTax = itemsToPrint.reduce((s, i) => s + i.tax_amount, 0);
       const printTotal = printSubtotal + printTax;
-      
-      const result = await print('printer_main', 'invoice', {
+
+      await print('printer_main', 'invoice', {
         bizInfo,
         invoice: { number: invoiceNumber || order.order_number || order.id, date: new Date().toISOString() },
         customer: { name: customerName || clienteNombre || 'CONSUMIDOR FINAL', id: clienteCedula || '9999999999' },
@@ -525,19 +513,13 @@ export default function PosCheckoutPage() {
         payment: { cash: paid, card: 0, other: 0 },
         printerFooter: printerConfig.footer,
       }, true);
-      
-      if (result.success) {
-        setSuccess(result.message);
-      } else {
-        setError(result.error);
-      }
     } catch (err) {
       console.error('Error imprimiendo:', err);
       setError('Error al imprimir');
     }
   };
 
-  // ── COBRAR COMENSAL (VERSIÓN CORREGIDA) ────────────────────────────────────
+  // Cobrar comensal
   const cobrarComensal = async (comensal) => {
     if (comensal.items.length === 0) {
       setError('Este comensal no tiene productos asignados');
@@ -545,19 +527,19 @@ export default function PosCheckoutPage() {
     }
 
     const totalComensal = calcularTotalComensal(comensal);
-    
+
     if (comensal.metodoPago === 'cash' && comensal.montoRecibido < totalComensal) {
       setError(`Monto insuficiente. Total: ${fmt(totalComensal)}, Recibido: ${fmt(comensal.montoRecibido)}`);
       return;
     }
+    if (comensal.metodoPago === 'mixto' && comensal.montoRecibido < totalComensal) {
+      setError(`Monto insuficiente. Total pagado: ${fmt(comensal.montoRecibido)}. Total: ${fmt(totalComensal)}`);
+      return;
+    }
 
     setPrintLoading(true);
-    
     try {
-      let cedula = '9999999999';
-      let nombre = 'CONSUMIDOR FINAL';
-      let email = null;
-      
+      let cedula = '9999999999', nombre = 'CONSUMIDOR FINAL', email = null;
       if (facturaIndividual) {
         cedula = comensal.cedula?.trim() || '9999999999';
         nombre = comensal.nombre?.trim() || 'CONSUMIDOR FINAL';
@@ -567,232 +549,139 @@ export default function PosCheckoutPage() {
         nombre = clienteNombre?.trim() || 'CONSUMIDOR FINAL';
         email = clienteEmail?.trim() || null;
       }
-      
       let clienteId = await guardarCliente(cedula, nombre, email);
-      
+
+      let payments = [];
+      if (comensal.metodoPago === 'cash') {
+        payments = [{ method: 'cash', amount: comensal.montoRecibido }];
+      } else if (comensal.metodoPago === 'card') {
+        payments = [{ method: 'card', amount: totalComensal, reference_number: comensal.referencia }];
+      } else if (comensal.metodoPago === 'transfer') {
+        payments = [{ method: 'transfer', amount: totalComensal, reference_number: comensal.referencia }];
+      } else if (comensal.metodoPago === 'mixto') {
+        if (comensal.cashAmount > 0) payments.push({ method: 'cash', amount: comensal.cashAmount });
+        if (comensal.cardAmount > 0) payments.push({ method: 'card', amount: comensal.cardAmount, reference_number: comensal.referencia || null });
+        if (comensal.transferAmount > 0) payments.push({ method: 'transfer', amount: comensal.transferAmount, reference_number: comensal.referencia || null });
+      }
+
       await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/pay-items`, {
         method: 'POST',
         body: JSON.stringify({
           item_ids: comensal.items,
           amount_paid: totalComensal,
           payment_method: comensal.metodoPago,
+          payments,
           cliente_id: clienteId,
-          reference_number: comensal.metodoPago !== 'cash' ? (comensal.referencia || null) : null,
+          reference_number: (comensal.metodoPago !== 'cash' && comensal.metodoPago !== 'mixto') ? (comensal.referencia || null) : null,
           notes: `${orderNotes} - ${nombre}`
         }),
       });
-      
+
       const nuevoTotalPagado = totalPagadoAcumulado + totalComensal;
       setTotalPagadoAcumulado(nuevoTotalPagado);
-      
+
       if (facturaIndividual) {
-        const partialOrder = {
-          ...selectedOrder,
-          items: selectedOrder.items.filter(i => comensal.items.includes(i.id))
-        };
+        const partialOrder = { ...selectedOrder, items: selectedOrder.items.filter(i => comensal.items.includes(i.id)) };
         const invoiceNum = await emitirFactura(partialOrder, cedula, nombre, 'split');
         await imprimirTicket(partialOrder, totalComensal, comensal.montoRecibido - totalComensal, invoiceNum, 'split', nombre);
         setSuccess(`Factura generada para ${nombre}`);
       } else {
-        // Guardar los items COMPLETOS en el historial
-        const itemsCompletos = comensal.items.map(itemId => {
-          const itemCompleto = selectedOrder?.items?.find(i => i.id === itemId);
-          return itemCompleto;
-        }).filter(i => i);
-        
-        setPagosRegistrados(prev => [...prev, {
-          cliente: { cedula, nombre, email },
-          items: itemsCompletos,
-          total: totalComensal,
-          metodoPago: comensal.metodoPago
-        }]);
+        const itemsCompletos = comensal.items.map(itemId => selectedOrder?.items?.find(i => i.id === itemId)).filter(i => i);
+        setPagosRegistrados(prev => [...prev, { cliente: { cedula, nombre, email }, items: itemsCompletos, total: totalComensal, metodoPago: comensal.metodoPago, payments }]);
         setSuccess(`Pago registrado para ${nombre}`);
       }
-      
+
       setClientesDivididos(prev => prev.filter(c => c.id !== comensal.id));
-      
       const ordenActualizada = await recargarOrden();
-      
       const pagoTotalCompletado = nuevoTotalPagado === totalOrden;
-      
+
       if (pagoTotalCompletado) {
-        // Recolectar TODOS los items desde pagosRegistrados
         let itemsFinales = [];
-        for (const pago of pagosRegistrados) {
-          if (pago.items && pago.items.length > 0) {
-            itemsFinales.push(...pago.items);
-          }
-        }
-        
-        // También incluir los items del pago actual si no se agregaron aún
+        for (const pago of pagosRegistrados) if (pago.items) itemsFinales.push(...pago.items);
         if (!facturaIndividual) {
-          const itemsActuales = comensal.items.map(itemId => {
-            return selectedOrder?.items?.find(i => i.id === itemId);
-          }).filter(i => i);
-          for (const item of itemsActuales) {
-            if (!itemsFinales.some(i => i.id === item.id)) {
-              itemsFinales.push(item);
-            }
-          }
+          const itemsActuales = comensal.items.map(itemId => selectedOrder?.items?.find(i => i.id === itemId)).filter(i => i);
+          itemsActuales.forEach(item => { if (!itemsFinales.some(i => i.id === item.id)) itemsFinales.push(item); });
         }
-        
-        console.log('📦 Items finales para factura:', itemsFinales.length);
-        
         if (itemsFinales.length > 0) {
           const ordenCompleta = { ...selectedOrder, items: itemsFinales };
-          const clientePrincipal = { 
-            cedula: clienteCedula || '9999999999', 
-            nombre: clienteNombre || 'CONSUMIDOR FINAL' 
-          };
-          
-          const invoiceNum = await emitirFactura(ordenCompleta, clientePrincipal.cedula, clientePrincipal.nombre, 'split');
+          const invoiceNum = await emitirFactura(ordenCompleta, clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', 'split');
           await imprimirTicket(ordenCompleta, totalOrden, 0, invoiceNum, 'split', 'FACTURA FINAL');
-          setSuccess('✅ Factura final generada con todos los productos');
         }
-        
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
-          body: JSON.stringify({
-            status: 'paid',
-            payment_method: 'split',
-            amount_paid: totalOrden,
-            notes: orderNotes
-          }),
+          body: JSON.stringify({ status: 'paid', payment_method: 'split', amount_paid: totalOrden, notes: orderNotes })
         });
-        
         setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
         setSelectedOrder(null);
         setClientesDivididos([]);
         setPagosRegistrados([]);
         setTotalPagadoAcumulado(0);
         setSuccess('✅ Orden completada y factura final generada');
-        
       } else if (ordenActualizada) {
-        const productosPendientes = ordenActualizada.items.filter(i => !i.paid);
         const comensalesPendientes = clientesDivididos.filter(c => c.id !== comensal.id);
         if (comensalesPendientes.length === 0) {
-          setClientesDivididos([{
-            id: Date.now(),
-            cedula: '',
-            nombre: '',
-            email: '',
-            items: [],
-            metodoPago: 'cash',
-            montoRecibido: 0,
-            referencia: ''
-          }]);
+          setClientesDivididos([{ id: Date.now(), cedula: '', nombre: '', email: '', items: [], metodoPago: 'cash', montoRecibido: 0, referencia: '', cashAmount: 0, cardAmount: 0, transferAmount: 0 }]);
         }
         setSelectedItems([]);
-        setSuccess(`Pago completado. Quedan ${productosPendientes.length} productos por pagar.`);
+        setSuccess(`Pago completado. Quedan ${ordenActualizada.items.filter(i => !i.paid).length} productos por pagar.`);
       }
-      
     } catch (err) {
-      console.error('Error al cobrar comensal:', err);
+      console.error(err);
       setError(err.message);
     } finally {
       setPrintLoading(false);
     }
   };
 
-  // ── PAGO NORMAL ──────────────────────────────────────────────────────────
+  // PAGO NORMAL
   const pagoNormal = async () => {
     setPrintLoading(true);
     try {
       let cedula = clienteCedula?.trim() || '9999999999';
       let nombre = clienteNombre?.trim() || 'CONSUMIDOR FINAL';
       let clienteId = await guardarCliente(cedula, nombre, clienteEmail?.trim() || null);
-      
+      let invoiceNum = null;
+
       if (metodoPagoNormal === 'cash') {
         const paid = parseFloat(amountPaid) || 0;
-        if (paid < totalOrden) {
-          setError(`Monto insuficiente. Total: ${fmt(totalOrden)}`);
-          setPrintLoading(false);
-          return;
-        }
+        if (paid < totalOrden) throw new Error(`Monto insuficiente. Total: ${fmt(totalOrden)}`);
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
-          body: JSON.stringify({
-            status: 'paid',
-            payment_method: 'cash',
-            amount_paid: totalOrden,
-            customer_id: clienteId,
-            customer_name: nombre,
-            customer_document_number: cedula,
-            notes: orderNotes
-          }),
+          body: JSON.stringify({ status: 'paid', payment_method: 'cash', amount_paid: totalOrden, customer_id: clienteId, customer_name: nombre, customer_document_number: cedula, notes: orderNotes })
         });
-        const invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'cash');
+        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'cash');
         await imprimirTicket(selectedOrder, totalOrden, paid - totalOrden, invoiceNum);
       } else if (metodoPagoNormal === 'card') {
-        if (!refCard) {
-          setError('Ingrese la referencia de la tarjeta');
-          setPrintLoading(false);
-          return;
-        }
+        if (!refCard) throw new Error('Ingrese la referencia de la tarjeta');
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
-          body: JSON.stringify({
-            status: 'paid',
-            payment_method: 'card',
-            amount_paid: totalOrden,
-            reference_number: refCard,
-            customer_id: clienteId,
-            customer_name: nombre,
-            customer_document_number: cedula,
-            notes: orderNotes
-          }),
+          body: JSON.stringify({ status: 'paid', payment_method: 'card', amount_paid: totalOrden, reference_number: refCard, customer_id: clienteId, customer_name: nombre, customer_document_number: cedula, notes: orderNotes })
         });
-        const invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'card');
+        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'card');
         await imprimirTicket(selectedOrder, totalOrden, 0, invoiceNum);
       } else if (metodoPagoNormal === 'transfer') {
-        if (!refTransfer) {
-          setError('Ingrese la referencia de la transferencia');
-          setPrintLoading(false);
-          return;
-        }
+        if (!refTransfer) throw new Error('Ingrese la referencia de la transferencia');
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
-          body: JSON.stringify({
-            status: 'paid',
-            payment_method: 'transfer',
-            amount_paid: totalOrden,
-            reference_number: refTransfer,
-            customer_id: clienteId,
-            customer_name: nombre,
-            customer_document_number: cedula,
-            notes: orderNotes
-          }),
+          body: JSON.stringify({ status: 'paid', payment_method: 'transfer', amount_paid: totalOrden, reference_number: refTransfer, customer_id: clienteId, customer_name: nombre, customer_document_number: cedula, notes: orderNotes })
         });
-        const invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'transfer');
+        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'transfer');
         await imprimirTicket(selectedOrder, totalOrden, 0, invoiceNum);
       } else if (metodoPagoNormal === 'mixto') {
         const cashAmt = parseFloat(amountPaid) || 0;
         const cardAmt = parseFloat(cardPaid) || 0;
         const transferAmt = parseFloat(transferPaid) || 0;
         const cashNeeded = Math.max(0, totalOrden - cardAmt - transferAmt);
-        if (cashAmt < cashNeeded) {
-          setError(`Falta ${fmt(cashNeeded - cashAmt)} en efectivo`);
-          setPrintLoading(false);
-          return;
-        }
+        if (cashAmt < cashNeeded) throw new Error(`Falta ${fmt(cashNeeded - cashAmt)} en efectivo`);
         const mixtoPayments = [];
         if (cashNeeded > 0) mixtoPayments.push({ method: 'cash', amount: cashNeeded });
         if (cardAmt > 0) mixtoPayments.push({ method: 'card', amount: cardAmt, reference_number: refCard });
         if (transferAmt > 0) mixtoPayments.push({ method: 'transfer', amount: transferAmt, reference_number: refTransfer });
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
-          body: JSON.stringify({
-            status: 'paid',
-            payment_method: 'mixto',
-            amount_paid: totalOrden,
-            payments: mixtoPayments,
-            customer_id: clienteId,
-            customer_name: nombre,
-            customer_document_number: cedula,
-            notes: orderNotes
-          }),
+          body: JSON.stringify({ status: 'paid', payment_method: 'mixto', amount_paid: totalOrden, payments: mixtoPayments, customer_id: clienteId, customer_name: nombre, customer_document_number: cedula, notes: orderNotes })
         });
-        const invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'mixto');
+        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'mixto');
         await imprimirTicket(selectedOrder, totalOrden, cashAmt - cashNeeded, invoiceNum);
       }
       setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
@@ -805,16 +694,15 @@ export default function PosCheckoutPage() {
     }
   };
 
-  // ── RENDER ─────────────────────────────────────────────────────────────────
+  // RENDER
   return (
     <PageTemplate title="Cobrar Orden" subtitle="Cobrar órdenes abiertas, imprimir recibo y abrir caja" backButton>
       <div className="checkout-modern-main">
         <div className="checkout-modern-card">
           {/* Selección de orden y cliente */}
           <div className="cmbx-row">
-            <label className="label">Orden:</label>
-            <select value={selectedOrder?.id || ''} onChange={e => handleSelectOrder(e.target.value)} className="combobox">
-              <option value="">Seleccionar No. Orden</option>
+            <select value={selectedOrder?.id || ''} onChange={e => handleSelectOrder(e.target.value)} className="combobox" style={{ width: '130px' }}>
+              <option value="">No. Orden</option>
               {orders.map(order => (
                 <option key={order.id} value={order.id}>
                   {order.mesa_numero ? `Mesa ${order.mesa_numero}` : order.order_type === 'delivery' ? 'DELIVERY' : 'PARA LLEVAR'} - #{order.order_number || order.id}
@@ -823,40 +711,18 @@ export default function PosCheckoutPage() {
             </select>
 
             {(!modoDividido || (modoDividido && !facturaIndividual)) && (
-              <>
-                <label className="label">Cliente:</label>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-                    <input 
-                      type="text" 
-                      placeholder="Cédula/RUC" 
-                      value={clienteCedula}
-                      onChange={e => setClienteCedula(e.target.value.replace(/\D/g, '').slice(0, 13))}
-                      onBlur={e => onClienteCedulaBlurOrEnter(e, false, null)}
-                      onKeyPress={e => onClienteCedulaBlurOrEnter(e, false, null)}
-                      disabled={!selectedOrder}
-                      style={{ width: 130, padding: 8, borderRadius: 6, border: '1px solid #ccc' }}
-                    />
-                    {clientApiLoading && <div className="spinner-small"></div>}
-                  </div>
-                  <input 
-                    type="text" 
-                    placeholder="Nombre cliente" 
-                    value={clienteNombre}
-                    onChange={e => setClienteNombre(e.target.value)} 
-                    disabled={!selectedOrder}
-                    style={{ width: 220, padding: 8, borderRadius: 6, border: '1px solid #ccc' }}
-                  />
-                  <input 
-                    type="email" 
-                    placeholder="Email (factura)" 
-                    value={clienteEmail}
-                    onChange={e => setClienteEmail(e.target.value)} 
-                    disabled={!selectedOrder}
-                    style={{ width: 200, padding: 8, borderRadius: 6, border: '1px solid #ccc' }}
-                  />
-                </div>
-              </>
+              <div className="cliente-fields">
+                <input type="text" placeholder="No. Cédula/RUC" value={clienteCedula}
+                  onChange={e => setClienteCedula(e.target.value.replace(/\D/g, '').slice(0, 13))}
+                  onBlur={e => onClienteCedulaBlurOrEnter(e, false, null)}
+                  onKeyPress={e => onClienteCedulaBlurOrEnter(e, false, null)}
+                  disabled={!selectedOrder} style={{ width: '135px' }} />
+                {clientApiLoading && <div className="spinner-small"></div>}
+                <input type="text" placeholder="Nombre cliente" value={clienteNombre}
+                  onChange={e => setClienteNombre(e.target.value)} disabled={!selectedOrder} style={{ width: '300px' }} />
+                <input type="email" placeholder="Email (factura)" value={clienteEmail}
+                  onChange={e => setClienteEmail(e.target.value)} disabled={!selectedOrder} style={{ width: '300px' }} />
+              </div>
             )}
             <OpenDrawerButton />
           </div>
@@ -867,72 +733,43 @@ export default function PosCheckoutPage() {
 
           {selectedOrder && (
             <>
-              {/* Botones de modo */}
               <div className="pay-methods">
-                <button className={!modoDividido ? "pay-btn selected" : "pay-btn"} onClick={() => {
-                  setModoDividido(false);
-                  setClientesDivididos([]);
-                  setSelectedItems([]);
-                }}>
+                <button className={!modoDividido ? "pay-btn selected" : "pay-btn"} onClick={() => { setModoDividido(false); setClientesDivididos([]); setSelectedItems([]); }}>
                   <DollarSign size={15} /> Normal
                 </button>
                 <button className={modoDividido ? "pay-btn selected" : "pay-btn"} onClick={() => {
                   setModoDividido(true);
                   setFacturaIndividual(false);
                   if (clientesDivididos.length === 0) {
-                    setClientesDivididos([{
-                      id: Date.now(), cedula: '', nombre: '', email: '', items: [],
-                      metodoPago: 'cash', montoRecibido: 0, referencia: ''
-                    }]);
+                    setClientesDivididos([{ id: Date.now(), cedula: '', nombre: '', email: '', items: [], metodoPago: 'cash', montoRecibido: 0, referencia: '', cashAmount: 0, cardAmount: 0, transferAmount: 0 }]);
                   }
                 }}>
                   <Users size={15} /> Dividir Cuenta
                 </button>
               </div>
 
-              {/* Checkbox para factura individual */}
               {modoDividido && (
                 <div className="factura-opcion">
                   <label>
-                    <input 
-                      type="checkbox" 
-                      checked={facturaIndividual} 
-                      onChange={e => {
-                        setFacturaIndividual(e.target.checked);
-                        setClientesDivididos([{
-                          id: Date.now(), 
-                          cedula: '', 
-                          nombre: '', 
-                          email: '', 
-                          items: [],
-                          metodoPago: 'cash', 
-                          montoRecibido: 0, 
-                          referencia: ''
-                        }]);
-                        setSelectedItems([]);
-                      }} 
-                    />
+                    <input type="checkbox" checked={facturaIndividual} onChange={e => {
+                      setFacturaIndividual(e.target.checked);
+                      setClientesDivididos([{ id: Date.now(), cedula: '', nombre: '', email: '', items: [], metodoPago: 'cash', montoRecibido: 0, referencia: '', cashAmount: 0, cardAmount: 0, transferAmount: 0 }]);
+                      setSelectedItems([]);
+                    }} />
                     <span>📄 Factura INDIVIDUAL por cada comensal</span>
                   </label>
-                  <small>
-                    {facturaIndividual 
-                      ? 'Cada comensal recibe su factura con sus datos' 
-                      : 'Una sola factura al final con los datos del cliente principal'}
-                  </small>
+                  <small>{facturaIndividual ? 'Cada comensal recibe su factura con sus datos' : 'Una sola factura al final con los datos del cliente principal'}</small>
                 </div>
               )}
 
-              {/* Detalle del Pedido */}
               <div className="order-details">
                 <div className="order-head">
                   <b>{selectedOrder.mesa_numero ? `Mesa ${selectedOrder.mesa_numero}` : selectedOrder.order_type} #{selectedOrder.order_number || selectedOrder.id}</b>
-                  {modoDividido && selectedItems.length > 0 && (
-                    <span className="badge">{selectedItems.length} producto(s) seleccionado(s)</span>
-                  )}
+                  {modoDividido && selectedItems.length > 0 && <span className="badge">{selectedItems.length} producto(s) seleccionado(s)</span>}
                 </div>
 
-                {/* MODO NORMAL */}
-                {!modoDividido && (
+                {!modoDividido ? (
+                  // ----- MODO NORMAL -----
                   <>
                     <div className="order-items">
                       {selectedOrder.items.filter(item => !item.paid).map((item, idx) => (
@@ -945,65 +782,68 @@ export default function PosCheckoutPage() {
                     <div className="totals-footer">
                       <div className="sub-iva-total"><span>SUBTOTAL:</span><span>{fmt(subtotalOrden)}</span></div>
                       <div className="sub-iva-total"><span>IVA:</span><span>{fmt(ivaOrden)}</span></div>
-                      <div className="sub-iva-total"><span><strong>TOTAL:</strong></span><span><strong>{fmt(totalOrden)}</strong></span></div>
+                      <div className="sub-iva-total total-row"><span><strong>TOTAL:</strong></span><span className="total-amount"><strong>{fmt(totalOrden)}</strong></span></div>
                     </div>
-
                     <div className="metodo-pago-seleccion">
-                      <button className={metodoPagoNormal === 'cash' ? "selected" : ""} onClick={() => setMetodoPagoNormal('cash')}>💰 Efectivo</button>
-                      <button className={metodoPagoNormal === 'card' ? "selected" : ""} onClick={() => setMetodoPagoNormal('card')}>💳 Tarjeta</button>
-                      <button className={metodoPagoNormal === 'transfer' ? "selected" : ""} onClick={() => setMetodoPagoNormal('transfer')}>🏦 Transferencia</button>
-                      <button className={metodoPagoNormal === 'mixto' ? "selected" : ""} onClick={() => setMetodoPagoNormal('mixto')}>🔄 Mixto</button>
+                      <button className={metodoPagoNormal === 'cash' ? "selected" : ""} onClick={() => setMetodoPagoNormal('cash')}><FaHandHoldingDollar size={20} /> Efectivo</button>
+                      <button className={metodoPagoNormal === 'card' ? "selected" : ""} onClick={() => setMetodoPagoNormal('card')}><FiCreditCard size={20} /> Tarjeta</button>
+                      <button className={metodoPagoNormal === 'transfer' ? "selected" : ""} onClick={() => setMetodoPagoNormal('transfer')}><FiSmartphone size={20} /> Transferencia</button>
+                      <button className={metodoPagoNormal === 'mixto' ? "selected" : ""} onClick={() => {
+                        setMetodoPagoNormal('mixto');
+                        setAmountPaidRaw(''); setAmountPaid(''); setCardPaidRaw(''); setCardPaid(''); setTransferPaidRaw(''); setTransferPaid(''); setMixtoManual(new Set());
+                      }}><FiGrid size={20} /> Mixto</button>
                     </div>
-
                     {metodoPagoNormal === 'cash' && (
-                      <div className="pay-input-row">
-                        <div><label>Recibido:</label>
-                          <input type="text" inputMode="numeric" value={amountPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; setAmountPaidRaw(digits); setAmountPaid((parseInt(digits, 10) / 100).toFixed(2)); }} />
+                      <div className="payment-cash-row">
+                        <div className="payment-field"><label><BsCurrencyExchange size={20} /> Recibido:</label>
+                          <input type="text" inputMode="numeric" value={amountPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; if (digits.length > 8) digits = digits.slice(0,8); setAmountPaidRaw(digits); setAmountPaid((parseInt(digits,10)/100).toFixed(2)); }} placeholder="0.00" />
                         </div>
-                        <div><label>Cambio:</label><span>{fmt(changeNormal)}</span></div>
+                        <div className="payment-field cambio-field"><label><BsCurrencyExchange size={20} /> Cambio:</label>
+                          <span className="cambio-amount">{fmt(changeNormal)}</span>
+                        </div>
                       </div>
                     )}
-
                     {(metodoPagoNormal === 'card' || metodoPagoNormal === 'transfer') && (
-                      <div className="pay-row"><label>Referencia:</label>
-                        <input type="text" value={metodoPagoNormal === 'card' ? refCard : refTransfer} onChange={e => metodoPagoNormal === 'card' ? setRefCard(e.target.value) : setRefTransfer(e.target.value)} />
+                      <div className="payment-reference-row">
+                        <label>{metodoPagoNormal === 'card' ? <FiCreditCard size={20} /> : <FaMoneyBillTransfer size={20} />} Referencia:</label>
+                        <input type="text" value={metodoPagoNormal === 'card' ? refCard : refTransfer} onChange={e => metodoPagoNormal === 'card' ? setRefCard(e.target.value) : setRefTransfer(e.target.value)} placeholder="Número de referencia" />
                       </div>
                     )}
-
                     {metodoPagoNormal === 'mixto' && (
-                      <div className="pay-input-row">
-                        <div><label>Efectivo:</label><input type="text" inputMode="numeric" value={amountPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); handleMixtoField('cash', digits); }} /></div>
-                        <div><label>Transferencia:</label><input type="text" inputMode="numeric" value={transferPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); handleMixtoField('transfer', digits); }} /></div>
-                        <div><label>Tarjeta:</label><input type="text" inputMode="numeric" value={cardPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); handleMixtoField('card', digits); }} /></div>
-                      </div>
+                      <>
+                        <div className="payment-mixed-row">
+                          <div className="mixed-field"><label><FaHandHoldingDollar size={20}/> Efectivo:</label>
+                            <input type="text" inputMode="numeric" value={amountPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; if (digits.length > 8) digits = digits.slice(0,8); handleMixtoField('cash', digits); }} placeholder="0.00" />
+                          </div>
+                          <div className="mixed-field"><label><FiCreditCard size={20} /> Tarjeta:</label>
+                            <input type="text" inputMode="numeric" value={cardPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; if (digits.length > 8) digits = digits.slice(0,8); handleMixtoField('card', digits); }} placeholder="0.00" />
+                          </div>
+                          <div className="mixed-field"><label><FaMoneyBillTransfer size={20} /> Transferencia:</label>
+                            <input type="text" inputMode="numeric" value={transferPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; if (digits.length > 8) digits = digits.slice(0,8); handleMixtoField('transfer', digits); }} placeholder="0.00" />
+                          </div>
+                        </div>
+                        <div className="mixed-total-row">
+                          <div className="mixed-total-item"><span><IoFileTrayFull size={20} /> Total Ingresado:</span><strong>{fmt(totalPagadoMixto)}</strong></div>
+                          {faltanteMixto > 0 && <div className="mixed-total-item warning"><span><CiWarning size={20} /> Faltante:</span><strong>{fmt(faltanteMixto)}</strong></div>}
+                          {cambioMixto > 0 && <div className="mixed-total-item success"><span><BsCurrencyExchange size={20} /> Cambio:</span><strong>{fmt(cambioMixto)}</strong></div>}
+                        </div>
+                      </>
                     )}
                   </>
-                )}
-
-                {/* MODO DIVIDIDO */}
-                {modoDividido && (
+                ) : (
+                  // ----- MODO DIVIDIDO -----
                   <>
                     <div className="order-items">
-                      <div className="section-title">📦 Productos pendientes:</div>
+                      <div className="section-title"><IoFileTrayFull size={14} /> Productos pendientes:</div>
                       {selectedOrder.items.filter(item => !item.paid).map((item, idx) => (
-                        <div key={idx} className="item-line" style={{ 
-                          background: selectedItems.includes(item.id) ? '#f3f0ff' : 'transparent',
-                          opacity: item.paid ? 0.5 : 1
-                        }}>
-                          <input 
-                            type="checkbox" 
-                            checked={selectedItems.includes(item.id)} 
-                            onChange={() => handleSelectItem(item.id)}
-                            disabled={item.paid}
-                          />
+                        <div key={idx} className="item-line" style={{ background: selectedItems.includes(item.id) ? 'rgba(16,185,129,0.08)' : 'transparent' }}>
+                          <input type="checkbox" checked={selectedItems.includes(item.id)} onChange={() => handleSelectItem(item.id)} disabled={item.paid} />
                           <span>{item.quantity}x {item.product_name}</span>
                           <span className="item-amt">{fmt((Number(item.selling_price) || Number(item.unit_price)) * item.quantity)}</span>
                           {item.paid && <span className="paid-badge">✔ PAGADO</span>}
                         </div>
                       ))}
-                      {selectedOrder.items.filter(item => !item.paid).length === 0 && (
-                        <div className="empty-state">✓ Todos los productos han sido pagados</div>
-                      )}
+                      {selectedOrder.items.filter(item => !item.paid).length === 0 && <div className="empty-state">✓ Todos los productos han sido pagados</div>}
                     </div>
 
                     {selectedItems.length > 0 && (
@@ -1014,66 +854,58 @@ export default function PosCheckoutPage() {
 
                     <div className="clientes-container">
                       <div className="clientes-header">
-                        <span>👥 Comensales</span>
-                        <button onClick={agregarComensal} className="btn-add">+ Agregar Comensal</button>
+                        <span><FiUsersIcon size={18} /> Comensales</span>
+                        <button onClick={agregarComensal} className="btn-add"><FiPlus size={14} /> Agregar Comensal</button>
                       </div>
 
                       {clientesDivididos.map((comensal, idx) => {
                         const subtotalC = calcularSubtotalComensal(comensal);
                         const ivaC = calcularIVAComensal(comensal);
                         const totalC = subtotalC + ivaC;
-                        const cambio = comensal.montoRecibido - totalC;
+                        const recibido = comensal.montoRecibido || 0;
+                        const cambioC = recibido - totalC;
+                        const faltanteC = Math.max(0, totalC - recibido);
+                        const sobranteC = Math.max(0, recibido - totalC);
+
+                        const cashRaw = comensal.cashAmount ? String(Math.round(comensal.cashAmount * 100)) : '';
+                        const cardRaw = comensal.cardAmount ? String(Math.round(comensal.cardAmount * 100)) : '';
+                        const transferRaw = comensal.transferAmount ? String(Math.round(comensal.transferAmount * 100)) : '';
+                        const recibidoRaw = recibido > 0 ? String(Math.round(recibido * 100)) : '';
+
+                        const totalPagadoMixtoComensal = (comensal.cashAmount || 0) + (comensal.cardAmount || 0) + (comensal.transferAmount || 0);
+                        const faltanteMixtoComensal = Math.max(0, totalC - totalPagadoMixtoComensal);
+                        const cambioMixtoComensal = Math.max(0, totalPagadoMixtoComensal - totalC);
 
                         return (
                           <div key={comensal.id} className="comensal-card">
                             <div className="comensal-header">
-                              <span className="comensal-titulo">🍽️ Comensal {idx + 1}</span>
+                              <span className="comensal-titulo"><FiUsersIcon size={14} /> Comensal {idx + 1}</span>
                               {clientesDivididos.length > 1 && (
-                                <button onClick={() => eliminarComensal(comensal.id)} className="btn-delete">Eliminar</button>
+                                <button onClick={() => eliminarComensal(comensal.id)} className="btn-delete"><FiX size={14} /> Eliminar</button>
                               )}
                             </div>
 
                             {facturaIndividual ? (
                               <div className="comensal-datos">
                                 <div className="busqueda-container">
-                                  <input 
-                                    type="text" 
-                                    placeholder="Cédula/RUC" 
-                                    value={comensal.cedula || ''}
+                                  <input type="text" placeholder="Cédula/RUC" value={comensal.cedula || ''}
                                     onChange={e => {
-                                      const val = e.target.value.replace(/\D/g, '').slice(0, 13);
+                                      const val = e.target.value.replace(/\D/g, '').slice(0,13);
                                       actualizarComensal(comensal.id, 'cedula', val);
-                                      if (val.length === 10 || val.length === 13) {
-                                        buscarClientePorDocumento(val, true, comensal.id);
-                                      } else {
-                                        actualizarComensal(comensal.id, 'nombre', '');
-                                        actualizarComensal(comensal.id, 'email', '');
-                                      }
-                                    }}
-                                  />
+                                      if (val.length === 10 || val.length === 13) buscarClientePorDocumento(val, true, comensal.id);
+                                      else { actualizarComensal(comensal.id, 'nombre', ''); actualizarComensal(comensal.id, 'email', ''); }
+                                    }} />
                                   {clientApiLoading && <div className="spinner-small"></div>}
                                 </div>
-                                <input 
-                                  type="text" 
-                                  placeholder="Nombre completo" 
-                                  value={comensal.nombre || ''}
-                                  onChange={e => actualizarComensal(comensal.id, 'nombre', e.target.value)} 
-                                />
-                                <input 
-                                  type="email" 
-                                  placeholder="Email (factura)" 
-                                  value={comensal.email || ''}
-                                  onChange={e => actualizarComensal(comensal.id, 'email', e.target.value)} 
-                                />
+                                <input type="text" placeholder="Nombre completo" value={comensal.nombre || ''} onChange={e => actualizarComensal(comensal.id, 'nombre', e.target.value)} />
+                                <input type="email" placeholder="Email (factura)" value={comensal.email || ''} onChange={e => actualizarComensal(comensal.id, 'email', e.target.value)} />
                               </div>
                             ) : (
-                              <div className="comensal-sin-datos">
-                                <span className="comensal-numero">Comensal {idx + 1}</span>
-                              </div>
+                              <div className="comensal-sin-datos"><span className="comensal-numero">Comensal {idx + 1}</span></div>
                             )}
 
                             <div className="productos-asignados">
-                              <span>Productos asignados:</span>
+                              <span>🍽️ Productos asignados:</span>
                               {comensal.items.map(itemId => {
                                 const item = selectedOrder.items.find(i => i.id === itemId);
                                 return item ? (
@@ -1089,24 +921,91 @@ export default function PosCheckoutPage() {
                               {comensal.items.length === 0 && <span className="empty-text">Sin productos</span>}
                             </div>
 
-                            <div className="metodo-pago-comensal">
-                              <select value={comensal.metodoPago} onChange={e => actualizarComensal(comensal.id, 'metodoPago', e.target.value)}>
-                                <option value="cash">💰 Efectivo</option>
-                                <option value="card">💳 Tarjeta</option>
-                                <option value="transfer">🏦 Transferencia</option>
-                              </select>
-                              <span>Recibido:</span>
-                              <input type="number" step="0.01" placeholder="0.00" value={comensal.montoRecibido || ''}
-                                onChange={e => actualizarComensal(comensal.id, 'montoRecibido', parseFloat(e.target.value) || 0)} />
-                              {comensal.metodoPago !== 'cash' && (
-                                <>
-                                  <span>Ref:</span>
-                                  <input type="text" placeholder="N° referencia" value={comensal.referencia || ''}
-                                    onChange={e => actualizarComensal(comensal.id, 'referencia', e.target.value)} />
-                                </>
-                              )}
+                            {/* Botones de método de pago (igual que el normal) */}
+                            <div className="metodo-pago-seleccion">
+                              <button className={comensal.metodoPago === 'cash' ? "selected" : ""} onClick={() => actualizarComensal(comensal.id, 'metodoPago', 'cash')}>
+                                <FaHandHoldingDollar size={16} /> Efectivo
+                              </button>
+                              <button className={comensal.metodoPago === 'card' ? "selected" : ""} onClick={() => actualizarComensal(comensal.id, 'metodoPago', 'card')}>
+                                <FiCreditCard size={16} /> Tarjeta
+                              </button>
+                              <button className={comensal.metodoPago === 'transfer' ? "selected" : ""} onClick={() => actualizarComensal(comensal.id, 'metodoPago', 'transfer')}>
+                                <FaMoneyBillTransfer size={16} /> Transferencia
+                              </button>
+                              <button className={comensal.metodoPago === 'mixto' ? "selected" : ""} onClick={() => actualizarComensal(comensal.id, 'metodoPago', 'mixto')}>
+                                <FiGrid size={16} /> Mixto
+                              </button>
                             </div>
 
+                            {/* Campos según método */}
+                            {comensal.metodoPago === 'cash' && (
+                              <div className="payment-cash-row">
+                                <div className="payment-field">
+                                  <label><BsCurrencyExchange size={16} /> Recibido:</label>
+                                  <input type="text" inputMode="numeric" value={recibidoRaw}
+                                    onChange={e => {
+                                      let digits = e.target.value.replace(/\D/g, '');
+                                      if (!digits) digits = '0';
+                                      const value = parseInt(digits, 10) / 100;
+                                      actualizarComensal(comensal.id, 'montoRecibido', value);
+                                    }} placeholder="0.00" />
+                                </div>
+                                <div className="payment-field cambio-field">
+                                  <label><BsCurrencyExchange size={16} /> Cambio:</label>
+                                  <span className="cambio-amount">{fmt(Math.max(0, cambioC))}</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {(comensal.metodoPago === 'card' || comensal.metodoPago === 'transfer') && (
+                              <div className="payment-reference-row">
+                                <label>{comensal.metodoPago === 'card' ? <FiCreditCard size={16} /> : <FaMoneyBillTransfer size={16} />} Referencia:</label>
+                                <input type="text" value={comensal.referencia || ''}
+                                  onChange={e => actualizarComensal(comensal.id, 'referencia', e.target.value)}
+                                  placeholder="Número de referencia" />
+                              </div>
+                            )}
+
+                            {comensal.metodoPago === 'mixto' && (
+                              <>
+                                <div className="payment-mixed-row">
+                                  <div className="mixed-field"><label><FaHandHoldingDollar size={16} /> Efectivo:</label>
+                                    <input type="text" inputMode="numeric" value={cashRaw}
+                                      onChange={e => {
+                                        let digits = e.target.value.replace(/\D/g, '');
+                                        if (!digits) digits = '0';
+                                        const value = parseInt(digits, 10) / 100;
+                                        actualizarMontoMixtoComensal(comensal.id, 'cash', value);
+                                      }} placeholder="0.00" />
+                                  </div>
+                                  <div className="mixed-field"><label><FiCreditCard size={16} /> Tarjeta:</label>
+                                    <input type="text" inputMode="numeric" value={cardRaw}
+                                      onChange={e => {
+                                        let digits = e.target.value.replace(/\D/g, '');
+                                        if (!digits) digits = '0';
+                                        const value = parseInt(digits, 10) / 100;
+                                        actualizarMontoMixtoComensal(comensal.id, 'card', value);
+                                      }} placeholder="0.00" />
+                                  </div>
+                                  <div className="mixed-field"><label><FaMoneyBillTransfer size={16} /> Transferencia:</label>
+                                    <input type="text" inputMode="numeric" value={transferRaw}
+                                      onChange={e => {
+                                        let digits = e.target.value.replace(/\D/g, '');
+                                        if (!digits) digits = '0';
+                                        const value = parseInt(digits, 10) / 100;
+                                        actualizarMontoMixtoComensal(comensal.id, 'transfer', value);
+                                      }} placeholder="0.00" />
+                                  </div>
+                                </div>
+                                <div className="mixed-total-row">
+                                  <div className="mixed-total-item"><span><IoFileTrayFull size={14} /> Total Ingresado:</span><strong>{fmt(totalPagadoMixtoComensal)}</strong></div>
+                                  {faltanteMixtoComensal > 0 && <div className="mixed-total-item warning"><span><CiWarning size={14} /> Faltante:</span><strong>{fmt(faltanteMixtoComensal)}</strong></div>}
+                                  {cambioMixtoComensal > 0 && <div className="mixed-total-item success"><span><BsCurrencyExchange size={14} /> Cambio:</span><strong>{fmt(cambioMixtoComensal)}</strong></div>}
+                                </div>
+                              </>
+                            )}
+
+                            {/* Totales del comensal */}
                             <div className="comensal-totales">
                               <div>
                                 <div>Subtotal: <strong>{fmt(subtotalC)}</strong></div>
@@ -1114,13 +1013,14 @@ export default function PosCheckoutPage() {
                               </div>
                               <div>
                                 <div className="total-valor">Total: {fmt(totalC)}</div>
-                                {comensal.montoRecibido > 0 && (
-                                  <div className={cambio >= 0 ? "cambio-success" : "cambio-error"}>
-                                    {cambio >= 0 ? `💰 Cambio: ${fmt(cambio)}` : `⚠️ Falta: ${fmt(Math.abs(cambio))}`}
+                                {comensal.metodoPago === 'cash' && recibido > 0 && (
+                                  <div className={cambioC >= 0 ? "cambio-success" : "cambio-error"}>
+                                    {cambioC >= 0 ? `💰 Cambio: ${fmt(cambioC)}` : `⚠️ Falta: ${fmt(Math.abs(cambioC))}`}
                                   </div>
                                 )}
-                                <button className="btn-cobrar" onClick={() => cobrarComensal(comensal)} disabled={comensal.montoRecibido < totalC || comensal.items.length === 0}>
-                                  💵 Cobrar a este comensal
+                                <button className="btn-cobrar" onClick={() => cobrarComensal(comensal)}
+                                  disabled={(comensal.metodoPago === 'cash' && recibido < totalC) || (comensal.metodoPago === 'mixto' && totalPagadoMixtoComensal < totalC) || comensal.items.length === 0}>
+                                  <FiCheck size={14} /> Cobrar a este comensal
                                 </button>
                               </div>
                             </div>
@@ -1131,42 +1031,27 @@ export default function PosCheckoutPage() {
                       {selectedItems.length > 0 && clientesDivididos.length > 0 && (
                         <div className="asignar-container">
                           <select className="asignar-select" id="comensalSelect">
-                            {clientesDivididos.map((c, idx) => (
-                              <option key={c.id} value={c.id}>Comensal {idx + 1}</option>
-                            ))}
+                            {clientesDivididos.map((c, idx) => <option key={c.id} value={c.id}>Comensal {idx + 1}</option>)}
                           </select>
                           <button className="btn-asignar" onClick={() => {
                             const select = document.getElementById('comensalSelect');
                             const comensalId = parseInt(select.value);
                             asignarItemsAComensal(comensalId);
-                          }}>📦 Asignar {selectedItems.length} producto(s)</button>
+                          }}><FiPlus size={14} /> Asignar {selectedItems.length} producto(s)</button>
                         </div>
                       )}
-
-                      {selectedItems.length > 0 && <div className="warning-box">⚠️ {selectedItems.length} producto(s) sin asignar</div>}
+                      {selectedItems.length > 0 && <div className="warning-box"><CiWarning size={14} /> {selectedItems.length} producto(s) sin asignar</div>}
                     </div>
                   </>
                 )}
               </div>
 
               <div className="actions-row">
-                <button
-                  className="btn-guardar"
-                  disabled={printLoading || (!modoDividido && metodoPagoNormal === 'cash' && (!amountPaid || parseFloat(amountPaid) < totalOrden))}
-                  onClick={() => {
-                    if (!modoDividido) pagoNormal();
-                  }}
-                >
+                <button className="btn-guardar" disabled={printLoading || (!modoDividido && metodoPagoNormal === 'cash' && (!amountPaid || parseFloat(amountPaid) < totalOrden))}
+                  onClick={() => { if (!modoDividido) pagoNormal(); }}>
                   <Check size={16} /> {printLoading ? 'Procesando...' : modoDividido ? 'CONTINUAR' : 'COBRAR'}
                 </button>
-                <button className="btn-cancelar" onClick={() => {
-                  setSelectedOrder(null);
-                  setClientesDivididos([]);
-                  setSelectedItems([]);
-                  setPagosRegistrados([]);
-                  setTotalPagadoAcumulado(0);
-                  setModoDividido(false);
-                }}>
+                <button className="btn-cancelar" onClick={() => { setSelectedOrder(null); setClientesDivididos([]); setSelectedItems([]); setPagosRegistrados([]); setTotalPagadoAcumulado(0); setModoDividido(false); }}>
                   <X size={16} /> Cancelar
                 </button>
               </div>
@@ -1174,68 +1059,15 @@ export default function PosCheckoutPage() {
               {modoDividido && !facturaIndividual && pagosRegistrados.length > 0 && (
                 <div className="historial-pagos">
                   <div className="historial-titulo">📋 Pagos realizados:</div>
-                  {pagosRegistrados.map((pago, idx) => (
-                    <div key={idx} className="historial-item">• Pago {idx + 1} - {fmt(pago.total)} ({pago.items.length} productos)</div>
-                  ))}
+                  {pagosRegistrados.map((pago, idx) => <div key={idx} className="historial-item">• Pago {idx + 1} - {fmt(pago.total)} ({pago.items.length} productos)</div>)}
                   <div className="historial-total">Total pagado: {fmt(pagosRegistrados.reduce((s, p) => s + p.total, 0))} / Total orden: {fmt(totalOrden)}</div>
-                  {totalPagadoAcumulado >= totalOrden && (
-                    <div className="historial-completado">✅ ¡Pago completado! La factura se generará automáticamente.</div>
-                  )}
+                  {totalPagadoAcumulado >= totalOrden && <div className="historial-completado">✅ ¡Pago completado! La factura se generará automáticamente.</div>}
                 </div>
               )}
             </>
           )}
         </div>
       </div>
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .busqueda-container { display: flex; gap: 5px; align-items: center; flex: 1; }
-        .spinner-small { width: 18px; height: 18px; border: 2px solid #ddd; border-top-color: #6842fe; border-radius: 50%; animation: spin 0.6s linear infinite; }
-        .comensal-card { background: #f9f9ff; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
-        .comensal-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
-        .comensal-titulo { font-weight: bold; }
-        .comensal-sin-datos { margin-bottom: 12px; padding: 8px; background: #f0f0f0; border-radius: 6px; text-align: center; }
-        .comensal-numero { font-weight: 600; color: #333; }
-        .btn-delete { background: #ff4444; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; }
-        .comensal-datos { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
-        .comensal-datos input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .productos-asignados { margin-bottom: 12px; }
-        .producto-item { display: flex; justify-content: space-between; background: #e8e8ff; padding: 6px 10px; border-radius: 4px; margin-bottom: 4px; }
-        .btn-quitar { background: #ff6666; color: white; border: none; border-radius: 4px; padding: 2px 8px; margin-left: 8px; cursor: pointer; }
-        .metodo-pago-comensal { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; background: #f0f0f0; padding: 8px; border-radius: 6px; margin-bottom: 12px; }
-        .metodo-pago-comensal select, .metodo-pago-comensal input { padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
-        .comensal-totales { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #ccc; padding-top: 8px; }
-        .total-valor { font-size: 18px; font-weight: bold; color: #6842fe; }
-        .cambio-success { color: #16a34a; font-size: 12px; }
-        .cambio-error { color: #e11d48; font-size: 12px; }
-        .btn-cobrar { background: #28a745; color: white; border: none; border-radius: 6px; padding: 6px 12px; margin-top: 8px; cursor: pointer; width: 100%; }
-        .btn-cobrar:disabled { background: #ccc; cursor: not-allowed; }
-        .asignar-container { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
-        .asignar-select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
-        .btn-asignar { background: #007bff; color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; }
-        .warning-box { background: #fff3cd; padding: 12px; border-radius: 6px; text-align: center; color: #856404; margin-top: 12px; }
-        .historial-pagos { background: #e8f5e9; padding: 12px; border-radius: 8px; margin-top: 16px; }
-        .historial-completado { background: #28a745; color: white; padding: 8px; border-radius: 6px; text-align: center; margin-top: 8px; font-size: 12px; }
-        .factura-opcion { background: #f0f0ff; padding: 12px; border-radius: 8px; margin: 12px 0; }
-        .factura-opcion label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; }
-        .factura-opcion small { margin-left: 26px; display: block; font-size: 12px; color: #666; margin-top: 4px; }
-        .metodo-pago-seleccion { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
-        .metodo-pago-seleccion button { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 6px; background: white; cursor: pointer; }
-        .metodo-pago-seleccion button.selected { background: #6842fe; color: white; border-color: #6842fe; }
-        .empty-state { text-align: center; padding: 20px; color: #16a34a; }
-        .empty-text { color: #999; font-size: 12px; }
-        .error-msg { color: #e11d48; font-size: 12px; margin-top: 6px; }
-        .success-msg { color: #16a34a; font-size: 12px; margin-top: 6px; }
-        .pay-input-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
-        .pay-row { margin: 12px 0; }
-        .badge { background: #6842fe; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 8px; }
-        .section-title { font-weight: bold; margin-bottom: 8px; font-size: 14px; color: #333; }
-        .totals-footer.small { margin-top: 8px; padding-top: 4px; font-size: 13px; }
-        .clientes-container { margin-top: 20px; border-top: 2px solid #e0e0e0; padding-top: 16px; }
-        .clientes-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .btn-add { background: #6842fe; color: white; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 12px; }
-        .paid-badge { background: #28a745; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px; }
-      `}</style>
     </PageTemplate>
   );
 }

@@ -190,33 +190,38 @@ function AppRoutes({ user, setUser, handleLogout }) {
 }
 
 function AppContent() {
-  const [user,    setUser]    = useState(() => {
-    try { return JSON.parse(localStorage.getItem('idonUser')) || null; }
-    catch { return null; }
+  const [user, setUser] = useState(() => {
+    try { 
+      return JSON.parse(localStorage.getItem('idonUser')) || null;
+    } catch { 
+      return null; 
+    }
   });
   const [loading, setLoading] = useState(true);
-  const location  = useLocation();
-  const navigate  = useNavigate();
-
-  useEffect(() => {
-    if (user) localStorage.setItem('lastPath', location.pathname + location.search);
-  }, [location, user]);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const PUBLIC_PATHS = ['/terms-and-conditions', '/privacy-policy', '/login', '/register'];
 
+  // SOLO verificar token y cargar usuario inicial - SIN REDIRECCIONES
   useEffect(() => {
     const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
-    if (!token) {
+    
+    // Si no hay token y hay usuario en estado, limpiar
+    if (!token && user) {
       setUser(null);
       localStorage.removeItem('idonUser');
-    } else if (!PUBLIC_PATHS.includes(location.pathname)) {
-      const lastPath = localStorage.getItem('lastPath');
-      if (lastPath && lastPath !== location.pathname) {
-        navigate(lastPath, { replace: true });
-      }
     }
+    
     setLoading(false);
-  }, []);
+  }, []); // ← Sin dependencias que causen redirección
+
+  // Guardar última ruta SOLO cuando el usuario está autenticado y cambia de ruta
+  useEffect(() => {
+    if (user && !PUBLIC_PATHS.includes(location.pathname)) {
+      localStorage.setItem('lastPath', location.pathname + location.search);
+    }
+  }, [location, user]);
 
   async function handleLogout() {
     setUser(null);
@@ -224,10 +229,22 @@ function AppContent() {
     localStorage.removeItem('idonToken');
     localStorage.removeItem('token');
     localStorage.removeItem('selectedBusiness');
+    localStorage.removeItem('lastPath');
     navigate('/login', { replace: true });
   }
 
-  if (loading) return <p style={{ padding: '20px' }}>Cargando...</p>;
+  if (loading) return (
+    <div style={{ 
+      minHeight: '100vh', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      background: '#080810',
+      color: '#fff'
+    }}>
+      <div className="spinner"></div>
+    </div>
+  );
 
   return <AppRoutes user={user} setUser={setUser} handleLogout={handleLogout} />;
 }

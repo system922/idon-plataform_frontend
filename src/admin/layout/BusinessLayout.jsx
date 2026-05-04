@@ -13,13 +13,14 @@ import {
   FiCalendar, FiStar, FiShoppingBag, FiClock, FiUsers,
   FiUserCheck, FiMap, FiMapPin, FiList, FiGlobe, FiBell,
   FiFileText, FiUser, FiAlertCircle, FiZap, FiMenu, FiInbox,
+  FiLock
 } from 'react-icons/fi';
 import API_BASE, { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/BusinessLayout.css';
 
 import { BusinessContextProvider } from '../../admin/config/BusinessContext';
-import AperturaCajaPage from '../../pages/business/AperturaCajaPage';
-import { useAutoPrint } from '../../hooks/useAutoPrint';
+import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';
+import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
 import { useCashDrawer } from '../../hooks/useCashDrawer';
 
 const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
@@ -59,8 +60,24 @@ function buildSidebarMenu(navData) {
   if (!navData?.modules?.length) return [];
 
   return navData.modules.map(mod => {
-    const icon  = MOD_ICONS[mod.code] || <FiZap size={17}/>;
-    const pages = mod.pages || [];
+    const icon = MOD_ICONS[mod.code] || <FiZap size={17}/>;
+    
+    const pages = (mod.pages || []).filter(page => {
+      const pagePath = page.path || '';
+      const pageCode = page.code || '';
+      const pageName = page.name || '';
+      
+      const esCierreCaja = 
+        pagePath.includes('pos.cash_register') ||
+        pagePath.includes('cash_register') ||
+        pageCode.includes('cash_register') ||
+        pageName.toLowerCase().includes('cierre de caja') ||
+        pageName.toLowerCase().includes('cerrar caja');
+      
+      return !esCierreCaja;
+    });
+
+    if (pages.length === 0) return null;
 
     const resolvePath = (rawPath, fallback) => {
       if (!rawPath) return fallback;
@@ -82,8 +99,8 @@ function buildSidebarMenu(navData) {
         path: mainPath,
         items: subPages.map(page => ({
           label: page.name,
-          path:  resolvePath(page.path, `/app/${mod.code}/${toSlug(page.name)}`),
-          icon:  <FiZap size={15}/>,
+          path: resolvePath(page.path, `/app/${mod.code}/${toSlug(page.name)}`),
+          icon: <FiZap size={15}/>,
         })),
       };
     }
@@ -94,7 +111,7 @@ function buildSidebarMenu(navData) {
       icon,
       path: resolvePath(single?.path, `/app/${mod.code}`),
     };
-  });
+  }).filter(Boolean);
 }
 
 const getStoredBiz = () => {
@@ -117,14 +134,14 @@ function getOperatorUser() {
 }
 
 /* ══════════════════════════════════════════════════════════
-   MODAL DE ALERTA DE APERTURA
+   MODAL DE ALERTA DE APERTURA - CON ESTILOS MODERNOS
 ══════════════════════════════════════════════════════════ */
 function AlertaAperturaModal({ onAceptar, abriendo }) {
   return (
     <div className="apertura-alert-overlay">
       <div className="apertura-alert-modal">
         <div className="apertura-alert-icon">
-          <FiInbox size={48} color="#10b981" />
+          <FiInbox size={48} color="#f97316" />
         </div>
         <h2 className="apertura-alert-title">Apertura de Caja Requerida</h2>
         <p className="apertura-alert-message">
@@ -133,7 +150,7 @@ function AlertaAperturaModal({ onAceptar, abriendo }) {
         </p>
         <button
           type="button"
-          className="apertura-alert-btn"
+          className="btn-modal-aceptar"
           onClick={onAceptar}
           disabled={abriendo}
         >
@@ -145,11 +162,60 @@ function AlertaAperturaModal({ onAceptar, abriendo }) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   MODAL DE CONFIRMACIÓN PARA CIERRE DE CAJA - CON ESTILOS MODERNOS
+══════════════════════════════════════════════════════════ */
+function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
+  return (
+    <div className="apertura-alert-overlay">
+      <div className="apertura-alert-modal">
+        <div className="apertura-alert-icon">
+          <FiLock size={48} color="#f97316" />
+        </div>
+        <h2 className="apertura-alert-title">Cerrar Caja</h2>
+        <p className="apertura-alert-message">
+          <strong>¿Estás seguro que deseas cerrar la caja?</strong>
+          <br /><br />
+          Una vez cerrada la caja:
+          <br />
+          • No podrás seguir cobrando hasta la próxima apertura
+          <br />
+          • Se generará el reporte de cierre del día
+          <br />
+          • Se imprimirá el ticket de cierre
+          <br /><br />
+          <strong>El cajón se abrirá para que puedas contar el dinero.</strong>
+        </p>
+        <div className="modal-buttons-group">
+          <button
+            type="button"
+            className="btn-modal-cancelar"
+            onClick={onCancel}
+            disabled={cargando}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="btn-modal-confirmar"
+            onClick={onConfirm}
+            disabled={cargando}
+          >
+            {cargando ? 'Abriendo cajón...' : 'Sí, Cerrar Caja'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
    BUSINESS LAYOUT
 ══════════════════════════════════════════════════════════ */
 export default function BusinessLayout({ user, onLogout }) {
   const navigate   = useNavigate();
-  const openDrawer = useCashDrawer();
+  
+  // HOOKS
+  const { openDrawer } = useCashDrawer();
   
   const [navData,      setNavData]      = useState(null);
   const [loading,      setLoading]      = useState(true);
@@ -159,15 +225,21 @@ export default function BusinessLayout({ user, onLogout }) {
   const [isSuspended,  setIsSuspended]  = useState(false);
   const [selectedBiz,  setSelectedBiz]  = useState(getStoredBiz);
 
-  useAutoPrint({ businessId: selectedBiz?.id, enabled: !!selectedBiz?.id });
-
-  // ── Apertura de caja ──────────────────────────────────────────────────────
+  // Apertura de caja
   const [aperturaChecked,     setAperturaChecked]     = useState(false);
   const [aperturaHecha,       setAperturaHecha]       = useState(true);
   const [mostrarAlerta,       setMostrarAlerta]       = useState(false);
   const [mostrarFormulario,   setMostrarFormulario]   = useState(false);
   const [abriendoCaja,        setAbriendoCaja]        = useState(false);
+  
+  // Cierre de caja
+  const [mostrarConfirmacionCierre, setMostrarConfirmacionCierre] = useState(false);
+  const [mostrarCierreForm, setMostrarCierreForm] = useState(false);
+  const [datosCierre, setDatosCierre] = useState(null);
+  const [cargandoCierre, setCargandoCierre] = useState(false);
+  const [abriendoCajonCierre, setAbriendoCajonCierre] = useState(false);
 
+  // Verificar si hay apertura activa
   const checkApertura = useCallback(async () => {
     if (!isCashierRole(user)) { 
       setAperturaChecked(true); 
@@ -181,13 +253,15 @@ export default function BusinessLayout({ user, onLogout }) {
       
       if (res.status === 200) {
         setAperturaHecha(true);
+        setMostrarAlerta(false);
       } else if (res.status === 404) {
         setAperturaHecha(false);
-        setMostrarAlerta(true); // Mostrar alerta en lugar del formulario directamente
+        setMostrarAlerta(true);
       } else {
         setAperturaHecha(true);
       }
-    } catch {
+    } catch (err) {
+      console.error('Error checking aperture:', err);
       setAperturaHecha(true);
     } finally {
       setAperturaChecked(true);
@@ -196,56 +270,124 @@ export default function BusinessLayout({ user, onLogout }) {
 
   useEffect(() => { checkApertura(); }, [checkApertura]);
 
-  const handleAceptarAlerta = async () => {
-    setAbriendoCaja(true);
-
-    const operador = getOperatorUser();
-    const userName = operador?.nombre || operador?.name || operador?.username || operador?.email || 'Usuario';
-
+  // Cargar datos reales para el cierre
+  const cargarDatosCierre = async () => {
     try {
-      // 1. Guardar auditoría de intento de apertura
-      if (operador?.id) {
-        const auditPayload = {
-          user_id: operador.id,
-          table_name: "cash_drawer",
-          action: "intento_apertura_caja",
-          description: `${userName} inició el proceso de apertura de caja. Cajón físico abierto.`,
-          new_values: null,
-          reason: "Inicio de proceso de apertura"
-        };
-
-        await fetchWithAuth('/api/audit-log', {
-          method: 'POST',
-          body: JSON.stringify(auditPayload)
-        }).catch(err => console.warn('Error guardando auditoría inicial:', err));
-      }
-
-      // 2. Abrir cajón físico
-      const ok = await openDrawer();
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
       
-      if (!ok) {
-        console.warn('No se pudo abrir la caja física');
-      }
+      const [sumRes, openRes, incomesRes] = await Promise.all([
+        fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`),
+        fetchWithAuth(`/api/pos/cash-register/opening?date=${today}`),
+        fetchWithAuth(`/api/incomes?business_id=${selectedBiz?.id}&date=${today}`)
+      ]);
 
-      // 3. Mostrar formulario de apertura
-      setMostrarAlerta(false);
-      setMostrarFormulario(true);
+      let summary = {};
+      let opening = {};
+      let incomes = [];
 
+      if (sumRes.ok) summary = await sumRes.json();
+      if (openRes.ok) opening = await openRes.json();
+      if (incomesRes.ok) incomes = await incomesRes.json();
+
+      const ventasPorMetodo = summary?.metodos || [];
+      const totalVentas = ventasPorMetodo.reduce((a, b) => a + (Number(b.total_cobrado) || 0), 0);
+      const ventasEfectivo = ventasPorMetodo.find(m => m.payment_method === 'efectivo')?.total_cobrado || 0;
+      const ventasTarjeta = ventasPorMetodo.find(m => m.payment_method === 'tarjeta')?.total_cobrado || 0;
+      const ventasTransferencia = ventasPorMetodo.find(m => m.payment_method === 'transferencia')?.total_cobrado || 0;
+      
+      const gastos = (summary?.gastos || []).reduce((a, g) => a + (Number(g.monto) || 0), 0);
+      const ingresosExtras = incomes.reduce((a, i) => a + (Number(i.amount) || 0), 0);
+      
+      const aperturaInicial = (opening?.total_efectivo || 0) + (opening?.monto_banca || 0);
+      const totalTransacciones = summary?.total_transactions || 0;
+
+      return {
+        ventasDelDia: totalVentas,
+        totalTransacciones: totalTransacciones,
+        ventasEfectivo: ventasEfectivo,
+        ventasTarjeta: ventasTarjeta + ventasTransferencia,
+        gastosOperativos: gastos,
+        ingresosExtras: ingresosExtras,
+        aperturaInicial: aperturaInicial,
+        fechaApertura: opening?.created_at || new Date().toISOString(),
+        cajero: opening?.user_name || user?.nombre || 'N/A'
+      };
     } catch (err) {
-      console.error('Error en apertura:', err);
-      // Continuar mostrando el formulario aunque falle algo
-      setMostrarAlerta(false);
-      setMostrarFormulario(true);
-    } finally {
-      setAbriendoCaja(false);
+      console.error('Error cargando datos cierre:', err);
+      return null;
     }
+  };
+
+  // FUNCION PRINCIPAL: Al hacer clic en "Cerrar Caja"
+  const handleClickCerrarCaja = async () => {
+    if (!aperturaHecha) {
+      setError('No hay una apertura de caja activa. Debes abrir caja primero.');
+      setTimeout(() => setError(null), 4000);
+      return;
+    }
+
+    setCargandoCierre(true);
+    
+    const datos = await cargarDatosCierre();
+    
+    if (!datos) {
+      setError('Error al cargar los datos para el cierre');
+      setTimeout(() => setError(null), 4000);
+      setCargandoCierre(false);
+      return;
+    }
+    
+    setDatosCierre(datos);
+    setCargandoCierre(false);
+    setMostrarConfirmacionCierre(true);
+  };
+
+  const handleConfirmarCierre = async () => {
+    setMostrarConfirmacionCierre(false);
+    setAbriendoCajonCierre(true);
+    
+    try {
+      await openDrawer();
+      console.log('Cajón abierto exitosamente para el cierre');
+    } catch (err) {
+      console.warn('No se pudo abrir la caja física:', err);
+    } finally {
+      setAbriendoCajonCierre(false);
+      setMostrarCierreForm(true);
+    }
+  };
+
+  const handleCancelarCierre = () => {
+    setMostrarConfirmacionCierre(false);
+  };
+
+  const handleCierreCompleto = async (data) => {
+    const operador = getOperatorUser();
+    if (operador?.id && data) {
+      const auditPayload = {
+        user_id: operador.id,
+        table_name: "cash_drawer",
+        action: "cierre_caja_completado",
+        description: `Cierre de caja completado por ${operador?.nombre || 'Usuario'}`,
+        new_values: data,
+        reason: "Cierre de caja"
+      };
+      
+      await fetchWithAuth('/api/audit-log', {
+        method: 'POST',
+        body: JSON.stringify(auditPayload)
+      }).catch(err => console.warn('Error guardando auditoría:', err));
+    }
+    
+    setMostrarCierreForm(false);
+    setAperturaHecha(false);
+    await checkApertura();
   };
 
   const handleAperturaCompleta = async (data) => {
     const operador = getOperatorUser();
     const userName = operador?.nombre || operador?.name || operador?.username || operador?.email || 'Usuario';
 
-    // Guardar auditoría final de apertura completada
     if (operador?.id && data) {
       const totalEfectivo = data.total_efectivo || 0;
       const montoBanca = data.monto_banca || 0;
@@ -273,8 +415,32 @@ export default function BusinessLayout({ user, onLogout }) {
 
     setAperturaHecha(true);
     setMostrarFormulario(false);
+    setMostrarAlerta(false);
   };
 
+  const handleAceptarAlerta = async () => {
+    setAbriendoCaja(true);
+
+    try {
+      await openDrawer();
+      console.log('Cajón abierto exitosamente');
+      setMostrarAlerta(false);
+      setMostrarFormulario(true);
+    } catch (err) {
+      console.error('Error en apertura:', err);
+      setMostrarAlerta(false);
+      setMostrarFormulario(true);
+    } finally {
+      setAbriendoCaja(false);
+    }
+  };
+
+  const handleClickAbrirCaja = () => {
+    setMostrarAlerta(true);
+    setMostrarFormulario(false);
+  };
+
+  // Cargar navegación
   useEffect(() => {
     const load = async () => {
       try {
@@ -297,7 +463,9 @@ export default function BusinessLayout({ user, onLogout }) {
               }
             }
           }
-        } catch {}
+        } catch (err) {
+          console.warn('Error loading businesses:', err);
+        }
 
         if (!suspended) {
           const navRes  = await fetch(`${API_BASE}/api/business-status/navigation`, {
@@ -324,10 +492,19 @@ export default function BusinessLayout({ user, onLogout }) {
     navigate('/login');
   };
 
+  if (loading) {
+    return (
+      <div className="business-loading">
+        <div className="business-loading-spinner"/>
+        <p>Cargando tu panel...</p>
+      </div>
+    );
+  }
+
   return (
     <BusinessContextProvider>
       {/* Alerta de apertura requerida */}
-      {aperturaChecked && mostrarAlerta && (
+      {aperturaChecked && mostrarAlerta && !mostrarFormulario && !mostrarCierreForm && (
         <AlertaAperturaModal 
           onAceptar={handleAceptarAlerta}
           abriendo={abriendoCaja}
@@ -336,64 +513,84 @@ export default function BusinessLayout({ user, onLogout }) {
 
       {/* Formulario de apertura de caja */}
       {aperturaChecked && mostrarFormulario && (
-        <AperturaCajaPage onAperturaCompleta={handleAperturaCompleta} />
+        <AperturaCajaPage 
+          onAperturaCompleta={handleAperturaCompleta}
+          onCancel={() => {
+            setMostrarFormulario(false);
+            setMostrarAlerta(true);
+          }}
+        />
       )}
 
-      {loading ? (
-        <div className="business-loading">
-          <div className="business-loading-spinner"/>
-          <p>Cargando tu panel...</p>
-        </div>
-      ) : isSuspended ? (
-        <div style={{ minHeight: '100vh', background: 'var(--bg, #0f1117)', overflowY: 'auto' }}>
-          <Outlet />
-        </div>
-      ) : (
-        <div className="business-layout">
-          {mobileOpen && (
-            <div
-              className="sidebar-mobile-overlay"
-              onClick={() => setMobileOpen(false)}
-            />
-          )}
-
-          <div className={`business-sidebar-wrapper ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
-            <SidebarModern
-              user={user}
-              menu={navData ? buildSidebarMenu(navData) : []}
-              onLogout={handleLogout}
-              collapsed={collapsed}
-              setCollapsed={setCollapsed}
-              onMobileClose={() => setMobileOpen(false)}
-            />
-          </div>
-
-          <div className="business-content-area">
-            <div className="mobile-topbar">
-              <span className="mobile-topbar-brand">
-                <span className="logo-white">ID</span><span className="logo-orange">ON</span>
-              </span>
-              <button
-                className="mobile-hamburger"
-                onClick={() => setMobileOpen(v => !v)}
-                aria-label="Abrir menú"
-              >
-                <FiMenu size={20} />
-              </button>
-            </div>
-
-            <div className="business-content-inner">
-              {error && (
-                <div className="business-error">
-                  <FiAlertCircle size={18}/>
-                  Error cargando el panel: {error}
-                </div>
-              )}
-              <Outlet />
-            </div>
-          </div>
-        </div>
+      {/* Modal de confirmación para cierre de caja */}
+      {mostrarConfirmacionCierre && (
+        <ConfirmarCierreModal
+          onConfirm={handleConfirmarCierre}
+          onCancel={handleCancelarCierre}
+          cargando={abriendoCajonCierre}
+        />
       )}
+
+      {/* Formulario de cierre de caja */}
+      {mostrarCierreForm && datosCierre && (
+        <CierreDeCajaPage
+          cajaData={datosCierre}
+          onClose={(exitoso) => {
+            setMostrarCierreForm(false);
+            if (exitoso) {
+              handleCierreCompleto(datosCierre);
+            }
+          }}
+        />
+      )}
+
+      <div className="business-layout">
+        {mobileOpen && (
+          <div
+            className="sidebar-mobile-overlay"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+
+        <div className={`business-sidebar-wrapper ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+          <SidebarModern
+            user={user}
+            menu={navData ? buildSidebarMenu(navData) : []}
+            onLogout={handleLogout}
+            onCerrarCaja={handleClickCerrarCaja}
+            onAbrirCaja={handleClickAbrirCaja}
+            aperturaHecha={aperturaHecha}
+            collapsed={collapsed}
+            setCollapsed={setCollapsed}
+            onMobileClose={() => setMobileOpen(false)}
+          />
+        </div>
+
+        <div className="business-content-area">
+          <div className="mobile-topbar">
+            <span className="mobile-topbar-brand">
+              <span className="logo-white">ID</span><span className="logo-orange">ON</span>
+            </span>
+            <button
+              className="mobile-hamburger"
+              onClick={() => setMobileOpen(v => !v)}
+              aria-label="Abrir menú"
+            >
+              <FiMenu size={20} />
+            </button>
+          </div>
+
+          <div className="business-content-inner">
+            {error && (
+              <div className="business-error">
+                <FiAlertCircle size={18}/>
+                {error}
+              </div>
+            )}
+            <Outlet />
+          </div>
+        </div>
+      </div>
     </BusinessContextProvider>
   );
 }

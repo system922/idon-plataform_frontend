@@ -2,30 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { Plus, Edit2, Trash2, Users, X, Search, RefreshCw, Unlock, CheckCircle, AlertCircle } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
+import '../../styles/UsersPage.css';
 
-// ─── Estilos ─────────────────────────────────────────────────────────────────
-
-const lbl = { display: 'block', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6 };
-const inputStyle = {
-  width: '100%', padding: '9px 12px', borderRadius: 8,
-  border: '1px solid rgba(255,255,255,0.12)',
-  background: 'rgba(0,0,0,0.22)', color: '#fff',
-  fontSize: 13, fontFamily: 'inherit', boxSizing: 'border-box',
-};
-const btnPrimary = {
-  padding: '10px 22px', background: '#6842fe', color: '#fff',
-  border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13,
-};
-const btnSecondary = {
-  padding: '10px 22px', background: 'transparent', color: 'rgba(255,255,255,0.7)',
-  border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, cursor: 'pointer',
-  fontWeight: 600, fontSize: 13,
-};
-const th      = { padding: '12px 10px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#495', textTransform: 'uppercase' };
-const td      = { padding: '14px 12px', color: '#222', fontSize: 13 };
-const miniBtn = { background: 'rgba(104,66,254,0.12)', border: '1px solid #6842fe33', color: '#6842fe', borderRadius: 6, cursor: 'pointer', padding: '4px 8px', display: 'inline-flex', alignItems: 'center' };
-
-// ─── Modal ────────────────────────────────────────────────────────────────────
+// ─── Modal de usuario ────────────────────────────────────────────────────────────────────
 
 function UserModal({ user, onClose, onSave, saving, roles }) {
   const [form, setForm] = useState({
@@ -48,46 +27,57 @@ function UserModal({ user, onClose, onSave, saving, roles }) {
                     (form.password || user) && form.role_id;
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
-      backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', zIndex: 2000, padding: 16,
-    }}>
-      <div style={{
-        background: 'linear-gradient(135deg,#1a1f2a 0%,#141920 100%)',
-        border: '1px solid rgba(104,66,254,0.25)', borderRadius: 16,
-        width: '100%', maxWidth: 460,
-        boxShadow: '0 25px 60px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column',
-      }}>
-        <div style={{ padding: '22px 28px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#fff' }}>
+    <div className="users-modal-overlay">
+      <div className="users-modal">
+        <div className="users-modal-header">
+          <h2 className="users-modal-title">
             {user ? 'Editar usuario' : 'Nuevo usuario'}
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', padding: 4 }}>
-            <X size={20} />
+          <button onClick={onClose} className="users-modal-close">
+            <X size={18} />
           </button>
         </div>
 
-        <div style={{ padding: '16px 28px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <label style={lbl}>Nombre</label>
-              <input value={form.first_name} onChange={e => set('first_name', e.target.value)} placeholder="Nombre" style={inputStyle} />
+        <div className="users-modal-body">
+          <div className="users-form-row">
+            <div className="users-form-group">
+              <label className="users-form-label">Nombre</label>
+              <input 
+                value={form.first_name} 
+                onChange={e => set('first_name', e.target.value)} 
+                placeholder="Nombre" 
+                className="users-form-input"
+              />
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={lbl}>Apellido</label>
-              <input value={form.last_name} onChange={e => set('last_name', e.target.value)} placeholder="Apellido" style={inputStyle} />
+            <div className="users-form-group">
+              <label className="users-form-label">Apellido</label>
+              <input 
+                value={form.last_name} 
+                onChange={e => set('last_name', e.target.value)} 
+                placeholder="Apellido" 
+                className="users-form-input"
+              />
             </div>
           </div>
 
           <div>
-            <label style={lbl}>Email</label>
-            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@dominio.com" style={inputStyle} />
+            <label className="users-form-label">Email</label>
+            <input 
+              type="email" 
+              value={form.email} 
+              onChange={e => set('email', e.target.value)} 
+              placeholder="email@dominio.com" 
+              className="users-form-input"
+            />
           </div>
 
           <div>
-            <label style={lbl}>Rol</label>
-            <select value={form.role_id} onChange={e => set('role_id', Number(e.target.value))} style={inputStyle}>
+            <label className="users-form-label">Rol</label>
+            <select 
+              value={form.role_id} 
+              onChange={e => set('role_id', Number(e.target.value))} 
+              className="users-form-select"
+            >
               {roles?.length
                 ? roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)
                 : <option value="">Sin roles definidos</option>}
@@ -95,18 +85,27 @@ function UserModal({ user, onClose, onSave, saving, roles }) {
           </div>
 
           <div>
-            <label style={lbl}>
-              Clave {user && <span style={{ color: '#aaa', fontWeight: 400 }}>(dejar vacío para no cambiar)</span>}
+            <label className="users-form-label">
+              Clave {user && <span className="users-form-label-hint">(dejar vacío para no cambiar)</span>}
             </label>
-            <input type="password" value={form.password} onChange={e => set('password', e.target.value)}
+            <input 
+              type="password" 
+              value={form.password} 
+              onChange={e => set('password', e.target.value)}
               placeholder={user ? 'Nueva clave (opcional)' : 'Clave'}
-              style={inputStyle} autoComplete="new-password" />
+              className="users-form-input"
+              autoComplete="new-password" 
+            />
           </div>
 
           {user && (
             <div>
-              <label style={lbl}>Activo</label>
-              <select value={form.is_active ? '1' : '0'} onChange={e => set('is_active', e.target.value === '1')} style={inputStyle}>
+              <label className="users-form-label">Activo</label>
+              <select 
+                value={form.is_active ? '1' : '0'} 
+                onChange={e => set('is_active', e.target.value === '1')} 
+                className="users-form-select"
+              >
                 <option value="1">Sí</option>
                 <option value="0">No</option>
               </select>
@@ -114,9 +113,11 @@ function UserModal({ user, onClose, onSave, saving, roles }) {
           )}
         </div>
 
-        <div style={{ padding: '18px 28px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-          <button onClick={onClose} disabled={saving} style={btnSecondary}>Cancelar</button>
-          <button onClick={() => onSave(form)} disabled={saving || !canSubmit} style={btnPrimary}>
+        <div className="users-modal-footer">
+          <button onClick={onClose} disabled={saving} className="users-btn-secondary">
+            Cancelar
+          </button>
+          <button onClick={() => onSave(form)} disabled={saving || !canSubmit} className="users-btn-primary">
             {saving ? 'Guardando...' : user ? 'Guardar cambios' : 'Crear usuario'}
           </button>
         </div>
@@ -125,7 +126,7 @@ function UserModal({ user, onClose, onSave, saving, roles }) {
   );
 }
 
-// ─── Página principal ─────────────────────────────────────────────────────────
+// ─── Página principal ─────────────────────────────────────────────────────────────────────────
 
 export default function CoreUsersPage() {
   const [users,       setUsers      ] = useState([]);
@@ -137,27 +138,33 @@ export default function CoreUsersPage() {
   const [editingUser, setEditingUser] = useState(null);
   const [saving,      setSaving     ] = useState(false);
   const [modalError,  setModalError ] = useState('');
-  const [verifData,   setVerifData  ] = useState(null); // { userId } | null
+  const [refreshing,  setRefreshing ] = useState(false);
+  const [verifData,   setVerifData  ] = useState(null);
   const [clave,       setClave      ] = useState('');
   const [verifMsg,    setVerifMsg   ] = useState('');
 
   // ── Carga ────────────────────────────────────────────────────────────────
 
-  const load = useCallback(() => {
-    setLoading(true); setError('');
-    fetchWithAuth('/api/core/users')
-      .then(r => r.json())
-      .then(data => setUsers(
+  const load = useCallback(async () => {
+    setLoading(true); 
+    setError('');
+    try {
+      const res = await fetchWithAuth('/api/core/users');
+      const data = await res.json();
+      setUsers(
         Array.isArray(data.users)
           ? data.users.map(u => ({
               ...u,
-              first_name: u.first_name ?? u.name?.split(' ')[0]          ?? '',
+              first_name: u.first_name ?? u.name?.split(' ')[0] ?? '',
               last_name:  u.last_name  ?? u.name?.split(' ').slice(1).join(' ') ?? '',
             }))
           : []
-      ))
-      .catch(() => setUsers([]))
-      .finally(() => setLoading(false));
+      );
+    } catch {
+      setError('Error al cargar usuarios');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -169,10 +176,19 @@ export default function CoreUsersPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // ── Refresh ────────────────────────────────────────────────────────────────
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
+
   // ── CRUD ─────────────────────────────────────────────────────────────────
 
   const handleSave = async (values) => {
-    setSaving(true); setModalError('');
+    setSaving(true); 
+    setModalError('');
     try {
       const isEdit = !!editingUser;
       const res = await fetchWithAuth(
@@ -181,7 +197,8 @@ export default function CoreUsersPage() {
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Error al guardar usuario');
-      setShowModal(false); setEditingUser(null);
+      setShowModal(false); 
+      setEditingUser(null);
       load();
     } catch (e) {
       setModalError(e.message);
@@ -200,7 +217,9 @@ export default function CoreUsersPage() {
       load();
     } catch (e) {
       alert(e.message);
-    } finally { setSaving(false); }
+    } finally { 
+      setSaving(false); 
+    }
   };
 
   const handleVerifClave = async () => {
@@ -211,9 +230,9 @@ export default function CoreUsersPage() {
         body: JSON.stringify({ userId: verifData.userId, key: clave }),
       });
       const data = await res.json();
-      setVerifMsg(res.ok && data.valid ? '✔️ Clave correcta' : data.error ?? 'Clave incorrecta');
+      setVerifMsg(res.ok && data.valid ? '✔️ Clave correcta' : data.error ?? '❌ Clave incorrecta');
     } catch {
-      setVerifMsg('Error de conexión');
+      setVerifMsg('❌ Error de conexión');
     }
   };
 
@@ -232,77 +251,117 @@ export default function CoreUsersPage() {
       || (roles.find(r => r.id === u.role_id)?.name ?? '').toLowerCase().includes(q);
   });
 
+  // ── Botón de actualizar para el header ───────────────────────────────────
+
+  const refreshButton = (
+    <button 
+      onClick={handleRefresh} 
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <RefreshCw size={18} className={refreshing ? 'spinning' : ''} /> 
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
     <PageTemplate
-      title="Usuarios"
+      title="USUARIOS"
       subtitle="Gestión de usuarios y roles del negocio"
       loading={loading}
       error={error}
-      onRetry={load}
-      headerAction={
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative' }}>
-            <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#ccc' }} />
+      onRetry={handleRefresh}
+      theme="business"
+      headerAction={refreshButton}
+    >
+      <div className="users-page">
+        {/* Barra de búsqueda y botón nuevo usuario JUNTOS */}
+        <div className="users-search-row">
+          <div className="users-search-wrapper">
+            <Search size={16} className="users-search-icon" />
             <input
-              type="text" placeholder="Buscar nombre, email, rol..."
-              value={search} onChange={e => setSearch(e.target.value)}
-              style={{ padding: '9px 12px 9px 32px', borderRadius: 8, border: '1px solid #d1d5db', background: '#f8fafc', color: '#222', fontSize: 13, width: 220 }}
+              type="text" 
+              placeholder="Buscar nombre, email, rol..."
+              value={search} 
+              onChange={e => setSearch(e.target.value)}
+              className="users-search-input"
             />
           </div>
-          <button onClick={load} title="Recargar" style={{ ...btnSecondary, padding: '9px 12px' }}>
-            <RefreshCw size={14} />
-          </button>
-          <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: 6, ...btnPrimary, padding: '9px 18px' }}>
-            <Plus size={15} /> Nuevo usuario
+          <button onClick={openCreate} className="users-btn-new">
+            <Plus size={14} /> Nuevo Usuario
           </button>
         </div>
-      }
-    >
-      <div style={{ background: '#f7f8fa', border: '1px solid #eceff1', borderRadius: 12, overflow: 'hidden', marginTop: 15 }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: '#eff6ff', borderBottom: '1px solid #eceff1' }}>
-                <th style={th}>Nombre</th>
-                <th style={th}>Apellido</th>
-                <th style={th}>Email</th>
-                <th style={th}>Rol</th>
-                <th style={th}>Estado</th>
-                <th style={th}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtrados.length === 0 ? (
+
+        {/* Tabla de usuarios */}
+        <div className="users-table-container">
+          <div className="users-table-wrapper">
+            <table className="users-table">
+              <thead>
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: 40, color: '#aaa', fontSize: 14 }}>
-                    <Users size={32} style={{ display: 'block', margin: '0 auto 10px', opacity: 0.3 }} />
-                    {search ? 'Sin resultados para esa búsqueda' : 'No hay usuarios registrados'}
-                  </td>
+                  <th>Nombre</th>
+                  <th>Apellido</th>
+                  <th>Email</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
-              ) : filtrados.map(user => (
-                <tr key={user.id} style={{ borderBottom: '1px solid #eceff1', background: '#fff' }}>
-                  <td style={td}>{user.first_name}</td>
-                  <td style={td}>{user.last_name}</td>
-                  <td style={td}>{user.email}</td>
-                  <td style={td}>{roles.find(r => r.id === user.role_id)?.name ?? user.role_id}</td>
-                  <td style={td}>
-                    {user.is_active
-                      ? <CheckCircle size={17} color="#22c55e" />
-                      : <AlertCircle size={17} color="#e11d48" />}
-                  </td>
-                  <td style={{ ...td, minWidth: 160 }}>
-                    <div style={{ display: 'flex', gap: 5 }}>
-                      <button onClick={() => openEdit(user)}    style={miniBtn}><Edit2  size={13} /></button>
-                      <button onClick={() => handleDelete(user)} style={miniBtn}><Trash2 size={13} /></button>
-                      <button onClick={() => openVerif(user)}   style={miniBtn}><Unlock size={13} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtrados.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="users-empty-state">
+                      <Users size={48} className="users-empty-icon" />
+                      <span className="users-empty-text">
+                        {search ? 'Sin resultados para esa búsqueda' : 'No hay usuarios registrados'}
+                      </span>
+                    </td>
+                  </tr>
+                ) : (
+                  filtrados.map(user => (
+                    <tr key={user.id}>
+                      <td>{user.first_name}</td>
+                      <td>{user.last_name}</td>
+                      <td>{user.email}</td>
+                      <td>
+                        <span className="users-role-badge">
+                          {roles.find(r => r.id === user.role_id)?.name ?? user.role_id}
+                        </span>
+                      </td>
+                      <td>
+                        {user.is_active ? (
+                          <div className="users-status-active">
+                            <CheckCircle size={16} /> 
+                            <span>Activo</span>
+                          </div>
+                        ) : (
+                          <div className="users-status-inactive">
+                            <AlertCircle size={16} /> 
+                            <span>Inactivo</span>
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <div className="users-action-buttons">
+                          <button onClick={() => openEdit(user)} className="users-btn-icon">
+                            <Edit2 size={14} />
+                          </button>
+                          <button onClick={() => handleDelete(user)} className="users-btn-icon">
+                            <Trash2 size={14} />
+                          </button>
+                          <button onClick={() => openVerif(user)} className="users-btn-icon">
+                            <Unlock size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -310,12 +369,8 @@ export default function CoreUsersPage() {
       {showModal && (
         <>
           {modalError && (
-            <div style={{
-              position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)',
-              zIndex: 2100, background: 'rgba(239,68,68,0.9)', color: '#fff',
-              padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-            }}>
-              {modalError}
+            <div className="users-modal-error">
+              ⚠️ {modalError}
             </div>
           )}
           <UserModal
@@ -330,29 +385,27 @@ export default function CoreUsersPage() {
 
       {/* ── Modal verificar clave ── */}
       {verifData && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.19)',
-          zIndex: 2550, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <div style={{
-            background: '#fff', borderRadius: 12, boxShadow: '0 14px 40px rgba(0,0,0,0.13)',
-            padding: 34, minWidth: 320, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center',
-          }}>
-            <label style={{ fontFamily: 'monospace', fontWeight: 700, marginBottom: 4 }}>
-              Clave del usuario seleccionado
-            </label>
+        <div className="users-verif-overlay">
+          <div className="users-verif-modal">
+            <h3 className="users-verif-title">Verificar clave</h3>
+            <label className="users-verif-label">Ingrese la clave del usuario</label>
             <input
-              type="password" placeholder="Clave" value={clave}
+              type="password" 
+              placeholder="Clave" 
+              value={clave}
               onChange={e => setClave(e.target.value)}
-              style={{ ...inputStyle, color: '#222', background: '#f3f4f6', textAlign: 'center' }}
+              className="users-verif-input"
+              onKeyPress={e => e.key === 'Enter' && handleVerifClave()}
             />
-            <button onClick={handleVerifClave} style={{ ...btnPrimary, minWidth: 95 }}>
+            <button onClick={handleVerifClave} className="users-btn-verif">
               Verificar clave
             </button>
-            <div style={{ minHeight: 20, color: verifMsg.includes('✔') ? '#16a34a' : '#e11d48', fontWeight: 600 }}>
+            <div className={`users-verif-message ${verifMsg.includes('✔') ? 'users-verif-message-success' : 'users-verif-message-error'}`}>
               {verifMsg}
             </div>
-            <button onClick={closeVerif} style={btnSecondary}>Cerrar</button>
+            <button onClick={closeVerif} className="users-btn-secondary">
+              Cerrar
+            </button>
           </div>
         </div>
       )}
