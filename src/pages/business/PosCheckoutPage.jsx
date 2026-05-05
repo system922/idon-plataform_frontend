@@ -257,6 +257,7 @@ export default function PosCheckoutPage() {
     setRefCard('');
     setRefTransfer('');
     setMixtoManual(new Set());
+    setMixtoActive(new Set());
     setSelectedItems([]);
     setClientesDivididos([]);
     setPagosRegistrados([]);

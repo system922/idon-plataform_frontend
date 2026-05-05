@@ -36,10 +36,24 @@ export function useAutoPrint({ businessId, enabled = true }) {
     if (printedIdsRef.current.has(order.id)) return false; // ya impreso
     if (!qz.websocket.isActive()) return false;
 
+    // Si la orden llegó sin ítems (socket no los incluye), buscarlos del backend
+    let orderToprint = order;
+    if (!Array.isArray(order.items) || order.items.length === 0) {
+      try {
+        const res = await fetchWithAuth(`/api/ordenes/${order.id}`);
+        if (res.ok) {
+          const full = await res.json();
+          orderToprint = { ...order, ...full, items: full.items || full.pedido?.items || [] };
+        }
+      } catch {
+        // si falla la búsqueda, imprime con lo que hay
+      }
+    }
+
     // Marcar inmediatamente para bloquear cualquier otra llamada concurrente
     printedIdsRef.current.add(order.id);
     try {
-      await printOrder(order);
+      await printOrder(orderToprint);
       await fetchWithAuth('/api/ordenes/mark-printed', {
         method: 'POST',
         body: JSON.stringify({ order_ids: [order.id] }),
@@ -105,7 +119,9 @@ export function useAutoPrint({ businessId, enabled = true }) {
 
     socket.on('new_order', async (data) => {
       try {
-        const order = { ...(data?.pedido || data), items: data?.items || [] };
+        const pedido = data?.pedido || data;
+        const items  = data?.items ?? pedido?.items ?? [];
+        const order  = { ...pedido, items };
         await tryPrint(order);
       } catch (err) {
         console.error('[AutoPrint] Error socket print:', err);
