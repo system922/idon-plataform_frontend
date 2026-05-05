@@ -160,89 +160,72 @@ export default function TakeOrderPageNew() {
   // ── Guardar orden ─────────────────────────────────────────────────────────
 
   async function guardarOrden() {
-    if (orderType === 'dine_in' && !numeroMesa) {
-      setError('Debe ingresar un número de mesa');
-      return;
-    }
-
-    if (items.length === 0) {
-      setError('Debe agregar al menos un ítem');
-      return;
-    }
-
-    try {
-      setGuardando(true);
-
-      const CF_CEDULA = '9999999999';
-      const CF_NOMBRE = 'CONSUMIDOR FINAL';
-      let clienteId   = null;
-
-      const cfRes  = await fetchWithAuth(`/api/customers/cedula?cedula=${CF_CEDULA}`);
-      const cfData = cfRes.ok ? await cfRes.json() : null;
-      const cfExistente = Array.isArray(cfData) ? cfData[0] : cfData;
-
-      if (cfExistente?.id) {
-        clienteId = cfExistente.id;
-      } else {
-        const crearRes  = await fetchWithAuth('/api/customers', {
-          method: 'POST',
-          body: JSON.stringify({ nombre: CF_NOMBRE, cedula: CF_CEDULA }),
-        });
-        if (!crearRes.ok) throw new Error('Error creando Consumidor Final');
-        const creado = await crearRes.json();
-        clienteId    = creado.id;
-      }
-
-      const itemsFormateados = items.map(item => ({
-        product_id:   item.product_id,
-        product_name: item.product_name,
-        quantity:     item.quantity,
-        unit_price:   item.unit_price,
-        line_total:   item.line_total,
-        notes:        item.notas || null,
-      }));
-
-      const res = await fetchWithAuth('/api/ordenes', {
-        method: 'POST',
-        body: JSON.stringify({
-          numero_mesa:    orderType === 'dine_in' ? parseInt(numeroMesa, 10) : null,
-          mesa_id:        mesaId,
-          cliente_id:     clienteId,
-          items:          itemsFormateados,
-          notas,
-          order_type:     orderType,
-          vat_rate:       vatRate,
-          iva_percentage: vatRate * 100,
-          iva_amount:     ivaAmount,
-          subtotal,
-          total:          totalConIva,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Error al guardar orden');
-      }
-
-      const data = await res.json();
-      setSuccess(`✅ Orden ${data?.pedido?.numero_pedido ?? ''} enviada a cocina`);
-
-      setTimeout(() => {
-        setNumeroMesa('');
-        setMesaId('');
-        setNotas('');
-        setOrderType('dine_in');
-        setItems([]);
-        setSuccess('');
-        setError('');
-      }, 2500);
-
-    } catch (err) {
-      setError(err?.message || 'Error al guardar orden');
-    } finally {
-      setGuardando(false);
-    }
+  if (orderType === 'dine_in' && !numeroMesa) {
+    setError('Debe ingresar un número de mesa');
+    return;
   }
+
+  if (items.length === 0) {
+    setError('Debe agregar al menos un ítem');
+    return;
+  }
+
+  try {
+    setGuardando(true);
+
+    // ✅ No asignamos ningún cliente al crear la orden
+    const clienteId = null;
+
+    const itemsFormateados = items.map(item => ({
+      product_id:   item.product_id,
+      product_name: item.product_name,
+      quantity:     item.quantity,
+      unit_price:   item.unit_price,
+      line_total:   item.line_total,
+      notes:        item.notas || null,
+    }));
+
+    const res = await fetchWithAuth('/api/ordenes', {
+      method: 'POST',
+      body: JSON.stringify({
+        numero_mesa:    orderType === 'dine_in' ? parseInt(numeroMesa, 10) : null,
+        mesa_id:        mesaId,
+        cliente_id:     clienteId,   // ← null
+        items:          itemsFormateados,
+        notas,
+        order_type:     orderType,
+        vat_rate:       vatRate,
+        iva_percentage: vatRate * 100,
+        iva_amount:     ivaAmount,
+        subtotal,
+        total:          totalConIva,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Error al guardar orden');
+    }
+
+    const data = await res.json();
+    setSuccess(`✅ Orden ${data?.pedido?.numero_pedido ?? ''} enviada a cocina`);
+
+    setTimeout(() => {
+      setNumeroMesa('');
+      setMesaId('');
+      setNotas('');
+      setOrderType('dine_in');
+      setItems([]);
+      setSuccess('');
+      setError('');
+    }, 2500);
+
+  } catch (err) {
+    setError(err?.message || 'Error al guardar orden');
+  } finally {
+    setGuardando(false);
+  }
+}
 
   // ── Render ────────────────────────────────────────────────────────────────
 
