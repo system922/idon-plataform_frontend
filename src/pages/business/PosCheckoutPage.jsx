@@ -874,17 +874,23 @@ export default function PosCheckoutPage() {
     });
 
     try {
-      const result = await fetchWithAuth('/api/einvoicing/invoices/emit', { 
-        method: 'POST', 
-        body: JSON.stringify(payload) 
+      const response = await fetchWithAuth('/api/einvoicing/invoices/emit', {
+        method: 'POST',
+        body: JSON.stringify(payload)
       });
-      
+
+      const result = await response.json();
       console.log('📨 Respuesta del servidor:', result);
-      
-      if (result && result.invoice_number) {
+
+      if (!response.ok) {
+        console.error('❌ Error del backend:', result?.error || response.status);
+        return null;
+      }
+
+      if (result?.invoice_number) {
         console.log(`✅ Factura emitida: ${result.invoice_number}`);
       }
-      
+
       return result?.invoice_number || null;
     } catch (e) {
       console.error('❌ Error al emitir factura:', e);
