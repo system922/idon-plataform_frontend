@@ -22,6 +22,7 @@ import { BusinessContextProvider } from '../../admin/config/BusinessContext';
 import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';
 import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
 import { useCashDrawer } from '../../hooks/useCashDrawer';
+import { useAutoPrint } from '../../hooks/useAutoPrint';
 
 const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
 
@@ -224,6 +225,8 @@ export default function BusinessLayout({ user, onLogout }) {
   const [mobileOpen,   setMobileOpen]   = useState(false);
   const [isSuspended,  setIsSuspended]  = useState(false);
   const [selectedBiz,  setSelectedBiz]  = useState(getStoredBiz);
+
+  useAutoPrint({ businessId: selectedBiz?.id, enabled: !!selectedBiz?.id });
 
   // Apertura de caja
   const [aperturaChecked,     setAperturaChecked]     = useState(false);

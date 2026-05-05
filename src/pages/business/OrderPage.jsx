@@ -5,9 +5,14 @@ import ItemsSection from '../../components/ItemsSection';
 import AddItemModal from '../../components/AddItemModal';
 import EditItemModal from '../../components/EditItemModal';
 import { fetchWithAuth } from '../../config/apiBase';
+import { useQzTray } from '../../components/useQzTray';
+import { usePrinterService } from '../../services/usePrinterService';
 import '../../styles/CreateOrder.css';
 
 export default function TakeOrderPageNew() {
+  const { printerConnected, printerError } = useQzTray();
+  const { print } = usePrinterService();
+
   const [vatRate,               setVatRate              ] = useState(0.15);
   const [categorias,            setCategorias           ] = useState([]);
   const [productos,             setProductos            ] = useState([]);
@@ -25,6 +30,7 @@ export default function TakeOrderPageNew() {
   const [cantidadItem,          setCantidadItem         ] = useState(1);
   const [notasItem,             setNotasItem            ] = useState('');
   const [itemEditando,          setItemEditando         ] = useState(null);   // 👈 NUEVO
+  const [printLoading,          setPrintLoading         ] = useState(false);
 
   // ── Carga inicial ─────────────────────────────────────────────────────────
 
@@ -157,6 +163,23 @@ export default function TakeOrderPageNew() {
   const totalConIva = useMemo(() => subtotal + ivaAmount, [subtotal, ivaAmount]);
   const ivaLabel    = useMemo(() => `${Math.round((vatRate || 0) * 1000) / 10}%`, [vatRate]);
 
+  // ── Impresión comanda ─────────────────────────────────────────────────────
+
+  async function imprimirComanda(pedido) {
+    if (!printerConnected) return;
+    try {
+      setPrintLoading(true);
+      await print('printer_ticket', 'comanda', {
+        comanda: { number: pedido?.numero_pedido ?? 'N/A' },
+        table:   pedido?.mesa_numero ?? pedido?.numero_mesa ?? (orderType === 'delivery' ? 'DELIVERY' : 'LLEVAR'),
+        items,
+        notes:   notas,
+      });
+    } finally {
+      setPrintLoading(false);
+    }
+  }
+
   // ── Guardar orden ─────────────────────────────────────────────────────────
 
   async function guardarOrden() {
@@ -210,6 +233,8 @@ export default function TakeOrderPageNew() {
     const data = await res.json();
     setSuccess(`✅ Orden ${data?.pedido?.numero_pedido ?? ''} enviada a cocina`);
 
+    await imprimirComanda(data.pedido);
+
     setTimeout(() => {
       setNumeroMesa('');
       setMesaId('');
@@ -234,6 +259,12 @@ export default function TakeOrderPageNew() {
       <div className="takeorder-shell">
         {error   && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
+        {printerError && (
+          <div className="print-alert">
+            <div className="print-alert-title">Error de impresión</div>
+            <div className="print-alert-desc">{printerError}. Verifica QZ Tray y la impresora USB.</div>
+          </div>
+        )}
 
         <div className="order-grid">
           <OrderHeader
@@ -251,7 +282,7 @@ export default function TakeOrderPageNew() {
             ivaAmount={ivaAmount}
             totalConIva={totalConIva}
             ivaLabel={ivaLabel}
-            guardando={guardando}
+            guardando={guardando || printLoading}
             orderType={orderType}
             numeroMesa={numeroMesa}
             guardarOrden={guardarOrden}
