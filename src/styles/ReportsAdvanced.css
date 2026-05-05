@@ -1,0 +1,104 @@
+.reports-advanced-container {
+  padding: 24px;
+}
+
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  background: rgba(22, 78, 68, 0.3);
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #60d5c0;
+}
+.filter-group input, .filter-group select {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #fff;
+}
+.kpi-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.kpi-card {
+  background: rgba(22, 78, 68, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 20px;
+  padding: 20px;
+  position: relative;
+}
+.kpi-title {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+}
+.kpi-value {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 12px 0;
+  color: #fff;
+}
+.kpi-icon {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  opacity: 0.6;
+}
+.kpi-icon.positive { color: #10b981; }
+.kpi-icon.negative { color: #ef4444; }
+.chart-card, .table-card {
+  background: rgba(22, 78, 68, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+.chart-card h3, .table-card h3 {
+  margin: 0 0 20px;
+  font-size: 18px;
+  color: #fff;
+}
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.report-table th, .report-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.report-table th {
+  color: #60d5c0;
+  font-weight: 600;
+}
+.table-responsive {
+  overflow-x: auto;
+}
+.alert-error, .alert-success {
+  margin-bottom: 20px;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.loading-spinner {
+  text-align: center;
+  padding: 60px;
+}

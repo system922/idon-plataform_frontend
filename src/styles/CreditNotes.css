@@ -1,0 +1,40 @@
+.credit-notes-container {
+  padding: 20px;
+}
+.notes-table-wrapper {
+  overflow-x: auto;
+  background: rgba(22, 78, 68, 0.3);
+  border-radius: 16px;
+  padding: 4px;
+}
+.notes-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.notes-table th, .notes-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+}
+.status-badge.autorizada {
+  background: rgba(16,185,129,0.2);
+  color: #10b981;
+}
+.status-badge.pendiente {
+  background: rgba(245,158,11,0.2);
+  color: #f59e0b;
+}
+.credit-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.totals {
+  margin-top: 20px;
+  text-align: right;
+}

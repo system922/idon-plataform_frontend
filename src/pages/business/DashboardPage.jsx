@@ -44,7 +44,8 @@ function toArray(data) {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function ManagerDashboard() {
-  const today    = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
+  // Fecha en UTC para evitar problemas de zona horaria con el backend
+  const today = new Date().toISOString().split('T')[0];
 
   const [stats,        setStats       ] = useState(null);
   const [graphData,    setGraphData   ] = useState({ sales: [], purchases: [], hours: [] });
@@ -67,7 +68,7 @@ export default function ManagerDashboard() {
         fetchWithAuth(`/api/reports/sales-today?date=${today}`),
         fetchWithAuth(`/api/expenses?date=${today}`),
         fetchWithAuth(`/api/reports/pending`),
-        fetchWithAuth(`/api/clientes`),
+        fetchWithAuth(`/api/customers?limit=1`),
       ]);
 
       setStats({
@@ -116,36 +117,47 @@ export default function ManagerDashboard() {
 
   async function handleRefresh() { 
     setRefreshing(true);
-    setError(''); // Limpiar error anterior
+    setError('');
     try {
       await Promise.all([fetchStats(), fetchGraphs()]);
-    } catch (err) {
+    } catch {
       setError('Error al actualizar los datos');
     } finally {
       setRefreshing(false);
     }
   }
 
-  // ── Computed values ───────────────────────────────────────────────────────
+  // ── Computed values con sanitización ─────────────────────────────────────
 
-  const { sales = {}, purchases = {}, pending = {} } = stats ?? {};
-  const balance = (sales.total_cobrado ?? 0) - (purchases.total ?? 0);
+  const rawSales     = stats?.sales     ?? {};
+  const rawPurchases = stats?.purchases ?? {};
+  const rawPending   = stats?.pending   ?? {};
+
+  let salesTotal     = Number(rawSales.total_cobrado)     || 0;
+  let ticketsCount   = Number(rawSales.tickets_count)     || 0;
+  let purchasesTotal = Number(rawPurchases.total)         || 0;
+  let pendingCount   = Number(rawPending.count)           || 0;
+
+  // Si hay tickets pero ventas total 0 → forzar tickets a 0 (inconsistencia de datos)
+  if (ticketsCount > 0 && salesTotal === 0) {
+    ticketsCount = 0;
+  }
+
+  // Las compras no deberían ser negativas; si lo son, usar valor absoluto
+  if (purchasesTotal < 0) {
+    purchasesTotal = Math.abs(purchasesTotal);
+  }
+
+  const balance = salesTotal - purchasesTotal;
 
   const statsData = {
-    sales: {
-      total: sales.total_cobrado ?? 0,
-      tickets: sales.tickets_count ?? 0
-    },
-    purchases: {
-      total: purchases.total ?? 0
-    },
+    sales:    { total: salesTotal, tickets: ticketsCount },
+    purchases: { total: purchasesTotal },
     balance,
-    pending: {
-      count: pending.count ?? 0
-    }
+    pending:  { count: pendingCount }
   };
 
-  // ── Botón de actualizar para el header ─────────────────────────────────────
+  // ── Botón de actualizar para el header ────────────────────────────────────
   
   const refreshButton = (
     <button 
@@ -172,20 +184,13 @@ export default function ManagerDashboard() {
       theme="business"
     >
       <div className="custom-dashboard">
-        {/* ── Tarjetas resumen ── */}
         <StatsCardsSection stats={statsData} />
-
-        {/* ── Ventas por día ── */}
         <SalesChartSection salesData={graphData.sales} />
-
-        {/* ── Fila inferior: Compras + Horas ── */}
         <GraphsRowSection 
           purchasesData={graphData.purchases}
           hoursData={graphData.hours}
           graphLoading={graphLoading}
         />
-
-        {/* ── Acciones rápidas ── */}
         <QuickActionsSection />
       </div>
     </PageTemplate>

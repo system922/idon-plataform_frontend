@@ -1,0 +1,595 @@
+/* AccountingReceivablePage.css */
+
+/* Header Actions */
+.receivable-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.receivable-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: #006648;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.receivable-btn-primary:hover {
+  background: #008060;
+}
+
+.receivable-btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #1d1d19;
+  border: 1px solid #2a2a26;
+  border-radius: 8px;
+  color: #FFFACA;
+  cursor: pointer;
+}
+
+.receivable-btn-secondary:hover {
+  background: #2a2a26;
+}
+
+.receivable-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #1d1d19;
+  border: 1px solid #2a2a26;
+  border-radius: 8px;
+  color: #FFFACA;
+  cursor: pointer;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Summary Cards */
+.receivable-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.receivable-summary-card {
+  background: #1d1d19;
+  border: 1px solid #2a2a26;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.receivable-summary-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #00664820;
+  border-radius: 12px;
+  color: #A0E7C7;
+}
+
+.receivable-summary-icon.paid {
+  background: #A0E7C720;
+  color: #A0E7C7;
+}
+
+.receivable-summary-icon.pending {
+  background: #FFD70020;
+  color: #FFD700;
+}
+
+.receivable-summary-icon.overdue {
+  background: #FF6B6B20;
+  color: #FF6B6B;
+}
+
+.receivable-summary-content {
+  flex: 1;
+}
+
+.receivable-summary-title {
+  font-size: 12px;
+  color: #A8A89A;
+  margin-bottom: 4px;
+}
+
+.receivable-summary-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #FFFACA;
+}
+
+/* Filters Bar */
+.receivable-filters-bar {
+  background: #1d1d19;
+  border: 1px solid #2a2a26;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.receivable-search-wrapper {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.receivable-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #A8A89A;
+}
+
+.receivable-search-input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  background: #141410;
+  border: 1px solid #2a2a26;
+  border-radius: 8px;
+  color: #FFFACA;
+  font-size: 14px;
+}
+
+.receivable-search-input:focus {
+  outline: none;
+  border-color: #006648;
+}
+
+.receivable-filter-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.receivable-filter-select {
+  padding: 8px 16px;
+  background: #141410;
+  border: 1px solid #2a2a26;
+  border-radius: 8px;
+  color: #FFFACA;
+  cursor: pointer;
+}
+
+.receivable-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #A0E7C7;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.receivable-link-btn:hover {
+  text-decoration: underline;
+}
+
+/* Table */
+.receivable-table-container {
+  background: #1d1d19;
+  border: 1px solid #2a2a26;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.receivable-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #2a2a26;
+}
+
+.receivable-table-header h3 {
+  margin: 0;
+  color: #FFFACA;
+  font-size: 16px;
+}
+
+.receivable-count {
+  font-size: 12px;
+  color: #A8A89A;
+}
+
+.receivable-table-wrapper {
+  overflow-x: auto;
+}
+
+.receivable-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.receivable-table thead tr {
+  background: #141410;
+  border-bottom: 2px solid #2a2a26;
+}
+
+.receivable-table th {
+  padding: 12px 16px;
+  text-align: left;
+  color: #FFFACA;
+  font-weight: 600;
+}
+
+.receivable-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #2a2a26;
+  color: #D0D0C0;
+}
+
+.receivable-table tbody tr:hover {
+  background: #252520;
+}
+
+.receivable-table tfoot tr {
+  background: #141410;
+  border-top: 2px solid #2a2a26;
+}
+
+.receivable-text-right {
+  text-align: right;
+}
+
+.receivable-customer strong {
+  display: block;
+  color: #FFFACA;
+}
+
+.receivable-customer small {
+  font-size: 11px;
+  color: #A8A89A;
+}
+
+.receivable-description {
+  font-weight: 500;
+}
+
+.receivable-invoice {
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.receivable-pending {
+  font-weight: 700;
+  color: #FFD700;
+}
+
+.overdue-row {
+  background: #FF6B6B08;
+}
+
+.overdue-date {
+  color: #FF6B6B;
+  font-weight: 600;
+}
+
+/* Status Badges */
+.receivable-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.receivable-status-badge.pending {
+  background: #FFD70020;
+  color: #FFD700;
+}
+
+.receivable-status-badge.partial {
+  background: #FFA07A20;
+  color: #FFA07A;
+}
+
+.receivable-status-badge.paid {
+  background: #A0E7C720;
+  color: #A0E7C7;
+}
+
+.receivable-status-badge.overdue {
+  background: #FF6B6B20;
+  color: #FF6B6B;
+}
+
+/* Action Buttons */
+.receivable-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.receivable-action-btn {
+  padding: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #A8A89A;
+}
+
+.receivable-action-btn.payment:hover {
+  background: #A0E7C720;
+  color: #A0E7C7;
+}
+
+.receivable-action-btn.edit:hover {
+  background: #00664820;
+  color: #A0E7C7;
+}
+
+.receivable-action-btn.delete:hover {
+  background: #FF6B6B20;
+  color: #FF6B6B;
+}
+
+/* Footer Totals */
+.receivable-footer-label {
+  font-weight: 700;
+  color: #FFFACA;
+}
+
+.receivable-footer-total {
+  font-weight: 800;
+  color: #A0E7C7;
+  font-size: 15px;
+}
+
+.receivable-footer-pending {
+  font-weight: 800;
+  color: #FFD700;
+  font-size: 15px;
+}
+
+/* Empty State */
+.receivable-empty-state {
+  text-align: center;
+  padding: 48px !important;
+  color: #A8A89A;
+}
+
+.receivable-empty-state svg {
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.receivable-empty-state span {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.receivable-empty-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: #006648;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+}
+
+/* Modal */
+.receivable-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.receivable-modal-box {
+  background: #1d1d19;
+  border: 1px solid #2a2a26;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 85vh;
+  overflow: auto;
+}
+
+.receivable-modal-small {
+  max-width: 450px;
+}
+
+.receivable-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #2a2a26;
+}
+
+.receivable-modal-header h2 {
+  font-size: 18px;
+  color: #FFFACA;
+  margin: 0;
+}
+
+.receivable-modal-close {
+  background: none;
+  border: none;
+  color: #A8A89A;
+  cursor: pointer;
+}
+
+.receivable-modal-close:hover {
+  color: #FFFACA;
+}
+
+.receivable-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.receivable-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.receivable-form-group.full-width {
+  grid-column: span 2;
+}
+
+.receivable-form-group label {
+  font-size: 12px;
+  color: #A8A89A;
+  font-weight: 600;
+}
+
+.receivable-form-group input,
+.receivable-form-group select,
+.receivable-form-group textarea {
+  padding: 10px 12px;
+  background: #141410;
+  border: 1px solid #2a2a26;
+  border-radius: 8px;
+  color: #FFFACA;
+  font-size: 14px;
+}
+
+.receivable-form-group input:focus,
+.receivable-form-group select:focus,
+.receivable-form-group textarea:focus {
+  outline: none;
+  border-color: #006648;
+}
+
+.receivable-payment-info {
+  background: #141410;
+  margin: 0 24px;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.receivable-payment-info-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.receivable-payment-info-item:last-child {
+  margin-bottom: 0;
+}
+
+.receivable-payment-info-item span {
+  color: #A8A89A;
+}
+
+.receivable-pending-amount {
+  color: #FFD700;
+}
+
+.receivable-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #2a2a26;
+}
+
+.receivable-btn-cancel {
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid #2a2a26;
+  border-radius: 8px;
+  color: #A8A89A;
+  cursor: pointer;
+}
+
+.receivable-btn-cancel:hover {
+  background: #2a2a26;
+}
+
+.receivable-btn-save {
+  padding: 8px 24px;
+  background: #006648;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.receivable-btn-save:hover:not(:disabled) {
+  background: #008060;
+}
+
+.receivable-btn-save:disabled,
+.receivable-btn-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Alert */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alert-error {
+  background: #FF6B6B20;
+  border: 1px solid #FF6B6B40;
+  color: #FF6B6B;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .receivable-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .receivable-form-group.full-width {
+    grid-column: span 1;
+  }
+  
+  .receivable-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .receivable-table th,
+  .receivable-table td {
+    padding: 8px 12px;
+  }
+}

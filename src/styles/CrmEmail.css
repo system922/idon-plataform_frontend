@@ -1,0 +1,196 @@
+.crm-email-container {
+  padding: 20px 0;
+}
+
+.campaigns-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 24px;
+}
+
+.campaign-card {
+  background: rgba(22, 78, 68, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.campaign-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.campaign-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.campaign-icon {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 8px;
+  border-radius: 12px;
+  display: inline-flex;
+}
+
+.campaign-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  flex: 1;
+}
+
+.campaign-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+.campaign-status.active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.campaign-status.inactive {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.campaign-subject {
+  font-size: 14px;
+  font-weight: 600;
+  color: #60d5c0;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(255,255,255,0.1);
+}
+
+.campaign-preview {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.5;
+  margin-bottom: 16px;
+  max-height: 80px;
+  overflow: hidden;
+}
+
+.campaign-meta {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.campaign-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.icon-btn.edit { color: #60a5fa; }
+.icon-btn.edit:hover { background: rgba(96, 165, 250, 0.15); }
+.icon-btn.preview { color: #a78bfa; }
+.icon-btn.preview:hover { background: rgba(167, 139, 250, 0.15); }
+.icon-btn.send { color: #10b981; }
+.icon-btn.send:hover { background: rgba(16, 185, 129, 0.15); }
+.icon-btn.delete { color: #ef4444; }
+.icon-btn.delete:hover { background: rgba(239, 68, 68, 0.15); }
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: rgba(22, 78, 68, 0.2);
+  border-radius: 24px;
+  border: 1px dashed rgba(16, 185, 129, 0.3);
+  grid-column: 1 / -1;
+}
+.empty-state svg {
+  color: #10b981;
+  margin-bottom: 16px;
+}
+.empty-state h3 {
+  margin: 0 0 8px;
+  color: #fff;
+}
+.empty-state p {
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 20px;
+}
+
+/* Modal grande para contenido HTML */
+.modal-lg {
+  max-width: 800px;
+  width: 90%;
+}
+.preview-modal .preview-subject {
+  background: rgba(0,0,0,0.3);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+.preview-content {
+  background: #fff;
+  color: #000;
+  padding: 20px;
+  border-radius: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.preview-content img {
+  max-width: 100%;
+}
+
+/* Formulario */
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  color: #fff;
+  font-family: monospace;
+  font-size: 13px;
+  resize: vertical;
+}
+.form-group textarea:focus {
+  outline: none;
+  border-color: #10b981;
+}
+.checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .campaigns-grid {
+    grid-template-columns: 1fr;
+  }
+  .campaign-actions {
+    justify-content: center;
+  }
+}

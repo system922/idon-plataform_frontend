@@ -1,0 +1,319 @@
+/* ============================================================
+   PURCHASES CATEGORIES PAGE - DARK THEME PREMIUM
+   Estilo para la gestión de categorías de gastos
+============================================================ */
+
+.categories-container {
+  padding: 20px 0;
+}
+
+.categories-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Tabla de categorías */
+.categories-table-wrapper {
+  overflow-x: auto;
+  background: rgba(22, 78, 68, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 16px;
+  padding: 4px;
+}
+
+.categories-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.categories-table thead th {
+  text-align: left;
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #60d5c0;
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.categories-table tbody td {
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  vertical-align: middle;
+}
+
+.category-name {
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Muestra de color */
+.color-display {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  vertical-align: middle;
+  margin-right: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.color-hex {
+  font-family: monospace;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Botones de acción */
+.actions-cell {
+  display: flex;
+  gap: 12px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn.edit {
+  color: #60a5fa;
+}
+.icon-btn.edit:hover {
+  background: rgba(96, 165, 250, 0.2);
+}
+.icon-btn.delete {
+  color: #ef4444;
+}
+.icon-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.empty-row {
+  text-align: center;
+  padding: 40px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ============================================================
+   MODAL PARA CREAR/EDITAR CATEGORÍAS
+============================================================ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background: #1e293b;
+  border-radius: 24px;
+  width: 90%;
+  max-width: 500px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #fff;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 8px;
+  transition: 0.2s;
+}
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  font-size: 14px;
+}
+.form-group input[type="text"] {
+  width: 100%;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 14px;
+  transition: 0.2s;
+}
+.form-group input[type="text"]:focus {
+  outline: none;
+  border-color: #10b981;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Paleta de colores */
+.color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.color-option {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: 0.1s;
+}
+.color-option.active {
+  border-color: #fff;
+  transform: scale(1.05);
+  box-shadow: 0 0 0 2px #10b981;
+}
+.color-picker {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Modal footer */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Botones principales */
+.btn-primary,
+.btn-secondary {
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  border: none;
+  font-size: 14px;
+}
+.btn-primary {
+  background: #10b981;
+  color: #fff;
+}
+.btn-primary:hover {
+  background: #059669;
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Alertas */
+.alert-error,
+.alert-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+.alert-error {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid #ef4444;
+  color: #f87171;
+}
+.alert-success {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid #10b981;
+  color: #34d399;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .categories-table-wrapper {
+    margin: 0 -4px;
+  }
+  .categories-table thead th,
+  .categories-table tbody td {
+    padding: 12px 12px;
+  }
+  .color-display {
+    width: 24px;
+    height: 24px;
+    margin-right: 6px;
+  }
+  .actions-cell {
+    gap: 6px;
+  }
+  .modal-container {
+    width: 95%;
+    margin: 16px;
+  }
+  .color-option {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+@media (max-width: 640px) {
+  .categories-table thead th,
+  .categories-table tbody td {
+    font-size: 12px;
+    padding: 10px 8px;
+  }
+  .icon-btn {
+    padding: 4px;
+  }
+}

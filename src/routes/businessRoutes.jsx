@@ -13,7 +13,6 @@ import CoreRolesPage       from '../pages/business/RolesPage';
 import AuditLogs           from '../pages/business/AuditPage';
 
 
-import CloseCashPage       from '../pages/business/PosCashRegisterPage.jsx';
 import AperturaCajaPage    from '../pages/business/PosAperturaCajaPage.jsx';
 import ReceiptPrint        from '../pages/business/ReceiptPrintPage';
 import Checkout            from '../pages/business/PosCheckoutPage';
@@ -27,15 +26,13 @@ import InventoryPhysical   from '../pages/business/InventoryPhysicalPage';
 import InventorySuppliers  from '../pages/business/InventorySuppliersPage';
 import InventoryRecipes    from '../pages/business/InventoryRecipesPage';
 
-import ReportProducts      from '../pages/business/ReportsProductsPage';
-import ReportsSales        from '../pages/business/ReportsSalesPage';
-
 import Order               from '../pages/business/OrderPage';
 import OrderTable          from '../pages/business/OrdersTablesPage';
 import OrderHistory        from '../pages/business/OrdersHistoryPage';
 import OrdersKitchenScreenPage from '../pages/business/OrdersKitchenScreenPage';
 
-import PurchaseHistory            from '../pages/business/PurchasesHistory.jsx';
+import ExpensesCategory from '../pages/business/ExpensesCategories.jsx';
+import ExpensesHistory from '../pages/business/ExpensesHistory.jsx';
 
 
 import Attendance          from '../pages/business/EmployeesAttendancePage';
@@ -52,13 +49,30 @@ import ProfilePage         from '../pages/ProfilePage';
 import ReportsAdvancedPage    from '../pages/business/ReportsAdvancedPage';
 import ReportsCustomersPage   from '../pages/business/ReportsCustomersPage';
 import ReportsInventoryPage   from '../pages/business/ReportsInventoryPage';
+import ReportProducts      from '../pages/business/ReportsProductsPage';
+import ReportsSales        from '../pages/business/ReportsSalesPage';
+
+
+import CRMCustomers          from '../pages/business/CRMCustomersPage';
+import CRMEmail              from '../pages/business/CRMEmailPage';
+import CRMAnalytics          from '../pages/business/CRMAnalyticsPage';
+import CrmSegments           from '../pages/business/CrmSegments';
+
 
 import AccountingBalancePage  from '../pages/business/AccountingBalancePage';
 import AccountingExpensesPage from '../pages/business/AccountingExpensesPage';
+import AccountingReceivablePage from '../pages/business/AccountingReceivablePage';
 import AccountingPayablePage  from '../pages/business/AccountingPayablePage';
 
+import NotificationsPush       from '../pages/business/NotificationsPush';
+import NotificationsScheduled from '../pages/business/NotificationsSchedulesPage';
+import NotificationsEmail      from '../pages/business/NotificationsEmailPage';
+
 import EinvoicingInvoicesPage from '../pages/business/EinvoicingInvoicesPage';
-import PurchasesHistory from '../pages/business/PurchasesHistory.jsx';
+import CreditNotes            from '../pages/business/CreditNotesPage';
+
+
+
 
 function OwnerRoute({ children }) {
   const user = (() => {
@@ -141,6 +155,7 @@ export const businessRoutes = (
     <Route path="accounting"                          element={<GenericFeaturePage moduleName="Contabilidad" />} />
     <Route path="accounting/accounting.balance"       element={<AccountingBalancePage />} />
     <Route path="accounting/accounting.expenses"      element={<AccountingExpensesPage />} />
+    <Route path="accounting/accounting.receivable"    element={<AccountingReceivablePage />} />
     <Route path="accounting/accounting.payable"       element={<AccountingPayablePage />} />
     <Route path="accounting/:feature"                 element={<GenericFeaturePage moduleName="Contabilidad" />} />
 
@@ -191,10 +206,10 @@ export const businessRoutes = (
     <Route path="suppliers/:feature"          element={<GenericFeaturePage moduleName="Proveedores" />} />
 
     {/* ────────────────────────────────────────────────
-        COMPRAS  /app/purchases
+        COMPRAS-GASTOS  /app/purchases
     ──────────────────────────────────────────────── */}
-    <Route path="purchases/purchases.categories" element={<GenericFeaturePage moduleName="Compras" />} />
-    <Route path="purchases/purchases.history" element={<PurchasesHistory />} />
+    <Route path="purchases/purchases.categories" element={<ExpensesCategory/>} />
+    <Route path="purchases/purchases.history" element={<ExpensesHistory />} />
     <Route path="purchases/:feature"          element={<GenericFeaturePage moduleName="Compras" />} />
 
     {/* ────────────────────────────────────────────────
@@ -216,8 +231,11 @@ export const businessRoutes = (
     {/* ────────────────────────────────────────────────
         CRM  /app/crm
     ──────────────────────────────────────────────── */}
-    <Route path="crm"                         element={<GenericFeaturePage moduleName="CRM Clientes" />} />
-    <Route path="crm/:feature"                element={<GenericFeaturePage moduleName="CRM Clientes" />} />
+    <Route path="crm/crm.customers"           element={<CRMCustomers />} />
+    <Route path="crm/crm.email"               element={<CRMEmail />} />
+    <Route path="crm/crm.analytics"           element={<CRMAnalytics />} />
+    <Route path="crm/crm.segments"            element={<CrmSegments />} />
+
 
     {/* ────────────────────────────────────────────────
         RUTAS  /app/routes
@@ -246,17 +264,16 @@ export const businessRoutes = (
     {/* ────────────────────────────────────────────────
         NOTIFICACIONES  /app/notifications
     ──────────────────────────────────────────────── */}
-    <Route path="notifications"               element={<GenericFeaturePage moduleName="Notificaciones" />} />
-    <Route path="notifications/:feature"      element={<GenericFeaturePage moduleName="Notificaciones" />} />
+    <Route path="notifications/notifications.push" element={<NotificationsPush />} />
+    <Route path="notifications/notifications.scheduled" element={<NotificationsScheduled />} />
+    <Route path="notifications/notifications.email"      element={<NotificationsEmail />} />
 
     {/* ────────────────────────────────────────────────
         FACTURACIÓN ELECTRÓNICA  /app/einvoicing
     ──────────────────────────────────────────────── */}
-    <Route path="einvoicing"                            element={<GenericFeaturePage moduleName="Facturación Electrónica" />} />
-    <Route path="einvoicing/einvoicing.void"            element={<EinvoicingInvoicesPage />} />
     <Route path="einvoicing/einvoicing.status"          element={<EinvoicingInvoicesPage />} />
-    <Route path="einvoicing/einvoicing.invoices"        element={<EinvoicingInvoicesPage />} />
-    <Route path="einvoicing/einvoicing.invoices"        element={<EinvoicingInvoicesPage />} />
+    <Route path="einvoicing/einvoicing.credit_notes" element={<CreditNotes />} />
+    
 
 
     {/* ── Catch-all ── */}

@@ -316,7 +316,7 @@ export default function InventoryPhysicalPage() {
                     </td>
                   </tr>
                 )}
-                {inventories.map((inv, idx) => {
+                {inventories.map((inv) => {
                   const st = STATUS_STYLE[inv.status] || STATUS_STYLE.open;
                   return (
                     <tr key={inv.id}>
@@ -404,7 +404,18 @@ export default function InventoryPhysicalPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item, idx) => {
+                  {items.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="empty-state" style={{ textAlign: 'center', padding: '40px' }}>
+                        <Clipboard size={48} className="empty-icon" />
+                        <p>No hay productos en este inventario.</p>
+                        <p style={{ fontSize: 12, opacity: 0.6 }}>
+                          Verifica que las categorías seleccionadas tengan productos asociados.
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                  {items.map((item) => {
                     const diff = item.difference ?? 0;
                     const diffClass = diff > 0 ? 'difference-positive' : diff < 0 ? 'difference-negative' : 'difference-zero';
                     return (

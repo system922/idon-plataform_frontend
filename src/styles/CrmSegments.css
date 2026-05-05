@@ -1,0 +1,512 @@
+/* ============================================================
+   CRM SEGMENTS - DARK THEME PREMIUM
+============================================================ */
+
+/* Grid de segmentos */
+.segments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .segments-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tarjeta de segmento */
+.segment-card {
+  background: linear-gradient(135deg, #1a1f2a 0%, #141920 100%);
+  border: 1px solid rgba(104, 66, 254, 0.2);
+  border-radius: 16px;
+  border-top: 4px solid;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.segment-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(104, 66, 254, 0.4);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+.segment-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.segment-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.segment-info {
+  flex: 1;
+}
+
+.segment-info h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.segment-info p {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+}
+
+.segment-stats {
+  display: flex;
+  gap: 24px;
+  padding: 16px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 16px;
+}
+
+.segment-stats .stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.segment-stats .stat svg {
+  opacity: 0.6;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.segment-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-view {
+  background: none;
+  border: none;
+  color: #6842fe;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+.btn-view:hover {
+  background: rgba(104, 66, 254, 0.15);
+  gap: 8px;
+}
+
+/* Botones de acción */
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-refresh-segments {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: rgba(104, 66, 254, 0.15);
+  border: 1px solid rgba(104, 66, 254, 0.3);
+  border-radius: 10px;
+  color: #6842fe;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-refresh-segments:hover {
+  background: rgba(104, 66, 254, 0.25);
+}
+
+.btn-create-segment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: #6842fe;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-create-segment:hover {
+  background: #7c5cff;
+  transform: translateY(-1px);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Notificaciones */
+.segments-notification {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 1000;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.segments-notification.success {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.segments-notification.error {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(100px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ============================================================
+   MODALES
+============================================================ */
+.segments-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.segments-modal {
+  background: linear-gradient(135deg, #1a1f2a 0%, #141920 100%);
+  border: 1px solid rgba(104, 66, 254, 0.3);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 550px;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: modalSlideUp 0.3s ease;
+}
+
+.segments-modal.large {
+  max-width: 900px;
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.segments-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.segments-modal-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.segments-modal-header p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.btn-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.2s;
+}
+
+.btn-modal-close:hover {
+  color: #ef4444;
+}
+
+.segments-modal-body {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.segments-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Formulario */
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: rgba(104, 66, 254, 0.4);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.conditions-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.conditions-section h4 {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Tabla de clientes */
+.customers-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.customers-table th {
+  text-align: left;
+  padding: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.customers-table td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 13px;
+}
+
+.customers-table td.center {
+  text-align: center;
+}
+
+.customers-table td.spent {
+  font-weight: 700;
+  color: #a78bfa;
+}
+
+.customer-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.customer-avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6842fe, #4a1dcc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.customer-name {
+  font-weight: 700;
+  color: #fff;
+}
+
+.customer-since {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 2px;
+}
+
+.contact-item {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 2px;
+}
+
+.no-contact {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
+  font-style: italic;
+}
+
+/* Paginación */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pagination button {
+  background: rgba(104, 66, 254, 0.15);
+  border: 1px solid rgba(104, 66, 254, 0.3);
+  color: #6842fe;
+  padding: 6px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Estados vacíos */
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Botones */
+.btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 8px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-primary {
+  background: #6842fe;
+  border: none;
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #7c5cff;
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Scrollbar */
+.segments-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.segments-modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.segments-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(104, 66, 254, 0.3);
+  border-radius: 3px;
+}

@@ -1,0 +1,399 @@
+import { useState, useEffect, useCallback } from 'react';
+import PageTemplate from '../../components/PageTemplate';
+import { 
+  RefreshCw, TrendingUp, Users, ShoppingBag, DollarSign, 
+  Clock, Calendar, Award, Target, Activity, BarChart2,
+  UserCheck, UserX, UserPlus, PieChart
+} from 'react-feather';
+import { fetchWithAuth } from '../../config/apiBase';
+import '../../styles/CrmAnalytics.css';
+
+export default function CrmAnalytics() {
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [segments, setSegments] = useState([]);
+  const [topCustomers, setTopCustomers] = useState([]);
+  const [salesByHour, setSalesByHour] = useState([]);
+  const [salesByDay, setSalesByDay] = useState([]);
+  const [monthlyTrend, setMonthlyTrend] = useState([]);
+  const [clv, setClv] = useState(null);
+  const [periodFilter, setPeriodFilter] = useState('all');
+  const [error, setError] = useState('');
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (msg, type = 'info') => {
+    setNotification({ msg, type });
+    setTimeout(() => setNotification(null), 3500);
+  };
+
+  // Cargar todos los datos
+  const loadAllData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const [
+        summaryRes,
+        segmentsRes,
+        topCustomersRes,
+        salesByHourRes,
+        salesByDayRes,
+        monthlyTrendRes,
+        clvRes
+      ] = await Promise.all([
+        fetchWithAuth('/api/crm/analytics/summary'),
+        fetchWithAuth('/api/crm/analytics/customer-segments'),
+        fetchWithAuth(`/api/crm/analytics/top-customers?limit=10&period=${periodFilter}`),
+        fetchWithAuth('/api/crm/analytics/sales-by-hour'),
+        fetchWithAuth('/api/crm/analytics/sales-by-day'),
+        fetchWithAuth('/api/crm/analytics/monthly-trend?months=6'),
+        fetchWithAuth('/api/crm/analytics/customer-lifetime-value')
+      ]);
+
+      const summaryData = await summaryRes.json();
+      const segmentsData = await segmentsRes.json();
+      const topCustomersData = await topCustomersRes.json();
+      const salesByHourData = await salesByHourRes.json();
+      const salesByDayData = await salesByDayRes.json();
+      const monthlyTrendData = await monthlyTrendRes.json();
+      const clvData = await clvRes.json();
+
+      if (summaryData.success) setSummary(summaryData.data);
+      if (segmentsData.success) setSegments(segmentsData.data);
+      if (topCustomersData.success) setTopCustomers(topCustomersData.data);
+      if (salesByHourData.success) setSalesByHour(salesByHourData.data);
+      if (salesByDayData.success) setSalesByDay(salesByDayData.data);
+      if (monthlyTrendData.success) setMonthlyTrend(monthlyTrendData.data);
+      if (clvData.success) setClv(clvData.data);
+
+    } catch (err) {
+      console.error('Error cargando datos:', err);
+      setError(err.message);
+      showNotification('Error al cargar datos', 'error');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [periodFilter]);
+
+  useEffect(() => {
+    loadAllData();
+  }, [loadAllData]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadAllData();
+    showNotification('Actualizando datos...', 'info');
+  };
+
+  // Encontrar valor máximo para las barras
+  const maxHourSales = Math.max(...(salesByHour.map(h => h.total_sales || 0)));
+  const maxDaySales = Math.max(...(salesByDay.map(d => d.total_sales || 0)));
+  const maxMonthSales = Math.max(...(monthlyTrend.map(m => m.total_sales || 0)));
+
+  // Formatear moneda
+  const formatCurrency = (value) => `$${parseFloat(value || 0).toFixed(2)}`;
+
+  // Formatear número
+  const formatNumber = (value) => parseInt(value || 0).toLocaleString();
+
+  // Configuración de segmentos
+  const segmentColors = {
+    vip: { bg: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', icon: '👑' },
+    frecuente: { bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', icon: '⭐' },
+    ocasional: { bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', icon: '🔄' },
+    nuevo: { bg: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', icon: '🆕' }
+  };
+
+  const segmentNames = {
+    vip: 'VIP',
+    frecuente: 'Frecuente',
+    ocasional: 'Ocasional',
+    nuevo: 'Nuevo'
+  };
+
+  return (
+    <PageTemplate
+      title="Analítica de Clientes"
+      subtitle="Comportamiento y tendencias de tus clientes"
+      loading={loading}
+      error={error}
+      onRetry={loadAllData}
+      headerAction={
+        <div className="header-actions">
+          <button className="btn-refresh-analytics" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw size={16} className={refreshing ? 'spin' : ''} />
+            Actualizar
+          </button>
+        </div>
+      }
+    >
+      {notification && (
+        <div className={`crm-analytics-notification ${notification.type}`}>
+          {notification.msg}
+        </div>
+      )}
+
+      {/* Tarjetas de resumen */}
+      {summary && (
+        <div className="analytics-summary-grid">
+          <div className="summary-card">
+            <div className="summary-icon total">
+              <Users size={24} />
+            </div>
+            <div className="summary-info">
+              <span className="summary-value">{formatNumber(summary.total_customers)}</span>
+              <span className="summary-label">Total Clientes</span>
+            </div>
+          </div>
+          <div className="summary-card">
+            <div className="summary-icon active">
+              <UserCheck size={24} />
+            </div>
+            <div className="summary-info">
+              <span className="summary-value">{formatNumber(summary.active_customers)}</span>
+              <span className="summary-label">Clientes Activos</span>
+              <span className="summary-sub">{summary.customers_last_30d} últimos 30 días</span>
+            </div>
+          </div>
+          <div className="summary-card">
+            <div className="summary-icon revenue">
+              <DollarSign size={24} />
+            </div>
+            <div className="summary-info">
+              <span className="summary-value">{formatCurrency(summary.total_revenue)}</span>
+              <span className="summary-label">Ingresos Totales</span>
+              <span className="summary-sub">{formatNumber(summary.total_orders)} órdenes</span>
+            </div>
+          </div>
+          <div className="summary-card">
+            <div className="summary-icon ticket">
+              <ShoppingBag size={24} />
+            </div>
+            <div className="summary-info">
+              <span className="summary-value">{formatCurrency(summary.avg_ticket)}</span>
+              <span className="summary-label">Ticket Promedio</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Segmentación de clientes */}
+      {segments.length > 0 && (
+        <div className="analytics-section">
+          <div className="section-header">
+            <h3><PieChart size={18} /> Segmentación de Clientes</h3>
+            <p>Distribución por comportamiento de compra</p>
+          </div>
+          <div className="segments-grid">
+            {segments.map(segment => {
+              const config = segmentColors[segment.segment] || segmentColors.ocasional;
+              const total = segments.reduce((sum, s) => sum + s.count, 0);
+              const percentage = total > 0 ? ((segment.count / total) * 100).toFixed(1) : 0;
+              return (
+                <div key={segment.segment} className="segment-card">
+                  <div className="segment-header" style={{ background: config.bg }}>
+                    <span className="segment-icon">{config.icon}</span>
+                    <span className="segment-name" style={{ color: config.color }}>{segmentNames[segment.segment]}</span>
+                  </div>
+                  <div className="segment-body">
+                    <div className="segment-stat">
+                      <span className="stat-value">{formatNumber(segment.count)}</span>
+                      <span className="stat-label">clientes</span>
+                    </div>
+                    <div className="segment-stat">
+                      <span className="stat-value">{formatCurrency(segment.avg_spent)}</span>
+                      <span className="stat-label">gasto promedio</span>
+                    </div>
+                    <div className="segment-stat">
+                      <span className="stat-value">{segment.avg_orders}</span>
+                      <span className="stat-label">órdenes promedio</span>
+                    </div>
+                    <div className="segment-progress">
+                      <div className="progress-bar" style={{ width: `${percentage}%`, background: config.color }} />
+                      <span className="progress-label">{percentage}%</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Top clientes y CLV */}
+      <div className="analytics-two-columns">
+        {/* Top clientes */}
+        <div className="analytics-section half">
+          <div className="section-header">
+            <h3><Award size={18} /> Top Clientes</h3>
+            <div className="period-filter">
+              <select value={periodFilter} onChange={e => setPeriodFilter(e.target.value)}>
+                <option value="all">Todo el período</option>
+                <option value="month">Último mes</option>
+                <option value="week">Última semana</option>
+              </select>
+            </div>
+          </div>
+          <div className="top-customers-list">
+            {topCustomers.length === 0 ? (
+              <div className="empty-state">No hay datos de clientes</div>
+            ) : (
+              topCustomers.map((customer, idx) => (
+                <div key={customer.id} className="top-customer-item">
+                  <div className="customer-rank">#{idx + 1}</div>
+                  <div className="customer-avatar">
+                    {customer.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <div className="customer-info">
+                    <div className="customer-name">{customer.name}</div>
+                    <div className="customer-email">{customer.email || 'Sin email'}</div>
+                  </div>
+                  <div className="customer-stats">
+                    <div className="stat">
+                      <span className="stat-value">{formatNumber(customer.total_orders)}</span>
+                      <span className="stat-label">órdenes</span>
+                    </div>
+                    <div className="stat">
+                      <span className="stat-value">{formatCurrency(customer.total_spent)}</span>
+                      <span className="stat-label">gastado</span>
+                    </div>
+                    <div className="stat">
+                      <span className="stat-value">{formatCurrency(customer.avg_ticket)}</span>
+                      <span className="stat-label">promedio</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* CLV - Customer Lifetime Value */}
+        {clv && (
+          <div className="analytics-section half">
+            <div className="section-header">
+              <h3><Target size={18} /> Valor de Vida del Cliente (CLV)</h3>
+              <p>Métrica clave de negocio</p>
+            </div>
+            <div className="clv-cards">
+              <div className="clv-card">
+                <span className="clv-value">{formatCurrency(clv.avg_clv)}</span>
+                <span className="clv-label">CLV Promedio</span>
+              </div>
+              <div className="clv-card">
+                <span className="clv-value">{formatCurrency(clv.median_clv)}</span>
+                <span className="clv-label">CLV Mediana</span>
+              </div>
+              <div className="clv-card">
+                <span className="clv-value">{formatCurrency(clv.max_clv)}</span>
+                <span className="clv-label">CLV Máximo</span>
+              </div>
+              <div className="clv-card">
+                <span className="clv-value">{formatCurrency(clv.avg_projected_annual)}</span>
+                <span className="clv-label">Valor Anual Proyectado</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Ventas por hora y día */}
+      <div className="analytics-two-columns">
+        {/* Ventas por hora */}
+        <div className="analytics-section half">
+          <div className="section-header">
+            <h3><Clock size={18} /> Ventas por Hora</h3>
+            <p>Horario de mayor actividad</p>
+          </div>
+          <div className="chart-bars hour-bars">
+            {salesByHour.map(hour => (
+              <div key={hour.hour} className="bar-item">
+                <div className="bar-label">{String(hour.hour).padStart(2, '0')}:00</div>
+                <div className="bar-container">
+                  <div 
+                    className="bar-fill" 
+                    style={{ 
+                      width: maxHourSales > 0 ? `${(hour.total_sales / maxHourSales) * 100}%` : '0%',
+                      background: 'linear-gradient(90deg, #6842fe, #8b5cf6)'
+                    }}
+                  />
+                </div>
+                <div className="bar-value">{formatCurrency(hour.total_sales)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Ventas por día */}
+        <div className="analytics-section half">
+          <div className="section-header">
+            <h3><Calendar size={18} /> Ventas por Día</h3>
+            <p>Días de mayor facturación</p>
+          </div>
+          <div className="chart-bars day-bars">
+            {salesByDay.map(day => (
+              <div key={day.day_of_week} className="bar-item">
+                <div className="bar-label">{day.day_name?.substring(0, 3)}</div>
+                <div className="bar-container">
+                  <div 
+                    className="bar-fill" 
+                    style={{ 
+                      width: maxDaySales > 0 ? `${(day.total_sales / maxDaySales) * 100}%` : '0%',
+                      background: 'linear-gradient(90deg, #10b981, #34d399)'
+                    }}
+                  />
+                </div>
+                <div className="bar-value">{formatCurrency(day.total_sales)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Tendencia mensual */}
+      {monthlyTrend.length > 0 && (
+        <div className="analytics-section">
+          <div className="section-header">
+            <h3><TrendingUp size={18} /> Tendencia Mensual</h3>
+            <p>Evolución de ventas y clientes</p>
+          </div>
+          <div className="monthly-trend">
+            <div className="trend-chart">
+              {monthlyTrend.map(month => (
+                <div key={month.month} className="trend-bar-item">
+                  <div className="trend-label">{month.month?.substring(5, 7)}/{month.year}</div>
+                  <div className="trend-bars">
+                    <div 
+                      className="trend-bar sales-bar" 
+                      style={{ 
+                        height: maxMonthSales > 0 ? `${(month.total_sales / maxMonthSales) * 100}%` : '0%',
+                      }}
+                      title={`Ventas: ${formatCurrency(month.total_sales)}`}
+                    />
+                    <div 
+                      className="trend-bar customers-bar" 
+                      style={{ 
+                        height: maxMonthSales > 0 ? `${(month.unique_customers / maxMonthSales) * 100}%` : '0%',
+                      }}
+                      title={`Clientes: ${month.unique_customers}`}
+                    />
+                  </div>
+                  <div className="trend-values">
+                    <span className="sales">{formatCurrency(month.total_sales)}</span>
+                    <span className="customers">{month.unique_customers} clientes</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="trend-legend">
+              <span><div className="legend-color sales"></div> Ventas</span>
+              <span><div className="legend-color customers"></div> Clientes únicos</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </PageTemplate>
+  );
+}

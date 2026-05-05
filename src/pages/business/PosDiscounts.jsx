@@ -4,7 +4,7 @@ import {
   FiRefreshCw, FiPercent, FiDollarSign, FiPlus, FiX,
   FiCalendar, FiRepeat, FiClock, FiTag, FiEdit2, FiTrash2,
   FiGift, FiUsers, FiShoppingBag, FiAward,
-  FiAlertCircle, FiCopy
+  FiAlertCircle, FiCopy, FiChevronDown, FiChevronUp
 } from "react-icons/fi";
 import { CheckCircle, XCircle } from "react-feather";
 import { fetchWithAuth } from '../../config/apiBase';
@@ -64,18 +64,15 @@ const isDiscountActive = (discount) => {
   
   const now = new Date();
   
-  // Verificar fechas
   if (discount.start_date && new Date(discount.start_date) > now) return false;
   if (discount.end_date && new Date(discount.end_date) < now) return false;
   
-  // Verificar días de semana
   if (discount.days_of_week && discount.days_of_week.length > 0) {
     const currentDay = now.getDay();
     const days = parseDays(discount.days_of_week);
     if (!days.includes(currentDay)) return false;
   }
   
-  // Verificar horario
   if (discount.start_time && discount.end_time) {
     const currentTime = now.toTimeString().slice(0, 5);
     if (currentTime < discount.start_time || currentTime > discount.end_time) return false;
@@ -111,11 +108,97 @@ const getDiscountTypeIcon = (type) => {
   }
 };
 
-const ScheduleIcon = ({ scheduleType, discount }) => {
+const ScheduleIcon = ({ discount }) => {
   if (discount?.start_date && discount?.end_date) return <FiCalendar />;
   if (discount?.days_of_week?.length > 0) return <FiRepeat />;
   if (discount?.start_time) return <FiClock />;
   return <FiClock />;
+};
+
+// ─── COMPONENTE DE AYUDA DESPLEGABLE ─────────────────────────
+// ─── COMPONENTE DE AYUDA DESPLEGABLE (con estilos en línea visibles) ─────────
+const CollapsibleHelp = ({ tab }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const helps = {
+    basic: (
+      <ul style={{ marginTop: '6px', marginBottom: 0, paddingLeft: '20px', color: '#004d40' }}>
+        <li>✏️ <strong>Nombre</strong>: Pon un nombre claro, ej. "20% off los viernes".</li>
+        <li>🎯 <strong>Tipo</strong>: Porcentaje, monto fijo, cupón, etc.</li>
+        <li>💰 <strong>Valor</strong>: 20 para 20% o 5.00 para $5 fijo.</li>
+        <li>📦 <strong>Aplicar a</strong>: ¿Toda la orden, solo un producto o una categoría?</li>
+        <li>🔑 <strong>Código de cupón</strong>: Solo si elegiste "Cupón" (el cliente lo ingresará).</li>
+      </ul>
+    ),
+    schedule: (
+      <ul style={{ marginTop: '6px', marginBottom: 0, paddingLeft: '20px', color: '#004d40' }}>
+        <li>📅 <strong>Días</strong>: Selecciona los días. Vacío = todos.</li>
+        <li>⏰ <strong>Horas</strong>: Rango horario (ej. 14:00 a 18:00). Vacío = todo el día.</li>
+        <li>📆 <strong>Fechas</strong>: Rango de fechas. Vacío = sin límite.</li>
+        <li>✨ <strong>Si todo vacío</strong>: la promoción aplica siempre (24/7 todos los días).</li>
+      </ul>
+    ),
+    conditions: (
+      <ul style={{ marginTop: '6px', marginBottom: 0, paddingLeft: '20px', color: '#004d40' }}>
+        <li>💵 <strong>Monto mínimo</strong>: Ej. 30.00 (solo si la compra supera $30).</li>
+        <li>🔝 <strong>Descuento máximo</strong>: Límite del descuento (ej. máximo $10).</li>
+        <li>🔢 <strong>Cantidad mínima</strong>: Unidades que debe llevar.</li>
+        <li>🔄 <strong>Límite de usos</strong>: Número total de veces que puede usarse.</li>
+        <li>⭐ <strong>Prioridad</strong>: Número más alto = se aplica primero.</li>
+        <li>🧩 <strong>Acumulable</strong>: Si se puede combinar con otros descuentos.</li>
+        <li>✅ <strong>Activar descuento</strong>: <strong>Debe estar marcado</strong> para que funcione.</li>
+      </ul>
+    )
+  };
+
+  const titles = {
+    basic: '📘 Consejos para Información Básica',
+    schedule: '📘 Consejos para Programación',
+    conditions: '📘 Consejos para Condiciones'
+  };
+
+  return (
+    <div style={{ marginBottom: '16px' }}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          background: '#3b4b5e',
+          border: '1px solid #5a6e82',
+          borderRadius: '6px',
+          padding: '8px 14px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '13px',
+          fontWeight: '500',
+          color: '#ffffff',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.background = '#4a5e72'}
+        onMouseLeave={(e) => e.currentTarget.style.background = '#3b4b5e'}
+      >
+        {isOpen ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+        {isOpen ? 'Ocultar consejos' : 'Mostrar consejos'}
+      </button>
+      {isOpen && (
+        <div style={{
+          background: '#e6f7ff',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          marginTop: '8px',
+          borderLeft: '4px solid #1890ff',
+          fontSize: '13px',
+          color: '#003366',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}>
+          <strong style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#0050b3' }}>{titles[tab]}</strong>
+          {helps[tab]}
+        </div>
+      )}
+    </div>
+  );
 };
 
 // ─── MODAL ─────────────────────────
@@ -266,6 +349,9 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
 
         <form className="modal-body" onSubmit={handleSubmit}>
           {err && <div className="alert-error"><FiAlertCircle /> {err}</div>}
+          
+          {/* Ayuda desplegable contextual */}
+          <CollapsibleHelp tab={activeTab} />
 
           {activeTab === 'basic' && (
             <>

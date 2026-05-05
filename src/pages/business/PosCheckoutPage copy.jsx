@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, X, DollarSign, Users } from 'react-feather';
 import PageTemplate from '../../components/PageTemplate';
 import {
@@ -58,353 +58,11 @@ export default function PosCheckoutPage() {
   const [metodoPagoNormal, setMetodoPagoNormal] = useState('cash');
   const [totalPagadoAcumulado, setTotalPagadoAcumulado] = useState(0);
 
-  // ========== DESCUENTOS ==========
-  const [availableDiscounts, setAvailableDiscounts] = useState([]);
-  const [appliedDiscount, setAppliedDiscount] = useState(null);
-  const [discountAmount, setDiscountAmount] = useState(0);
-  const [totalOrdenConDescuento, setTotalOrdenConDescuento] = useState(0);
-
-  // ========== CONFIGURACIÓN FISCAL ==========
-  const [ivaRateGlobal, setIvaRateGlobal] = useState(15); // Valor por defecto 15%
-  const [currencySymbol, setCurrencySymbol] = useState('$');
-
-  // Cargar configuración fiscal desde API
-  const loadFiscalConfig = async () => {
-    try {
-      console.log('🔄 Cargando configuración fiscal...');
-      const res = await fetchWithAuth('/api/fiscal/config');
-      console.log('📡 Respuesta del servidor:', res.status);
-      if (res.ok) {
-        const data = await res.json();
-        console.log('📦 Configuración fiscal recibida:', data);
-        if (data && data.iva_rate) {
-          setIvaRateGlobal(Number(data.iva_rate));
-          console.log(`💰 Tasa de IVA global cargada: ${data.iva_rate}%`);
-        }
-        if (data && data.currency_symbol) {
-          setCurrencySymbol(data.currency_symbol);
-        }
-      } else {
-        console.warn('⚠️ No se pudo cargar configuración fiscal, usando valores por defecto');
-      }
-    } catch (err) {
-      console.error('❌ Error cargando configuración fiscal:', err);
-    }
-  };
-
-  // Cargar descuentos desde API
-  const loadDiscounts = async () => {
-    try {
-      console.log('🔄 Cargando descuentos desde API...');
-      const res = await fetchWithAuth('/api/discounts');
-      console.log('📡 Respuesta del servidor:', res.status);
-      if (res.ok) {
-        const data = await res.json();
-        console.log('📦 Descuentos recibidos:', data);
-        console.log('📊 Cantidad de descuentos:', data.length);
-        
-        const validDiscounts = (Array.isArray(data) ? data : []).filter(d => {
-          const isValid = d && d.id && d.name && d.is_active !== undefined && d.type && d.value !== undefined;
-          if (!isValid) {
-            console.warn('⚠️ Descuento inválido encontrado:', d);
-          }
-          return isValid;
-        });
-        
-        console.log('✅ Descuentos válidos:', validDiscounts.length);
-        setAvailableDiscounts(validDiscounts);
-      } else {
-        console.error('❌ Error al cargar descuentos:', res.status);
-        setAvailableDiscounts([]);
-      }
-    } catch (err) {
-      console.error('❌ Error cargando descuentos:', err);
-      setAvailableDiscounts([]);
-    }
-  };
-
-  // Calcular subtotal SIN IVA (precio de venta * cantidad)
-  const getSubtotalSinIVA = useCallback(() => {
-    if (!selectedOrder) return 0;
-    
-    return (selectedOrder.items || []).reduce((sum, item) => {
-      const price = Number(item.selling_price) || Number(item.unit_price) || 0;
-      const quantity = Number(item.quantity) || 1;
-      return sum + (price * quantity);
-    }, 0);
-  }, [selectedOrder]);
-
-  // Obtener tasa de IVA desde configuración global
-  const getIvaRate = useCallback(() => {
-    return ivaRateGlobal;
-  }, [ivaRateGlobal]);
-
-  // Calcular total de la orden (con IVA)
-  const getOrderTotal = useCallback(() => {
-    if (!selectedOrder) return 0;
-    
-    if (selectedOrder.total && typeof selectedOrder.total === 'number' && selectedOrder.total > 0) {
-      return Number(selectedOrder.total);
-    }
-    
-    const subtotal = getSubtotalSinIVA();
-    const ivaRate = getIvaRate();
-    const iva = Math.round((subtotal * ivaRate / 100) * 100) / 100;
-    
-    return subtotal + iva;
-  }, [selectedOrder, getSubtotalSinIVA, getIvaRate]);
-
-  // Calcular subtotal de items por categoría
-  const getSubtotalByCategory = useCallback((items, categoryId) => {
-    return items.reduce((sum, item) => {
-      if (item.category_id === categoryId) {
-        const price = Number(item.selling_price) || Number(item.unit_price) || 0;
-        const quantity = Number(item.quantity) || 1;
-        return sum + (price * quantity);
-      }
-      return sum;
-    }, 0);
-  }, []);
-
-  // Verificar si descuento es aplicable (soportando categorías)
-  const isDiscountApplicable = useCallback((discount, orderTotal, items = []) => {
-    console.log(`🔍 Evaluando descuento: ${discount.name}`);
-    console.log(`   - ID: ${discount.id}`);
-    console.log(`   - is_active: ${discount.is_active}`);
-    console.log(`   - type: ${discount.type}, value: ${discount.value}`);
-    console.log(`   - applies_to: ${discount.applies_to}`);
-    console.log(`   - orderTotal: ${orderTotal}, min_amount: ${discount.min_amount || 0}`);
-    
-    if (!discount.is_active) {
-      console.log(`   ❌ Descuento inactivo`);
-      return false;
-    }
-
-    if (!discount.type || discount.value === undefined || discount.value === null) {
-      console.log(`   ❌ Descuento sin tipo o valor válido`);
-      return false;
-    }
-
-    const now = new Date();
-    
-    if (discount.start_date) {
-      const startDate = new Date(discount.start_date);
-      if (startDate > now) {
-        console.log(`   ❌ Fecha inicio futura: ${discount.start_date}`);
-        return false;
-      }
-    }
-    
-    if (discount.end_date) {
-      const endDate = new Date(discount.end_date);
-      if (endDate < now) {
-        console.log(`   ❌ Fecha fin pasada: ${discount.end_date}`);
-        return false;
-      }
-    }
-    
-    if (discount.days_of_week && discount.days_of_week.length > 0) {
-      const today = now.getDay();
-      if (!discount.days_of_week.includes(today)) {
-        console.log(`   ❌ Día no permitido. Hoy: ${today}, Permitidos: ${discount.days_of_week}`);
-        return false;
-      }
-    }
-    
-    if (discount.start_time && discount.end_time) {
-      const currentTime = now.toTimeString().slice(0, 5);
-      if (currentTime < discount.start_time || currentTime > discount.end_time) {
-        console.log(`   ❌ Horario fuera de rango. Actual: ${currentTime}, Rango: ${discount.start_time}-${discount.end_time}`);
-        return false;
-      }
-    }
-    
-    // Para descuentos por categoría, verificar si hay items de esa categoría
-    if (discount.applies_to === 'category') {
-      if (!discount.category_id) {
-        console.log(`   ❌ Descuento por categoría sin category_id`);
-        return false;
-      }
-      
-      const categoryTotal = getSubtotalByCategory(items, discount.category_id);
-      if (categoryTotal === 0) {
-        console.log(`   ❌ No hay productos de la categoría ${discount.category_id} en esta orden`);
-        return false;
-      }
-      
-      if (discount.min_amount && categoryTotal < Number(discount.min_amount)) {
-        console.log(`   ❌ Monto insuficiente para la categoría. Total categoría: ${categoryTotal.toFixed(2)}, Mínimo requerido: ${Number(discount.min_amount).toFixed(2)}`);
-        return false;
-      }
-      
-      console.log(`   ✅ Descuento por categoría APLICA (total categoría: $${categoryTotal.toFixed(2)})`);
-      return true;
-    }
-    
-    // Para descuentos de orden completa
-    if (discount.applies_to === 'order') {
-      if (discount.min_amount && orderTotal < Number(discount.min_amount)) {
-        console.log(`   ❌ Monto insuficiente. Total: ${orderTotal.toFixed(2)}, Mínimo requerido: ${Number(discount.min_amount).toFixed(2)}`);
-        return false;
-      }
-      
-      console.log(`   ✅ Descuento de orden APLICA`);
-      return true;
-    }
-    
-    console.log(`   ❌ Tipo de aplicación no soportado: ${discount.applies_to}`);
-    return false;
-  }, [getSubtotalByCategory]);
-
-  // Calcular monto del descuento (soportando categorías) - sobre SUBTOTAL sin IVA
-  const calculateDiscountAmountForOrder = useCallback((discount, subtotalSinIVA, items = []) => {
-    if (!discount || !discount.type || discount.value === undefined) return 0;
-    
-    let baseAmount = 0;
-    
-    if (discount.applies_to === 'category' && discount.category_id) {
-      baseAmount = getSubtotalByCategory(items, discount.category_id);
-      console.log(`   📊 Base para descuento por categoría: $${baseAmount.toFixed(2)}`);
-    } else {
-      baseAmount = subtotalSinIVA;
-      console.log(`   📊 Base para descuento de orden (subtotal Sin IVA): $${baseAmount.toFixed(2)}`);
-    }
-    
-    let amount = 0;
-    
-    if (discount.type === 'percentage') {
-      amount = baseAmount * (Number(discount.value) / 100);
-      console.log(`   📊 Descuento porcentual: ${discount.value}% = $${amount.toFixed(2)}`);
-    } else if (discount.type === 'fixed') {
-      amount = Math.min(Number(discount.value), baseAmount);
-      console.log(`   📊 Descuento fijo: $${amount.toFixed(2)}`);
-    } else {
-      console.log(`   ⚠️ Tipo de descuento desconocido: ${discount.type}`);
-      return 0;
-    }
-    
-    if (discount.max_discount && amount > Number(discount.max_discount)) {
-      const originalAmount = amount;
-      amount = Number(discount.max_discount);
-      console.log(`   ✂️ Aplicando límite máximo: $${originalAmount.toFixed(2)} -> $${amount.toFixed(2)}`);
-    }
-    
-    if (amount > baseAmount) {
-      console.log(`   ✂️ Ajustando descuento (no puede superar el subtotal): $${amount.toFixed(2)} -> $${baseAmount.toFixed(2)}`);
-      amount = baseAmount;
-    }
-    
-    return amount;
-  }, [getSubtotalByCategory]);
-
-  // Obtener mejor descuento aplicable
-  const getBestApplicableDiscount = useCallback((subtotalSinIVA, items) => {
-    console.log('🔍 Buscando descuentos aplicables...');
-    console.log('📦 Descuentos disponibles en memoria:', availableDiscounts.length);
-    
-    if (availableDiscounts.length === 0) {
-      console.log('⚠️ No hay descuentos disponibles');
-      return null;
-    }
-    
-    const applicable = availableDiscounts.filter(discount => 
-      isDiscountApplicable(discount, subtotalSinIVA, items)
-    );
-    
-    console.log(`✅ Descuentos aplicables encontrados: ${applicable.length}`);
-    
-    if (applicable.length === 0) {
-      console.log('⚠️ Ningún descuento aplicable');
-      return null;
-    }
-    
-    // Calcular el monto real de cada descuento para comparar
-    const applicableWithAmount = applicable.map(discount => ({
-      discount,
-      amount: calculateDiscountAmountForOrder(discount, subtotalSinIVA, items)
-    }));
-    
-    // Ordenar por monto de descuento (mayor a menor)
-    applicableWithAmount.sort((a, b) => b.amount - a.amount);
-    
-    const selected = applicableWithAmount[0].discount;
-    const selectedAmount = applicableWithAmount[0].amount;
-    
-    console.log(`🎯 Descuento seleccionado: ${selected.name}`);
-    console.log(`   - Tipo: ${selected.type}`);
-    console.log(`   - Valor: ${selected.value}`);
-    console.log(`   - Aplica a: ${selected.applies_to}`);
-    console.log(`   - Monto: $${selectedAmount.toFixed(2)}`);
-    
-    return selected;
-  }, [availableDiscounts, isDiscountApplicable, calculateDiscountAmountForOrder]);
-
-  // Calcular todos los valores de descuento - CORREGIDO SRI con IVA global
-  const updateDiscountValues = useCallback(() => {
-    if (!selectedOrder) {
-      setAppliedDiscount(null);
-      setDiscountAmount(0);
-      setTotalOrdenConDescuento(getOrderTotal());
-      return;
-    }
-    
-    // Obtener subtotal SIN IVA (base imponible)
-    const subtotalSinIVA = getSubtotalSinIVA();
-    const ivaRate = getIvaRate();
-    const items = selectedOrder.items || [];
-    
-    const best = getBestApplicableDiscount(subtotalSinIVA, items);
-    
-    if (best) {
-      const amount = calculateDiscountAmountForOrder(best, subtotalSinIVA, items);
-      setAppliedDiscount(best);
-      setDiscountAmount(amount);
-      
-      // 🔥 CÁLCULO CORRECTO SRI:
-      // 1. Nueva base imponible = subtotal sin IVA - descuento
-      const nuevaBaseImponible = Math.max(0, subtotalSinIVA - amount);
-      // 2. IVA sobre nueva base imponible (usando tasa global)
-      const nuevoIVA = Math.round((nuevaBaseImponible * ivaRate / 100) * 100) / 100;
-      // 3. Total = nueva base imponible + IVA
-      const nuevoTotal = nuevaBaseImponible + nuevoIVA;
-      
-      setTotalOrdenConDescuento(nuevoTotal);
-      
-      console.log(`✨ Descuento aplicado (SRI correcto): ${best.name} - $${amount.toFixed(2)}`);
-      console.log(`   Subtotal sin IVA original: $${subtotalSinIVA.toFixed(2)}`);
-      console.log(`   Tasa IVA global: ${ivaRate}%`);
-      console.log(`   Nueva base imponible: $${nuevaBaseImponible.toFixed(2)}`);
-      console.log(`   IVA: $${nuevoIVA.toFixed(2)}`);
-      console.log(`   Total con descuento: $${nuevoTotal.toFixed(2)}`);
-    } else {
-      setAppliedDiscount(null);
-      setDiscountAmount(0);
-      const totalConIVA = getOrderTotal();
-      setTotalOrdenConDescuento(totalConIVA);
-      console.log('⚠️ No se encontró ningún descuento aplicable');
-    }
-  }, [selectedOrder, getSubtotalSinIVA, getIvaRate, getOrderTotal, getBestApplicableDiscount, calculateDiscountAmountForOrder]);
-
-  // Efecto para aplicar descuento cuando cambia la orden
-  useEffect(() => {
-    updateDiscountValues();
-  }, [selectedOrder, updateDiscountValues]);
-
-  // Cargar datos iniciales
   useEffect(() => {
     loadOrders();
-    loadDiscounts();
-    loadFiscalConfig(); // ← Cargar configuración fiscal
   }, [selectedBusiness]);
 
-  // Recargar descuentos cuando se actualizan
-  useEffect(() => {
-    if (selectedOrder) {
-      updateDiscountValues();
-    }
-  }, [availableDiscounts, updateDiscountValues]);
-
-  const fmt = (n) => `${currencySymbol}${parseFloat(n || 0).toFixed(2)}`;
+  const fmt = (n) => `$${parseFloat(n || 0).toFixed(2)}`;
 
   const recargarOrden = async () => {
     if (!selectedOrder) return null;
@@ -442,9 +100,6 @@ export default function PosCheckoutPage() {
     setModoDividido(false);
     setFacturaIndividual(false);
     setMetodoPagoNormal('cash');
-    setAppliedDiscount(null);
-    setDiscountAmount(0);
-    setTotalOrdenConDescuento(0);
   };
 
   const loadOrders = async () => {
@@ -543,11 +198,11 @@ export default function PosCheckoutPage() {
   const guardarCliente = async (documento, nombre, email = null) => {
     const tipo_documento = documento.length === 13 ? 'ruc' : 'cedula';
     try {
-      const resBusqueda = await fetchWithAuth(`/api/customers/by-document?document_number=${documento}&document_type=${tipo_documento}`);
+      const resBusqueda = await fetchWithAuth(`/api/clientes?cedula=${documento}`);
       if (resBusqueda.ok) {
         const existe = await resBusqueda.json();
-        if (existe && existe.id) {
-          return existe.id;
+        if (Array.isArray(existe) && existe.length > 0 && existe[0].id) {
+          return existe[0].id;
         }
       }
       const res = await fetchWithAuth('/api/customers', {
@@ -593,7 +248,7 @@ export default function PosCheckoutPage() {
   };
 
   const handleMixtoField = (field, digits) => {
-    const currentTotal = selectedOrder ? totalOrdenConDescuento : 0;
+    const currentTotal = selectedOrder ? Number(selectedOrder.total || 0) : 0;
     const value = parseInt(digits || '0', 10) / 100;
     const newManual = new Set(mixtoManual);
     if (value === 0) newManual.delete(field);
@@ -635,12 +290,6 @@ export default function PosCheckoutPage() {
     setTransferPaid(vals.transfer.toFixed(2));
     setTransferPaidRaw(String(Math.round(vals.transfer * 100)));
   };
-
-  // Variables para mostrar en el render
-  const subtotalSinIVAMostrar = getSubtotalSinIVA();
-  const ivaRateMostrar = getIvaRate();
-  const nuevaBaseImponible = Math.max(0, subtotalSinIVAMostrar - discountAmount);
-  const nuevoIVAMostrar = Math.round((nuevaBaseImponible * ivaRateMostrar / 100) * 100) / 100;
 
   // Funciones para cuenta dividida
   const agregarComensal = () => {
@@ -772,81 +421,42 @@ export default function PosCheckoutPage() {
 
   const calcularTotalComensal = (comensal) => calcularSubtotalComensal(comensal) + calcularIVAComensal(comensal);
 
-  const changeNormal = Math.max(0, (parseFloat(amountPaid) || 0) - totalOrdenConDescuento);
+  const subtotalOrden = selectedOrder ? Number(selectedOrder.subtotal || 0) : 0;
+  const ivaOrden = selectedOrder ? Number(selectedOrder.tax_amount || 0) : 0;
+  const totalOrden = selectedOrder ? Number(selectedOrder.total || 0) : 0;
+  const changeNormal = Math.max(0, (parseFloat(amountPaid) || 0) - totalOrden);
   const totalPagadoMixto = (parseFloat(amountPaid) || 0) + (parseFloat(cardPaid) || 0) + (parseFloat(transferPaid) || 0);
-  const faltanteMixto = Math.max(0, totalOrdenConDescuento - totalPagadoMixto);
-  const cambioMixto = Math.max(0, totalPagadoMixto - totalOrdenConDescuento);
-  const totalOrdenBruto = getOrderTotal();
+  const faltanteMixto = Math.max(0, totalOrden - totalPagadoMixto);
+  const cambioMixto = Math.max(0, totalPagadoMixto - totalOrden);
 
   // Factura electrónica
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
-  async function emitirFactura(order, custCedula, custNombre, method, discountData = null) {
+  async function emitirFactura(order, custCedula, custNombre, method) {
     const cedula = custCedula?.trim() || '9999999999';
     const isCF = cedula === '9999999999' || cedula === '9999999999999';
     const isRUC = !isCF && cedula.length === 13;
     const tipoId = isCF ? '07' : isRUC ? '04' : '05';
     const email = foundCliente?.email || clienteEmail.trim() || null;
 
-    // Calcular subtotal ORIGINAL (sin descuento)
-    let subtotalOriginal = 0;
-    
     const itemsPayload = (order.items || []).map(item => {
       const qty = item.quantity || 1;
       const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
-      const itemSubtotal = precioSinIVA * qty;
-      
-      subtotalOriginal += itemSubtotal;
-      
+      const montoIVA = Number(item.tax_rate) || 0;
       return {
-        code: item.code || 'PROD',
+        code: item.product_code || 'PROD',
         description: item.product_name || 'Producto',
-        qty: qty,
+        qty,
         unit_price: precioSinIVA,
-        subtotal: itemSubtotal
+        subtotal: qty * precioSinIVA,
+        tax_amount: qty * montoIVA
       };
     });
-    
+    const subtotalTotal = itemsPayload.reduce((s, i) => s + i.subtotal, 0);
+    const ivaTotal = itemsPayload.reduce((s, i) => s + i.tax_amount, 0);
+    const totalFactura = subtotalTotal + ivaTotal;
+
     if (itemsPayload.length === 0) return null;
-
-    // Obtener el monto del descuento
-    let descuentoTotal = discountData?.amount || 0;
-    
-    // Si es descuento por categoría, recalcular solo para esa categoría
-    if (appliedDiscount && appliedDiscount.applies_to === 'category' && appliedDiscount.category_id) {
-      let categoriaSubtotal = 0;
-      order.items.forEach(item => {
-        if (item.category_id === appliedDiscount.category_id) {
-          const precio = Number(item.selling_price) || Number(item.unit_price) || 0;
-          const qty = item.quantity || 1;
-          categoriaSubtotal += precio * qty;
-        }
-      });
-      
-      if (appliedDiscount.type === 'percentage') {
-        descuentoTotal = categoriaSubtotal * (Number(appliedDiscount.value) / 100);
-      } else if (appliedDiscount.type === 'fixed') {
-        descuentoTotal = Math.min(Number(appliedDiscount.value), categoriaSubtotal);
-      }
-    }
-    
-    // Calcular nueva base imponible (subtotal con descuento)
-    const nuevaBaseImponible = Math.max(0, subtotalOriginal - descuentoTotal);
-    
-    // Calcular IVA sobre la nueva base imponible usando tasa global
-    const ivaRate = ivaRateGlobal;
-    const ivaConDescuento = Math.round((nuevaBaseImponible * ivaRate / 100) * 100) / 100;
-    
-    const totalFactura = nuevaBaseImponible + ivaConDescuento;
-
-    console.log('💰 Emitiendo factura con descuento (SRI correcto):', {
-      subtotalOriginal: subtotalOriginal.toFixed(2),
-      descuentoTotal: descuentoTotal.toFixed(2),
-      nuevaBaseImponible: nuevaBaseImponible.toFixed(2),
-      ivaRate: ivaRate + '%',
-      ivaConDescuento: ivaConDescuento.toFixed(2),
-      total: totalFactura.toFixed(2)
-    });
 
     const payload = {
       order_id: order.id,
@@ -855,39 +465,19 @@ export default function PosCheckoutPage() {
         ruc: isCF ? '9999999999' : cedula,
         email: email || null,
         tipo_identificacion: tipoId,
-        phone: null
       },
       items: itemsPayload,
-      subtotal: subtotalOriginal.toFixed(2),      // Subtotal original SIN descuento
-      iva_amount: ivaConDescuento.toFixed(2),     // IVA calculado sobre nueva base
-      total: totalFactura.toFixed(2),             // Total = nueva base + IVA
+      subtotal: subtotalTotal.toFixed(2),
+      iva_amount: ivaTotal.toFixed(2),
+      total: totalFactura.toFixed(2),
       forma_pago: FORMA_PAGO_MAP[method] || '01',
-      descuento: descuentoTotal.toFixed(2),       // Monto del descuento
-      iva_rate: ivaRate
     };
 
-    console.log('📦 Enviando al backend:', {
-      subtotal: payload.subtotal,
-      descuento: payload.descuento,
-      total: payload.total,
-      iva_rate: payload.iva_rate
-    });
-
     try {
-      const result = await fetchWithAuth('/api/einvoicing/invoices/emit', { 
-        method: 'POST', 
-        body: JSON.stringify(payload) 
-      });
-      
-      console.log('📨 Respuesta del servidor:', result);
-      
-      if (result && result.invoice_number) {
-        console.log(`✅ Factura emitida: ${result.invoice_number}`);
-      }
-      
+      const result = await fetchWithAuth('/api/einvoicing/invoices/emit', { method: 'POST', body: JSON.stringify(payload) });
       return result?.invoice_number || null;
     } catch (e) {
-      console.error('❌ Error al emitir factura:', e);
+      console.error('Error al emitir factura:', e);
       return null;
     }
   }
@@ -898,17 +488,18 @@ export default function PosCheckoutPage() {
       const printerConfig = await getPrinterConfig('printer_main');
       const itemsToPrint = (order.items || []).map(item => {
         const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
+        const montoIVA = Number(item.tax_rate) || 0;
         return {
           description: item.product_name || 'Producto',
           quantity: item.quantity,
           price: precioSinIVA,
-          total: precioSinIVA * item.quantity
+          total: precioSinIVA * item.quantity,
+          tax_amount: montoIVA * item.quantity
         };
       });
       const printSubtotal = itemsToPrint.reduce((s, i) => s + i.total, 0);
-      const printTotal = Math.max(0, printSubtotal - discountAmount);
-      const nuevoIVAImpresion = Math.round((printTotal * ivaRateGlobal / 100) * 100) / 100;
-      const printTotalFinal = printTotal + nuevoIVAImpresion;
+      const printTax = itemsToPrint.reduce((s, i) => s + i.tax_amount, 0);
+      const printTotal = printSubtotal + printTax;
 
       await print('printer_main', 'invoice', {
         bizInfo,
@@ -916,18 +507,11 @@ export default function PosCheckoutPage() {
         customer: { name: customerName || clienteNombre || 'CONSUMIDOR FINAL', id: clienteCedula || '9999999999' },
         items: itemsToPrint,
         subtotal: printSubtotal,
-        discount: discountAmount,
-        tax: nuevoIVAImpresion,
-        taxRate: ivaRateGlobal,
-        total: printTotalFinal,
+        tax: printTax,
+        taxRate: 0,
+        total: printTotal,
         payment: { cash: paid, card: 0, other: 0 },
         printerFooter: printerConfig.footer,
-        discount: appliedDiscount ? {
-          name: appliedDiscount.name,
-          type: appliedDiscount.type,
-          value: appliedDiscount.value,
-          amount: discountAmount
-        } : null
       }, true);
     } catch (err) {
       console.error('Error imprimiendo:', err);
@@ -935,7 +519,7 @@ export default function PosCheckoutPage() {
     }
   };
 
-  // Cobrar comensal y pagoNormal se mantienen igual pero usan la nueva emitirFactura
+  // Cobrar comensal
   const cobrarComensal = async (comensal) => {
     if (comensal.items.length === 0) {
       setError('Este comensal no tiene productos asignados');
@@ -943,6 +527,7 @@ export default function PosCheckoutPage() {
     }
 
     const totalComensal = calcularTotalComensal(comensal);
+
     if (comensal.metodoPago === 'cash' && comensal.montoRecibido < totalComensal) {
       setError(`Monto insuficiente. Total: ${fmt(totalComensal)}, Recibido: ${fmt(comensal.montoRecibido)}`);
       return;
@@ -1008,7 +593,7 @@ export default function PosCheckoutPage() {
 
       setClientesDivididos(prev => prev.filter(c => c.id !== comensal.id));
       const ordenActualizada = await recargarOrden();
-      const pagoTotalCompletado = nuevoTotalPagado === totalOrdenConDescuento;
+      const pagoTotalCompletado = nuevoTotalPagado === totalOrden;
 
       if (pagoTotalCompletado) {
         let itemsFinales = [];
@@ -1019,13 +604,12 @@ export default function PosCheckoutPage() {
         }
         if (itemsFinales.length > 0) {
           const ordenCompleta = { ...selectedOrder, items: itemsFinales };
-          const discountInfo = appliedDiscount ? { id: appliedDiscount.id, name: appliedDiscount.name, amount: discountAmount } : null;
-          const invoiceNum = await emitirFactura(ordenCompleta, clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', 'split', discountInfo);
-          await imprimirTicket(ordenCompleta, totalOrdenConDescuento, 0, invoiceNum, 'split', 'FACTURA FINAL');
+          const invoiceNum = await emitirFactura(ordenCompleta, clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', 'split');
+          await imprimirTicket(ordenCompleta, totalOrden, 0, invoiceNum, 'split', 'FACTURA FINAL');
         }
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
-          body: JSON.stringify({ status: 'paid', payment_method: 'split', amount_paid: totalOrdenConDescuento, notes: orderNotes, discount_id: appliedDiscount?.id || null, discount_amount: discountAmount })
+          body: JSON.stringify({ status: 'paid', payment_method: 'split', amount_paid: totalOrden, notes: orderNotes })
         });
         setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
         setSelectedOrder(null);
@@ -1049,79 +633,45 @@ export default function PosCheckoutPage() {
     }
   };
 
-  // PAGO NORMAL (con descuento)
+  // PAGO NORMAL
   const pagoNormal = async () => {
     setPrintLoading(true);
     try {
       let cedula = clienteCedula?.trim() || '9999999999';
       let nombre = clienteNombre?.trim() || 'CONSUMIDOR FINAL';
       let clienteId = await guardarCliente(cedula, nombre, clienteEmail?.trim() || null);
-
       let invoiceNum = null;
-      const discountInfo = appliedDiscount ? { id: appliedDiscount.id, name: appliedDiscount.name, amount: discountAmount } : null;
 
       if (metodoPagoNormal === 'cash') {
         const paid = parseFloat(amountPaid) || 0;
-        if (paid < totalOrdenConDescuento) throw new Error(`Monto insuficiente. Total: ${fmt(totalOrdenConDescuento)}`);
+        if (paid < totalOrden) throw new Error(`Monto insuficiente. Total: ${fmt(totalOrden)}`);
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
-          body: JSON.stringify({
-            status: 'paid',
-            payment_method: 'cash',
-            amount_paid: totalOrdenConDescuento,
-            customer_id: clienteId,
-            customer_name: nombre,
-            customer_document_number: cedula,
-            notes: orderNotes,
-            discount_id: appliedDiscount?.id || null,
-            discount_amount: discountAmount
-          }),
+          body: JSON.stringify({ status: 'paid', payment_method: 'cash', amount_paid: totalOrden, customer_id: clienteId, customer_name: nombre, customer_document_number: cedula, notes: orderNotes })
         });
-        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'cash', discountInfo);
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, paid - totalOrdenConDescuento, invoiceNum);
+        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'cash');
+        await imprimirTicket(selectedOrder, totalOrden, paid - totalOrden, invoiceNum);
       } else if (metodoPagoNormal === 'card') {
         if (!refCard) throw new Error('Ingrese la referencia de la tarjeta');
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
-          body: JSON.stringify({
-            status: 'paid',
-            payment_method: 'card',
-            amount_paid: totalOrdenConDescuento,
-            reference_number: refCard,
-            customer_id: clienteId,
-            customer_name: nombre,
-            customer_document_number: cedula,
-            notes: orderNotes,
-            discount_id: appliedDiscount?.id || null,
-            discount_amount: discountAmount
-          }),
+          body: JSON.stringify({ status: 'paid', payment_method: 'card', amount_paid: totalOrden, reference_number: refCard, customer_id: clienteId, customer_name: nombre, customer_document_number: cedula, notes: orderNotes })
         });
-        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'card', discountInfo);
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceNum);
+        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'card');
+        await imprimirTicket(selectedOrder, totalOrden, 0, invoiceNum);
       } else if (metodoPagoNormal === 'transfer') {
         if (!refTransfer) throw new Error('Ingrese la referencia de la transferencia');
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
-          body: JSON.stringify({
-            status: 'paid',
-            payment_method: 'transfer',
-            amount_paid: totalOrdenConDescuento,
-            reference_number: refTransfer,
-            customer_id: clienteId,
-            customer_name: nombre,
-            customer_document_number: cedula,
-            notes: orderNotes,
-            discount_id: appliedDiscount?.id || null,
-            discount_amount: discountAmount
-          }),
+          body: JSON.stringify({ status: 'paid', payment_method: 'transfer', amount_paid: totalOrden, reference_number: refTransfer, customer_id: clienteId, customer_name: nombre, customer_document_number: cedula, notes: orderNotes })
         });
-        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'transfer', discountInfo);
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceNum);
+        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'transfer');
+        await imprimirTicket(selectedOrder, totalOrden, 0, invoiceNum);
       } else if (metodoPagoNormal === 'mixto') {
         const cashAmt = parseFloat(amountPaid) || 0;
         const cardAmt = parseFloat(cardPaid) || 0;
         const transferAmt = parseFloat(transferPaid) || 0;
-        const cashNeeded = Math.max(0, totalOrdenConDescuento - cardAmt - transferAmt);
+        const cashNeeded = Math.max(0, totalOrden - cardAmt - transferAmt);
         if (cashAmt < cashNeeded) throw new Error(`Falta ${fmt(cashNeeded - cashAmt)} en efectivo`);
         const mixtoPayments = [];
         if (cashNeeded > 0) mixtoPayments.push({ method: 'cash', amount: cashNeeded });
@@ -1129,21 +679,10 @@ export default function PosCheckoutPage() {
         if (transferAmt > 0) mixtoPayments.push({ method: 'transfer', amount: transferAmt, reference_number: refTransfer });
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
-          body: JSON.stringify({
-            status: 'paid',
-            payment_method: 'mixto',
-            amount_paid: totalOrdenConDescuento,
-            payments: mixtoPayments,
-            customer_id: clienteId,
-            customer_name: nombre,
-            customer_document_number: cedula,
-            notes: orderNotes,
-            discount_id: appliedDiscount?.id || null,
-            discount_amount: discountAmount
-          }),
+          body: JSON.stringify({ status: 'paid', payment_method: 'mixto', amount_paid: totalOrden, payments: mixtoPayments, customer_id: clienteId, customer_name: nombre, customer_document_number: cedula, notes: orderNotes })
         });
-        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'mixto', discountInfo);
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, cashAmt - cashNeeded, invoiceNum);
+        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'mixto');
+        await imprimirTicket(selectedOrder, totalOrden, cashAmt - cashNeeded, invoiceNum);
       }
       setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
       await resetForm();
@@ -1240,23 +779,11 @@ export default function PosCheckoutPage() {
                         </div>
                       ))}
                     </div>
-
                     <div className="totals-footer">
-                      <div className="sub-iva-total"><span>SUBTOTAL:</span><span>{fmt(subtotalSinIVAMostrar)}</span></div>
-                      {appliedDiscount && discountAmount > 0 && (
-                        <div className="sub-iva-total discount-row">
-                          <span>DESCUENTO ({appliedDiscount.type === 'percentage' ? `${appliedDiscount.value}%` : `$${appliedDiscount.value}`}):</span>
-                          <span style={{ color: '#10b981' }}>-{fmt(discountAmount)}</span>
-                        </div>
-                      )}
-                      <div className="sub-iva-total"><span>BASE IMPONIBLE:</span><span>{fmt(nuevaBaseImponible)}</span></div>
-                      <div className="sub-iva-total"><span>IVA ({ivaRateMostrar}%):</span><span>{fmt(nuevoIVAMostrar)}</span></div>
-                      <div className="sub-iva-total total-row">
-                        <span><strong>TOTAL:</strong></span>
-                        <span className="total-amount"><strong>{fmt(totalOrdenConDescuento)}</strong></span>
-                      </div>
+                      <div className="sub-iva-total"><span>SUBTOTAL:</span><span>{fmt(subtotalOrden)}</span></div>
+                      <div className="sub-iva-total"><span>IVA:</span><span>{fmt(ivaOrden)}</span></div>
+                      <div className="sub-iva-total total-row"><span><strong>TOTAL:</strong></span><span className="total-amount"><strong>{fmt(totalOrden)}</strong></span></div>
                     </div>
-
                     <div className="metodo-pago-seleccion">
                       <button className={metodoPagoNormal === 'cash' ? "selected" : ""} onClick={() => setMetodoPagoNormal('cash')}><FaHandHoldingDollar size={20} /> Efectivo</button>
                       <button className={metodoPagoNormal === 'card' ? "selected" : ""} onClick={() => setMetodoPagoNormal('card')}><FiCreditCard size={20} /> Tarjeta</button>
@@ -1266,7 +793,6 @@ export default function PosCheckoutPage() {
                         setAmountPaidRaw(''); setAmountPaid(''); setCardPaidRaw(''); setCardPaid(''); setTransferPaidRaw(''); setTransferPaid(''); setMixtoManual(new Set());
                       }}><FiGrid size={20} /> Mixto</button>
                     </div>
-
                     {metodoPagoNormal === 'cash' && (
                       <div className="payment-cash-row">
                         <div className="payment-field"><label><BsCurrencyExchange size={20} /> Recibido:</label>
@@ -1277,14 +803,12 @@ export default function PosCheckoutPage() {
                         </div>
                       </div>
                     )}
-
                     {(metodoPagoNormal === 'card' || metodoPagoNormal === 'transfer') && (
                       <div className="payment-reference-row">
                         <label>{metodoPagoNormal === 'card' ? <FiCreditCard size={20} /> : <FaMoneyBillTransfer size={20} />} Referencia:</label>
                         <input type="text" value={metodoPagoNormal === 'card' ? refCard : refTransfer} onChange={e => metodoPagoNormal === 'card' ? setRefCard(e.target.value) : setRefTransfer(e.target.value)} placeholder="Número de referencia" />
                       </div>
                     )}
-
                     {metodoPagoNormal === 'mixto' && (
                       <>
                         <div className="payment-mixed-row">
@@ -1307,19 +831,21 @@ export default function PosCheckoutPage() {
                     )}
                   </>
                 ) : (
-                  // MODO DIVIDIDO - Se mantiene igual por simplicidad
-                  <div className="order-items">
-                    <div className="section-title"><IoFileTrayFull size={14} /> Productos pendientes:</div>
-                    {selectedOrder.items.filter(item => !item.paid).map((item, idx) => (
-                      <div key={idx} className="item-line" style={{ background: selectedItems.includes(item.id) ? 'rgba(16,185,129,0.08)' : 'transparent' }}>
-                        <input type="checkbox" checked={selectedItems.includes(item.id)} onChange={() => handleSelectItem(item.id)} disabled={item.paid} />
-                        <span>{item.quantity}x {item.product_name}</span>
-                        <span className="item-amt">{fmt((Number(item.selling_price) || Number(item.unit_price)) * item.quantity)}</span>
-                        {item.paid && <span className="paid-badge">✔ PAGADO</span>}
-                      </div>
-                    ))}
-                    {selectedOrder.items.filter(item => !item.paid).length === 0 && <div className="empty-state">✓ Todos los productos han sido pagados</div>}
-                    
+                  // ----- MODO DIVIDIDO -----
+                  <>
+                    <div className="order-items">
+                      <div className="section-title"><IoFileTrayFull size={14} /> Productos pendientes:</div>
+                      {selectedOrder.items.filter(item => !item.paid).map((item, idx) => (
+                        <div key={idx} className="item-line" style={{ background: selectedItems.includes(item.id) ? 'rgba(16,185,129,0.08)' : 'transparent' }}>
+                          <input type="checkbox" checked={selectedItems.includes(item.id)} onChange={() => handleSelectItem(item.id)} disabled={item.paid} />
+                          <span>{item.quantity}x {item.product_name}</span>
+                          <span className="item-amt">{fmt((Number(item.selling_price) || Number(item.unit_price)) * item.quantity)}</span>
+                          {item.paid && <span className="paid-badge">✔ PAGADO</span>}
+                        </div>
+                      ))}
+                      {selectedOrder.items.filter(item => !item.paid).length === 0 && <div className="empty-state">✓ Todos los productos han sido pagados</div>}
+                    </div>
+
                     {selectedItems.length > 0 && (
                       <div className="totals-footer small">
                         <div>Seleccionado: {fmt(getSplitSubtotal() + getSplitTax())}</div>
@@ -1338,6 +864,8 @@ export default function PosCheckoutPage() {
                         const totalC = subtotalC + ivaC;
                         const recibido = comensal.montoRecibido || 0;
                         const cambioC = recibido - totalC;
+                        const faltanteC = Math.max(0, totalC - recibido);
+                        const sobranteC = Math.max(0, recibido - totalC);
 
                         const cashRaw = comensal.cashAmount ? String(Math.round(comensal.cashAmount * 100)) : '';
                         const cardRaw = comensal.cardAmount ? String(Math.round(comensal.cardAmount * 100)) : '';
@@ -1345,8 +873,8 @@ export default function PosCheckoutPage() {
                         const recibidoRaw = recibido > 0 ? String(Math.round(recibido * 100)) : '';
 
                         const totalPagadoMixtoComensal = (comensal.cashAmount || 0) + (comensal.cardAmount || 0) + (comensal.transferAmount || 0);
-                        const cambioMixtoComensal = Math.max(0, totalPagadoMixtoComensal - totalC);
                         const faltanteMixtoComensal = Math.max(0, totalC - totalPagadoMixtoComensal);
+                        const cambioMixtoComensal = Math.max(0, totalPagadoMixtoComensal - totalC);
 
                         return (
                           <div key={comensal.id} className="comensal-card">
@@ -1393,6 +921,7 @@ export default function PosCheckoutPage() {
                               {comensal.items.length === 0 && <span className="empty-text">Sin productos</span>}
                             </div>
 
+                            {/* Botones de método de pago (igual que el normal) */}
                             <div className="metodo-pago-seleccion">
                               <button className={comensal.metodoPago === 'cash' ? "selected" : ""} onClick={() => actualizarComensal(comensal.id, 'metodoPago', 'cash')}>
                                 <FaHandHoldingDollar size={16} /> Efectivo
@@ -1408,6 +937,7 @@ export default function PosCheckoutPage() {
                               </button>
                             </div>
 
+                            {/* Campos según método */}
                             {comensal.metodoPago === 'cash' && (
                               <div className="payment-cash-row">
                                 <div className="payment-field">
@@ -1475,6 +1005,7 @@ export default function PosCheckoutPage() {
                               </>
                             )}
 
+                            {/* Totales del comensal */}
                             <div className="comensal-totales">
                               <div>
                                 <div>Subtotal: <strong>{fmt(subtotalC)}</strong></div>
@@ -1511,12 +1042,12 @@ export default function PosCheckoutPage() {
                       )}
                       {selectedItems.length > 0 && <div className="warning-box"><CiWarning size={14} /> {selectedItems.length} producto(s) sin asignar</div>}
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
 
               <div className="actions-row">
-                <button className="btn-guardar" disabled={printLoading || (!modoDividido && metodoPagoNormal === 'cash' && (!amountPaid || parseFloat(amountPaid) < totalOrdenConDescuento))}
+                <button className="btn-guardar" disabled={printLoading || (!modoDividido && metodoPagoNormal === 'cash' && (!amountPaid || parseFloat(amountPaid) < totalOrden))}
                   onClick={() => { if (!modoDividido) pagoNormal(); }}>
                   <Check size={16} /> {printLoading ? 'Procesando...' : modoDividido ? 'CONTINUAR' : 'COBRAR'}
                 </button>
@@ -1529,8 +1060,8 @@ export default function PosCheckoutPage() {
                 <div className="historial-pagos">
                   <div className="historial-titulo">📋 Pagos realizados:</div>
                   {pagosRegistrados.map((pago, idx) => <div key={idx} className="historial-item">• Pago {idx + 1} - {fmt(pago.total)} ({pago.items.length} productos)</div>)}
-                  <div className="historial-total">Total pagado: {fmt(pagosRegistrados.reduce((s, p) => s + p.total, 0))} / Total orden: {fmt(totalOrdenBruto)}</div>
-                  {totalPagadoAcumulado >= totalOrdenBruto && <div className="historial-completado">✅ ¡Pago completado! La factura se generará automáticamente.</div>}
+                  <div className="historial-total">Total pagado: {fmt(pagosRegistrados.reduce((s, p) => s + p.total, 0))} / Total orden: {fmt(totalOrden)}</div>
+                  {totalPagadoAcumulado >= totalOrden && <div className="historial-completado">✅ ¡Pago completado! La factura se generará automáticamente.</div>}
                 </div>
               )}
             </>

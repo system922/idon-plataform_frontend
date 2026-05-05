@@ -1,0 +1,131 @@
+.accounting-balance-container {
+  padding: 20px;
+}
+
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  background: rgba(22, 78, 68, 0.3);
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #60d5c0;
+}
+.filter-group input, .filter-group select {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #fff;
+}
+.kpi-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.kpi-card {
+  background: rgba(22, 78, 68, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 20px;
+  padding: 20px;
+  position: relative;
+}
+.kpi-card.success {
+  border-color: #10b981;
+}
+.kpi-card.danger {
+  border-color: #ef4444;
+}
+.kpi-title {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+}
+.kpi-value {
+  font-size: 28px;
+  font-weight: 800;
+  margin-top: 8px;
+}
+.kpi-icon {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  opacity: 0.5;
+}
+.kpi-icon.positive {
+  color: #10b981;
+}
+.kpi-icon.negative {
+  color: #ef4444;
+}
+.chart-card, .table-card {
+  background: rgba(22, 78, 68, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+.chart-card h3, .table-card h3 {
+  margin: 0 0 20px;
+  font-size: 18px;
+  color: #fff;
+}
+.balance-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.balance-table th, .balance-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.balance-table th {
+  color: #60d5c0;
+  font-weight: 600;
+}
+.balance-table .sales {
+  color: #10b981;
+}
+.balance-table .expenses {
+  color: #ef4444;
+}
+.balance-table .profit {
+  color: #10b981;
+  font-weight: bold;
+}
+.balance-table .loss {
+  color: #ef4444;
+  font-weight: bold;
+}
+.table-responsive {
+  overflow-x: auto;
+}
+tfoot td {
+  border-top: 2px solid rgba(16, 185, 129, 0.3);
+  padding-top: 12px;
+}
+.loading-spinner {
+  text-align: center;
+  padding: 60px;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.alert-error, .alert-success {
+  margin-bottom: 20px;
+}
