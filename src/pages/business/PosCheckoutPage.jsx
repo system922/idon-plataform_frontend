@@ -95,13 +95,9 @@ export default function PosCheckoutPage() {
   // Cargar descuentos desde API
   const loadDiscounts = async () => {
     try {
-      console.log('🔄 Cargando descuentos desde API...');
       const res = await fetchWithAuth('/api/discounts');
-      console.log('📡 Respuesta del servidor:', res.status);
       if (res.ok) {
         const data = await res.json();
-        console.log('📦 Descuentos recibidos:', data);
-        console.log('📊 Cantidad de descuentos:', data.length);
         
         const validDiscounts = (Array.isArray(data) ? data : []).filter(d => {
           const isValid = d && d.id && d.name && d.is_active !== undefined && d.type && d.value !== undefined;
@@ -111,14 +107,11 @@ export default function PosCheckoutPage() {
           return isValid;
         });
         
-        console.log('✅ Descuentos válidos:', validDiscounts.length);
         setAvailableDiscounts(validDiscounts);
       } else {
-        console.error('❌ Error al cargar descuentos:', res.status);
         setAvailableDiscounts([]);
       }
     } catch (err) {
-      console.error('❌ Error cargando descuentos:', err);
       setAvailableDiscounts([]);
     }
   };
@@ -176,12 +169,10 @@ export default function PosCheckoutPage() {
     console.log(`   - orderTotal: ${orderTotal}, min_amount: ${discount.min_amount || 0}`);
     
     if (!discount.is_active) {
-      console.log(`   ❌ Descuento inactivo`);
       return false;
     }
 
     if (!discount.type || discount.value === undefined || discount.value === null) {
-      console.log(`   ❌ Descuento sin tipo o valor válido`);
       return false;
     }
 
@@ -190,7 +181,6 @@ export default function PosCheckoutPage() {
     if (discount.start_date) {
       const startDate = new Date(discount.start_date);
       if (startDate > now) {
-        console.log(`   ❌ Fecha inicio futura: ${discount.start_date}`);
         return false;
       }
     }
@@ -198,7 +188,6 @@ export default function PosCheckoutPage() {
     if (discount.end_date) {
       const endDate = new Date(discount.end_date);
       if (endDate < now) {
-        console.log(`   ❌ Fecha fin pasada: ${discount.end_date}`);
         return false;
       }
     }
@@ -206,7 +195,6 @@ export default function PosCheckoutPage() {
     if (discount.days_of_week && discount.days_of_week.length > 0) {
       const today = now.getDay();
       if (!discount.days_of_week.includes(today)) {
-        console.log(`   ❌ Día no permitido. Hoy: ${today}, Permitidos: ${discount.days_of_week}`);
         return false;
       }
     }
@@ -214,7 +202,6 @@ export default function PosCheckoutPage() {
     if (discount.start_time && discount.end_time) {
       const currentTime = now.toTimeString().slice(0, 5);
       if (currentTime < discount.start_time || currentTime > discount.end_time) {
-        console.log(`   ❌ Horario fuera de rango. Actual: ${currentTime}, Rango: ${discount.start_time}-${discount.end_time}`);
         return false;
       }
     }
@@ -222,18 +209,15 @@ export default function PosCheckoutPage() {
     // Para descuentos por categoría, verificar si hay items de esa categoría
     if (discount.applies_to === 'category') {
       if (!discount.category_id) {
-        console.log(`   ❌ Descuento por categoría sin category_id`);
         return false;
       }
       
       const categoryTotal = getSubtotalByCategory(items, discount.category_id);
       if (categoryTotal === 0) {
-        console.log(`   ❌ No hay productos de la categoría ${discount.category_id} en esta orden`);
         return false;
       }
       
       if (discount.min_amount && categoryTotal < Number(discount.min_amount)) {
-        console.log(`   ❌ Monto insuficiente para la categoría. Total categoría: ${categoryTotal.toFixed(2)}, Mínimo requerido: ${Number(discount.min_amount).toFixed(2)}`);
         return false;
       }
       
@@ -244,7 +228,6 @@ export default function PosCheckoutPage() {
     // Para descuentos de orden completa
     if (discount.applies_to === 'order') {
       if (discount.min_amount && orderTotal < Number(discount.min_amount)) {
-        console.log(`   ❌ Monto insuficiente. Total: ${orderTotal.toFixed(2)}, Mínimo requerido: ${Number(discount.min_amount).toFixed(2)}`);
         return false;
       }
       
@@ -252,7 +235,6 @@ export default function PosCheckoutPage() {
       return true;
     }
     
-    console.log(`   ❌ Tipo de aplicación no soportado: ${discount.applies_to}`);
     return false;
   }, [getSubtotalByCategory]);
 
@@ -264,33 +246,25 @@ export default function PosCheckoutPage() {
     
     if (discount.applies_to === 'category' && discount.category_id) {
       baseAmount = getSubtotalByCategory(items, discount.category_id);
-      console.log(`   📊 Base para descuento por categoría: $${baseAmount.toFixed(2)}`);
     } else {
       baseAmount = subtotalSinIVA;
-      console.log(`   📊 Base para descuento de orden (subtotal Sin IVA): $${baseAmount.toFixed(2)}`);
     }
     
     let amount = 0;
     
     if (discount.type === 'percentage') {
       amount = baseAmount * (Number(discount.value) / 100);
-      console.log(`   📊 Descuento porcentual: ${discount.value}% = $${amount.toFixed(2)}`);
     } else if (discount.type === 'fixed') {
       amount = Math.min(Number(discount.value), baseAmount);
-      console.log(`   📊 Descuento fijo: $${amount.toFixed(2)}`);
     } else {
-      console.log(`   ⚠️ Tipo de descuento desconocido: ${discount.type}`);
       return 0;
     }
     
     if (discount.max_discount && amount > Number(discount.max_discount)) {
-      const originalAmount = amount;
       amount = Number(discount.max_discount);
-      console.log(`   ✂️ Aplicando límite máximo: $${originalAmount.toFixed(2)} -> $${amount.toFixed(2)}`);
     }
     
     if (amount > baseAmount) {
-      console.log(`   ✂️ Ajustando descuento (no puede superar el subtotal): $${amount.toFixed(2)} -> $${baseAmount.toFixed(2)}`);
       amount = baseAmount;
     }
     
@@ -299,11 +273,8 @@ export default function PosCheckoutPage() {
 
   // Obtener mejor descuento aplicable
   const getBestApplicableDiscount = useCallback((subtotalSinIVA, items) => {
-    console.log('🔍 Buscando descuentos aplicables...');
-    console.log('📦 Descuentos disponibles en memoria:', availableDiscounts.length);
     
     if (availableDiscounts.length === 0) {
-      console.log('⚠️ No hay descuentos disponibles');
       return null;
     }
     
@@ -311,10 +282,7 @@ export default function PosCheckoutPage() {
       isDiscountApplicable(discount, subtotalSinIVA, items)
     );
     
-    console.log(`✅ Descuentos aplicables encontrados: ${applicable.length}`);
-    
     if (applicable.length === 0) {
-      console.log('⚠️ Ningún descuento aplicable');
       return null;
     }
     
@@ -328,13 +296,6 @@ export default function PosCheckoutPage() {
     applicableWithAmount.sort((a, b) => b.amount - a.amount);
     
     const selected = applicableWithAmount[0].discount;
-    const selectedAmount = applicableWithAmount[0].amount;
-    
-    console.log(`🎯 Descuento seleccionado: ${selected.name}`);
-    console.log(`   - Tipo: ${selected.type}`);
-    console.log(`   - Valor: ${selected.value}`);
-    console.log(`   - Aplica a: ${selected.applies_to}`);
-    console.log(`   - Monto: $${selectedAmount.toFixed(2)}`);
     
     return selected;
   }, [availableDiscounts, isDiscountApplicable, calculateDiscountAmountForOrder]);
@@ -370,18 +331,11 @@ export default function PosCheckoutPage() {
       
       setTotalOrdenConDescuento(nuevoTotal);
       
-      console.log(`✨ Descuento aplicado (SRI correcto): ${best.name} - $${amount.toFixed(2)}`);
-      console.log(`   Subtotal sin IVA original: $${subtotalSinIVA.toFixed(2)}`);
-      console.log(`   Tasa IVA global: ${ivaRate}%`);
-      console.log(`   Nueva base imponible: $${nuevaBaseImponible.toFixed(2)}`);
-      console.log(`   IVA: $${nuevoIVA.toFixed(2)}`);
-      console.log(`   Total con descuento: $${nuevoTotal.toFixed(2)}`);
     } else {
       setAppliedDiscount(null);
       setDiscountAmount(0);
       const totalConIVA = getOrderTotal();
       setTotalOrdenConDescuento(totalConIVA);
-      console.log('⚠️ No se encontró ningún descuento aplicable');
     }
   }, [selectedOrder, getSubtotalSinIVA, getIvaRate, getOrderTotal, getBestApplicableDiscount, calculateDiscountAmountForOrder]);
 
