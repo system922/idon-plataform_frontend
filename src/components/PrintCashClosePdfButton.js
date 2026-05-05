@@ -12,7 +12,7 @@ function getOperatorUser() {
   }
 }
 
-export default function PrintCashClosePdfButton({ close, opening, summary, className }) {
+export default function PrintCashClosePdfButton({ close, opening, summary, incomeExtras = [], className }) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -97,6 +97,9 @@ export default function PrintCashClosePdfButton({ close, opening, summary, class
       y += 4;
       doc.text(`ID Cierre: #${close?.id || Date.now()}`, 15, y);
 
+      // Pre-calcular totales necesarios en múltiples secciones
+      const totalExtras = incomeExtras.reduce((s, e) => s + Number(e.amount || 0), 0);
+
       // ============ APERTURA DE CAJA ============
       y += 8;
       doc.setFillColor(245, 245, 245);
@@ -164,6 +167,37 @@ export default function PrintCashClosePdfButton({ close, opening, summary, class
       doc.text(`TOTAL VENTAS:`, 18, y);
       doc.text(`$${totalVentas.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
+      // ============ INGRESOS EXTRAS ============
+      if (incomeExtras.length > 0) {
+        y += 8;
+        doc.setFillColor(245, 245, 245);
+        doc.rect(15, y, pageWidth - 30, 6, 'F');
+
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(0, 128, 80);
+        doc.text("INGRESOS EXTRAS", 18, y + 4);
+
+        y += 9;
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(0, 0, 0);
+
+        const METODO_ES2 = { cash: 'Efectivo', card: 'Tarjeta', transfer: 'Transferencia' };
+        incomeExtras.forEach(e => {
+          const monto = Number(e.amount || 0);
+          const label = e.description || 'Ingreso extra';
+          const metodo = METODO_ES2[e.payment_method] || e.payment_method;
+          doc.text(`${label} (${metodo}):`, 18, y);
+          doc.text(`$${monto.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+          y += 5;
+        });
+
+        doc.setFont(undefined, 'bold');
+        doc.text(`TOTAL EXTRAS:`, 18, y);
+        doc.text(`$${totalExtras.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+      }
+
       // ============ EGRESOS Y GASTOS ============
       y += 8;
       doc.setFillColor(245, 245, 245);
@@ -204,8 +238,9 @@ export default function PrintCashClosePdfButton({ close, opening, summary, class
       const transferenciaContada = Number(close?.transfer_counted || 0);
       const tarjetaContada = Number(close?.card_counted || 0);
       const propinaContada = Number(close?.tip_counted || 0);
-      const totalContado = efectivoContado + transferenciaContada + tarjetaContada + propinaContada;
-      const cajaEsperada = totalApertura + totalVentas - totalGastos;
+      // Propina no afecta cuadre — excluida del totalContado
+      const totalContado = efectivoContado + transferenciaContada + tarjetaContada;
+      const cajaEsperada = totalApertura + totalVentas - totalGastos + totalExtras;
       const diferencia = totalContado - cajaEsperada;
       const esCuadrado = Math.abs(diferencia) < 0.01;
 
@@ -229,32 +264,41 @@ export default function PrintCashClosePdfButton({ close, opening, summary, class
       doc.text(`Efectivo contado:`, 18, y);
       doc.text(`$${efectivoContado.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
       y += 5;
-      
+
       doc.text(`Transferencias contadas:`, 18, y);
       doc.text(`$${transferenciaContada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
       y += 5;
-      
+
       doc.text(`Tarjetas contadas:`, 18, y);
       doc.text(`$${tarjetaContada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
       y += 5;
-      
-      doc.text(`Propinas contadas:`, 18, y);
-      doc.text(`$${propinaContada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
-      
-      y += 7;
+
+      if (totalExtras > 0) {
+        doc.text(`Ingresos extras:`, 18, y);
+        doc.text(`$${totalExtras.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+        y += 5;
+      }
+
+      if (propinaContada > 0) {
+        doc.text(`Propinas (sin cuadre):`, 18, y);
+        doc.text(`$${propinaContada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
+        y += 5;
+      }
+
+      y += 2;
       doc.setDrawColor(255, 255, 255);
       doc.setLineWidth(0.3);
       doc.line(18, y, pageWidth - 18, y);
-      
+
       y += 5;
       doc.setFontSize(9);
       doc.text(`Total esperado:`, 18, y);
       doc.text(`$${cajaEsperada.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
-      
+
       y += 5;
       doc.text(`Total contado:`, 18, y);
       doc.text(`$${totalContado.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
-      
+
       y += 6;
       doc.setFontSize(11);
       doc.setFont(undefined, 'bold');

@@ -399,6 +399,7 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                     close={closingConPropina || closing}
                     opening={opening}
                     summary={summary}
+                    incomeExtras={incomeExtras}
                     className="btn-secondary"
                   />
                 </div>
@@ -429,6 +430,7 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                   close={closingConPropina || closing}
                   opening={opening}
                   summary={summary}
+                  incomeExtras={incomeExtras}
                   className="btn-pdf-small-modern"
                 />
               </div>
@@ -617,49 +619,54 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                     <h3>INGRESOS EXTRAS</h3>
                   </div>
 
-                  {/* Propina — no afecta cuadre */}
-                  <div className="ingreso-input">
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <FiHeart size={12} /> Propina
-                      <span style={{ fontSize: 10, color: '#888', marginLeft: 4 }}>(No afecta cuadre)</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="ingreso-input-field"
-                      value={propinaFisico}
-                      onChange={(e) => setPropinaFisico(toNum(e.target.value))}
-                      disabled={!!closing}
-                      placeholder="0.00"
-                    />
-                  </div>
-
                   {/* Ingresos extras del día — SÍ afectan cuadre */}
-                  <div style={{ marginTop: 12 }}>
-                    <div style={{ fontSize: 11, color: '#a0a0b0', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Ingresos extras del día <span style={{ color: '#10b981' }}>(afectan cuadre)</span>
-                    </div>
-                    {incomeExtras.length === 0 ? (
-                      <div style={{ fontSize: 12, color: '#666', padding: '6px 0' }}>Sin ingresos extras registrados hoy</div>
-                    ) : (
-                      <>
-                        {incomeExtras.map(extra => (
-                          <div key={extra.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 13 }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <span style={{ color: '#e2e8f0' }}>{extra.description || 'Ingreso extra'}</span>
-                              <span style={{ fontSize: 10, color: '#888' }}>
-                                {{ cash: 'Efectivo', card: 'Tarjeta', transfer: 'Transferencia' }[extra.payment_method] || extra.payment_method}
-                              </span>
-                            </div>
-                            <span style={{ color: '#10b981', fontWeight: 600 }}>{money(toNum(extra.amount))}</span>
+                  <div style={{ fontSize: 11, color: '#a0a0b0', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Extras del día <span style={{ color: '#10b981' }}>(afectan cuadre)</span>
+                  </div>
+                  {incomeExtras.length === 0 ? (
+                    <div style={{ fontSize: 12, color: '#666', padding: '4px 0 8px' }}>Sin ingresos extras registrados hoy</div>
+                  ) : (
+                    <>
+                      {incomeExtras.map(extra => (
+                        <div key={extra.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 13 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <span style={{ color: '#e2e8f0' }}>{extra.description || 'Ingreso extra'}</span>
+                            <span style={{ fontSize: 10, color: '#888' }}>
+                              {{ cash: 'Efectivo', card: 'Tarjeta', transfer: 'Transferencia' }[extra.payment_method] || extra.payment_method}
+                            </span>
                           </div>
-                        ))}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontWeight: 700, fontSize: 13 }}>
-                          <span>Total extras:</span>
-                          <span style={{ color: '#10b981' }}>{money(totalExtras)}</span>
+                          <span style={{ color: '#10b981', fontWeight: 600 }}>{money(toNum(extra.amount))}</span>
                         </div>
-                      </>
-                    )}
+                      ))}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontWeight: 700, fontSize: 13 }}>
+                        <span>Total extras:</span>
+                        <span style={{ color: '#10b981' }}>{money(totalExtras)}</span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Propina — no afecta cuadre */}
+                  <div style={{ marginTop: 14, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 10 }}>
+                    <div style={{ fontSize: 11, color: '#a0a0b0', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Propina <span style={{ color: '#f39c12' }}>(sin cuadre)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="ingreso-input-field"
+                        value={propinaFisico}
+                        onChange={(e) => setPropinaFisico(toNum(e.target.value))}
+                        disabled={!!closing}
+                        placeholder="0.00"
+                        style={{ flex: 1 }}
+                      />
+                      {propinaFisico > 0 && (
+                        <span style={{ color: '#f39c12', fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap' }}>
+                          {money(propinaFisico)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

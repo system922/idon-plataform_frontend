@@ -278,7 +278,7 @@ export default function BusinessLayout({ user, onLogout }) {
       const [sumRes, openRes, incomesRes] = await Promise.all([
         fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`),
         fetchWithAuth(`/api/pos/cash-register/opening?date=${today}`),
-        fetchWithAuth(`/api/incomes?business_id=${selectedBiz?.id}&date=${today}`)
+        fetchWithAuth(`/api/pos/cash-register/income-extra?date=${today}`)
       ]);
 
       let summary = {};
@@ -291,9 +291,9 @@ export default function BusinessLayout({ user, onLogout }) {
 
       const ventasPorMetodo = summary?.metodos || [];
       const totalVentas = ventasPorMetodo.reduce((a, b) => a + (Number(b.total_cobrado) || 0), 0);
-      const ventasEfectivo = ventasPorMetodo.find(m => m.payment_method === 'efectivo')?.total_cobrado || 0;
-      const ventasTarjeta = ventasPorMetodo.find(m => m.payment_method === 'tarjeta')?.total_cobrado || 0;
-      const ventasTransferencia = ventasPorMetodo.find(m => m.payment_method === 'transferencia')?.total_cobrado || 0;
+      const ventasEfectivo = ventasPorMetodo.find(m => m.payment_method === 'cash')?.total_cobrado || 0;
+      const ventasTarjeta = ventasPorMetodo.find(m => m.payment_method === 'card')?.total_cobrado || 0;
+      const ventasTransferencia = ventasPorMetodo.find(m => m.payment_method === 'transfer')?.total_cobrado || 0;
       
       const gastos = (summary?.gastos || []).reduce((a, g) => a + (Number(g.monto) || 0), 0);
       const ingresosExtras = incomes.reduce((a, i) => a + (Number(i.amount) || 0), 0);
