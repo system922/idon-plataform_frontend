@@ -584,6 +584,21 @@ export default function PosCheckoutPage() {
 
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
+  // Función para enviar la factura por correo electrónico
+  const enviarFacturaEmail = async (invoiceId, email) => {
+    if (!invoiceId || !email) return;
+    try {
+      await fetchWithAuth(`/api/einvoicing/invoices/${invoiceId}/email`, {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim() })
+      });
+      console.log(`📧 Factura enviada a ${email}`);
+    } catch (err) {
+      console.warn('Error al enviar correo (no crítico):', err);
+    }
+  };
+
+  // Función emitirFactura ahora devuelve objeto con id y número de factura
   async function emitirFactura(order, custCedula, custNombre, method, discountData = null) {
     const cedula = custCedula?.trim() || '9999999999';
     const isCF = cedula === '9999999999' || cedula === '9999999999999';
@@ -642,7 +657,8 @@ export default function PosCheckoutPage() {
         setError(`Error factura: ${result.error || response.status}`);
         return null;
       }
-      return result?.invoice_number || null;
+      // Retornar objeto con id y número de factura
+      return { id: result.id, invoice_number: result.invoice_number };
     } catch (e) {
       setError(`Error emitir factura: ${e.message}`);
       console.error(e);
@@ -751,8 +767,12 @@ export default function PosCheckoutPage() {
 
       if (facturaIndividual) {
         const partialOrder = { ...selectedOrder, items: selectedOrder.items.filter(i => comensal.items.includes(i.id)) };
-        const invoiceNum = await emitirFactura(partialOrder, cedula, nombre, 'split');
-        await imprimirTicket(partialOrder, totalComensal, comensal.montoRecibido - totalComensal, invoiceNum, 'split', nombre);
+        const invoiceData = await emitirFactura(partialOrder, cedula, nombre, 'split');
+        await imprimirTicket(partialOrder, totalComensal, comensal.montoRecibido - totalComensal, invoiceData?.invoice_number, 'split', nombre);
+        // Enviar factura por correo al comensal si tiene email
+        if (invoiceData?.id && comensal.email) {
+          await enviarFacturaEmail(invoiceData.id, comensal.email);
+        }
         setSuccess(`Factura generada para ${nombre}`);
       } else {
         const itemsCompletos = comensal.items.map(itemId => selectedOrder?.items?.find(i => i.id === itemId)).filter(i => i);
@@ -762,38 +782,60 @@ export default function PosCheckoutPage() {
 
       setClientesDivididos(prev => prev.filter(c => c.id !== comensal.id));
       const ordenActualizada = await recargarOrden();
-      const pagoTotalCompletado = nuevoTotalPagado === totalOrdenConDescuento;
+      const itemsPendientes = ordenActualizada?.items?.filter(i => !i.paid).length || 0;
 
-      if (pagoTotalCompletado) {
-        let itemsFinales = [];
-        for (const pago of pagosRegistrados) if (pago.items) itemsFinales.push(...pago.items);
+      if (itemsPendientes === 0) {
+        // Todos los productos pagados
         if (!facturaIndividual) {
+          // Modo factura única final: reunir todos los items pagados y emitir una factura global
+          let itemsFinales = [];
+          for (const pago of pagosRegistrados) if (pago.items) itemsFinales.push(...pago.items);
+          // Agregar los items del último comensal
           const itemsActuales = comensal.items.map(itemId => selectedOrder?.items?.find(i => i.id === itemId)).filter(i => i);
           itemsActuales.forEach(item => { if (!itemsFinales.some(i => i.id === item.id)) itemsFinales.push(item); });
+
+          if (itemsFinales.length > 0) {
+            const ordenCompleta = { ...selectedOrder, items: itemsFinales };
+            const discountInfo = appliedDiscount ? { id: appliedDiscount.id, name: appliedDiscount.name, amount: discountAmount } : null;
+            const invoiceData = await emitirFactura(ordenCompleta, clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', 'split', discountInfo);
+            await imprimirTicket(ordenCompleta, totalOrdenConDescuento, 0, invoiceData?.invoice_number, 'split', 'FACTURA FINAL');
+            // Enviar factura final al correo del cliente principal
+            if (invoiceData?.id && clienteEmail) {
+              await enviarFacturaEmail(invoiceData.id, clienteEmail);
+            }
+          }
+        } else {
+          setSuccess('✅ Todos los comensales facturados. Orden completada.');
         }
-        if (itemsFinales.length > 0) {
-          const ordenCompleta = { ...selectedOrder, items: itemsFinales };
-          const discountInfo = appliedDiscount ? { id: appliedDiscount.id, name: appliedDiscount.name, amount: discountAmount } : null;
-          const invoiceNum = await emitirFactura(ordenCompleta, clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', 'split', discountInfo);
-          await imprimirTicket(ordenCompleta, totalOrdenConDescuento, 0, invoiceNum, 'split', 'FACTURA FINAL');
-        }
+
+        // Marcar orden como pagada en el backend
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
-          body: JSON.stringify({ status: 'paid', payment_method: 'split', amount_paid: totalOrdenConDescuento, notes: orderNotes, discount_id: appliedDiscount?.id || null, discount_amount: discountAmount })
+          body: JSON.stringify({
+            status: 'paid',
+            payment_method: 'split',
+            amount_paid: totalOrdenConDescuento,
+            notes: orderNotes,
+            discount_id: appliedDiscount?.id || null,
+            discount_amount: discountAmount
+          })
         });
+
+        // Limpiar estado y actualizar lista de órdenes
         setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
         setSelectedOrder(null);
         setClientesDivididos([]);
         setPagosRegistrados([]);
         setTotalPagadoAcumulado(0);
-        setSuccess('✅ Orden completada y factura final generada');
-      } else if (ordenActualizada) {
+        setSuccess(prev => prev.includes('Factura final') ? prev : '✅ Orden completada');
+      } else {
+        // Todavía quedan productos pendientes
         const comensalesPendientes = clientesDivididos.filter(c => c.id !== comensal.id);
         if (comensalesPendientes.length === 0) {
           setClientesDivididos([{ id: Date.now(), cedula: '', nombre: '', email: '', items: [], metodoPago: 'cash', montoRecibido: 0, referencia: '', cashAmount: 0, cardAmount: 0, transferAmount: 0 }]);
         }
         setSelectedItems([]);
-        setSuccess(`Pago completado. Quedan ${ordenActualizada.items.filter(i => !i.paid).length} productos por pagar.`);
+        setSuccess(`Pago completado. Quedan ${itemsPendientes} productos por pagar.`);
       }
     } catch (err) {
       console.error(err);
@@ -809,7 +851,7 @@ export default function PosCheckoutPage() {
       let cedula = clienteCedula?.trim() || '9999999999';
       let nombre = clienteNombre?.trim() || 'CONSUMIDOR FINAL';
       let clienteId = await guardarCliente(cedula, nombre, clienteEmail?.trim() || null);
-      let invoiceNum = null;
+      let invoiceData = null;
       const discountInfo = appliedDiscount ? { id: appliedDiscount.id, name: appliedDiscount.name, amount: discountAmount } : null;
 
       if (metodoPagoNormal === 'cash') {
@@ -829,8 +871,8 @@ export default function PosCheckoutPage() {
             discount_amount: discountAmount
           }),
         });
-        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'cash', discountInfo);
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, paid - totalOrdenConDescuento, invoiceNum);
+        invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'cash', discountInfo);
+        await imprimirTicket(selectedOrder, totalOrdenConDescuento, paid - totalOrdenConDescuento, invoiceData?.invoice_number);
       } else if (metodoPagoNormal === 'card') {
         if (!refCard) throw new Error('Ingrese la referencia de la tarjeta');
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
@@ -848,8 +890,8 @@ export default function PosCheckoutPage() {
             discount_amount: discountAmount
           }),
         });
-        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'card', discountInfo);
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceNum);
+        invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'card', discountInfo);
+        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceData?.invoice_number);
       } else if (metodoPagoNormal === 'transfer') {
         if (!refTransfer) throw new Error('Ingrese la referencia de la transferencia');
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
@@ -867,8 +909,8 @@ export default function PosCheckoutPage() {
             discount_amount: discountAmount
           }),
         });
-        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'transfer', discountInfo);
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceNum);
+        invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'transfer', discountInfo);
+        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceData?.invoice_number);
       } else if (metodoPagoNormal === 'mixto') {
         const cashAmt = parseFloat(amountPaid) || 0;
         const cardAmt = parseFloat(cardPaid) || 0;
@@ -894,9 +936,15 @@ export default function PosCheckoutPage() {
             discount_amount: discountAmount
           }),
         });
-        invoiceNum = await emitirFactura(selectedOrder, cedula, nombre, 'mixto', discountInfo);
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, cashAmt - cashNeeded, invoiceNum);
+        invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'mixto', discountInfo);
+        await imprimirTicket(selectedOrder, totalOrdenConDescuento, cashAmt - cashNeeded, invoiceData?.invoice_number);
       }
+
+      // Enviar factura por correo al cliente principal
+      if (invoiceData?.id && clienteEmail) {
+        await enviarFacturaEmail(invoiceData.id, clienteEmail);
+      }
+
       setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
       await resetForm();
       setSuccess('Pago completado');
@@ -907,7 +955,7 @@ export default function PosCheckoutPage() {
     }
   };
 
-  // Render
+  // Render (sin cambios estructurales)
   return (
     <PageTemplate title="Cobrar Orden" subtitle="Cobrar órdenes abiertas, imprimir recibo y abrir caja" backButton>
       <div className="checkout-modern-main">
@@ -1040,7 +1088,7 @@ export default function PosCheckoutPage() {
                     )}
                   </>
                 ) : (
-                  // Modo dividido
+                  // Modo dividido (sin cambios estructurales)
                   <div className="order-items">
                     <div className="section-title"><IoFileTrayFull size={14} /> Productos pendientes:</div>
                     {selectedOrder.items.filter(item => !item.paid).map((item, idx) => (
