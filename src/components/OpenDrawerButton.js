@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import { useCashDrawer } from '../hooks/useCashDrawer';
 import { FiInbox, FiAlertCircle } from 'react-icons/fi';
 import PasswordModal from './PasswordModal';
@@ -310,9 +311,8 @@ function OpenDrawerButton({ label = "Abrir Caja", onDone, disabled = false, clas
         return;
       }
 
-      // 2. Abrir cajón
-      const ok = await openDrawer();
-      if (!ok) { setErr('No se pudo abrir la caja'); setLoading(false); return; }
+      // 2. Abrir cajón (no bloqueamos el flujo si falla físicamente)
+      await openDrawer().catch(() => {});
 
       setReasonOpen(false);
 
@@ -390,12 +390,13 @@ function OpenDrawerButton({ label = "Abrir Caja", onDone, disabled = false, clas
         error={reasonModalErr}
       />
 
-      {bubbleOpen && (
+      {bubbleOpen && ReactDOM.createPortal(
         <EgressBubble
           onSave={handleBubbleSave}
           saving={bubbleSaving}
           error={bubbleErr}
-        />
+        />,
+        document.body
       )}
     </div>
   );
