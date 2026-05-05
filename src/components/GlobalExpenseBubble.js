@@ -4,12 +4,10 @@ import ReactDOM from 'react-dom';
 import { useDrawer } from '../context/DrawerContext';
 import { fetchWithAuth } from '../config/apiBase';
 import { FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
-import { useQzTray } from './useQzTray';
 import { usePrinterService } from '../services/usePrinterService';
 
 function GlobalExpenseBubble() {
   const { pendingExpense, clearExpense } = useDrawer();
-  useQzTray();
   const { openCashDrawer } = usePrinterService();
   const [expanded, setExpanded] = useState(false);
   const [amount, setAmount] = useState('');

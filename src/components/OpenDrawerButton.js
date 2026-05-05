@@ -5,7 +5,6 @@ import PasswordModal from './PasswordModal';
 import { useDrawer } from '../context/DrawerContext';  // 👈 contexto global
 import '../styles/OpenDrawerButton.css';
 import { fetchWithAuth } from '../config/apiBase';
-import { useQzTray } from './useQzTray';
 import { usePrinterService } from '../services/usePrinterService';
 
 function getOperatorUser() {
@@ -135,8 +134,7 @@ function renderJefeData(jefeCaja, jefeName) {
 
 // ── Componente principal ──────────────────────────────────────────────────────
 function OpenDrawerButton({ label = "Abrir Caja", onDone, disabled = false, className = "" }) {
-  useQzTray();                                    // establece conexión QZ Tray
-  const { openCashDrawer } = usePrinterService(); // abre cajón vía ESC/POS
+  const { openCashDrawer } = usePrinterService();
   const { startExpense } = useDrawer();   // 👈 contexto global
 
   const [loading, setLoading] = useState(false);
