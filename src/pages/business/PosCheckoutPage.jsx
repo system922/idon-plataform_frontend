@@ -784,69 +784,47 @@ export default function PosCheckoutPage() {
   async function emitirFactura(order, custCedula, custNombre, method, discountData = null) {
     const cedula = custCedula?.trim() || '9999999999';
     const isCF = cedula === '9999999999' || cedula === '9999999999999';
-    const isRUC = !isCF && cedula.length === 13;
-    const tipoId = isCF ? '07' : isRUC ? '04' : '05';
+    const tipoId = isCF ? '07' : (cedula.length === 13 ? '04' : '05');
     const email = foundCliente?.email || clienteEmail.trim() || null;
 
-    // Calcular subtotal ORIGINAL (sin descuento)
     let subtotalOriginal = 0;
-    
     const itemsPayload = (order.items || []).map(item => {
       const qty = item.quantity || 1;
       const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
       const itemSubtotal = precioSinIVA * qty;
-      
       subtotalOriginal += itemSubtotal;
-      
       return {
         code: item.code || 'PROD',
         description: item.product_name || 'Producto',
-        qty: qty,
+        qty,
         unit_price: precioSinIVA,
         subtotal: itemSubtotal
       };
     });
-    
+
     if (itemsPayload.length === 0) return null;
 
-    // Obtener el monto del descuento
-    let descuentoTotal = discountData?.amount || 0;
-    
-    // Si es descuento por categoría, recalcular solo para esa categoría
-    if (appliedDiscount && appliedDiscount.applies_to === 'category' && appliedDiscount.category_id) {
-      let categoriaSubtotal = 0;
-      order.items.forEach(item => {
-        if (item.category_id === appliedDiscount.category_id) {
-          const precio = Number(item.selling_price) || Number(item.unit_price) || 0;
-          const qty = item.quantity || 1;
-          categoriaSubtotal += precio * qty;
-        }
-      });
-      
-      if (appliedDiscount.type === 'percentage') {
-        descuentoTotal = categoriaSubtotal * (Number(appliedDiscount.value) / 100);
-      } else if (appliedDiscount.type === 'fixed') {
-        descuentoTotal = Math.min(Number(appliedDiscount.value), categoriaSubtotal);
+    // 🔥 USAR SOLO discountData (que viene del parámetro) para el descuento
+    let descuentoTotal = 0;
+    if (discountData && discountData.amount) {
+      descuentoTotal = discountData.amount;
+    } else if (discountData && discountData.type && discountData.value) {
+      // Si por alguna razón llega el descuento en crudo, calcularlo
+      if (discountData.type === 'percentage') {
+        descuentoTotal = subtotalOriginal * (Number(discountData.value) / 100);
+      } else if (discountData.type === 'fixed') {
+        descuentoTotal = Math.min(Number(discountData.value), subtotalOriginal);
       }
+    } else {
+      // Si no hay descuentoData, asegurar 0
+      descuentoTotal = 0;
     }
-    
-    // Calcular nueva base imponible (subtotal con descuento)
+
+    // Calcular nueva base imponible e IVA
     const nuevaBaseImponible = Math.max(0, subtotalOriginal - descuentoTotal);
-    
-    // Calcular IVA sobre la nueva base imponible usando tasa global
     const ivaRate = ivaRateGlobal;
     const ivaConDescuento = Math.round((nuevaBaseImponible * ivaRate / 100) * 100) / 100;
-    
     const totalFactura = nuevaBaseImponible + ivaConDescuento;
-
-    console.log('💰 Emitiendo factura con descuento (SRI correcto):', {
-      subtotalOriginal: subtotalOriginal.toFixed(2),
-      descuentoTotal: descuentoTotal.toFixed(2),
-      nuevaBaseImponible: nuevaBaseImponible.toFixed(2),
-      ivaRate: ivaRate + '%',
-      ivaConDescuento: ivaConDescuento.toFixed(2),
-      total: totalFactura.toFixed(2)
-    });
 
     const payload = {
       order_id: order.id,
@@ -858,42 +836,28 @@ export default function PosCheckoutPage() {
         phone: null
       },
       items: itemsPayload,
-      subtotal: subtotalOriginal.toFixed(2),      // Subtotal original SIN descuento
-      iva_amount: ivaConDescuento.toFixed(2),     // IVA calculado sobre nueva base
-      total: totalFactura.toFixed(2),             // Total = nueva base + IVA
+      subtotal: subtotalOriginal.toFixed(2),
+      iva_amount: ivaConDescuento.toFixed(2),
+      total: totalFactura.toFixed(2),
       forma_pago: FORMA_PAGO_MAP[method] || '01',
-      descuento: descuentoTotal.toFixed(2),       // Monto del descuento
+      descuento: descuentoTotal.toFixed(2),
       iva_rate: ivaRate
     };
-
-    console.log('📦 Enviando al backend:', {
-      subtotal: payload.subtotal,
-      descuento: payload.descuento,
-      total: payload.total,
-      iva_rate: payload.iva_rate
-    });
 
     try {
       const response = await fetchWithAuth('/api/einvoicing/invoices/emit', {
         method: 'POST',
         body: JSON.stringify(payload)
       });
-
       const result = await response.json();
-      console.log('📨 Respuesta del servidor:', result);
-
       if (!response.ok) {
-        console.error('❌ Error del backend:', result?.error || response.status);
+        setError(`Error factura: ${result.error || response.status}`);
         return null;
       }
-
-      if (result?.invoice_number) {
-        console.log(`✅ Factura emitida: ${result.invoice_number}`);
-      }
-
       return result?.invoice_number || null;
     } catch (e) {
-      console.error('❌ Error al emitir factura:', e);
+      setError(`Error emitir factura: ${e.message}`);
+      console.error(e);
       return null;
     }
   }
