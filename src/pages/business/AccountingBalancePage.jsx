@@ -48,9 +48,9 @@ export default function AccountingBalance() {
       const expense = data.expenses.find(e => e.period === s.period) || { amount: 0 };
       return {
         Periodo: s.period,
-        Ventas: s.amount,
-        Gastos: expense.amount,
-        'Resultado': s.amount - expense.amount
+        Ventas: Number(s.amount) || 0,
+        Gastos: Number(expense.amount) || 0,
+        'Resultado': (Number(s.amount) || 0) - (Number(expense.amount) || 0)
       };
     });
     const headers = ['Periodo', 'Ventas', 'Gastos', 'Resultado'];
@@ -67,11 +67,11 @@ export default function AccountingBalance() {
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  // Preparar datos para gráfico combinado
-  const chartData = data?.sales.map(s => ({
+  // 🔥 CORRECCIÓN: convertir a número los valores de ventas y gastos
+  const chartData = (data?.sales || []).map(s => ({
     period: s.period,
-    Ventas: s.amount,
-    Gastos: data.expenses.find(e => e.period === s.period)?.amount || 0
+    Ventas: Number(s.amount) || 0,
+    Gastos: Number(data.expenses.find(e => e.period === s.period)?.amount) || 0
   })) || [];
 
   return (
@@ -112,24 +112,24 @@ export default function AccountingBalance() {
             <div className="kpi-cards">
               <div className="kpi-card">
                 <div className="kpi-title">Ventas Totales</div>
-                <div className="kpi-value">${data.total_sales.toFixed(2)}</div>
+                <div className="kpi-value">${(Number(data.total_sales) || 0).toFixed(2)}</div>
                 <TrendingUp size={24} className="kpi-icon positive" />
               </div>
               <div className="kpi-card">
                 <div className="kpi-title">Gastos Operativos</div>
-                <div className="kpi-value">${data.total_expenses.toFixed(2)}</div>
+                <div className="kpi-value">${(Number(data.total_expenses) || 0).toFixed(2)}</div>
                 <TrendingDown size={24} className="kpi-icon negative" />
               </div>
               {data.total_incomes > 0 && (
                 <div className="kpi-card">
                   <div className="kpi-title">Ingresos No Operativos</div>
-                  <div className="kpi-value">${data.total_incomes.toFixed(2)}</div>
+                  <div className="kpi-value">${(Number(data.total_incomes) || 0).toFixed(2)}</div>
                   <DollarSign size={24} className="kpi-icon" />
                 </div>
               )}
-              <div className={`kpi-card ${data.net_income >= 0 ? 'success' : 'danger'}`}>
+              <div className={`kpi-card ${(Number(data.net_income) || 0) >= 0 ? 'success' : 'danger'}`}>
                 <div className="kpi-title">Resultado Neto</div>
-                <div className="kpi-value">${data.net_income.toFixed(2)}</div>
+                <div className="kpi-value">${(Number(data.net_income) || 0).toFixed(2)}</div>
                 <BarChart2 size={24} className="kpi-icon" />
               </div>
             </div>
@@ -201,10 +201,10 @@ export default function AccountingBalance() {
                   <tfoot>
                     <tr>
                       <td><strong>Totales</strong></td>
-                      <td><strong>${data.total_sales.toFixed(2)}</strong></td>
-                      <td><strong>${data.total_expenses.toFixed(2)}</strong></td>
-                      <td className={data.net_income >= 0 ? 'profit' : 'loss'}>
-                        <strong>${data.net_income.toFixed(2)}</strong>
+                      <td><strong>${(Number(data.total_sales) || 0).toFixed(2)}</strong></td>
+                      <td><strong>${(Number(data.total_expenses) || 0).toFixed(2)}</strong></td>
+                      <td className={(Number(data.net_income) || 0) >= 0 ? 'profit' : 'loss'}>
+                        <strong>${(Number(data.net_income) || 0).toFixed(2)}</strong>
                       </td>
                       <td></td>
                     </tr>

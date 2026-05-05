@@ -1,5 +1,8 @@
 .reports-inventory-container {
-  padding: 20px;
+  padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
 }
 
 .tabs {
@@ -22,18 +25,25 @@
   color: #60d5c0;
   border-bottom-color: #60d5c0;
 }
+
+/* ------------------------------------------------------------
+   FUERZA 5 TARJETAS EN UNA FILA (grid fijo de 5 columnas)
+   ------------------------------------------------------------ */
 .kpi-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(5, 1fr);  /* 5 columnas iguales, sin mínimo flexible */
+  gap: 5px;
+  margin-bottom: 24px;
+  width: 100%;
 }
 .kpi-card {
   background: rgba(22, 78, 68, 0.3);
   border: 1px solid rgba(16, 185, 129, 0.25);
-  border-radius: 20px;
-  padding: 20px;
-  position: relative;
+  border-radius: 12px;
+  padding: 8px 4px;
+  text-align: center;
+  min-width: 0;           /* evita desborde */
+  box-sizing: border-box;
 }
 .kpi-card.warning {
   border-color: #f59e0b;
@@ -42,20 +52,34 @@
   border-color: #ef4444;
 }
 .kpi-title {
-  font-size: 14px;
+  font-size: 10px;
   color: rgba(255,255,255,0.7);
+  white-space: nowrap;
 }
 .kpi-value {
-  font-size: 28px;
-  font-weight: 800;
-  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 4px;
 }
 .kpi-icon {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  opacity: 0.5;
+  display: none;          /* ocupa mucho espacio horizontal, lo quitamos */
 }
+
+/* Si la pantalla es muy pequeña, se envuelven pero siguen siendo 5 columnas */
+@media (max-width: 700px) {
+  .kpi-cards {
+    grid-template-columns: repeat(5, minmax(100px, 1fr));
+  }
+  .kpi-title {
+    white-space: normal;
+    font-size: 9px;
+  }
+  .kpi-value {
+    font-size: 13px;
+  }
+}
+
+/* ========== RESTO DE ESTILOS (sin cambios) ========== */
 .table-actions {
   display: flex;
   justify-content: flex-end;

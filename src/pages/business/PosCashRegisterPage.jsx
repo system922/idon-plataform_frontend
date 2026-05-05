@@ -82,6 +82,8 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
   const [resultadoCierre, setResultadoCierre] = useState(null);
   const [error, setError] = useState('');
   
+  const [incomeExtras, setIncomeExtras] = useState([]);
+
   // Refs para los botones (para llamarlos programáticamente)
   const printButtonRef = useRef(null);
   const pdfButtonRef = useRef(null);
@@ -98,10 +100,11 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
     setError('');
     
     try {
-      const [sumRes, openRes, closeRes] = await Promise.all([
+      const [sumRes, openRes, closeRes, extrasRes] = await Promise.all([
         fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`),
         fetchWithAuth(`/api/pos/cash-register/opening?date=${today}`),
-        fetchWithAuth(`/api/pos/cash-register/full-closing?date=${today}`)
+        fetchWithAuth(`/api/pos/cash-register/full-closing?date=${today}`),
+        fetchWithAuth(`/api/pos/cash-register/income-extra?date=${today}`)
       ]);
 
       if (sumRes.ok) {
@@ -123,6 +126,11 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
         setPropinaFisico(c.tip_counted || 0);
         setRemarks(c.remarks || '');
         setConteoEfectivo(c.cash_denomination_count || {});
+      }
+
+      if (extrasRes.ok) {
+        const extrasData = await extrasRes.json();
+        setIncomeExtras(Array.isArray(extrasData) ? extrasData : []);
       }
 
     } catch (err) {
@@ -178,12 +186,18 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
   const totalVentas = ventasEfectivo + ventasTarjeta + ventasTransferencia;
   
   const gastos = (summary?.gastos || []).reduce((a, g) => a + toNum(g.monto), 0);
-  
+
   const aperturaEfectivo = toNum(opening?.total_efectivo);
   const aperturaBanca = toNum(opening?.monto_banca);
   const aperturaTotal = aperturaEfectivo + aperturaBanca;
-  
-  const totalGeneralEsperado = aperturaTotal + totalVentas - gastos;
+
+  // Ingresos extras por método
+  const extrasCash     = incomeExtras.filter(e => e.payment_method === 'cash')    .reduce((s, e) => s + toNum(e.amount), 0);
+  const extrasCard     = incomeExtras.filter(e => e.payment_method === 'card')    .reduce((s, e) => s + toNum(e.amount), 0);
+  const extrasTransfer = incomeExtras.filter(e => e.payment_method === 'transfer').reduce((s, e) => s + toNum(e.amount), 0);
+  const totalExtras    = extrasCash + extrasCard + extrasTransfer;
+
+  const totalGeneralEsperado = aperturaTotal + totalVentas - gastos + totalExtras;
   const totalContadoGeneral = toNum(efectivoFisico) + toNum(transferFisico) + toNum(tarjetaFisico);
   const diferenciaGeneral = totalContadoGeneral - totalGeneralEsperado;
 
@@ -489,6 +503,12 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                     <span className="label">+ Ventas Netas</span>
                     <span className="value">{money(totalVentas - gastos)}</span>
                   </div>
+                  {totalExtras > 0 && (
+                    <div className="card-row">
+                      <span className="label">+ Ingresos Extras</span>
+                      <span className="value" style={{ color: '#10b981' }}>{money(totalExtras)}</span>
+                    </div>
+                  )}
                   <div className="card-divider"></div>
                   <div className="card-row">
                     <span className="label">= Total Esperado</span>
@@ -594,19 +614,52 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                 <div className="ingreso-card">
                   <div className="card-header">
                     <FiHeart className="card-icon" />
-                    <h3>INGRESO EXTRA (No afecta cuadre)</h3>
+                    <h3>INGRESOS EXTRAS</h3>
                   </div>
+
+                  {/* Propina — no afecta cuadre */}
                   <div className="ingreso-input">
-                    <label><FiHeart size={12} /> Propina</label>
-                    <input 
-                      type="number" 
-                      step="0.01" 
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <FiHeart size={12} /> Propina
+                      <span style={{ fontSize: 10, color: '#888', marginLeft: 4 }}>(No afecta cuadre)</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
                       className="ingreso-input-field"
-                      value={propinaFisico} 
-                      onChange={(e) => setPropinaFisico(toNum(e.target.value))} 
-                      disabled={!!closing} 
-                      placeholder="0.00" 
+                      value={propinaFisico}
+                      onChange={(e) => setPropinaFisico(toNum(e.target.value))}
+                      disabled={!!closing}
+                      placeholder="0.00"
                     />
+                  </div>
+
+                  {/* Ingresos extras del día — SÍ afectan cuadre */}
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 11, color: '#a0a0b0', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Ingresos extras del día <span style={{ color: '#10b981' }}>(afectan cuadre)</span>
+                    </div>
+                    {incomeExtras.length === 0 ? (
+                      <div style={{ fontSize: 12, color: '#666', padding: '6px 0' }}>Sin ingresos extras registrados hoy</div>
+                    ) : (
+                      <>
+                        {incomeExtras.map(extra => (
+                          <div key={extra.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 13 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <span style={{ color: '#e2e8f0' }}>{extra.description || 'Ingreso extra'}</span>
+                              <span style={{ fontSize: 10, color: '#888' }}>
+                                {{ cash: 'Efectivo', card: 'Tarjeta', transfer: 'Transferencia' }[extra.payment_method] || extra.payment_method}
+                              </span>
+                            </div>
+                            <span style={{ color: '#10b981', fontWeight: 600 }}>{money(toNum(extra.amount))}</span>
+                          </div>
+                        ))}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontWeight: 700, fontSize: 13 }}>
+                          <span>Total extras:</span>
+                          <span style={{ color: '#10b981' }}>{money(totalExtras)}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -647,9 +700,15 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                   </div>
                 )}
                 <div className="propina-extra-row">
-                  <span className="label">Propina (Ingreso Extra):</span>
+                  <span className="label">Propina (sin cuadre):</span>
                   <span>{money(propinaFisico)}</span>
                 </div>
+                {totalExtras > 0 && (
+                  <div className="propina-extra-row" style={{ color: '#10b981' }}>
+                    <span className="label">+ Ingresos extras:</span>
+                    <span>{money(totalExtras)}</span>
+                  </div>
+                )}
               </div>
             </div>
 

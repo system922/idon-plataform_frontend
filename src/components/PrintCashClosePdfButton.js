@@ -142,12 +142,14 @@ export default function PrintCashClosePdfButton({ close, opening, summary, class
 
       let totalVentas = 0;
       
+      const METODO_ES = { cash: 'Efectivo', card: 'Tarjeta', transfer: 'Transferencia', efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia' };
+
       if (summary?.metodos && summary.metodos.length > 0) {
         summary.metodos.forEach(m => {
           const monto = Number(m.total_cobrado || 0);
           totalVentas += monto;
-          
-          doc.text(`${m.payment_method}:`, 18, y);
+          const label = METODO_ES[m.payment_method?.toLowerCase()] || m.payment_method;
+          doc.text(`${label}:`, 18, y);
           doc.text(`$${monto.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
           y += 5;
         });
@@ -256,7 +258,7 @@ export default function PrintCashClosePdfButton({ close, opening, summary, class
       y += 6;
       doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
-      const diferenciaTexto = esCuadrado ? 'CUADRADO ✓' : diferencia > 0 ? 'SOBRANTE:' : 'FALTANTE:';
+      const diferenciaTexto = esCuadrado ? 'CUADRADO OK' : diferencia > 0 ? 'SOBRANTE:' : 'FALTANTE:';
       doc.text(diferenciaTexto, 18, y);
       doc.text(`$${Math.abs(diferencia).toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 

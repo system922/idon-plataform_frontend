@@ -16,7 +16,7 @@ export default function ReportsInventory() {
   const [movements, setMovements] = useState([]);
   const [currentStock, setCurrentStock] = useState([]);
   const [lowStockProducts, setLowStockProducts] = useState([]);
-  const [loading, setLoading] = useState({ summary: false, stock: false, movements: false });
+  const [loading, setLoading] = useState({ summary: false, stock: false, movements: false, lowStock: false });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState('summary');
@@ -27,13 +27,22 @@ export default function ReportsInventory() {
   const [productFilter, setProductFilter] = useState('');
   const [productsList, setProductsList] = useState([]);
 
+  // Helper para convertir a número seguro
+  const toNumber = (val) => Number(val) || 0;
+
   const loadSummary = async () => {
     setLoading(prev => ({ ...prev, summary: true }));
     try {
       const res = await fetchWithAuth('/api/reports/inventory?type=summary');
       if (!res.ok) throw new Error('Error cargando resumen');
       const data = await res.json();
-      setSummary(data);
+      setSummary({
+        total_products: toNumber(data.total_products),
+        total_units: toNumber(data.total_units),
+        total_value: toNumber(data.total_value),
+        low_stock_count: toNumber(data.low_stock_count),
+        out_of_stock_count: toNumber(data.out_of_stock_count)
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -47,9 +56,15 @@ export default function ReportsInventory() {
       const res = await fetchWithAuth('/api/reports/inventory?type=currentStock');
       if (!res.ok) throw new Error('Error cargando stock');
       const data = await res.json();
-      setCurrentStock(data);
-      // extraer lista de productos para filtro
-      const products = data.map(p => ({ id: p.id, name: p.name }));
+      const parsed = data.map(p => ({
+        ...p,
+        stock: toNumber(p.stock),
+        min_stock: toNumber(p.min_stock),
+        unit_cost: toNumber(p.unit_cost),
+        stock_value: toNumber(p.stock_value)
+      }));
+      setCurrentStock(parsed);
+      const products = parsed.map(p => ({ id: p.id, name: p.name }));
       setProductsList(products);
     } catch (err) {
       setError(err.message);
@@ -64,7 +79,13 @@ export default function ReportsInventory() {
       const res = await fetchWithAuth('/api/reports/inventory?type=lowStock');
       if (!res.ok) throw new Error('Error cargando productos bajos');
       const data = await res.json();
-      setLowStockProducts(data);
+      const parsed = data.map(p => ({
+        ...p,
+        stock: toNumber(p.stock),
+        min_stock: toNumber(p.min_stock),
+        stock_value: toNumber(p.stock_value)
+      }));
+      setLowStockProducts(parsed);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -182,8 +203,8 @@ export default function ReportsInventory() {
                       <td>{p.name}</td>
                       <td>{p.stock}</td>
                       <td>{p.min_stock}</td>
-                      <td>${Number(p.unit_cost).toFixed(2)}</td>
-                      <td>${Number(p.stock_value).toFixed(2)}</td>
+                      <td>${toNumber(p.unit_cost).toFixed(2)}</td>
+                      <td>${toNumber(p.stock_value).toFixed(2)}</td>
                       <td>
                         {p.stock === 0 ? <span className="badge-danger">Agotado</span> : 
                          p.stock <= p.min_stock && p.min_stock > 0 ? <span className="badge-warning">Bajo Stock</span> : 
@@ -236,8 +257,8 @@ export default function ReportsInventory() {
                           {m.type === 'entrada' ? 'Entrada' : m.type === 'salida' ? 'Salida' : 'Ajuste'}
                         </span>
                       </td>
-                      <td>{Math.abs(m.quantity)}</td>
-                      <td>{m.unit_cost ? `$${Number(m.unit_cost).toFixed(2)}` : '-'}</td>
+                      <td>{Math.abs(toNumber(m.quantity))}</td>
+                      <td>{m.unit_cost ? `$${toNumber(m.unit_cost).toFixed(2)}` : '-'}</td>
                       <td>{m.reference_id || '-'}</td>
                       <td>{m.notes || '-'}</td>
                     </tr>
@@ -273,7 +294,7 @@ export default function ReportsInventory() {
                       <td className="danger-text">{p.stock}</td>
                       <td>{p.min_stock}</td>
                       <td className="danger-text">{p.stock - p.min_stock}</td>
-                      <td>${Number(p.stock_value).toFixed(2)}</td>
+                      <td>${toNumber(p.stock_value).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>

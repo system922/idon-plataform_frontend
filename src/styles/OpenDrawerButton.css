@@ -1,132 +1,200 @@
-/* Overlay del modal */
+/* ── Overlay ──────────────────────────────────────────────────────────────── */
 .odr-modal-overlay {
   position: fixed;
   top: 0; left: 0;
   width: 100vw; height: 100vh;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
   z-index: 1100;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Caja central del modal */
+/* ── Caja del modal ───────────────────────────────────────────────────────── */
 .odr-modal-form {
-  background: #fff;
-  border-radius: 10px;
-  padding: 28px;
-  min-width: 320px;
-  max-width: 390px;
-  height: 50%;
-  box-shadow: 0 4px 24px #1232  /* Extra para resaltar el modal */;
+  background: #13132a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  width: 100%;
+  min-width: 340px;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
-  animation: odr-fadein .2s;
+  gap: 0;
+  animation: odr-fadein .2s ease;
 }
+
 @keyframes odr-fadein {
-  from { opacity: 0; transform: scale(.98);}
-  to { opacity: 1; transform: scale(1);}
+  from { opacity: 0; transform: translateY(-10px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);   }
 }
 
+/* ── Título ───────────────────────────────────────────────────────────────── */
 .odr-modal-form h3 {
-  margin-bottom: 10px;
-  color: #184923;
-  font-size: 18px;
+  margin: 0 0 18px 0;
+  color: #f0f0f8;
+  font-size: 17px;
   font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
-/* Selector y entradas del modal */
+/* ── Select e inputs globales ─────────────────────────────────────────────── */
 .odr-modal-form select,
 .odr-modal-form input,
 .odr-modal-form textarea {
   width: 100%;
-  margin-bottom: 15px;
-  padding: 8px;
-  font-size: 15px;
-  border-radius: 6px;
-  border: 1.3px solid #d7eedc;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #1e1e3a;
+  color: #f0f0f8;
+  font-weight: 500;
   box-sizing: border-box;
-  background: #f5fef7;
-  color: #184923;
-  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s;
+  margin-bottom: 14px;
+  appearance: auto;
 }
-.odr-modal-form input[type="number"] {
-  margin-bottom: 12px;
+
+.odr-modal-form select:focus,
+.odr-modal-form input:focus,
+.odr-modal-form textarea:focus {
+  border-color: #10b981;
 }
+
+.odr-modal-form select option {
+  background: #1e1e3a;
+  color: #f0f0f8;
+}
+
+.odr-modal-form input::placeholder {
+  color: #5a5a7a;
+}
+
 .odr-modal-form textarea {
-  margin-bottom: 12px;
   resize: none;
 }
 
-/* Botones en el modal */
+/* ── Labels inline de los extras ─────────────────────────────────────────── */
+.odr-modal-form label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #a0a0b0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 5px;
+}
+
+/* ── Mensaje de info (egreso_compra) ──────────────────────────────────────── */
+.odr-modal-info {
+  font-size: 13px;
+  color: #f39c12;
+  background: rgba(243, 156, 18, 0.08);
+  border: 1px solid rgba(243, 156, 18, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+/* ── Error ────────────────────────────────────────────────────────────────── */
+.odr-error {
+  color: #f87171;
+  font-size: 12px;
+  margin: 4px 0 10px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+}
+
+/* ── Botones ──────────────────────────────────────────────────────────────── */
 .odr-modal-buttons {
   display: flex;
   gap: 10px;
-}
-.odr-modal-form button[type="submit"] {
-  background: #13d06d;
-  color: #fff;
-  border: 0;
-  font-weight: 600;
-  border-radius: 6px;
-  padding: 9px 20px;
-  font-size: 15px;
-  transition: background 0.18s;
-}
-.odr-modal-form button[type="submit"]:disabled {
-  background: #a3e7bf;
-}
-.odr-modal-form button[type="button"] {
-  background: #eee;
-  border: 0;
-  border-radius: 6px;
-  padding: 9px 20px;
-  font-weight: 600;
-  font-size: 15px;
-  color: #333;
-  transition: background 0.18s;
-}
-.odr-modal-form button[type="button"]:hover:not(:disabled) {
-  background: #dbdbdb;
-}
-.odr-error {
-  color: #d11;
-  margin-bottom: 8px;
-  font-size: 13px;
+  margin-top: 6px;
 }
 
-/* --- Botón de abrir caja principal --- */
+.odr-modal-form button[type="submit"] {
+  flex: 1;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  border: 0;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.odr-modal-form button[type="submit"]:hover:not(:disabled) {
+  opacity: 0.88;
+}
+.odr-modal-form button[type="submit"]:disabled {
+  background: #1e3a2e;
+  color: #4a7a62;
+  cursor: not-allowed;
+}
+
+.odr-modal-form button[type="button"] {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #a0a0b0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.odr-modal-form button[type="button"]:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f0f0f8;
+}
+
+/* ── Botón principal "Abrir Caja" ─────────────────────────────────────────── */
 .open-drawer-btn {
   display: inline-block;
   position: relative;
 }
 
 .open-drawer-btn > button {
-  background: #13d06d;
-  color: #104818;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
   border: none;
   border-radius: 9px;
-  font-weight: bold;
-  padding: 9px 20px;
-  font-size: 17px;
+  font-weight: 700;
+  padding: 10px 22px;
+  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 7px;
-  transition: background .12s, box-shadow .2s;
-  box-shadow: 0 2px 8px #13d06d12;
+  gap: 8px;
+  transition: opacity 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
 }
-
+.open-drawer-btn > button:hover:not(:disabled) {
+  opacity: 0.9;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+}
 .open-drawer-btn > button:disabled {
-  background: #c3f4d9;
-  color: #adaaaa;
+  background: #1e3a2e;
+  color: #4a7a62;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .open-drawer-btn .odr-error-msg {
-  font-size: 13px;
-  color: #f44;
-  margin-top: 3px;
+  font-size: 12px;
+  color: #f87171;
+  margin-top: 4px;
 }
 
 @keyframes pulse-bubble {

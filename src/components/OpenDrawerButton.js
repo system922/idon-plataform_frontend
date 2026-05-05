@@ -15,27 +15,36 @@ function getOperatorUser() {
   }
 }
 
-// ── Modal de selección de motivo (sin cambios) ──────────────────────────────
+const METODO_LABEL = { cash: 'Efectivo', card: 'Tarjeta', transfer: 'Transferencia' };
+
+// ── Modal de selección de motivo ──────────────────────────────────────────────
 function OpenDrawerReasonModal({ open, onSubmit, onClose, submitting, error }) {
-  const [reasonType, setReasonType] = useState('');
+  const [reasonType, setReasonType]     = useState('');
+  const [amount, setAmount]             = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [concept, setConcept]           = useState('');
 
   React.useEffect(() => {
-    if (open) setReasonType('');
+    if (open) { setReasonType(''); setAmount(''); setPaymentMethod('cash'); setConcept(''); }
   }, [open]);
 
   const reasonsList = [
     { value: '', label: 'Elige motivo...' },
-    { value: 'cierre_error', label: 'Reabrir por cierre accidental' },
-    { value: 'egreso_compra', label: 'Retiro/egreso para compras' },
+    { value: 'cierre_error',   label: 'Reabrir por cierre accidental' },
+    { value: 'egreso_compra',  label: 'Retiro/egreso para compras' },
+    { value: 'ingreso_extra',  label: 'Ingresos extras' },
   ];
 
   function handleSubmit(e) {
     e.preventDefault();
     if (!reasonType) return;
-    onSubmit({ reasonType });
+    if (reasonType === 'ingreso_extra' && !amount) return;
+    onSubmit({ reasonType, amount: amount ? parseFloat(amount) : null, paymentMethod, concept });
   }
 
   if (!open) return null;
+
+  const isIngreso = reasonType === 'ingreso_extra';
 
   return (
     <div className="odr-modal-overlay">
@@ -54,20 +63,59 @@ function OpenDrawerReasonModal({ open, onSubmit, onClose, submitting, error }) {
         </select>
 
         {reasonType === 'egreso_compra' && (
-          <p style={{
-            fontSize: 13, color: '#f39c12', margin: '10px 0 0',
-            background: 'rgba(243,156,18,0.1)', borderRadius: 8, padding: '8px 12px'
-          }}>
+          <p className="odr-modal-info">
             Se abrirá el cajón. Al regresar de la compra aparecerá una burbuja para registrar lo gastado.
           </p>
+        )}
+
+        {isIngreso && (
+          <div style={{ marginTop: 4 }}>
+            <div>
+              <label>Método de pago</label>
+              <select
+                value={paymentMethod}
+                onChange={e => setPaymentMethod(e.target.value)}
+                disabled={submitting}
+              >
+                <option value="cash">Efectivo</option>
+                <option value="card">Tarjeta</option>
+                <option value="transfer">Transferencia</option>
+              </select>
+            </div>
+            <div>
+              <label>Monto *</label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="0.00"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                disabled={submitting}
+                required
+              />
+            </div>
+            <div>
+              <label>Concepto (opcional)</label>
+              <input
+                type="text"
+                placeholder="Describe el ingreso..."
+                value={concept}
+                onChange={e => setConcept(e.target.value)}
+                disabled={submitting}
+              />
+            </div>
+          </div>
         )}
 
         {error && <div className="odr-error">{error}</div>}
 
         {reasonType && (
           <div className="odr-modal-buttons">
-            <button type="submit" disabled={submitting}>
-              {submitting ? 'Abriendo...' : 'Abrir Caja'}
+            <button type="submit" disabled={submitting || (isIngreso && !amount)}>
+              {submitting
+                ? (isIngreso ? 'Registrando...' : 'Abriendo...')
+                : (isIngreso ? 'Registrar Ingreso' : 'Abrir Caja')}
             </button>
             <button type="button" onClick={onClose} disabled={submitting}>
               Cancelar
@@ -137,7 +185,7 @@ function OpenDrawerButton({ label = "Abrir Caja", onDone, disabled = false, clas
   }
 
   // ── Procesar selección de motivo ───────────────────────────────────────────
-  async function handleReasonSubmit({ reasonType }) {
+  async function handleReasonSubmit({ reasonType, amount, paymentMethod, concept }) {
     setLoading(true);
     setReasonModalErr('');
 
@@ -157,6 +205,9 @@ function OpenDrawerButton({ label = "Abrir Caja", onDone, disabled = false, clas
     } else if (reasonType === 'egreso_compra') {
       action = 'drawer_expense';
       description = `Caja abierta por autorización de ${jefeCompleto}. Motivo: Retiro para compras (monto pendiente de registrar).`;
+    } else if (reasonType === 'ingreso_extra') {
+      action = 'income_extra';
+      description = `Ingreso extra registrado por ${jefeCompleto}. Método: ${METODO_LABEL[paymentMethod] || paymentMethod}, Monto: $${Number(amount).toFixed(2)}${concept ? `, Concepto: ${concept}` : ''}.`;
     } else {
       setReasonModalErr('Motivo no válido');
       setLoading(false);
@@ -172,7 +223,7 @@ function OpenDrawerButton({ label = "Abrir Caja", onDone, disabled = false, clas
           table_name: 'cash_drawer',
           action,
           description,
-          new_values: null,
+          new_values: reasonType === 'ingreso_extra' ? { amount, payment_method: paymentMethod, concept } : null,
           reason: '',
         }),
       });
@@ -184,7 +235,25 @@ function OpenDrawerButton({ label = "Abrir Caja", onDone, disabled = false, clas
         return;
       }
 
-      // 2. Abrir cajón (verificación segura)
+      // 2. Si es ingreso extra → guardar en tabla incomes_extras
+      if (reasonType === 'ingreso_extra') {
+        const ingresoRes = await fetchWithAuth('/api/pos/cash-register/income-extra', {
+          method: 'POST',
+          body: JSON.stringify({
+            amount,
+            payment_method: paymentMethod,
+            description: concept || null,
+          }),
+        });
+        if (!ingresoRes.ok) {
+          const data = await ingresoRes.json().catch(() => ({}));
+          setReasonModalErr(data?.error || 'Error guardando ingreso extra');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 3. Abrir cajón (verificación segura)
       const openDrawerFn = typeof openDrawer === 'function' ? openDrawer : openDrawer?.openDrawer;
       if (typeof openDrawerFn === 'function') {
         await openDrawerFn().catch(() => {});
@@ -194,7 +263,7 @@ function OpenDrawerButton({ label = "Abrir Caja", onDone, disabled = false, clas
 
       setReasonOpen(false);
 
-      // 3. Si es egreso → guardar pendiente en contexto global
+      // 4. Si es egreso → guardar pendiente en contexto global
       if (reasonType === 'egreso_compra') {
         startExpense({
           userId: operador.id,

@@ -237,8 +237,8 @@ export default function ReportsProductsPage() {
   };
 
   // Calcular totales
-  const totalQuantity = filteredProducts.reduce((sum, p) => sum + p.qty, 0);
-  const totalSales = filteredProducts.reduce((sum, p) => sum + p.total, 0);
+  const totalQuantity = filteredProducts.reduce((sum, p) => sum + (Number(p.qty)   || 0), 0);
+  const totalSales    = filteredProducts.reduce((sum, p) => sum + (Number(p.total) || 0), 0);
   const averageTicket = filteredProducts.length > 0 ? totalSales / filteredProducts.length : 0;
   const topProduct = filteredProducts.length > 0 ? filteredProducts[0] : null;
 
@@ -363,8 +363,8 @@ export default function ReportsProductsPage() {
             <FiBarChart2 size={20} />
             <span>Producto más vendido:</span>
             <strong>{topProduct.name}</strong>
-            <span className="report-top-product-qty">{topProduct.qty} unidades</span>
-            <span className="report-top-product-total">${topProduct.total.toFixed(2)}</span>
+            <span className="report-top-product-qty">{Number(topProduct.qty) || 0} unidades</span>
+            <span className="report-top-product-total">${(Number(topProduct.total) || 0).toFixed(2)}</span>
           </div>
         </div>
       )}
@@ -392,7 +392,7 @@ export default function ReportsProductsPage() {
                 </tr>
               ) : (
                 filteredProducts.map((product, idx) => {
-                  const percentage = totalSales > 0 ? (product.total / totalSales) * 100 : 0;
+                  const percentage = totalSales > 0 ? ((Number(product.total) || 0) / totalSales) * 100 : 0;
                   return (
                     <tr key={product.id}>
                       <td className="report-product-name">
@@ -401,7 +401,7 @@ export default function ReportsProductsPage() {
                       </td>
                       <td className="report-product-sku">{product.sku}</td>
                       <td className="report-text-right report-product-qty">{product.qty}</td>
-                      <td className="report-text-right report-product-total">${product.total.toFixed(2)}</td>
+                      <td className="report-text-right report-product-total">${(Number(product.total) || 0).toFixed(2)}</td>
                       <td className="report-text-right report-product-percent">
                         <div className="report-percent-bar">
                           <div 
