@@ -46,6 +46,11 @@ function toArray(data) {
 export default function ManagerDashboard() {
   // Fecha en UTC para evitar problemas de zona horaria con el backend
   const today = new Date().toISOString().split('T')[0];
+  const fromDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 29);
+    return d.toISOString().split('T')[0];
+  })();
 
   const [stats,        setStats       ] = useState(null);
   const [graphData,    setGraphData   ] = useState({ sales: [], purchases: [], hours: [] });
@@ -56,26 +61,25 @@ export default function ManagerDashboard() {
 
   // ── Carga inicial ─────────────────────────────────────────────────────────
 
-  useEffect(() => { 
-    fetchStats(); 
-    fetchGraphs(); 
+  useEffect(() => {
+    fetchStats();
+    fetchGraphs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function fetchStats() {
     try {
       setLoading(true);
-      const [salesRes, purchasesRes, pendingRes, clientRes] = await Promise.all([
-        fetchWithAuth(`/api/reports/sales-today?date=${today}`),
+      const [salesRes, purchasesRes, pendingRes] = await Promise.all([
+        fetchWithAuth(`/api/sales/today?date=${today}`),
         fetchWithAuth(`/api/expenses?date=${today}`),
-        fetchWithAuth(`/api/reports/pending`),
-        fetchWithAuth(`/api/customers?limit=1`),
+        fetchWithAuth('/api/reports/pending'),
       ]);
 
       setStats({
         sales:     salesRes.ok     ? await salesRes.json()     : {},
         purchases: purchasesRes.ok ? await purchasesRes.json() : {},
         pending:   pendingRes.ok   ? await pendingRes.json()   : {},
-        clients:   clientRes.ok    ? await clientRes.json()    : {},
       });
     } catch {
       setError('Error al cargar estadísticas');
@@ -88,8 +92,8 @@ export default function ManagerDashboard() {
     try {
       setGraphLoading(true);
       const [salesRes, purchasesRes, attendanceRes] = await Promise.all([
-        fetchWithAuth('/api/graphs/sales-by-day'),
-        fetchWithAuth('/api/graphs/purchases-by-day'),
+        fetchWithAuth(`/api/graphs/sales-by-day?from=${fromDate}&to=${today}`),
+        fetchWithAuth(`/api/graphs/purchases-by-day?from=${fromDate}&to=${today}`),
         fetchWithAuth('/api/attendance/today'),
       ]);
 
