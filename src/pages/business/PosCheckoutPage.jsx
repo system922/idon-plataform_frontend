@@ -51,6 +51,7 @@ export default function PosCheckoutPage() {
   const [refCard, setRefCard] = useState('');
   const [refTransfer, setRefTransfer] = useState('');
   const [mixtoManual, setMixtoManual] = useState(new Set());
+  const [mixtoActive, setMixtoActive] = useState(new Set());
 
   const [facturaIndividual, setFacturaIndividual] = useState(false);
   const [clientesDivididos, setClientesDivididos] = useState([]);
@@ -400,44 +401,77 @@ export default function PosCheckoutPage() {
     }
   };
 
-  const handleMixtoField = (field, digits) => {
-    const currentTotal = selectedOrder ? totalOrdenConDescuento : 0;
-    const value = parseInt(digits || '0', 10) / 100;
-    const newManual = new Set(mixtoManual);
-    if (value === 0) newManual.delete(field);
-    else newManual.add(field);
-    setMixtoManual(newManual);
-    let vals = {
-      cash: field === 'cash' ? value : (parseFloat(amountPaid) || 0),
-      card: field === 'card' ? value : (parseFloat(cardPaid) || 0),
-      transfer: field === 'transfer' ? value : (parseFloat(transferPaid) || 0),
-    };
-    const ALL = ['cash', 'card', 'transfer'];
-    const autoFields = ALL.filter(f => !newManual.has(f));
-    if (autoFields.length === 1) {
-      const af = autoFields[0];
-      const manualSum = ALL.filter(f => f !== af).reduce((s, f) => s + vals[f], 0);
-      vals[af] = Math.round(Math.max(0, currentTotal - manualSum) * 100) / 100;
-    } else if (autoFields.length === 2) {
-      const manualField = ALL.find(f => newManual.has(f));
-      const remainder = Math.round(Math.max(0, currentTotal - (manualField ? vals[manualField] : 0)) * 100) / 100;
-      if (manualField === 'card') {
-        vals.cash = remainder;
-        vals.transfer = 0;
-      } else if (manualField === 'cash') {
-        vals.transfer = remainder;
-        vals.card = 0;
-      } else {
-        vals.card = remainder;
-        vals.cash = 0;
-      }
-    }
+  const applyMixtoVals = (vals) => {
     setAmountPaid(vals.cash.toFixed(2));
     setAmountPaidRaw(String(Math.round(vals.cash * 100)));
     setCardPaid(vals.card.toFixed(2));
     setCardPaidRaw(String(Math.round(vals.card * 100)));
     setTransferPaid(vals.transfer.toFixed(2));
     setTransferPaidRaw(String(Math.round(vals.transfer * 100)));
+  };
+
+  const handleMixtoField = (field, digits) => {
+    const total = totalOrdenConDescuento;
+    const value = parseInt(digits || '0', 10) / 100;
+    const newManual = new Set(mixtoManual);
+    if (value === 0) newManual.delete(field);
+    else newManual.add(field);
+    setMixtoManual(newManual);
+
+    const vals = {
+      cash:     field === 'cash'     ? value : (mixtoActive.has('cash')     ? (parseFloat(amountPaid) || 0)   : 0),
+      card:     field === 'card'     ? value : (mixtoActive.has('card')     ? (parseFloat(cardPaid) || 0)     : 0),
+      transfer: field === 'transfer' ? value : (mixtoActive.has('transfer') ? (parseFloat(transferPaid) || 0) : 0),
+    };
+
+    // El único campo activo no-manual recibe el resto
+    const activeList = [...mixtoActive];
+    const autoFields = activeList.filter(f => !newManual.has(f));
+    if (autoFields.length === 1) {
+      const af = autoFields[0];
+      const manualSum = activeList.filter(f => f !== af).reduce((s, f) => s + vals[f], 0);
+      vals[af] = Math.round(Math.max(0, total - manualSum) * 100) / 100;
+    }
+
+    applyMixtoVals(vals);
+  };
+
+  const toggleMixtoMetodo = (method) => {
+    const total = totalOrdenConDescuento;
+    const newActive = new Set(mixtoActive);
+    const newManual = new Set(mixtoManual);
+    const vals = {
+      cash:     parseFloat(amountPaid) || 0,
+      card:     parseFloat(cardPaid) || 0,
+      transfer: parseFloat(transferPaid) || 0,
+    };
+
+    if (newActive.has(method)) {
+      // Desactivar: poner a 0 y redistribuir
+      newActive.delete(method);
+      newManual.delete(method);
+      vals[method] = 0;
+      const autoActive = [...newActive].filter(f => !newManual.has(f));
+      if (autoActive.length === 1) {
+        const af = autoActive[0];
+        const manualSum = [...newActive].filter(f => newManual.has(f)).reduce((s, f) => s + vals[f], 0);
+        vals[af] = Math.round(Math.max(0, total - manualSum) * 100) / 100;
+      } else if (newActive.size === 1 && autoActive.length === 1) {
+        vals[autoActive[0]] = total;
+      }
+    } else {
+      // Activar: si es el único campo automático, recibe el resto
+      newActive.add(method);
+      const autoActive = [...newActive].filter(f => !newManual.has(f));
+      if (autoActive.length === 1 && autoActive[0] === method) {
+        const manualSum = [...newManual].reduce((s, f) => s + vals[f], 0);
+        vals[method] = Math.round(Math.max(0, total - manualSum) * 100) / 100;
+      }
+    }
+
+    setMixtoManual(newManual);
+    setMixtoActive(newActive);
+    applyMixtoVals(vals);
   };
 
   const subtotalSinIVAMostrar = getSubtotalSinIVA();
@@ -1035,7 +1069,7 @@ export default function PosCheckoutPage() {
                       <button className={metodoPagoNormal === 'cash' ? "selected" : ""} onClick={() => setMetodoPagoNormal('cash')}><FaHandHoldingDollar size={20} /> Efectivo</button>
                       <button className={metodoPagoNormal === 'card' ? "selected" : ""} onClick={() => setMetodoPagoNormal('card')}><FiCreditCard size={20} /> Tarjeta</button>
                       <button className={metodoPagoNormal === 'transfer' ? "selected" : ""} onClick={() => setMetodoPagoNormal('transfer')}><FiSmartphone size={20} /> Transferencia</button>
-                      <button className={metodoPagoNormal === 'mixto' ? "selected" : ""} onClick={() => { setMetodoPagoNormal('mixto'); setAmountPaidRaw(''); setAmountPaid(''); setCardPaidRaw(''); setCardPaid(''); setTransferPaidRaw(''); setTransferPaid(''); setMixtoManual(new Set()); }}><FiGrid size={20} /> Mixto</button>
+                      <button className={metodoPagoNormal === 'mixto' ? "selected" : ""} onClick={() => { setMetodoPagoNormal('mixto'); setAmountPaidRaw(''); setAmountPaid(''); setCardPaidRaw(''); setCardPaid(''); setTransferPaidRaw(''); setTransferPaid(''); setMixtoManual(new Set()); setMixtoActive(new Set()); }}><FiGrid size={20} /> Mixto</button>
                     </div>
 
                     {metodoPagoNormal === 'cash' && (
@@ -1054,16 +1088,61 @@ export default function PosCheckoutPage() {
 
                     {metodoPagoNormal === 'mixto' && (
                       <>
-                        <div className="payment-mixed-row">
-                          <div className="mixed-field"><label><FaHandHoldingDollar size={20}/> Efectivo:</label><input type="text" inputMode="numeric" value={amountPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; if (digits.length > 8) digits = digits.slice(0,8); handleMixtoField('cash', digits); }} placeholder="0.00" /></div>
-                          <div className="mixed-field"><label><FiCreditCard size={20} /> Tarjeta:</label><input type="text" inputMode="numeric" value={cardPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; if (digits.length > 8) digits = digits.slice(0,8); handleMixtoField('card', digits); }} placeholder="0.00" /></div>
-                          <div className="mixed-field"><label><FaMoneyBillTransfer size={20} /> Transferencia:</label><input type="text" inputMode="numeric" value={transferPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; if (digits.length > 8) digits = digits.slice(0,8); handleMixtoField('transfer', digits); }} placeholder="0.00" /></div>
+                        {/* Toggles de selección */}
+                        <div className="mixto-toggle-row">
+                          {[
+                            { key: 'cash',     label: 'Efectivo',       icon: <FaHandHoldingDollar size={16}/> },
+                            { key: 'card',     label: 'Tarjeta',         icon: <FiCreditCard size={16}/> },
+                            { key: 'transfer', label: 'Transferencia',   icon: <FaMoneyBillTransfer size={16}/> },
+                          ].map(({ key, label, icon }) => (
+                            <button key={key} type="button"
+                              className={`mixto-toggle${mixtoActive.has(key) ? ' active' : ''}`}
+                              onClick={() => toggleMixtoMetodo(key)}
+                            >
+                              {icon} {label}
+                            </button>
+                          ))}
                         </div>
-                        <div className="mixed-total-row">
-                          <div className="mixed-total-item"><span><IoFileTrayFull size={20} /> Total Ingresado:</span><strong>{fmt(totalPagadoMixto)}</strong></div>
-                          {faltanteMixto > 0 && <div className="mixed-total-item warning"><span><CiWarning size={20} /> Faltante:</span><strong>{fmt(faltanteMixto)}</strong></div>}
-                          {cambioMixto > 0 && <div className="mixed-total-item success"><span><BsCurrencyExchange size={20} /> Cambio:</span><strong>{fmt(cambioMixto)}</strong></div>}
-                        </div>
+
+                        {/* Campos solo para métodos activos */}
+                        {mixtoActive.size > 0 && (
+                          <div className="payment-mixed-row">
+                            {mixtoActive.has('cash') && (
+                              <div className="mixed-field">
+                                <label><FaHandHoldingDollar size={20}/> Efectivo:</label>
+                                <input type="text" inputMode="numeric" value={amountPaidRaw}
+                                  onChange={e => { let d = e.target.value.replace(/\D/g,''); if(!d) d='0'; if(d.length>8) d=d.slice(0,8); handleMixtoField('cash', d); }}
+                                  placeholder="0.00" />
+                              </div>
+                            )}
+                            {mixtoActive.has('card') && (
+                              <div className="mixed-field">
+                                <label><FiCreditCard size={20}/> Tarjeta:</label>
+                                <input type="text" inputMode="numeric" value={cardPaidRaw}
+                                  onChange={e => { let d = e.target.value.replace(/\D/g,''); if(!d) d='0'; if(d.length>8) d=d.slice(0,8); handleMixtoField('card', d); }}
+                                  placeholder="0.00" />
+                                <input type="text" placeholder="Ref. tarjeta" value={refCard} onChange={e => setRefCard(e.target.value)} style={{marginTop:4}} />
+                              </div>
+                            )}
+                            {mixtoActive.has('transfer') && (
+                              <div className="mixed-field">
+                                <label><FaMoneyBillTransfer size={20}/> Transferencia:</label>
+                                <input type="text" inputMode="numeric" value={transferPaidRaw}
+                                  onChange={e => { let d = e.target.value.replace(/\D/g,''); if(!d) d='0'; if(d.length>8) d=d.slice(0,8); handleMixtoField('transfer', d); }}
+                                  placeholder="0.00" />
+                                <input type="text" placeholder="Ref. transferencia" value={refTransfer} onChange={e => setRefTransfer(e.target.value)} style={{marginTop:4}} />
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {mixtoActive.size > 0 && (
+                          <div className="mixed-total-row">
+                            <div className="mixed-total-item"><span><IoFileTrayFull size={20}/> Total Ingresado:</span><strong>{fmt(totalPagadoMixto)}</strong></div>
+                            {faltanteMixto > 0 && <div className="mixed-total-item warning"><span><CiWarning size={20}/> Faltante:</span><strong>{fmt(faltanteMixto)}</strong></div>}
+                            {cambioMixto > 0 && <div className="mixed-total-item success"><span><BsCurrencyExchange size={20}/> Cambio:</span><strong>{fmt(cambioMixto)}</strong></div>}
+                          </div>
+                        )}
                       </>
                     )}
                   </>
