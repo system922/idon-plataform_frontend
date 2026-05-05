@@ -1,11 +1,12 @@
 // src/components/OpenDrawerButton.jsx
 import React, { useState } from 'react';
-import { useCashDrawer } from '../hooks/useCashDrawer';
 import { FiInbox, FiAlertCircle } from 'react-icons/fi';
 import PasswordModal from './PasswordModal';
 import { useDrawer } from '../context/DrawerContext';  // 👈 contexto global
 import '../styles/OpenDrawerButton.css';
 import { fetchWithAuth } from '../config/apiBase';
+import { useQzTray } from './useQzTray';
+import { usePrinterService } from '../services/usePrinterService';
 
 function getOperatorUser() {
   try {
@@ -134,7 +135,8 @@ function renderJefeData(jefeCaja, jefeName) {
 
 // ── Componente principal ──────────────────────────────────────────────────────
 function OpenDrawerButton({ label = "Abrir Caja", onDone, disabled = false, className = "" }) {
-  const openDrawer = useCashDrawer();
+  useQzTray();                                    // establece conexión QZ Tray
+  const { openCashDrawer } = usePrinterService(); // abre cajón vía ESC/POS
   const { startExpense } = useDrawer();   // 👈 contexto global
 
   const [loading, setLoading] = useState(false);
@@ -253,12 +255,17 @@ function OpenDrawerButton({ label = "Abrir Caja", onDone, disabled = false, clas
         }
       }
 
-      // 3. Abrir cajón (verificación segura)
-      const openDrawerFn = typeof openDrawer === 'function' ? openDrawer : openDrawer?.openDrawer;
-      if (typeof openDrawerFn === 'function') {
-        await openDrawerFn().catch(() => {});
-      } else {
-        console.warn('openDrawer no es una función válida:', openDrawer);
+      // 3. Abrir cajón según reglas:
+      //    - cierre_error  → siempre abre
+      //    - egreso_compra → siempre abre
+      //    - ingreso_extra → solo abre si el método de pago es efectivo
+      const debeAbrirCajon =
+        reasonType === 'cierre_error' ||
+        reasonType === 'egreso_compra' ||
+        (reasonType === 'ingreso_extra' && paymentMethod === 'cash');
+
+      if (debeAbrirCajon) {
+        await openCashDrawer().catch(() => {});
       }
 
       setReasonOpen(false);

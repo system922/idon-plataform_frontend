@@ -4,9 +4,13 @@ import ReactDOM from 'react-dom';
 import { useDrawer } from '../context/DrawerContext';
 import { fetchWithAuth } from '../config/apiBase';
 import { FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
+import { useQzTray } from './useQzTray';
+import { usePrinterService } from '../services/usePrinterService';
 
 function GlobalExpenseBubble() {
   const { pendingExpense, clearExpense } = useDrawer();
+  useQzTray();
+  const { openCashDrawer } = usePrinterService();
   const [expanded, setExpanded] = useState(false);
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
@@ -100,7 +104,7 @@ function GlobalExpenseBubble() {
   if (!expanded) {
     return ReactDOM.createPortal(
       <div
-        onClick={() => setExpanded(true)}
+        onClick={() => { setExpanded(true); openCashDrawer().catch(() => {}); }}
         style={{
           position: 'fixed', bottom: 28, right: 28, zIndex: 2000,
           background: '#f39c12', borderRadius: 50, padding: '14px 20px',
