@@ -128,3 +128,8 @@
   color: #f44;
   margin-top: 3px;
 }
+
+@keyframes pulse-bubble {
+  0%, 100% { box-shadow: 0 6px 24px rgba(243,156,18,0.5); transform: scale(1); }
+  50%       { box-shadow: 0 8px 32px rgba(243,156,18,0.8); transform: scale(1.05); }
+}

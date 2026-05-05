@@ -75,13 +75,16 @@ function OpenDrawerReasonModal({ open, onSubmit, onClose, submitting, error }) {
   );
 }
 
-// ── Burbuja flotante persistente ──────────────────────────────────────────────
-function EgressBubble({ onSave, saving, error, openDrawer }) {
-  const [amount, setAmount] = useState('');
-  const [reason, setReason] = useState('');
-  const [opening, setOpening] = useState(false);
+// ── Burbuja flotante (se expande al tocar, no bloquea la UI) ─────────────────
+function EgressBubble({ onSave, saving, error }) {
+  const openDrawer = useCashDrawer();
+  const [expanded, setExpanded] = useState(false);
+  const [amount,   setAmount  ] = useState('');
+  const [reason,   setReason  ] = useState('');
+  const [opening,  setOpening ] = useState(false);
 
-  async function handleOpenDrawer() {
+  async function handleOpenDrawer(e) {
+    e.stopPropagation();
     setOpening(true);
     try { await openDrawer(); } finally { setOpening(false); }
   }
@@ -92,85 +95,108 @@ function EgressBubble({ onSave, saving, error, openDrawer }) {
     onSave({ amount: parseFloat(amount), reason });
   }
 
+  // Pastilla colapsada
+  if (!expanded) {
+    return (
+      <div
+        onClick={() => setExpanded(true)}
+        title="Registrar gasto de compra"
+        style={{
+          position: 'fixed', bottom: 28, right: 28, zIndex: 2000,
+          background: '#f39c12', borderRadius: 50, padding: '14px 20px',
+          boxShadow: '0 6px 24px rgba(243,156,18,0.5)',
+          display: 'flex', alignItems: 'center', gap: 10,
+          cursor: 'pointer', userSelect: 'none',
+          animation: 'pulse-bubble 2s infinite',
+        }}
+      >
+        <FiAlertCircle size={22} color="#1a1a2e" />
+        <span style={{ color: '#1a1a2e', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap' }}>
+          Registrar gasto
+        </span>
+      </div>
+    );
+  }
+
+  // Formulario expandido
   return (
     <div style={{
       position: 'fixed', bottom: 28, right: 28, zIndex: 2000,
       background: '#1a1a2e', border: '2px solid #f39c12',
-      borderRadius: 16, padding: '20px 22px', width: 320,
-      boxShadow: '0 8px 40px rgba(243,156,18,0.4)',
+      borderRadius: 16, padding: '16px 18px', width: 300,
+      boxShadow: '0 8px 32px rgba(243,156,18,0.45)',
     }}>
-      {/* Encabezado */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <FiAlertCircle size={20} color="#f39c12" />
-        <span style={{ color: '#f39c12', fontWeight: 700, fontSize: 14 }}>
+      {/* Cabecera con botón de colapsar */}
+      <div
+        onClick={() => setExpanded(false)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          marginBottom: 12, cursor: 'pointer',
+        }}
+      >
+        <FiAlertCircle size={18} color="#f39c12" />
+        <span style={{ color: '#f39c12', fontWeight: 700, fontSize: 13, flex: 1 }}>
           Registra lo gastado al regresar
         </span>
+        <span style={{ color: '#f39c12', fontSize: 18, lineHeight: 1 }}>›</span>
       </div>
-      <p style={{ color: '#ffffffaa', fontSize: 12, margin: '0 0 14px', lineHeight: 1.5 }}>
-        Esta ventana no puede cerrarse hasta registrar el monto gastado.
-      </p>
 
-      {/* Botón abrir cajón sin clave */}
+      {/* Abrir cajón sin clave */}
       <button
         type="button"
         onClick={handleOpenDrawer}
         disabled={opening}
         style={{
-          width: '100%', marginBottom: 14, padding: '8px 0',
+          width: '100%', marginBottom: 12, padding: '7px 0',
           background: '#2c3e50', color: '#fff',
-          border: '1px solid #ffffff33', borderRadius: 8,
+          border: '1px solid #ffffff22', borderRadius: 8,
           cursor: 'pointer', fontSize: 13, fontWeight: 600,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
         }}
       >
-        <FiInbox size={14} />
+        <FiInbox size={13} />
         {opening ? 'Abriendo...' : 'Abrir Cajón'}
       </button>
 
-      {/* Formulario de gasto */}
       <form onSubmit={handleSave}>
         <input
-          type="number"
-          min="0"
-          step="0.01"
+          type="number" min="0" step="0.01"
           placeholder="Monto gastado *"
           value={amount}
           onChange={e => setAmount(e.target.value)}
           disabled={saving}
           required
           style={{
-            width: '100%', padding: '8px 10px', borderRadius: 8,
+            width: '100%', padding: '7px 10px', borderRadius: 8,
             border: '1px solid #ffffff33', background: '#0d0d1a',
-            color: '#fff', fontSize: 13, marginBottom: 10, boxSizing: 'border-box',
+            color: '#fff', fontSize: 13, marginBottom: 8, boxSizing: 'border-box',
           }}
         />
         <textarea
-          placeholder="Comentario / descripción de la compra"
+          placeholder="Comentario de la compra"
           value={reason}
           onChange={e => setReason(e.target.value)}
           disabled={saving}
           rows={2}
           style={{
-            width: '100%', padding: '8px 10px', borderRadius: 8,
+            width: '100%', padding: '7px 10px', borderRadius: 8,
             border: '1px solid #ffffff33', background: '#0d0d1a',
-            color: '#fff', fontSize: 13, marginBottom: 10,
-            resize: 'vertical', boxSizing: 'border-box',
+            color: '#fff', fontSize: 13, marginBottom: 8,
+            resize: 'none', boxSizing: 'border-box',
           }}
         />
-        {error && (
-          <div style={{ color: '#e74c3c', fontSize: 12, marginBottom: 8 }}>{error}</div>
-        )}
+        {error && <div style={{ color: '#e74c3c', fontSize: 12, marginBottom: 6 }}>{error}</div>}
         <button
           type="submit"
           disabled={saving || !amount}
           style={{
-            width: '100%', padding: '10px 0', borderRadius: 8,
-            background: amount ? '#27ae60' : '#444',
-            color: '#fff', border: 'none', fontWeight: 700, fontSize: 14,
-            cursor: amount ? 'pointer' : 'not-allowed', transition: 'background 0.2s',
+            width: '100%', padding: '9px 0', borderRadius: 8,
+            background: amount ? '#27ae60' : '#555',
+            color: '#fff', border: 'none', fontWeight: 700, fontSize: 13,
+            cursor: amount ? 'pointer' : 'not-allowed',
           }}
         >
-          {saving ? 'Guardando...' : 'Guardar Gasto y Cerrar'}
+          {saving ? 'Guardando...' : 'Guardar Gasto'}
         </button>
       </form>
     </div>
@@ -369,7 +395,6 @@ function OpenDrawerButton({ label = "Abrir Caja", onDone, disabled = false, clas
           onSave={handleBubbleSave}
           saving={bubbleSaving}
           error={bubbleErr}
-          openDrawer={openDrawer}
         />
       )}
     </div>
