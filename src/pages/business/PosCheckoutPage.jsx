@@ -584,26 +584,13 @@ export default function PosCheckoutPage() {
 
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
-  // Función para enviar la factura por correo electrónico
-  const enviarFacturaEmail = async (invoiceId, email) => {
-    if (!invoiceId || !email) return;
-    try {
-      await fetchWithAuth(`/api/einvoicing/invoices/${invoiceId}/email`, {
-        method: 'POST',
-        body: JSON.stringify({ email: email.trim() })
-      });
-      console.log(`📧 Factura enviada a ${email}`);
-    } catch (err) {
-      console.warn('Error al enviar correo (no crítico):', err);
-    }
-  };
-
-  // Función emitirFactura ahora devuelve objeto con id y número de factura
-  async function emitirFactura(order, custCedula, custNombre, method, discountData = null) {
+  // Función emitirFactura ahora acepta un parámetro adicional customerEmail
+  async function emitirFactura(order, custCedula, custNombre, method, discountData = null, customerEmail = null) {
     const cedula = custCedula?.trim() || '9999999999';
     const isCF = cedula === '9999999999' || cedula === '9999999999999';
     const tipoId = isCF ? '07' : (cedula.length === 13 ? '04' : '05');
-    const email = foundCliente?.email || clienteEmail.trim() || null;
+    // 🔥 Usar el email explícito si se pasa, sino el del cliente principal o foundCliente
+    const email = customerEmail || foundCliente?.email || clienteEmail.trim() || null;
 
     let subtotalOriginal = 0;
     const itemsPayload = (order.items || []).map(item => {
@@ -767,12 +754,10 @@ export default function PosCheckoutPage() {
 
       if (facturaIndividual) {
         const partialOrder = { ...selectedOrder, items: selectedOrder.items.filter(i => comensal.items.includes(i.id)) };
-        const invoiceData = await emitirFactura(partialOrder, cedula, nombre, 'split');
+        // 🔥 Pasar el email del comensal como sexto parámetro
+        const invoiceData = await emitirFactura(partialOrder, cedula, nombre, 'split', null, comensal.email);
         await imprimirTicket(partialOrder, totalComensal, comensal.montoRecibido - totalComensal, invoiceData?.invoice_number, 'split', nombre);
-        // Enviar factura por correo al comensal si tiene email
-        if (invoiceData?.id && comensal.email) {
-          await enviarFacturaEmail(invoiceData.id, comensal.email);
-        }
+        // ❌ Ya no se necesita enviarFacturaEmail manual porque el backend lo hará automáticamente cuando la factura se autorice
         setSuccess(`Factura generada para ${nombre}`);
       } else {
         const itemsCompletos = comensal.items.map(itemId => selectedOrder?.items?.find(i => i.id === itemId)).filter(i => i);
@@ -797,12 +782,10 @@ export default function PosCheckoutPage() {
           if (itemsFinales.length > 0) {
             const ordenCompleta = { ...selectedOrder, items: itemsFinales };
             const discountInfo = appliedDiscount ? { id: appliedDiscount.id, name: appliedDiscount.name, amount: discountAmount } : null;
-            const invoiceData = await emitirFactura(ordenCompleta, clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', 'split', discountInfo);
+            // 🔥 Pasar el email del cliente principal para la factura final
+            const invoiceData = await emitirFactura(ordenCompleta, clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', 'split', discountInfo, clienteEmail);
             await imprimirTicket(ordenCompleta, totalOrdenConDescuento, 0, invoiceData?.invoice_number, 'split', 'FACTURA FINAL');
-            // Enviar factura final al correo del cliente principal
-            if (invoiceData?.id && clienteEmail) {
-              await enviarFacturaEmail(invoiceData.id, clienteEmail);
-            }
+            // El backend enviará el correo automáticamente
           }
         } else {
           setSuccess('✅ Todos los comensales facturados. Orden completada.');
@@ -871,7 +854,7 @@ export default function PosCheckoutPage() {
             discount_amount: discountAmount
           }),
         });
-        invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'cash', discountInfo);
+        invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'cash', discountInfo, clienteEmail);
         await imprimirTicket(selectedOrder, totalOrdenConDescuento, paid - totalOrdenConDescuento, invoiceData?.invoice_number);
       } else if (metodoPagoNormal === 'card') {
         if (!refCard) throw new Error('Ingrese la referencia de la tarjeta');
@@ -890,7 +873,7 @@ export default function PosCheckoutPage() {
             discount_amount: discountAmount
           }),
         });
-        invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'card', discountInfo);
+        invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'card', discountInfo, clienteEmail);
         await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceData?.invoice_number);
       } else if (metodoPagoNormal === 'transfer') {
         if (!refTransfer) throw new Error('Ingrese la referencia de la transferencia');
@@ -909,7 +892,7 @@ export default function PosCheckoutPage() {
             discount_amount: discountAmount
           }),
         });
-        invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'transfer', discountInfo);
+        invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'transfer', discountInfo, clienteEmail);
         await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceData?.invoice_number);
       } else if (metodoPagoNormal === 'mixto') {
         const cashAmt = parseFloat(amountPaid) || 0;
@@ -936,14 +919,11 @@ export default function PosCheckoutPage() {
             discount_amount: discountAmount
           }),
         });
-        invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'mixto', discountInfo);
+        invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'mixto', discountInfo, clienteEmail);
         await imprimirTicket(selectedOrder, totalOrdenConDescuento, cashAmt - cashNeeded, invoiceData?.invoice_number);
       }
 
-      // Enviar factura por correo al cliente principal
-      if (invoiceData?.id && clienteEmail) {
-        await enviarFacturaEmail(invoiceData.id, clienteEmail);
-      }
+      // El backend enviará el correo automáticamente si hay email en la factura
 
       setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
       await resetForm();
