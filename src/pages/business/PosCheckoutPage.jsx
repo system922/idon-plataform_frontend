@@ -993,6 +993,8 @@ export default function PosCheckoutPage() {
           const invoiceNum = await emitirFactura(ordenCompleta, clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', 'split', discountInfo);
           await imprimirTicket(ordenCompleta, totalOrdenConDescuento, 0, invoiceNum, 'split', 'FACTURA FINAL');
         }
+        console.log('Enviando item_ids al backend:', comensal.items);
+        console.log('Primer item_id:', comensal.items[0], 'tipo:', typeof comensal.items[0]);
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
           body: JSON.stringify({ status: 'paid', payment_method: 'split', amount_paid: totalOrdenConDescuento, notes: orderNotes, discount_id: appliedDiscount?.id || null, discount_amount: discountAmount })
