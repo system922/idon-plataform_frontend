@@ -225,6 +225,27 @@ function OpenDrawerButton({
         return;
       }
 
+      // Guardar gasto en expenses cuando es egreso para compras
+      if (reasonType === 'egreso_compra' && amount) {
+        const expenseResp = await fetchWithAuth('/api/expenses', {
+          method: 'POST',
+          body: JSON.stringify({
+            amount,
+            description: `Retiro/egreso para compras${reason ? ': ' + reason : ''}`,
+            notes: reason || null,
+            category_id: '0f6dfe39-ef55-4765-8116-95f5c94bb7ca',
+            created_by: user_id,
+          }),
+        });
+
+        if (!expenseResp.ok) {
+          const data = await expenseResp.json().catch(() => ({}));
+          setReasonModalErr(data?.error || 'Error registrando el gasto');
+          setLoading(false);
+          return;
+        }
+      }
+
       const ok = await openDrawer();
 
       if (!ok) setErr('No se pudo abrir la caja');
