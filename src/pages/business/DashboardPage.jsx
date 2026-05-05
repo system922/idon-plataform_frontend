@@ -44,12 +44,12 @@ function toArray(data) {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function ManagerDashboard() {
-  // Fecha en UTC para evitar problemas de zona horaria con el backend
-  const today = new Date().toISOString().split('T')[0];
+  const TZ = 'America/Guayaquil';
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: TZ });
   const fromDate = (() => {
     const d = new Date();
     d.setDate(d.getDate() - 29);
-    return d.toISOString().split('T')[0];
+    return d.toLocaleDateString('en-CA', { timeZone: TZ });
   })();
 
   const [stats,        setStats       ] = useState(null);

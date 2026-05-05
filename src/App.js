@@ -28,6 +28,11 @@ import PendingApprovalPage  from './pages/PendingApprovalPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
 
+// ========== NUEVO: Contexto global para gastos pendientes ==========
+import { DrawerProvider } from './context/DrawerContext';
+import GlobalExpenseBubble from './components/GlobalExpenseBubble';
+// ==================================================================
+
 function RegisterPageWrapper({ setUser }) {
   const navigate = useNavigate();
   return (
@@ -44,7 +49,7 @@ function RegisterPageWrapper({ setUser }) {
 function AppRoutes({ user, setUser, handleLogout }) {
   return (
     <Routes>
-      {/* ── Rutas públicas ── */}
+      {/* ... tus rutas existentes, sin cambios ... */}
       <Route
         path="/login"
         element={
@@ -73,11 +78,9 @@ function AppRoutes({ user, setUser, handleLogout }) {
         }
       />
 
-      {/* Rutas públicas: Políticas y términos */}
       <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
-      {/* ── Negocio pendiente de aprobación ── */}
       <Route
         path="/pending-approval"
         element={
@@ -87,7 +90,6 @@ function AppRoutes({ user, setUser, handleLogout }) {
         }
       />
 
-      {/* ── Raíz ── */}
       <Route
         path="/"
         element={
@@ -105,7 +107,6 @@ function AppRoutes({ user, setUser, handleLogout }) {
         }
       />
 
-      {/* ── Panel SUPER ADMIN ── */}
       {user?.userType === 'admin_idon' && (
         <Route path="/admin/*" element={
           <AdminLayout user={user} onLogout={handleLogout}>
@@ -128,7 +129,6 @@ function AppRoutes({ user, setUser, handleLogout }) {
         } />
       )}
 
-      {/* ── Redirección legacy /dashboard ── */}
       <Route
         path="/dashboard"
         element={
@@ -146,7 +146,6 @@ function AppRoutes({ user, setUser, handleLogout }) {
         }
       />
 
-      {/* ── Panel del negocio (aprobado) ── */}
       <Route
         path="/app/*"
         element={
@@ -168,7 +167,6 @@ function AppRoutes({ user, setUser, handleLogout }) {
         {businessRoutes}
       </Route>
 
-      {/* ── Catch all ── */}
       <Route
         path="*"
         element={
@@ -203,20 +201,15 @@ function AppContent() {
 
   const PUBLIC_PATHS = ['/terms-and-conditions', '/privacy-policy', '/login', '/register'];
 
-  // SOLO verificar token y cargar usuario inicial - SIN REDIRECCIONES
   useEffect(() => {
     const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
-    
-    // Si no hay token y hay usuario en estado, limpiar
     if (!token && user) {
       setUser(null);
       localStorage.removeItem('idonUser');
     }
-    
     setLoading(false);
-  }, []); // ← Sin dependencias que causen redirección
+  }, []);
 
-  // Guardar última ruta SOLO cuando el usuario está autenticado y cambia de ruta
   useEffect(() => {
     if (user && !PUBLIC_PATHS.includes(location.pathname)) {
       localStorage.setItem('lastPath', location.pathname + location.search);
@@ -246,10 +239,15 @@ function AppContent() {
     </div>
   );
 
-  return <AppRoutes user={user} setUser={setUser} handleLogout={handleLogout} />;
+  // ========== CONTENIDO ENVOLVIDO CON DrawerProvider ==========
+  return (
+    <DrawerProvider>
+      <AppRoutes user={user} setUser={setUser} handleLogout={handleLogout} />
+      <GlobalExpenseBubble />  {/* 👈 Burbuja global siempre montada */}
+    </DrawerProvider>
+  );
 }
 
-// Intercepta rutas legales antes de cualquier lógica de auth
 function AppShell() {
   const location = useLocation();
   if (location.pathname === '/terms-and-conditions') return <TermsAndConditions />;

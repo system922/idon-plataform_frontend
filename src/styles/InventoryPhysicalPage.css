@@ -248,6 +248,7 @@
 }
 
 .progress-bar-wrapper {
+  position: relative;
   width: 120px;
   height: 6px;
   border-radius: 3px;

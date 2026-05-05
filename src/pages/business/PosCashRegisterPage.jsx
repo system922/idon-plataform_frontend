@@ -172,9 +172,9 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
   // ===============================
   const ventas = summary?.metodos || [];
   
-  const ventasEfectivo = ventas.find(m => m.payment_method === 'efectivo')?.total_cobrado || 0;
-  const ventasTarjeta = ventas.find(m => m.payment_method === 'tarjeta')?.total_cobrado || 0;
-  const ventasTransferencia = ventas.find(m => m.payment_method === 'transferencia')?.total_cobrado || 0;
+  const ventasEfectivo      = Number(ventas.find(m => m.payment_method === 'cash')?.total_cobrado     || 0);
+  const ventasTarjeta       = Number(ventas.find(m => m.payment_method === 'card')?.total_cobrado     || 0);
+  const ventasTransferencia = Number(ventas.find(m => m.payment_method === 'transfer')?.total_cobrado || 0);
   const totalVentas = ventasEfectivo + ventasTarjeta + ventasTransferencia;
   
   const gastos = (summary?.gastos || []).reduce((a, g) => a + toNum(g.monto), 0);
