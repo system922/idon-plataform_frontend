@@ -72,7 +72,7 @@ export default function ManagerDashboard() {
       setLoading(true);
       const [salesRes, purchasesRes, pendingRes] = await Promise.all([
         fetchWithAuth(`/api/sales/today?date=${today}`),
-        fetchWithAuth(`/api/expenses?date=${today}`),
+        fetchWithAuth(`/api/expenses/dashboard/summary?date=${today}`),
         fetchWithAuth('/api/reports/pending'),
       ]);
 

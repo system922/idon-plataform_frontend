@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
+import ExcelJS from 'exceljs';
 import {
   FiBarChart2, FiPackage, FiSearch, FiDownload, FiCalendar,
   FiChevronDown, FiRefreshCw, FiAlertCircle, FiTrendingUp,
   FiDollarSign, FiShoppingCart, FiGrid
 } from "react-icons/fi";
 import PageTemplate from '../../components/PageTemplate';
+import ReportPdfButton from '../../components/ReportPdfButton';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
 import { fetchWithAuth } from '../../config/apiBase';
 import "../../styles/ReportsProductsPage.css";
@@ -40,11 +42,8 @@ function FiltersModal({ open, filters, categories, onApply, onClose }) {
       <div className="report-modal-box" onClick={e => e.stopPropagation()}>
         <div className="report-modal-header">
           <h2>Filtros avanzados</h2>
-          <button type="button" onClick={onClose} className="report-modal-close">
-            ×
-          </button>
+          <button type="button" onClick={onClose} className="report-modal-close">×</button>
         </div>
-
         <div className="report-modal-body">
           <div className="report-filter-group">
             <label>Categoría</label>
@@ -60,7 +59,6 @@ function FiltersModal({ open, filters, categories, onApply, onClose }) {
               ))}
             </select>
           </div>
-
           <div className="report-filter-group">
             <label>Ordenar por</label>
             <select
@@ -72,7 +70,6 @@ function FiltersModal({ open, filters, categories, onApply, onClose }) {
               <option value="name">Nombre (A-Z)</option>
             </select>
           </div>
-
           <div className="report-filter-group">
             <label>Límite de resultados</label>
             <select
@@ -87,14 +84,9 @@ function FiltersModal({ open, filters, categories, onApply, onClose }) {
             </select>
           </div>
         </div>
-
         <div className="report-modal-footer">
-          <button className="report-btn-cancel" onClick={onClose}>
-            Cancelar
-          </button>
-          <button className="report-btn-apply" onClick={() => onApply(localFilters)}>
-            Aplicar filtros
-          </button>
+          <button className="report-btn-cancel" onClick={onClose}>Cancelar</button>
+          <button className="report-btn-apply" onClick={() => onApply(localFilters)}>Aplicar filtros</button>
         </div>
       </div>
     </div>
@@ -151,10 +143,8 @@ export default function ReportsProductsPage() {
       setLoading(false);
       return;
     }
-    
     setLoading(true);
     setError('');
-    
     try {
       const params = new URLSearchParams({
         periodo: dateRange,
@@ -162,14 +152,11 @@ export default function ReportsProductsPage() {
         order_by: filters.orderBy,
         limit: filters.limit
       });
-      
       const res = await fetchWithAuth(`/api/reports/products-sold?${params}`);
       const data = await res.json();
-      
       const productsList = Array.isArray(data.data) 
         ? data.data 
         : data.productos || data.products || [];
-      
       const formatted = productsList.map(item => ({
         id: item.id || item.producto_id,
         name: item.nombre || item.producto_nombre || item.name,
@@ -178,7 +165,6 @@ export default function ReportsProductsPage() {
         total: item.total_vendido || item.total_venta || item.monto || 0,
         category: item.categoria || 'Sin categoría'
       }));
-      
       setProducts(formatted);
     } catch (err) {
       console.error('Error loading report:', err);
@@ -208,62 +194,136 @@ export default function ReportsProductsPage() {
     setRefreshing(false);
   };
 
-  const handleExport = async () => {
-    try {
-      const params = new URLSearchParams({
-        periodo: dateRange,
-        format: 'csv',
-        ...(filters.category && { categoria: filters.category })
-      });
-      
-      const res = await fetchWithAuth(`/api/reports/products-sold/export?${params}`);
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `reporte_productos_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Error exporting:', err);
-      setError('Error al exportar el reporte');
-    }
-  };
-
+  // Aplicar filtros desde el modal
   const handleApplyFilters = (newFilters) => {
     setFilters(newFilters);
+    setShowFiltersModal(false);
   };
 
-  // Calcular totales
-  const totalQuantity = filteredProducts.reduce((sum, p) => sum + (Number(p.qty)   || 0), 0);
-  const totalSales    = filteredProducts.reduce((sum, p) => sum + (Number(p.total) || 0), 0);
-  const averageTicket = filteredProducts.length > 0 ? totalSales / filteredProducts.length : 0;
-  const topProduct = filteredProducts.length > 0 ? filteredProducts[0] : null;
+  // ─────────────────────────────────────────────────────────────────────────
+  // EXPORTACIÓN A EXCEL (XLSX)
+  // ─────────────────────────────────────────────────────────────────────────
+  const handleExportXLSX = async () => {
+    if (!filteredProducts.length) return;
 
-  // Botones para headerAction
-  const refreshButton = (
-    <button 
-      onClick={handleRefresh} 
-      className="report-refresh-btn-header"
-      disabled={refreshing}
-      title="Actualizar datos"
-    >
-      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} /> 
-      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
-    </button>
-  );
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'IDON Gestion';
+    wb.created = new Date();
 
-  const exportButton = (
-    <button onClick={handleExport} className="report-btn-secondary">
-      <FiDownload size={16} /> Exportar
-    </button>
-  );
+    const ws = wb.addWorksheet('Productos', {
+      views: [{ showGridLines: false }],
+      pageSetup: { paperSize: 9, orientation: 'landscape' },
+    });
 
+    ws.columns = [
+      { header: 'Producto', key: 'name', width: 35 },
+      { header: 'SKU / Código', key: 'sku', width: 20 },
+      { header: 'Cantidad vendida', key: 'qty', width: 18 },
+      { header: 'Total vendido', key: 'total', width: 18 },
+      { header: 'Participación (%)', key: 'percent', width: 18 },
+    ];
+
+    ws.getRow(1).font = { bold: true };
+    ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '1E3A5F' } };
+    ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
+
+    const totalSales = filteredProducts.reduce((sum, p) => sum + (Number(p.total) || 0), 0);
+    const rows = filteredProducts.map(p => ({
+      name: p.name,
+      sku: p.sku || '-',
+      qty: Number(p.qty) || 0,
+      total: Number(p.total) || 0,
+      percent: totalSales > 0 ? ((Number(p.total) || 0) / totalSales) * 100 : 0
+    }));
+
+    rows.forEach(row => {
+      ws.addRow({
+        name: row.name,
+        sku: row.sku,
+        qty: row.qty,
+        total: row.total,
+        percent: row.percent.toFixed(1) + '%'
+      });
+    });
+
+    const totalQty = filteredProducts.reduce((s, p) => s + (Number(p.qty) || 0), 0);
+    ws.addRow({
+      name: 'TOTALES',
+      sku: '',
+      qty: totalQty,
+      total: totalSales,
+      percent: '100%'
+    }).font = { bold: true };
+
+    ws.getColumn('total').numFmt = '"$"#,##0.00';
+    ws.getColumn('qty').numFmt = '#,##0';
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reporte_productos_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONFIGURACIÓN PARA PDF (customConfig)
+  // ─────────────────────────────────────────────────────────────────────────
+  const totalQtyPDF = filteredProducts.reduce((sum, p) => sum + (Number(p.qty) || 0), 0);
+  const totalSalesPDF = filteredProducts.reduce((sum, p) => sum + (Number(p.total) || 0), 0);
+  const avgTicketPDF = filteredProducts.length > 0 ? totalSalesPDF / filteredProducts.length : 0;
+  const productsCountPDF = filteredProducts.length;
+
+  const pdfConfig = (filteredProducts.length > 0) ? {
+    title: 'Reporte de Productos',
+    kpis: [
+      { label: 'Total Productos Vendidos', value: totalQtyPDF },
+      { label: 'Total Ventas', value: totalSalesPDF, formatter: (v) => `$${Number(v).toFixed(2)}` },
+      { label: 'Ticket Promedio', value: avgTicketPDF, formatter: (v) => `$${Number(v).toFixed(2)}` },
+      { label: 'Productos Distintos', value: productsCountPDF }
+    ],
+    sections: [{
+      title: 'Detalle de Productos',
+      columns: [
+        { label: 'Producto', key: 'name', width: 35 },
+        { label: 'SKU / Código', key: 'sku', width: 20 },
+        { label: 'Cantidad vendida', key: 'qty', width: 18 },
+        { label: 'Total vendido', key: 'total', width: 18, formatter: (v) => `$${Number(v).toFixed(2)}` },
+        { label: 'Participación', key: 'percent', width: 18, formatter: (v) => `${Number(v).toFixed(1)}%` }
+      ],
+      rows: filteredProducts.map(p => {
+        const percent = totalSalesPDF > 0 ? ((Number(p.total) || 0) / totalSalesPDF) * 100 : 0;
+        return {
+          name: p.name,
+          sku: p.sku || '-',
+          qty: Number(p.qty) || 0,
+          total: Number(p.total) || 0,
+          percent: percent
+        };
+      })
+    }]
+  } : null;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // BOTONES EN CABECERA
+  // ─────────────────────────────────────────────────────────────────────────
   const filtersButton = (
     <button onClick={() => setShowFiltersModal(true)} className="report-btn-secondary">
       <FiGrid size={16} /> Filtros
+    </button>
+  );
+
+  const excelButton = (
+    <button onClick={handleExportXLSX} className="report-btn-secondary" disabled={!filteredProducts.length}>
+      <FiDownload size={16} /> Excel
+    </button>
+  );
+
+  const refreshButton = (
+    <button onClick={handleRefresh} className="report-btn-secondary" disabled={refreshing}>
+      <FiRefreshCw size={16} className={refreshing ? 'spinning' : ''} /> {refreshing ? '...' : 'Actualizar'}
     </button>
   );
 
@@ -274,13 +334,10 @@ export default function ReportsProductsPage() {
       theme="business"
       loading={loading}
       headerAction={
-        <div className="report-header-actions">
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
           {/* Selector de período */}
           <div className="report-dropdown">
-            <button 
-              onClick={() => setShowDateDropdown(!showDateDropdown)} 
-              className="report-date-btn"
-            >
+            <button onClick={() => setShowDateDropdown(!showDateDropdown)} className="report-date-btn">
               <FiCalendar size={16} />
               {dateOptions.find(o => o.value === dateRange)?.label || 'Este mes'}
               <FiChevronDown size={14} />
@@ -316,7 +373,13 @@ export default function ReportsProductsPage() {
           </div>
 
           {filtersButton}
-          {exportButton}
+          {excelButton}
+          <ReportPdfButton
+            customConfig={pdfConfig}
+            dateRange={{ from: dateRange, to: new Date().toISOString().split('T')[0] }}
+            groupBy={null}
+            className="report-btn-secondary"
+          />
           {refreshButton}
         </div>
       }
@@ -331,40 +394,40 @@ export default function ReportsProductsPage() {
       <div className="report-summary-grid">
         <SummaryCard
           title="Total Productos Vendidos"
-          value={totalQuantity.toLocaleString()}
+          value={totalQtyPDF.toLocaleString()}
           icon={<FiShoppingCart size={24} />}
           color="#A0E7C7"
         />
         <SummaryCard
           title="Total Ventas"
-          value={`$${totalSales.toFixed(2)}`}
+          value={`$${totalSalesPDF.toFixed(2)}`}
           icon={<FiDollarSign size={24} />}
           color="#FFD700"
         />
         <SummaryCard
           title="Ticket Promedio"
-          value={`$${averageTicket.toFixed(2)}`}
+          value={`$${avgTicketPDF.toFixed(2)}`}
           icon={<FiTrendingUp size={24} />}
           color="#FFA07A"
           subtitle="Por producto"
         />
         <SummaryCard
           title="Productos Distintos"
-          value={filteredProducts.length.toLocaleString()}
+          value={productsCountPDF.toLocaleString()}
           icon={<FiPackage size={24} />}
           color="#87CEEB"
         />
       </div>
 
       {/* Producto destacado */}
-      {topProduct && (
+      {filteredProducts.length > 0 && (
         <div className="report-top-product">
           <div className="report-top-product-content">
             <FiBarChart2 size={20} />
             <span>Producto más vendido:</span>
-            <strong>{topProduct.name}</strong>
-            <span className="report-top-product-qty">{Number(topProduct.qty) || 0} unidades</span>
-            <span className="report-top-product-total">${(Number(topProduct.total) || 0).toFixed(2)}</span>
+            <strong>{filteredProducts[0].name}</strong>
+            <span className="report-top-product-qty">{Number(filteredProducts[0].qty) || 0} unidades</span>
+            <span className="report-top-product-total">${(Number(filteredProducts[0].total) || 0).toFixed(2)}</span>
           </div>
         </div>
       )}
@@ -392,7 +455,7 @@ export default function ReportsProductsPage() {
                 </tr>
               ) : (
                 filteredProducts.map((product, idx) => {
-                  const percentage = totalSales > 0 ? ((Number(product.total) || 0) / totalSales) * 100 : 0;
+                  const percentage = totalSalesPDF > 0 ? ((Number(product.total) || 0) / totalSalesPDF) * 100 : 0;
                   return (
                     <tr key={product.id}>
                       <td className="report-product-name">
@@ -404,10 +467,7 @@ export default function ReportsProductsPage() {
                       <td className="report-text-right report-product-total">${(Number(product.total) || 0).toFixed(2)}</td>
                       <td className="report-text-right report-product-percent">
                         <div className="report-percent-bar">
-                          <div 
-                            className="report-percent-fill" 
-                            style={{ width: `${percentage}%` }}
-                          />
+                          <div className="report-percent-fill" style={{ width: `${percentage}%` }} />
                           <span>{percentage.toFixed(1)}%</span>
                         </div>
                       </td>
@@ -420,8 +480,8 @@ export default function ReportsProductsPage() {
               <tfoot>
                 <tr>
                   <td colSpan={2} className="report-footer-label">Totales</td>
-                  <td className="report-text-right report-footer-qty">{totalQuantity}</td>
-                  <td className="report-text-right report-footer-total">${totalSales.toFixed(2)}</td>
+                  <td className="report-text-right report-footer-qty">{totalQtyPDF}</td>
+                  <td className="report-text-right report-footer-total">${totalSalesPDF.toFixed(2)}</td>
                   <td className="report-text-right report-footer-percent">100%</td>
                 </tr>
               </tfoot>

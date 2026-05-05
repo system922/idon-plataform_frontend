@@ -168,7 +168,7 @@ export default function ReportPdfButton({ customConfig, dateRange, groupBy, titl
         }
       }
 
-      const doc = new jsPDF();
+      const doc = new jsPDF(config.landscape ? { orientation: 'landscape', unit: 'mm', format: 'a4' } : {});
       const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.height;
       const marginX = 15;

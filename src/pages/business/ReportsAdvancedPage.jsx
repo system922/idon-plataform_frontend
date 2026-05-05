@@ -8,8 +8,8 @@ import {
 } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
-  Tooltip, Legend, ResponsiveContainer, PieChart as RePieChart, 
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer, PieChart as RePieChart,
   Pie, Cell
 } from 'recharts';
 import '../../styles/ReportsAdvanced.css';
@@ -48,10 +48,70 @@ export default function ReportsAdvanced() {
     loadReport();
   }, [dateRange, groupBy]);
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Helper para calcular totales reales a partir de los datos detallados
+  // ─────────────────────────────────────────────────────────────────────────
+  const computeTotals = () => {
+    if (!data) return { totalVentas: 0, totalGastos: 0, neto: 0, margen: 0 };
+    const totalVentas = data.sales?.reduce((sum, s) => sum + (Number(s.total_sales) || 0), 0) || 0;
+    const totalGastos = data.expenses?.reduce((sum, e) => sum + (Number(e.total_expenses) || 0), 0) || 0;
+    const neto = totalVentas - totalGastos;
+    const margen = totalVentas > 0 ? (neto / totalVentas) * 100 : 0;
+    return { totalVentas, totalGastos, neto, margen };
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Configuración para el PDF genérico usando totales reales
+  // ─────────────────────────────────────────────────────────────────────────
+  const pdfConfig = data ? (() => {
+    const { totalVentas, totalGastos, neto, margen } = computeTotals();
+    return {
+      title: 'Reporte Avanzado',
+      kpis: [
+        { label: 'Ventas Totales', value: totalVentas, formatter: (v) => `$${Number(v).toFixed(2)}` },
+        { label: 'Gastos Totales', value: totalGastos, formatter: (v) => `$${Number(v).toFixed(2)}` },
+        { label: 'Ganancia Neta', value: neto, formatter: (v) => `$${Number(v).toFixed(2)}`, bold: true },
+        { label: 'Margen de Ganancia', value: margen, formatter: (v) => `${v.toFixed(1)}%`, bold: true }
+      ],
+      sections: data.sales && data.sales.length ? [{
+        title: 'DETALLE POR PERÍODO',
+        columns: [
+          { 
+            label: 'Fecha / Categoria', 
+            key: 'date', 
+            width: 28, 
+            formatter: (val) => {
+              if (!val) return '';
+              const d = new Date(val);
+              return isNaN(d) ? val : d.toLocaleDateString('es-EC');
+            }
+          },
+          { label: 'Ventas ($)', key: 'ventas', width: 16, formatter: (v) => `$${Number(v).toFixed(2)}` },
+          { label: 'Gastos ($)', key: 'gastos', width: 16, formatter: (v) => `$${Number(v).toFixed(2)}` },
+          { label: 'Margen ($)', key: 'margen', width: 16, formatter: (v) => `$${Number(v).toFixed(2)}` }
+        ],
+        rows: data.sales.map(s => {
+          const key = s.date ?? s.category;
+          const gasto = data.expenses?.find(e => (e.date ?? e.category) === key)?.total_expenses || 0;
+          const venta = s.total_sales ?? s.total ?? 0;
+          return {
+            date: key,
+            ventas: venta,
+            gastos: gasto,
+            margen: venta - gasto
+          };
+        })
+      }] : [],
+      chartRefs: [chartLineRef, chartBarRef]
+    };
+  })() : null;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Exportación a Excel usando totales reales
+  // ─────────────────────────────────────────────────────────────────────────
   const handleExportXLSX = async () => {
     if (!data) return;
 
-    // ── Helpers de estilo ────────────────────────────────────────────────────
     const fmtDate = (val) => {
       if (!val) return '';
       const d = new Date(val);
@@ -59,15 +119,14 @@ export default function ReportsAdvanced() {
     };
 
     const GROUP_LABELS = { day: 'Dia', month: 'Mes', category: 'Categoria' };
-
     const COLORS = {
-      headerBg:   '1E2840',   // azul oscuro encabezado
-      sectionBg:  '2563EB',   // azul sección
-      colHeaderBg:'DBEAFE',   // azul claro encabezados de columna
-      totalsBg:   '1E40AF',   // azul oscuro totales
-      rowAlt:     'F0F7FF',   // fila alternada
-      positive:   '166534',   // verde texto positivo
-      negative:   '991B1B',   // rojo texto negativo
+      headerBg:   '1E2840',
+      sectionBg:  '2563EB',
+      colHeaderBg:'DBEAFE',
+      totalsBg:   '1E40AF',
+      rowAlt:     'F0F7FF',
+      positive:   '166534',
+      negative:   '991B1B',
       white:      'FFFFFF',
       black:      '000000',
       gray:       '6B7280',
@@ -81,7 +140,6 @@ export default function ReportsAdvanced() {
     };
 
     const applyStyle = (cell, style) => { cell.style = style; };
-
     const styleHeader = (cell, text) => {
       cell.value = text;
       applyStyle(cell, {
@@ -90,7 +148,6 @@ export default function ReportsAdvanced() {
         alignment: { vertical: 'middle', horizontal: 'center' },
       });
     };
-
     const styleSection = (cell, text) => {
       cell.value = text;
       applyStyle(cell, {
@@ -100,7 +157,6 @@ export default function ReportsAdvanced() {
         border,
       });
     };
-
     const styleColHeader = (cell, text) => {
       cell.value = text;
       applyStyle(cell, {
@@ -110,7 +166,6 @@ export default function ReportsAdvanced() {
         border,
       });
     };
-
     const styleData = (cell, value, align = 'left', altRow = false, numFmt = null) => {
       cell.value = value;
       const style = {
@@ -124,7 +179,6 @@ export default function ReportsAdvanced() {
       if (numFmt) style.numFmt = numFmt;
       applyStyle(cell, style);
     };
-
     const styleTotals = (cell, value, align = 'center', numFmt = null) => {
       cell.value = value;
       const style = {
@@ -142,14 +196,9 @@ export default function ReportsAdvanced() {
       applyStyle(cell, style);
     };
 
-    // ── Calcular totales ─────────────────────────────────────────────────────
-    const totals  = data.summary ?? data.totals ?? {};
-    const totalV  = Number(totals.total_sales    ?? 0);
-    const totalG  = Number(totals.total_expenses ?? 0);
-    const netProf = Number(totals.net_profit     ?? (totalV - totalG));
-    const margin  = totalV > 0 ? +((netProf / totalV) * 100).toFixed(1) : 0;
+    // Usar totales reales
+    const { totalVentas: totalV, totalGastos: totalG, neto: netProf, margen: margin } = computeTotals();
 
-    // ── Workbook ─────────────────────────────────────────────────────────────
     const wb = new ExcelJS.Workbook();
     wb.creator = 'IDON Gestion';
     wb.created = new Date();
@@ -167,12 +216,10 @@ export default function ReportsAdvanced() {
       { key: 'e', width: 14 },
     ];
 
-    // ── Fila 1: Título principal ─────────────────────────────────────────────
     ws.mergeCells('A1:E1');
     styleHeader(ws.getCell('A1'), 'REPORTE AVANZADO');
     ws.getRow(1).height = 28;
 
-    // ── Fila 2: Periodo ──────────────────────────────────────────────────────
     ws.getRow(2).height = 18;
     ws.mergeCells('A2:C2');
     const cellPeriod = ws.getCell('A2');
@@ -192,7 +239,6 @@ export default function ReportsAdvanced() {
       alignment: { vertical: 'middle', horizontal: 'right' },
     });
 
-    // ── Fila 3: Generado ─────────────────────────────────────────────────────
     ws.mergeCells('A3:E3');
     const cellGen = ws.getCell('A3');
     cellGen.value = `Generado: ${new Date().toLocaleString('es-EC')}`;
@@ -202,10 +248,8 @@ export default function ReportsAdvanced() {
       alignment: { vertical: 'middle', horizontal: 'left' },
     });
 
-    // ── Fila 4: Espacio ──────────────────────────────────────────────────────
     ws.getRow(4).height = 6;
 
-    // ── Fila 5: RESUMEN EJECUTIVO ────────────────────────────────────────────
     ws.mergeCells('A5:E5');
     styleSection(ws.getCell('A5'), '  RESUMEN EJECUTIVO');
     ws.getRow(5).height = 18;
@@ -228,31 +272,26 @@ export default function ReportsAdvanced() {
       styleData(cA, label, 'left', alt);
       styleData(cB, value, 'right', alt, type === '#currency' ? '"$"#,##0.00' : '0.0"%"');
 
-      // Color ganancia neta
       if (label === 'Ganancia Neta') {
         cB.font = { ...cB.font, bold: true, color: { argb: value >= 0 ? COLORS.positive : COLORS.negative } };
       }
     });
 
-    // ── Espacio ──────────────────────────────────────────────────────────────
     const spRow1 = 6 + kpiRows.length;
     ws.getRow(spRow1).height = 6;
 
-    // ── DETALLE POR PERIODO ──────────────────────────────────────────────────
     let r = spRow1 + 1;
     ws.mergeCells(`A${r}:E${r}`);
     styleSection(ws.getCell(`A${r}`), '  DETALLE POR PERIODO');
     ws.getRow(r).height = 18;
     r++;
 
-    // Cabeceras de columna
     ['Fecha / Categoria', 'Ventas ($)', 'Gastos ($)', 'Margen ($)', 'Margen (%)'].forEach((h, i) => {
       styleColHeader(ws.getCell(r, i + 1), h);
     });
     ws.getRow(r).height = 16;
     r++;
 
-    // Filas de datos
     (data.sales ?? []).forEach((s, idx) => {
       const key    = s.date ?? s.category ?? '';
       const venta  = Number(s.total_sales ?? s.total ?? 0);
@@ -270,11 +309,9 @@ export default function ReportsAdvanced() {
       const cPct = ws.getCell(r, 5);
       styleData(cPct, pct, 'right', alt, '0.0"%"');
       cPct.font = { ...cPct.font, color: { argb: margen >= 0 ? COLORS.positive : COLORS.negative } };
-
       r++;
     });
 
-    // Fila totales
     ws.getRow(r).height = 18;
     styleTotals(ws.getCell(r, 1), 'TOTALES',  'left');
     styleTotals(ws.getCell(r, 2), totalV,     'right', '"$"#,##0.00');
@@ -283,7 +320,6 @@ export default function ReportsAdvanced() {
     styleTotals(ws.getCell(r, 5), margin,     'right', '0.0"%"');
     r += 2;
 
-    // ── GASTOS DETALLADOS ────────────────────────────────────────────────────
     if (data.expenses?.length > 0) {
       ws.mergeCells(`A${r}:E${r}`);
       styleSection(ws.getCell(`A${r}`), '  GASTOS DETALLADOS');
@@ -316,7 +352,6 @@ export default function ReportsAdvanced() {
       });
     }
 
-    // ── Descargar ────────────────────────────────────────────────────────────
     const buffer = await wb.xlsx.writeBuffer();
     const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url    = URL.createObjectURL(blob);
@@ -330,7 +365,7 @@ export default function ReportsAdvanced() {
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  const COLORS = ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6'];
+  const CHART_COLORS = ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6'];
 
   return (
     <PageTemplate
@@ -363,11 +398,10 @@ export default function ReportsAdvanced() {
             <Download size={16} /> Exportar Excel
           </button>
           <ReportPdfButton
-            data={data}
+            customConfig={pdfConfig}
             dateRange={dateRange}
             groupBy={groupBy}
-            title="Reporte Avanzado"
-            chartRefs={[chartLineRef, chartBarRef]}
+            className="btn-secondary"
           />
         </div>
 
@@ -375,18 +409,18 @@ export default function ReportsAdvanced() {
           <div className="kpi-cards">
             <div className="kpi-card">
               <div className="kpi-title">Ventas Totales</div>
-              <div className="kpi-value">${Number(data.totals.total_sales).toFixed(2)}</div>
+              <div className="kpi-value">${Number(computeTotals().totalVentas).toFixed(2)}</div>
               <TrendingUp size={20} className="kpi-icon positive" />
             </div>
             <div className="kpi-card">
               <div className="kpi-title">Gastos Totales</div>
-              <div className="kpi-value">${Number(data.totals.total_expenses).toFixed(2)}</div>
+              <div className="kpi-value">${Number(computeTotals().totalGastos).toFixed(2)}</div>
               <TrendingDown size={20} className="kpi-icon negative" />
             </div>
             <div className="kpi-card">
               <div className="kpi-title">Ganancia Neta</div>
-              <div className="kpi-value" style={{ color: data.totals.net_profit >= 0 ? '#10b981' : '#ef4444' }}>
-                ${Number(data.totals.net_profit).toFixed(2)}
+              <div className="kpi-value" style={{ color: computeTotals().neto >= 0 ? '#10b981' : '#ef4444' }}>
+                ${Number(computeTotals().neto).toFixed(2)}
               </div>
               <DollarSign size={20} className="kpi-icon" />
             </div>
@@ -397,7 +431,6 @@ export default function ReportsAdvanced() {
 
         {!loading && data && (
           <>
-            {/* Gráfico de evolución (solo si groupBy no es 'category') */}
             {groupBy !== 'category' && (
               <div className="chart-card" ref={chartLineRef}>
                 <h3>Ventas vs Gastos</h3>
@@ -419,7 +452,6 @@ export default function ReportsAdvanced() {
               </div>
             )}
 
-            {/* Gráfico de barras o pastel según groupBy */}
             {groupBy === 'category' && data.sales && data.sales.length > 0 && (
               <div className="chart-card" ref={chartBarRef}>
                 <h3>Ventas por Categoría</h3>
@@ -435,13 +467,17 @@ export default function ReportsAdvanced() {
               </div>
             )}
 
-            {/* Tabla resumen */}
             <div className="table-card">
               <h3>Detalle de Ventas Diarias</h3>
               <div className="table-responsive">
                 <table className="report-table">
                   <thead>
-                    <tr><th>Fecha</th><th>Ventas</th><th>Gastos</th><th>Margen</th></tr>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Ventas</th>
+                      <th>Gastos</th>
+                      <th>Margen</th>
+                    </tr>
                   </thead>
                   <tbody>
                     {data.sales.map(s => {

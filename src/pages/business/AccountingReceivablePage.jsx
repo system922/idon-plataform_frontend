@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import ExcelJS from 'exceljs';
 import {
   FiDollarSign, FiPlus, FiEdit2, FiTrash2, FiRefreshCw,
   FiAlertCircle, FiSearch, FiCalendar, FiChevronDown,
@@ -6,11 +7,22 @@ import {
   FiAlertTriangle, FiEye, FiMail, FiPhone
 } from "react-icons/fi";
 import PageTemplate from '../../components/PageTemplate';
+import ReportPdfButton from '../../components/ReportPdfButton';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
 import { fetchWithAuth } from '../../config/apiBase';
 import "../../styles/AccountingReceivablePage.css";
 
-// ─── Modal de Cuenta por Cobrar ───────────────────────────────────────────────
+// ─── Helper para formatear fechas ────────────────────────────────────────────
+const formatDate = (dateValue) => {
+  if (!dateValue) return '-';
+  const date = new Date(dateValue);
+  return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('es-EC');
+};
+
+// ─── Helper para convertir a número seguro ───────────────────────────────────
+const toNumber = (val) => Number(val) || 0;
+
+// ─── Modal de Cuenta por Cobrar (sin cambios significativos) ─────────────────
 function ReceivableModal({ receivable, customers, onClose, onSave, saving }) {
   const [form, setForm] = useState({
     customer_id: '',
@@ -188,7 +200,7 @@ function ReceivableModal({ receivable, customers, onClose, onSave, saving }) {
   );
 }
 
-// ─── Modal de Pago ────────────────────────────────────────────────────────────
+// ─── Modal de Pago (sin cambios) ─────────────────────────────────────────────
 function PaymentModal({ receivable, onClose, onSave, saving }) {
   const [form, setForm] = useState({
     amount: '',
@@ -313,7 +325,7 @@ function PaymentModal({ receivable, onClose, onSave, saving }) {
   );
 }
 
-// ─── Modal de Cliente ─────────────────────────────────────────────────────────
+// ─── Modal de Cliente (sin cambios) ──────────────────────────────────────────
 function CustomerModal({ customer, onClose, onSave, saving }) {
   const [form, setForm] = useState({
     name: '',
@@ -445,6 +457,7 @@ export default function AccountingReceivablePage() {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [selectedReceivable, setSelectedReceivable] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [stats, setStats] = useState({
     total_receivable: 0,
     total_paid: 0,
@@ -452,7 +465,7 @@ export default function AccountingReceivablePage() {
     total_overdue: 0
   });
 
-  // Cargar datos
+  // ─── Cargar clientes ──────────────────────────────────────────────────────
   const loadCustomers = useCallback(async () => {
     if (!selectedBusiness?.id) return;
     try {
@@ -464,44 +477,37 @@ export default function AccountingReceivablePage() {
     }
   }, [selectedBusiness]);
 
+  // ─── Cargar cuentas por cobrar ────────────────────────────────────────────
   const loadReceivables = useCallback(async () => {
     if (!selectedBusiness?.id) {
       setLoading(false);
       return;
     }
-    
     setLoading(true);
     setError('');
-    
     try {
       const params = new URLSearchParams();
       if (statusFilter !== 'all') params.append('status', statusFilter);
+      if (search) params.append('search', search);
       
       const res = await fetchWithAuth(`/api/accounting/receivables?${params}`);
       const data = await res.json();
-      
       const receivablesList = Array.isArray(data.data) ? data.data : data.receivables || [];
       setReceivables(receivablesList);
       
-      // Calcular estadísticas
-      const total = receivablesList.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+      // Calcular estadísticas reales (a partir de los datos obtenidos)
+      const total = receivablesList.reduce((sum, r) => sum + toNumber(r.amount), 0);
       const paid = receivablesList
         .filter(r => r.status === 'paid')
-        .reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+        .reduce((sum, r) => sum + toNumber(r.amount), 0);
       const pending = receivablesList
         .filter(r => r.status === 'pending' || r.status === 'partial')
-        .reduce((sum, r) => sum + (parseFloat(r.remaining_amount || r.amount) || 0), 0);
+        .reduce((sum, r) => sum + toNumber(r.balance !== undefined ? r.balance : r.amount), 0);
       const overdue = receivablesList
         .filter(r => r.status === 'overdue')
-        .reduce((sum, r) => sum + (parseFloat(r.remaining_amount || r.amount) || 0), 0);
+        .reduce((sum, r) => sum + toNumber(r.balance !== undefined ? r.balance : r.amount), 0);
       
-      setStats({
-        total_receivable: total,
-        total_paid: paid,
-        total_pending: pending,
-        total_overdue: overdue
-      });
-      
+      setStats({ total_receivable: total, total_paid: paid, total_pending: pending, total_overdue: overdue });
     } catch (err) {
       console.error('Error loading receivables:', err);
       setError('Error al cargar las cuentas por cobrar');
@@ -509,7 +515,7 @@ export default function AccountingReceivablePage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedBusiness, statusFilter]);
+  }, [selectedBusiness, statusFilter, search]);
 
   useEffect(() => {
     loadCustomers();
@@ -519,13 +525,188 @@ export default function AccountingReceivablePage() {
     loadReceivables();
   }, [loadReceivables]);
 
-  // Filtrar por búsqueda
-  const filteredReceivables = receivables.filter(r =>
-    r.description?.toLowerCase().includes(search.toLowerCase()) ||
-    r.customer_name?.toLowerCase().includes(search.toLowerCase()) ||
-    r.invoice_number?.toLowerCase().includes(search.toLowerCase())
-  );
+  // ─── Exportación a Excel (con estilos profesionales) ───────────────────────
+  const handleExportXLSX = async () => {
+    if (!receivables.length) {
+      setError('No hay datos para exportar');
+      return;
+    }
+    setExporting(true);
+    try {
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'IDON Contabilidad';
+      wb.created = new Date();
 
+      const COLORS = {
+        headerBg:   '1E2840',
+        sectionBg:  '2563EB',
+        colHeaderBg:'DBEAFE',
+        totalsBg:   '1E40AF',
+        rowAlt:     'F0F7FF',
+        white:      'FFFFFF',
+        black:      '000000',
+        positive:   '166534',
+        negative:   '991B1B',
+      };
+      const border = {
+        top:    { style: 'thin', color: { argb: 'D1D5DB' } },
+        bottom: { style: 'thin', color: { argb: 'D1D5DB' } },
+        left:   { style: 'thin', color: { argb: 'D1D5DB' } },
+        right:  { style: 'thin', color: { argb: 'D1D5DB' } },
+      };
+      const applyStyle = (cell, style) => { cell.style = style; };
+      
+      const styleHeader = (cell, text) => {
+        cell.value = text;
+        applyStyle(cell, {
+          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerBg } },
+          font: { bold: true, size: 14, color: { argb: COLORS.white }, name: 'Calibri' },
+          alignment: { vertical: 'middle', horizontal: 'center' },
+        });
+      };
+      const styleSection = (cell, text) => {
+        cell.value = text;
+        applyStyle(cell, {
+          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.sectionBg } },
+          font: { bold: true, size: 10, color: { argb: COLORS.white }, name: 'Calibri' },
+          alignment: { vertical: 'middle', horizontal: 'left' },
+          border,
+        });
+      };
+      const styleColHeader = (cell, text) => {
+        cell.value = text;
+        applyStyle(cell, {
+          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.colHeaderBg } },
+          font: { bold: true, size: 9, color: { argb: '1E3A5F' }, name: 'Calibri' },
+          alignment: { vertical: 'middle', horizontal: 'center' },
+          border,
+        });
+      };
+      const styleData = (cell, value, align = 'left', altRow = false, numFmt = null) => {
+        cell.value = value;
+        const style = {
+          fill: altRow ? { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.rowAlt } } : { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.white } },
+          font: { size: 9, name: 'Calibri', color: { argb: COLORS.black } },
+          alignment: { vertical: 'middle', horizontal: align },
+          border,
+        };
+        if (numFmt) style.numFmt = numFmt;
+        applyStyle(cell, style);
+      };
+      const styleTotals = (cell, value, align = 'center', numFmt = null) => {
+        cell.value = value;
+        const style = {
+          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.totalsBg } },
+          font: { bold: true, size: 9, color: { argb: COLORS.white }, name: 'Calibri' },
+          alignment: { vertical: 'middle', horizontal: align },
+          border: {
+            top:    { style: 'medium', color: { argb: COLORS.white } },
+            bottom: { style: 'medium', color: { argb: COLORS.white } },
+            left:   { style: 'thin',   color: { argb: '3B82F6' } },
+            right:  { style: 'thin',   color: { argb: '3B82F6' } },
+          },
+        };
+        if (numFmt) style.numFmt = numFmt;
+        applyStyle(cell, style);
+      };
+
+      const ws = wb.addWorksheet('Cuentas por Cobrar', { views: [{ showGridLines: false }], pageSetup: { paperSize: 9, orientation: 'landscape' } });
+      ws.columns = [
+        { key: 'cliente', width: 30 },
+        { key: 'descripcion', width: 35 },
+        { key: 'factura', width: 15 },
+        { key: 'vencimiento', width: 15 },
+        { key: 'estado', width: 15 },
+        { key: 'monto', width: 15 },
+        { key: 'saldo', width: 15 },
+      ];
+
+      ws.mergeCells('A1:G1');
+      styleHeader(ws.getCell('A1'), 'CUENTAS POR COBRAR');
+      ws.getRow(1).height = 28;
+      ws.getRow(2).height = 6;
+      ws.mergeCells('A3:G3');
+      styleSection(ws.getCell('A3'), '  LISTADO DE CUENTAS ACTIVAS');
+      ws.getRow(3).height = 18;
+
+      // Cabeceras
+      const headers = ['Cliente', 'Descripción', 'N° Factura', 'Vencimiento', 'Estado', 'Monto Total', 'Saldo Pendiente'];
+      headers.forEach((h, i) => styleColHeader(ws.getCell(4, i + 1), h));
+      ws.getRow(4).height = 16;
+
+      let sumMonto = 0, sumSaldo = 0;
+      receivables.forEach((r, idx) => {
+        const alt = idx % 2 === 1;
+        const monto = toNumber(r.amount);
+        const saldo = toNumber(r.balance !== undefined ? r.balance : r.amount);
+        sumMonto += monto;
+        sumSaldo += saldo;
+        const rowNum = 5 + idx;
+        ws.getRow(rowNum).height = 15;
+        styleData(ws.getCell(rowNum, 1), r.customer_name || 'Sin cliente', 'left', alt);
+        styleData(ws.getCell(rowNum, 2), r.description || '-', 'left', alt);
+        styleData(ws.getCell(rowNum, 3), r.invoice_number || '-', 'center', alt);
+        styleData(ws.getCell(rowNum, 4), formatDate(r.due_date), 'center', alt);
+        const estado = r.status === 'paid' ? 'Pagado' : (r.status === 'overdue' ? 'Vencido' : (r.status === 'partial' ? 'Pago parcial' : 'Pendiente'));
+        styleData(ws.getCell(rowNum, 5), estado, 'center', alt);
+        styleData(ws.getCell(rowNum, 6), monto, 'right', alt, '"$"#,##0.00');
+        styleData(ws.getCell(rowNum, 7), saldo, 'right', alt, '"$"#,##0.00');
+      });
+
+      const lastRow = 5 + receivables.length;
+      ws.getRow(lastRow).height = 18;
+      styleTotals(ws.getCell(lastRow, 1), 'TOTALES', 'left');
+      [2,3,4,5].forEach(c => styleTotals(ws.getCell(lastRow, c), ''));
+      styleTotals(ws.getCell(lastRow, 6), sumMonto, 'right', '"$"#,##0.00');
+      styleTotals(ws.getCell(lastRow, 7), sumSaldo, 'right', '"$"#,##0.00');
+
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cuentas_por_cobrar_${new Date().toISOString().slice(0,10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      setError('Error al exportar a Excel');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // ─── Configuración para PDF ───────────────────────────────────────────────
+  const pdfConfig = receivables.length ? {
+    title: 'Cuentas por Cobrar',
+    kpis: [
+      { label: 'Total por cobrar', value: stats.total_receivable, formatter: (v) => `$${toNumber(v).toFixed(2)}` },
+      { label: 'Pagado', value: stats.total_paid, formatter: (v) => `$${toNumber(v).toFixed(2)}` },
+      { label: 'Pendiente', value: stats.total_pending, formatter: (v) => `$${toNumber(v).toFixed(2)}` },
+      { label: 'Vencido', value: stats.total_overdue, formatter: (v) => `$${toNumber(v).toFixed(2)}` }
+    ],
+    sections: [{
+      title: 'Listado de Cuentas por Cobrar',
+      columns: [
+        { label: 'Cliente', key: 'cliente', width: 30 },
+        { label: 'Descripción', key: 'descripcion', width: 35 },
+        { label: 'N° Factura', key: 'factura', width: 15 },
+        { label: 'Vencimiento', key: 'vencimiento', width: 15, formatter: (v) => formatDate(v) },
+        { label: 'Monto Total', key: 'monto', width: 15, formatter: (v) => `$${toNumber(v).toFixed(2)}` },
+        { label: 'Saldo Pendiente', key: 'saldo', width: 15, formatter: (v) => `$${toNumber(v).toFixed(2)}` }
+      ],
+      rows: receivables.map(r => ({
+        cliente: r.customer_name || 'Sin cliente',
+        descripcion: r.description || '-',
+        factura: r.invoice_number || '-',
+        vencimiento: r.due_date,
+        monto: toNumber(r.amount),
+        saldo: toNumber(r.balance !== undefined ? r.balance : r.amount)
+      }))
+    }]
+  } : null;
+
+  // ─── Handlers (CRUD) ──────────────────────────────────────────────────────
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadReceivables();
@@ -538,15 +719,11 @@ export default function AccountingReceivablePage() {
     setError('');
     try {
       const isEdit = !!editingReceivable;
-      const url = isEdit 
-        ? `/api/accounting/receivables/${editingReceivable.id}` 
-        : '/api/accounting/receivables';
+      const url = isEdit ? `/api/accounting/receivables/${editingReceivable.id}` : '/api/accounting/receivables';
       const method = isEdit ? 'PUT' : 'POST';
-      
       const res = await fetchWithAuth(url, { method, body: JSON.stringify(form) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al guardar');
-      
       setShowModal(false);
       setEditingReceivable(null);
       loadReceivables();
@@ -559,7 +736,6 @@ export default function AccountingReceivablePage() {
 
   const handleDeleteReceivable = async (receivable) => {
     if (!window.confirm(`¿Eliminar la cuenta por cobrar "${receivable.description}"?`)) return;
-    
     setSaving(true);
     try {
       await fetchWithAuth(`/api/accounting/receivables/${receivable.id}`, { method: 'DELETE' });
@@ -579,7 +755,6 @@ export default function AccountingReceivablePage() {
         body: JSON.stringify(paymentData)
       });
       if (!res.ok) throw new Error('Error al registrar pago');
-      
       setShowPaymentModal(false);
       setSelectedReceivable(null);
       loadReceivables();
@@ -594,14 +769,10 @@ export default function AccountingReceivablePage() {
     setSaving(true);
     try {
       const isEdit = !!editingCustomer;
-      const url = isEdit 
-        ? `/api/accounting/customers/${editingCustomer.id}` 
-        : '/api/accounting/customers';
+      const url = isEdit ? `/api/accounting/customers/${editingCustomer.id}` : '/api/accounting/customers';
       const method = isEdit ? 'PUT' : 'POST';
-      
       const res = await fetchWithAuth(url, { method, body: JSON.stringify(form) });
       if (!res.ok) throw new Error('Error al guardar cliente');
-      
       setShowCustomerModal(false);
       setEditingCustomer(null);
       loadCustomers();
@@ -612,49 +783,27 @@ export default function AccountingReceivablePage() {
     }
   };
 
-  const handleExport = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (statusFilter !== 'all') params.append('status', statusFilter);
-      params.append('format', 'csv');
-      
-      const res = await fetchWithAuth(`/api/accounting/receivables/export?${params}`);
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `cuentas_por_cobrar_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      setError('Error al exportar');
-    }
-  };
-
+  // ─── Navegación entre modales ─────────────────────────────────────────────
   const openCreateReceivable = () => {
     setEditingReceivable(null);
     setError('');
     setShowModal(true);
   };
-
   const openEditReceivable = (receivable) => {
     setEditingReceivable(receivable);
     setError('');
     setShowModal(true);
   };
-
   const openPaymentModal = (receivable) => {
     setSelectedReceivable(receivable);
     setShowPaymentModal(true);
   };
-
   const openCreateCustomer = () => {
     setEditingCustomer(null);
     setShowCustomerModal(true);
   };
 
+  // ─── Badge de estado ──────────────────────────────────────────────────────
   const getStatusBadge = (status) => {
     const config = {
       pending: { label: 'Pendiente', icon: <FiClock size={12} />, class: 'pending' },
@@ -663,14 +812,10 @@ export default function AccountingReceivablePage() {
       overdue: { label: 'Vencido', icon: <FiAlertCircle size={12} />, class: 'overdue' }
     };
     const c = config[status] || config.pending;
-    return (
-      <span className={`receivable-status-badge ${c.class}`}>
-        {c.icon} {c.label}
-      </span>
-    );
+    return (<span className={`receivable-status-badge ${c.class}`}>{c.icon} {c.label}</span>);
   };
 
-  // Botones header
+  // ─── Botones del header ───────────────────────────────────────────────────
   const refreshButton = (
     <button onClick={handleRefresh} className="receivable-refresh-btn" disabled={refreshing}>
       <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
@@ -678,9 +823,9 @@ export default function AccountingReceivablePage() {
     </button>
   );
 
-  const exportButton = (
-    <button onClick={handleExport} className="receivable-btn-secondary">
-      <FiDownload size={16} /> Exportar
+  const excelButton = (
+    <button onClick={handleExportXLSX} className="receivable-btn-secondary" disabled={exporting || !receivables.length}>
+      <FiDownload size={16} /> {exporting ? 'Exportando...' : 'Excel'}
     </button>
   );
 
@@ -699,7 +844,11 @@ export default function AccountingReceivablePage() {
       headerAction={
         <div className="receivable-header-actions">
           {newReceivableButton}
-          {exportButton}
+          {excelButton}
+          <ReportPdfButton
+            customConfig={pdfConfig}
+            className="receivable-btn-secondary"
+          />
           {refreshButton}
         </div>
       }
@@ -713,39 +862,28 @@ export default function AccountingReceivablePage() {
       {/* Tarjetas de resumen */}
       <div className="receivable-summary-grid">
         <div className="receivable-summary-card">
-          <div className="receivable-summary-icon">
-            <FiDollarSign size={24} />
-          </div>
+          <div className="receivable-summary-icon"><FiDollarSign size={24} /></div>
           <div className="receivable-summary-content">
             <div className="receivable-summary-title">Total por cobrar</div>
             <div className="receivable-summary-value">${stats.total_receivable.toFixed(2)}</div>
           </div>
         </div>
-
         <div className="receivable-summary-card">
-          <div className="receivable-summary-icon paid">
-            <FiCheckCircle size={24} />
-          </div>
+          <div className="receivable-summary-icon paid"><FiCheckCircle size={24} /></div>
           <div className="receivable-summary-content">
             <div className="receivable-summary-title">Pagado</div>
             <div className="receivable-summary-value">${stats.total_paid.toFixed(2)}</div>
           </div>
         </div>
-
         <div className="receivable-summary-card">
-          <div className="receivable-summary-icon pending">
-            <FiClock size={24} />
-          </div>
+          <div className="receivable-summary-icon pending"><FiClock size={24} /></div>
           <div className="receivable-summary-content">
             <div className="receivable-summary-title">Pendiente</div>
             <div className="receivable-summary-value">${stats.total_pending.toFixed(2)}</div>
           </div>
         </div>
-
         <div className="receivable-summary-card">
-          <div className="receivable-summary-icon overdue">
-            <FiAlertTriangle size={24} />
-          </div>
+          <div className="receivable-summary-icon overdue"><FiAlertTriangle size={24} /></div>
           <div className="receivable-summary-content">
             <div className="receivable-summary-title">Vencido</div>
             <div className="receivable-summary-value">${stats.total_overdue.toFixed(2)}</div>
@@ -765,7 +903,6 @@ export default function AccountingReceivablePage() {
             className="receivable-search-input"
           />
         </div>
-
         <div className="receivable-filter-group">
           <select
             value={statusFilter}
@@ -778,7 +915,6 @@ export default function AccountingReceivablePage() {
             <option value="overdue">Vencidos</option>
             <option value="paid">Pagados</option>
           </select>
-
           <button onClick={openCreateCustomer} className="receivable-link-btn">
             <FiUsers size={14} /> Gestionar clientes
           </button>
@@ -789,9 +925,8 @@ export default function AccountingReceivablePage() {
       <div className="receivable-table-container">
         <div className="receivable-table-header">
           <h3>Listado de cuentas por cobrar</h3>
-          <span className="receivable-count">{filteredReceivables.length} registros</span>
+          <span className="receivable-count">{receivables.length} registros</span>
         </div>
-
         <div className="receivable-table-wrapper">
           <table className="receivable-table">
             <thead>
@@ -807,7 +942,7 @@ export default function AccountingReceivablePage() {
               </tr>
             </thead>
             <tbody>
-              {filteredReceivables.length === 0 && !loading ? (
+              {receivables.length === 0 && !loading ? (
                 <tr>
                   <td colSpan={8} className="receivable-empty-state">
                     <FiDollarSign size={48} />
@@ -818,50 +953,32 @@ export default function AccountingReceivablePage() {
                   </td>
                 </tr>
               ) : (
-                filteredReceivables.map(receivable => {
-                  const remaining = receivable.remaining_amount || receivable.amount;
+                receivables.map(receivable => {
+                  const remaining = toNumber(receivable.balance !== undefined ? receivable.balance : receivable.amount);
                   const isOverdue = new Date(receivable.due_date) < new Date() && receivable.status !== 'paid';
-                  
                   return (
                     <tr key={receivable.id} className={isOverdue && receivable.status !== 'paid' ? 'overdue-row' : ''}>
-                      <td className="receivable-customer">
-                        <strong>{receivable.customer_name}</strong>
-                        {receivable.customer_phone && (
-                          <small>{receivable.customer_phone}</small>
-                        )}
+                      <td className="receivable-customer"><strong>{receivable.customer_name}</strong>
+                        {receivable.customer_phone && <small>{receivable.customer_phone}</small>}
                       </td>
                       <td className="receivable-description">{receivable.description}</td>
                       <td className="receivable-invoice">{receivable.invoice_number || '—'}</td>
                       <td className={isOverdue && receivable.status !== 'paid' ? 'overdue-date' : ''}>
-                        {new Date(receivable.due_date).toLocaleDateString()}
+                        {formatDate(receivable.due_date)}
                       </td>
                       <td>{getStatusBadge(receivable.status)}</td>
-                      <td className="receivable-text-right">${parseFloat(receivable.amount).toFixed(2)}</td>
-                      <td className="receivable-text-right receivable-pending">
-                        ${parseFloat(remaining).toFixed(2)}
-                      </td>
+                      <td className="receivable-text-right">${toNumber(receivable.amount).toFixed(2)}</td>
+                      <td className="receivable-text-right receivable-pending">${remaining.toFixed(2)}</td>
                       <td className="receivable-actions">
                         {receivable.status !== 'paid' && (
-                          <button 
-                            className="receivable-action-btn payment" 
-                            onClick={() => openPaymentModal(receivable)}
-                            title="Registrar pago"
-                          >
+                          <button className="receivable-action-btn payment" onClick={() => openPaymentModal(receivable)} title="Registrar pago">
                             <FiDollarSign size={14} />
                           </button>
                         )}
-                        <button 
-                          className="receivable-action-btn edit" 
-                          onClick={() => openEditReceivable(receivable)}
-                          title="Editar"
-                        >
+                        <button className="receivable-action-btn edit" onClick={() => openEditReceivable(receivable)} title="Editar">
                           <FiEdit2 size={14} />
                         </button>
-                        <button 
-                          className="receivable-action-btn delete" 
-                          onClick={() => handleDeleteReceivable(receivable)}
-                          title="Eliminar"
-                        >
+                        <button className="receivable-action-btn delete" onClick={() => handleDeleteReceivable(receivable)} title="Eliminar">
                           <FiTrash2 size={14} />
                         </button>
                       </td>
@@ -870,15 +987,15 @@ export default function AccountingReceivablePage() {
                 })
               )}
             </tbody>
-            {filteredReceivables.length > 0 && (
+            {receivables.length > 0 && (
               <tfoot>
                 <tr>
                   <td colSpan={5} className="receivable-footer-label">Totales</td>
                   <td className="receivable-text-right receivable-footer-total">
-                    ${filteredReceivables.reduce((sum, r) => sum + parseFloat(r.amount), 0).toFixed(2)}
+                    ${receivables.reduce((s, r) => s + toNumber(r.amount), 0).toFixed(2)}
                   </td>
                   <td className="receivable-text-right receivable-footer-pending">
-                    ${filteredReceivables.reduce((sum, r) => sum + (r.remaining_amount || r.amount), 0).toFixed(2)}
+                    ${receivables.reduce((s, r) => s + toNumber(r.balance !== undefined ? r.balance : r.amount), 0).toFixed(2)}
                   </td>
                   <td></td>
                 </tr>
@@ -893,34 +1010,23 @@ export default function AccountingReceivablePage() {
         <ReceivableModal
           receivable={editingReceivable}
           customers={customers}
-          onClose={() => {
-            setShowModal(false);
-            setEditingReceivable(null);
-          }}
+          onClose={() => { setShowModal(false); setEditingReceivable(null); }}
           onSave={handleSaveReceivable}
           saving={saving}
         />
       )}
-
       {showPaymentModal && (
         <PaymentModal
           receivable={selectedReceivable}
-          onClose={() => {
-            setShowPaymentModal(false);
-            setSelectedReceivable(null);
-          }}
+          onClose={() => { setShowPaymentModal(false); setSelectedReceivable(null); }}
           onSave={handleRegisterPayment}
           saving={saving}
         />
       )}
-
       {showCustomerModal && (
         <CustomerModal
           customer={editingCustomer}
-          onClose={() => {
-            setShowCustomerModal(false);
-            setEditingCustomer(null);
-          }}
+          onClose={() => { setShowCustomerModal(false); setEditingCustomer(null); }}
           onSave={handleSaveCustomer}
           saving={saving}
         />

@@ -2,23 +2,29 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   FiDollarSign, FiPlus, FiEdit2, FiTrash2, FiRefreshCw, 
   FiAlertCircle, FiSearch, FiCalendar, FiChevronDown,
-  FiFilter, FiDownload, FiX, FiTag, FiTrendingUp
+  FiDownload, FiX, FiTag, FiTrendingUp
 } from "react-icons/fi";
 import PageTemplate from '../../components/PageTemplate';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
 import { fetchWithAuth } from '../../config/apiBase';
 import "../../styles/AccountingExpensesPage.css";
 
-// ─── Modal de Gastos ─────────────────────────────────────────────────────────
+// ─── Helper para formatear fecha ────────────────────────────────────────────
+const formatDate = (dateValue) => {
+  if (!dateValue) return '-';
+  const date = new Date(dateValue);
+  if (isNaN(date.getTime())) return 'Fecha inválida';
+  return date.toLocaleDateString('es-EC');
+};
+
+// ─── Modal de Gastos (adaptado a la tabla real) ─────────────────────────────
 function ExpenseModal({ expense, categories, onClose, onSave, saving }) {
   const [form, setForm] = useState({
     description: '',
     amount: '',
     category_id: '',
-    expense_date: new Date().toISOString().split('T')[0],
-    payment_method: 'cash',
-    reference: '',
-    notes: ''
+    date: new Date().toISOString().split('T')[0],
+    reference: ''
   });
   const [error, setError] = useState('');
 
@@ -28,20 +34,8 @@ function ExpenseModal({ expense, categories, onClose, onSave, saving }) {
         description: expense.description || '',
         amount: expense.amount || '',
         category_id: expense.category_id || '',
-        expense_date: expense.expense_date?.split('T')[0] || new Date().toISOString().split('T')[0],
-        payment_method: expense.payment_method || 'cash',
-        reference: expense.reference || '',
-        notes: expense.notes || ''
-      });
-    } else {
-      setForm({
-        description: '',
-        amount: '',
-        category_id: '',
-        expense_date: new Date().toISOString().split('T')[0],
-        payment_method: 'cash',
-        reference: '',
-        notes: ''
+        date: expense.date?.split('T')[0] || new Date().toISOString().split('T')[0],
+        reference: expense.reference || ''
       });
     }
   }, [expense]);
@@ -60,7 +54,6 @@ function ExpenseModal({ expense, categories, onClose, onSave, saving }) {
       setError('La categoría es requerida');
       return;
     }
-    
     onSave(form);
   };
 
@@ -121,23 +114,9 @@ function ExpenseModal({ expense, categories, onClose, onSave, saving }) {
               <label>Fecha *</label>
               <input
                 type="date"
-                value={form.expense_date}
-                onChange={e => setForm({ ...form, expense_date: e.target.value })}
+                value={form.date}
+                onChange={e => setForm({ ...form, date: e.target.value })}
               />
-            </div>
-
-            <div className="expense-form-group">
-              <label>Método de pago</label>
-              <select
-                value={form.payment_method}
-                onChange={e => setForm({ ...form, payment_method: e.target.value })}
-              >
-                <option value="cash">Efectivo</option>
-                <option value="bank_transfer">Transferencia bancaria</option>
-                <option value="credit_card">Tarjeta de crédito</option>
-                <option value="debit_card">Tarjeta de débito</option>
-                <option value="check">Cheque</option>
-              </select>
             </div>
 
             <div className="expense-form-group">
@@ -147,16 +126,6 @@ function ExpenseModal({ expense, categories, onClose, onSave, saving }) {
                 value={form.reference}
                 onChange={e => setForm({ ...form, reference: e.target.value })}
                 placeholder="Factura #, comprobante..."
-              />
-            </div>
-
-            <div className="expense-form-group full-width">
-              <label>Notas (opcional)</label>
-              <textarea
-                value={form.notes}
-                onChange={e => setForm({ ...form, notes: e.target.value })}
-                rows={3}
-                placeholder="Notas adicionales..."
               />
             </div>
           </div>
@@ -175,7 +144,7 @@ function ExpenseModal({ expense, categories, onClose, onSave, saving }) {
   );
 }
 
-// ─── Modal de categorías ──────────────────────────────────────────────────────
+// ─── Modal de categorías ─────────────────────────────────────────────────────
 function CategoryModal({ category, onClose, onSave, saving }) {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
@@ -254,52 +223,60 @@ export default function AccountingExpensesPage() {
   const [editingCategory, setEditingCategory] = useState(null);
   const [saving, setSaving] = useState(false);
   const [totalExpenses, setTotalExpenses] = useState(0);
-  const [totalByCategory, setTotalByCategory] = useState({});
 
-  // Cargar categorías y gastos
+  // ─── Cargar categorías ─────────────────────────────────────────────────────
   const loadCategories = useCallback(async () => {
     if (!selectedBusiness?.id) return;
     try {
-      const res = await fetchWithAuth('/api/purchases/expense-categories');
+      const res = await fetchWithAuth('/api/expense-categories');
+      if (!res.ok) throw new Error('Error al cargar categorías');
       const data = await res.json();
-      setCategories(Array.isArray(data.data) ? data.data : data.categories || []);
+      setCategories(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error loading categories:', err);
     }
   }, [selectedBusiness]);
 
+  // ─── Cargar gastos (compatible con dos formatos de respuesta) ──────────────
   const loadExpenses = useCallback(async () => {
     if (!selectedBusiness?.id) {
       setLoading(false);
       return;
     }
-    
     setLoading(true);
     setError('');
-    
     try {
       const params = new URLSearchParams();
       if (dateFrom) params.append('date_from', dateFrom);
       if (dateTo) params.append('date_to', dateTo);
       if (selectedCategory) params.append('category_id', selectedCategory);
       
-      const res = await fetchWithAuth(`/api/purchases/expenses?${params}`);
+      const res = await fetchWithAuth(`/api/expenses?${params}`);
+      if (!res.ok) throw new Error('Error al cargar gastos');
       const data = await res.json();
       
-      const expensesList = Array.isArray(data.data) ? data.data : data.expenses || [];
-      setExpenses(expensesList);
+      // Compatibilidad con diferentes estructuras de respuesta:
+      // - Array directo
+      // - { data: [...] }
+      // - { expenses: [...] } (formato original del backend)
+      let expensesList = [];
+      if (Array.isArray(data)) {
+        expensesList = data;
+      } else if (data.data && Array.isArray(data.data)) {
+        expensesList = data.data;
+      } else if (data.expenses && Array.isArray(data.expenses)) {
+        expensesList = data.expenses;
+      }
       
-      // Calcular totales
+      // Mapear para agregar category_name
+      expensesList = expensesList.map(exp => ({
+        ...exp,
+        category_name: exp.category_name || categories.find(c => c.id === exp.category_id)?.name || 'Sin categoría'
+      }));
+      
+      setExpenses(expensesList);
       const total = expensesList.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
       setTotalExpenses(total);
-      
-      // Calcular total por categoría
-      const byCategory = {};
-      expensesList.forEach(e => {
-        const catName = e.category_name || 'Sin categoría';
-        byCategory[catName] = (byCategory[catName] || 0) + (parseFloat(e.amount) || 0);
-      });
-      setTotalByCategory(byCategory);
       
     } catch (err) {
       console.error('Error loading expenses:', err);
@@ -308,17 +285,21 @@ export default function AccountingExpensesPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedBusiness, dateFrom, dateTo, selectedCategory]);
+  }, [selectedBusiness, dateFrom, dateTo, selectedCategory, categories]);
 
+  // Cargar categorías al inicio y cuando cambie el negocio
   useEffect(() => {
     loadCategories();
   }, [loadCategories]);
 
+  // Cargar gastos cuando cambien filtros o categorías
   useEffect(() => {
-    loadExpenses();
-  }, [loadExpenses]);
+    if (categories.length > 0 || !selectedBusiness) {
+      loadExpenses();
+    }
+  }, [loadExpenses, categories]);
 
-  // Filtrar por búsqueda
+  // Filtrar por búsqueda local (descripción o referencia)
   const filteredExpenses = expenses.filter(e =>
     e.description?.toLowerCase().includes(search.toLowerCase()) ||
     e.reference?.toLowerCase().includes(search.toLowerCase())
@@ -326,8 +307,8 @@ export default function AccountingExpensesPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadExpenses();
     await loadCategories();
+    await loadExpenses();
     setRefreshing(false);
   };
 
@@ -336,21 +317,27 @@ export default function AccountingExpensesPage() {
     setError('');
     try {
       const isEdit = !!editingExpense;
-      const url = isEdit 
-        ? `/api/purchases/expenses/${editingExpense.id}` 
-        : '/api/purchases/expenses';
+      const url = isEdit ? `/api/expenses/${editingExpense.id}` : '/api/expenses';
       const method = isEdit ? 'PUT' : 'POST';
+      
+      const payload = {
+        description: form.description,
+        amount: parseFloat(form.amount),
+        category_id: form.category_id,
+        date: form.date,
+        reference: form.reference || null,
+        created_by: selectedBusiness?.userId || null
+      };
       
       const res = await fetchWithAuth(url, {
         method,
-        body: JSON.stringify({
-          ...form,
-          amount: parseFloat(form.amount)
-        })
+        body: JSON.stringify(payload)
       });
       
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al guardar');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Error al guardar');
+      }
       
       setShowModal(false);
       setEditingExpense(null);
@@ -364,10 +351,10 @@ export default function AccountingExpensesPage() {
 
   const handleDeleteExpense = async (expense) => {
     if (!window.confirm(`¿Eliminar el gasto "${expense.description}"?`)) return;
-    
     setSaving(true);
     try {
-      await fetchWithAuth(`/api/purchases/expenses/${expense.id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/api/expenses/${expense.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Error al eliminar');
       loadExpenses();
     } catch (e) {
       setError(e.message);
@@ -380,9 +367,7 @@ export default function AccountingExpensesPage() {
     setSaving(true);
     try {
       const isEdit = !!editingCategory;
-      const url = isEdit 
-        ? `/api/purchases/expense-categories/${editingCategory.id}` 
-        : '/api/purchases/expense-categories';
+      const url = isEdit ? `/api/expense-categories/${editingCategory.id}` : '/api/expense-categories';
       const method = isEdit ? 'PUT' : 'POST';
       
       const res = await fetchWithAuth(url, { method, body: JSON.stringify(form) });
@@ -400,36 +385,19 @@ export default function AccountingExpensesPage() {
 
   const handleDeleteCategory = async (category) => {
     if (!window.confirm(`¿Eliminar la categoría "${category.name}"? Los gastos quedarán sin categoría.`)) return;
-    
     try {
-      await fetchWithAuth(`/api/purchases/expense-categories/${category.id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/api/expense-categories/${category.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Error al eliminar categoría');
       loadCategories();
+      loadExpenses();
     } catch (e) {
       setError(e.message);
     }
   };
 
+  // Exportar a CSV (la ruta puede no existir; se comenta para no estorbar)
   const handleExport = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (dateFrom) params.append('date_from', dateFrom);
-      if (dateTo) params.append('date_to', dateTo);
-      if (selectedCategory) params.append('category_id', selectedCategory);
-      params.append('format', 'csv');
-      
-      const res = await fetchWithAuth(`/api/purchases/expenses/export?${params}`);
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `gastos_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      setError('Error al exportar');
-    }
+    setError('Exportación no disponible aún. Por favor, usa la versión de escritorio.');
   };
 
   const openCreateExpense = () => {
@@ -449,12 +417,6 @@ export default function AccountingExpensesPage() {
     setShowCategoryModal(true);
   };
 
-  const openEditCategory = (category) => {
-    setEditingCategory(category);
-    setShowCategoryModal(true);
-  };
-
-  // Reset filters
   const resetFilters = () => {
     setDateFrom('');
     setDateTo('');
@@ -471,8 +433,8 @@ export default function AccountingExpensesPage() {
   );
 
   const exportButton = (
-    <button onClick={handleExport} className="expense-btn-secondary">
-      <FiDownload size={16} /> Exportar
+    <button onClick={handleExport} className="expense-btn-secondary" disabled>
+      <FiDownload size={16} /> Exportar CSV
     </button>
   );
 
@@ -484,7 +446,7 @@ export default function AccountingExpensesPage() {
 
   return (
     <PageTemplate
-      title="CONTABILIDAD - GASTOS"
+      title="PAGOS - GASTOS"
       subtitle="Gestión y control de gastos contables"
       theme="business"
       loading={loading}
@@ -520,9 +482,7 @@ export default function AccountingExpensesPage() {
             className={`expense-filter-btn ${showDateFilter ? 'active' : ''}`}
             onClick={() => setShowDateFilter(!showDateFilter)}
           >
-            <FiCalendar size={16} />
-            Fecha
-            <FiChevronDown size={14} />
+            <FiCalendar size={16} /> Fecha <FiChevronDown size={14} />
           </button>
 
           <select
@@ -547,14 +507,12 @@ export default function AccountingExpensesPage() {
               type="date"
               value={dateFrom}
               onChange={e => setDateFrom(e.target.value)}
-              placeholder="Fecha desde"
             />
             <span>a</span>
             <input
               type="date"
               value={dateTo}
               onChange={e => setDateTo(e.target.value)}
-              placeholder="Fecha hasta"
             />
           </div>
         )}
@@ -563,19 +521,14 @@ export default function AccountingExpensesPage() {
       {/* Tarjetas de resumen */}
       <div className="expense-summary-grid">
         <div className="expense-summary-card">
-          <div className="expense-summary-icon">
-            <FiDollarSign size={24} />
-          </div>
+          <div className="expense-summary-icon"><FiDollarSign size={24} /></div>
           <div className="expense-summary-content">
             <div className="expense-summary-title">Total Gastos</div>
             <div className="expense-summary-value">${totalExpenses.toFixed(2)}</div>
           </div>
         </div>
-
         <div className="expense-summary-card">
-          <div className="expense-summary-icon">
-            <FiTrendingUp size={24} />
-          </div>
+          <div className="expense-summary-icon"><FiTrendingUp size={24} /></div>
           <div className="expense-summary-content">
             <div className="expense-summary-title">Promedio diario</div>
             <div className="expense-summary-value">
@@ -583,21 +536,15 @@ export default function AccountingExpensesPage() {
             </div>
           </div>
         </div>
-
         <div className="expense-summary-card">
-          <div className="expense-summary-icon">
-            <FiTag size={24} />
-          </div>
+          <div className="expense-summary-icon"><FiTag size={24} /></div>
           <div className="expense-summary-content">
             <div className="expense-summary-title">Categorías</div>
             <div className="expense-summary-value">{categories.length}</div>
           </div>
         </div>
-
         <div className="expense-summary-card">
-          <div className="expense-summary-icon">
-            <FiCalendar size={24} />
-          </div>
+          <div className="expense-summary-icon"><FiCalendar size={24} /></div>
           <div className="expense-summary-content">
             <div className="expense-summary-title">Total Gastos</div>
             <div className="expense-summary-value">{expenses.length}</div>
@@ -622,7 +569,6 @@ export default function AccountingExpensesPage() {
                 <th>Descripción</th>
                 <th>Categoría</th>
                 <th>Referencia</th>
-                <th>Método de pago</th>
                 <th className="expense-text-right">Monto</th>
                 <th style={{ width: '80px' }}>Acciones</th>
               </tr>
@@ -630,7 +576,7 @@ export default function AccountingExpensesPage() {
             <tbody>
               {filteredExpenses.length === 0 && !loading ? (
                 <tr>
-                  <td colSpan={7} className="expense-empty-state">
+                  <td colSpan={6} className="expense-empty-state">
                     <FiDollarSign size={48} />
                     <span>No hay gastos registrados</span>
                     <button onClick={openCreateExpense} className="expense-empty-btn">
@@ -641,7 +587,7 @@ export default function AccountingExpensesPage() {
               ) : (
                 filteredExpenses.map(expense => (
                   <tr key={expense.id}>
-                    <td>{new Date(expense.expense_date).toLocaleDateString()}</td>
+                    <td>{formatDate(expense.date)}</td>
                     <td className="expense-description">{expense.description}</td>
                     <td>
                       <span className="expense-category-badge">
@@ -649,30 +595,14 @@ export default function AccountingExpensesPage() {
                       </span>
                     </td>
                     <td className="expense-reference">{expense.reference || '—'}</td>
-                    <td>
-                      <span className="expense-payment-method">
-                        {expense.payment_method === 'cash' ? 'Efectivo' :
-                         expense.payment_method === 'bank_transfer' ? 'Transferencia' :
-                         expense.payment_method === 'credit_card' ? 'T. Crédito' :
-                         expense.payment_method === 'debit_card' ? 'T. Débito' : 'Cheque'}
-                      </span>
-                    </td>
                     <td className="expense-text-right expense-amount">
                       ${parseFloat(expense.amount).toFixed(2)}
                     </td>
                     <td className="expense-actions">
-                      <button 
-                        className="expense-action-btn edit" 
-                        onClick={() => openEditExpense(expense)}
-                        title="Editar"
-                      >
+                      <button className="expense-action-btn edit" onClick={() => openEditExpense(expense)} title="Editar">
                         <FiEdit2 size={14} />
                       </button>
-                      <button 
-                        className="expense-action-btn delete" 
-                        onClick={() => handleDeleteExpense(expense)}
-                        title="Eliminar"
-                      >
+                      <button className="expense-action-btn delete" onClick={() => handleDeleteExpense(expense)} title="Eliminar">
                         <FiTrash2 size={14} />
                       </button>
                     </td>
@@ -683,7 +613,7 @@ export default function AccountingExpensesPage() {
             {filteredExpenses.length > 0 && (
               <tfoot>
                 <tr>
-                  <td colSpan={5} className="expense-footer-label">Total</td>
+                  <td colSpan={4} className="expense-footer-label">Total</td>
                   <td className="expense-text-right expense-footer-total">
                     ${filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0).toFixed(2)}
                   </td>
@@ -700,10 +630,7 @@ export default function AccountingExpensesPage() {
         <ExpenseModal
           expense={editingExpense}
           categories={categories}
-          onClose={() => {
-            setShowModal(false);
-            setEditingExpense(null);
-          }}
+          onClose={() => { setShowModal(false); setEditingExpense(null); }}
           onSave={handleSaveExpense}
           saving={saving}
         />
@@ -713,10 +640,7 @@ export default function AccountingExpensesPage() {
       {showCategoryModal && (
         <CategoryModal
           category={editingCategory}
-          onClose={() => {
-            setShowCategoryModal(false);
-            setEditingCategory(null);
-          }}
+          onClose={() => { setShowCategoryModal(false); setEditingCategory(null); }}
           onSave={handleSaveCategory}
           saving={saving}
         />
