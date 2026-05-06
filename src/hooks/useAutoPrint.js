@@ -19,14 +19,10 @@ export function useAutoPrint({ businessId, enabled = true }) {
   const printOrder = useCallback(async (order) => {
     const items = Array.isArray(order.items) ? order.items : [];
     await printRef.current('printer_ticket', 'comanda', {
-      comanda: { number: order.order_number || order.numero_pedido || 'N/A' },
+      comanda: { number: order.order_number || order.numero_pedido || order.id || 'N/A' },
       table:   order.mesa_numero ?? order.numero_mesa,
-      items:   items.map(i => ({
-        product_name: i.product_name || i.nombre || i.name || 'Producto',
-        quantity:     i.quantity     || i.cantidad || 1,
-        notes:        i.notes        || i.notas   || '',
-      })),
-      notes: order.notas || order.notes || '',
+      items,   // pasar directos: formatComandaTicket ya maneja todos los nombres de campo
+      notes:   order.notas || order.notes || '',
     });
   }, []);
 
