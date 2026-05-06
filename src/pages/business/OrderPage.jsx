@@ -25,6 +25,7 @@ export default function TakeOrderPageNew() {
   const [cantidadItem,          setCantidadItem         ] = useState(1);
   const [notasItem,             setNotasItem            ] = useState('');
   const [itemEditando,          setItemEditando         ] = useState(null);   // 👈 NUEVO
+  const [extrasItem,            setExtrasItem           ] = useState([]);
 
   // ── Carga inicial ─────────────────────────────────────────────────────────
 
@@ -75,27 +76,33 @@ export default function TakeOrderPageNew() {
       return;
     }
     const precio = Number(productoSeleccionado.price) || 0;
+    const taxRate = Number(productoSeleccionado.tax_rate) || 0;
     const cantidad = parseInt(cantidadItem, 10);
-    
+    const extrasUnitCost = extrasItem.reduce((s, e) => s + (Number(e.price) || 0), 0);
+    const totalUnit = precio + extrasUnitCost;
+
     const nuevoItem = {
       id:         Date.now(),
       nombre:     productoSeleccionado.name,
       precio:     precio,
+      tax_rate:   taxRate,
       cantidad:   cantidad,
-      subtotal:   precio * cantidad,
+      subtotal:   totalUnit * cantidad,
       notas:      notasItem,
+      extras:     extrasItem,
       product_id:   productoSeleccionado.id,
       product_name: productoSeleccionado.name,
       quantity:     cantidad,
       unit_price:   precio,
-      line_total:   precio * cantidad,
+      line_total:   totalUnit * cantidad,
     };
-    
+
     setItems(prev => [...prev, nuevoItem]);
     setShowAddItemModal(false);
     setProductoSeleccionado(null);
     setCantidadItem(1);
     setNotasItem('');
+    setExtrasItem([]);
     setError('');
   }
 
@@ -103,12 +110,14 @@ export default function TakeOrderPageNew() {
   function abrirEditarItem(item) {
     setItemEditando(item);
     setProductoSeleccionado({
-      id: item.product_id,
-      name: item.nombre,
-      price: item.precio
+      id:       item.product_id,
+      name:     item.nombre,
+      price:    item.precio,
+      tax_rate: item.tax_rate,
     });
     setCantidadItem(item.cantidad);
     setNotasItem(item.notas || '');
+    setExtrasItem(item.extras || []);
     setShowEditItemModal(true);
   }
 
@@ -120,31 +129,37 @@ export default function TakeOrderPageNew() {
     }
     
     const precio = Number(productoSeleccionado.price) || 0;
+    const taxRate = Number(productoSeleccionado.tax_rate) || 0;
     const cantidad = parseInt(cantidadItem, 10);
-    
+    const extrasUnitCost = extrasItem.reduce((s, e) => s + (Number(e.price) || 0), 0);
+    const totalUnit = precio + extrasUnitCost;
+
     const itemActualizado = {
       ...itemEditando,
       nombre:     productoSeleccionado.name,
       precio:     precio,
+      tax_rate:   taxRate,
       cantidad:   cantidad,
-      subtotal:   precio * cantidad,
+      subtotal:   totalUnit * cantidad,
       notas:      notasItem,
+      extras:     extrasItem,
       product_id:   productoSeleccionado.id,
       product_name: productoSeleccionado.name,
       quantity:     cantidad,
       unit_price:   precio,
-      line_total:   precio * cantidad,
+      line_total:   totalUnit * cantidad,
     };
-    
-    setItems(prev => prev.map(item => 
+
+    setItems(prev => prev.map(item =>
       item.id === itemEditando.id ? itemActualizado : item
     ));
-    
+
     setShowEditItemModal(false);
     setItemEditando(null);
     setProductoSeleccionado(null);
     setCantidadItem(1);
     setNotasItem('');
+    setExtrasItem([]);
     setError('');
   }
 
@@ -153,7 +168,11 @@ export default function TakeOrderPageNew() {
   // ── Totales ───────────────────────────────────────────────────────────────
 
   const subtotal    = useMemo(() => items.reduce((s, i) => s + (Number(i.line_total) || Number(i.subtotal) || 0), 0), [items]);
-  const ivaAmount   = useMemo(() => subtotal * (Number.isFinite(vatRate) ? vatRate : 0.12), [subtotal, vatRate]);
+  const ivaAmount   = useMemo(() => items.reduce((s, i) => {
+    const mainIva   = (Number(i.tax_rate) || 0) * (i.cantidad || i.quantity || 1);
+    const extrasIva = (i.extras || []).reduce((se, e) => se + (Number(e.tax_rate) || 0) * (i.cantidad || i.quantity || 1), 0);
+    return s + mainIva + extrasIva;
+  }, 0), [items]);
   const totalConIva = useMemo(() => subtotal + ivaAmount, [subtotal, ivaAmount]);
   const ivaLabel    = useMemo(() => `${Math.round((vatRate || 0) * 1000) / 10}%`, [vatRate]);
 
@@ -176,14 +195,27 @@ export default function TakeOrderPageNew() {
     // ✅ No asignamos ningún cliente al crear la orden
     const clienteId = null;
 
-    const itemsFormateados = items.map(item => ({
-      product_id:   item.product_id,
-      product_name: item.product_name,
-      quantity:     item.quantity,
-      unit_price:   item.unit_price,
-      line_total:   item.line_total,
-      notes:        item.notas || null,
-    }));
+    const itemsFormateados = items.flatMap(item => {
+      const baseItem = {
+        product_id:   item.product_id,
+        product_name: item.product_name,
+        quantity:     item.quantity,
+        unit_price:   item.unit_price,
+        line_total:   item.unit_price * item.quantity,
+        notes:        item.notas || null,
+      };
+
+      const extraItems = (item.extras || []).map(e => ({
+        product_id:   e.id,
+        product_name: e.name,
+        quantity:     item.quantity,
+        unit_price:   Number(e.price) || 0,
+        line_total:   (Number(e.price) || 0) * item.quantity,
+        notes:        `__EXT__: + ${e.name}${e.nota ? ': ' + e.nota : ''}`,
+      }));
+
+      return [baseItem, ...extraItems];
+    });
 
     const res = await fetchWithAuth('/api/ordenes', {
       method: 'POST',
@@ -270,6 +302,8 @@ export default function TakeOrderPageNew() {
           setNotasItem={setNotasItem}
           agregarItem={agregarItem}
           categorias={categorias}
+          extrasItem={extrasItem}
+          setExtrasItem={setExtrasItem}
         />
 
         {/* 👈 NUEVO MODAL DE EDICIÓN */}
@@ -285,6 +319,8 @@ export default function TakeOrderPageNew() {
           setNotasItem={setNotasItem}
           guardarEdicionItem={guardarEdicionItem}
           categorias={categorias}
+          extrasItem={extrasItem}
+          setExtrasItem={setExtrasItem}
         />
       </div>
     </PageTemplate>

@@ -334,10 +334,22 @@ function formatComandaTicket(data, width = 32) {
   if (!itemsArr || itemsArr.length === 0) {
     out += center('SIN ITEMS') + '\n\n';
   } else {
-    itemsArr.forEach((item, idx) => {
-      const qty = getItemQty(item);
-      const name = String(getItemName(item)).trim().toUpperCase();
+    // Agrupar extras (notas con prefijo \x00) con su ítem principal
+    const groups = [];
+    let cur = null;
+    itemsArr.forEach(item => {
+      const rawNotes = String(getItemNotes(item));
+      if (rawNotes.startsWith('__EXT__:')) {
+        if (cur) cur.extras.push(item);
+      } else {
+        cur = { main: item, extras: [] };
+        groups.push(cur);
+      }
+    });
 
+    groups.forEach(({ main, extras }) => {
+      const qty  = getItemQty(main);
+      const name = String(getItemName(main)).trim().toUpperCase();
       const prefix = `${qty}x `;
       const nameLines = wrap(name, width - prefix.length);
 
@@ -346,11 +358,17 @@ function formatComandaTicket(data, width = 32) {
         out += '   ' + nameLines[i] + '\n';
       }
 
-      const itemNotes = getItemNotes(item);
+      // Extras como notas (debajo del producto, antes de las notas normales)
+      extras.forEach(extra => {
+        const display = String(getItemNotes(extra)).replace('__EXT__:', '').trim().toUpperCase();
+        wrap(display, width - 3).forEach(ln => { out += ` - ${ln}\n`; });
+      });
+
+      // Notas normales del ítem principal
+      const itemNotes = getItemNotes(main);
       if (itemNotes) {
-        const noteLines = wrap(itemNotes, width - 3);
-        noteLines.forEach((ln) => {
-          out += ` - ${ln}\n`;
+        itemNotes.split('\n').flatMap(l => wrap(l.trim(), width - 3) || ['']).forEach(ln => {
+          if (ln) out += ` - ${ln}\n`;
         });
       }
 

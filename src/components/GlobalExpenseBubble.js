@@ -86,6 +86,7 @@ function GlobalExpenseBubble() {
       }
       const data = await resp.json();
       console.log('✅ Gasto guardado:', data);
+      await openCashDrawer().catch(() => {});
       clearExpense();
       setExpanded(false);
       if (pendingExpense?.onDoneCallback) pendingExpense.onDoneCallback();
@@ -102,7 +103,7 @@ function GlobalExpenseBubble() {
   if (!expanded) {
     return ReactDOM.createPortal(
       <div
-        onClick={() => { setExpanded(true); openCashDrawer().catch(() => {}); }}
+        onClick={() => setExpanded(true)}
         style={{
           position: 'fixed', bottom: 28, right: 28, zIndex: 2000,
           background: '#f39c12', borderRadius: 50, padding: '14px 20px',

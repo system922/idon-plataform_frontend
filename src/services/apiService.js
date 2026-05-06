@@ -104,5 +104,20 @@ class ApiService {
   }
 }
 
+class AdminApiService extends ApiService {
+  getHeaders(includeAuth = true) {
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    if (includeAuth) {
+      const token = this.getToken();
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers; // no X-DB-Name, no business context
+  }
+}
+
 const apiService = new ApiService();
+export const adminApiService = new AdminApiService();
 export default apiService;

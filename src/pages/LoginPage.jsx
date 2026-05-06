@@ -263,7 +263,7 @@ export default function LoginPage({ onLogin }) {
 
   /* ─── Route resolver by user type ─── */
   const resolveRouteByType = (type, user) => {
-    if (type === 'admin_idon' || type === 'admin') return '/admin/panel';
+    if (type === 'admin_idon' || type === 'admin') return '/admin/dashboard';
     if (type === 'schema_employee' && user?.businessId) return '/app/dashboard';
     if (type === 'business_user' || !user?.businessId) return '/pending-approval';
     return '/app/dashboard';

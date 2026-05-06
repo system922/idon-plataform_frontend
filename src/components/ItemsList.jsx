@@ -25,6 +25,15 @@ export default function ItemsList({
                   ${(Number(item.precio) || 0).toFixed(2)} × {item.cantidad}
                   {item.notas ? ` • ${item.notas}` : ''}
                 </div>
+                {item.extras?.length > 0 && (
+                  <div className="item-extras">
+                    {item.extras.map((e, i) => (
+                      <span key={i} className="item-extra-tag">
+                        + {e.name}{e.price > 0 ? ` +$${Number(e.price).toFixed(2)}` : ''}{e.nota ? ` — ${e.nota}` : ''}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="item-right">
                 <div className="item-price">${(Number(item.subtotal) || 0).toFixed(2)}</div>

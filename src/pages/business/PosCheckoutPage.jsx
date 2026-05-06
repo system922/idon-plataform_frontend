@@ -8,7 +8,8 @@ import {
   FiSmartphone,
   FiPlus,
   FiUsers as FiUsersIcon,
-  FiCheck
+  FiCheck,
+  FiClock
 } from 'react-icons/fi';
 import { FaHandHoldingDollar } from "react-icons/fa6";
 import { BsCurrencyExchange } from "react-icons/bs";
@@ -31,6 +32,7 @@ export default function PosCheckoutPage() {
   const [bizInfo, setBizInfo] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [modoDividido, setModoDividido] = useState(false);
+  const [modoPorCobrar, setModoPorCobrar] = useState(false);
   const [foundCliente, setFoundCliente] = useState(null);
   const [clienteCedula, setClienteCedula] = useState('9999999999');
   const [clienteNombre, setClienteNombre] = useState('');
@@ -110,15 +112,18 @@ export default function PosCheckoutPage() {
 
   const getIvaRate = useCallback(() => ivaRateGlobal, [ivaRateGlobal]);
 
+  const getIvaTotal = useCallback(() => {
+    if (!selectedOrder) return 0;
+    return (selectedOrder.items || []).reduce((sum, item) =>
+      sum + (Number(item.tax_rate) || 0) * (Number(item.quantity) || 1), 0);
+  }, [selectedOrder]);
+
   const getOrderTotal = useCallback(() => {
     if (!selectedOrder) return 0;
     if (selectedOrder.total && typeof selectedOrder.total === 'number' && selectedOrder.total > 0)
       return Number(selectedOrder.total);
-    const subtotal = getSubtotalSinIVA();
-    const ivaRate = getIvaRate();
-    const iva = Math.round((subtotal * ivaRate / 100) * 100) / 100;
-    return subtotal + iva;
-  }, [selectedOrder, getSubtotalSinIVA, getIvaRate]);
+    return getSubtotalSinIVA() + getIvaTotal();
+  }, [selectedOrder, getSubtotalSinIVA, getIvaTotal]);
 
   const getSubtotalByCategory = useCallback((items, categoryId) => {
     return items.reduce((sum, item) => {
@@ -131,7 +136,6 @@ export default function PosCheckoutPage() {
     }, 0);
   }, []);
 
-  // Versiones simplificadas de descuentos (sin logs)
   const isDiscountApplicable = useCallback((discount, orderTotal, items = []) => {
     if (!discount.is_active) return false;
     if (!discount.type || discount.value === undefined) return false;
@@ -193,7 +197,7 @@ export default function PosCheckoutPage() {
       return;
     }
     const subtotalSinIVA = getSubtotalSinIVA();
-    const ivaRate = getIvaRate();
+    const ivaTotal = getIvaTotal();
     const items = selectedOrder.items || [];
     const best = getBestApplicableDiscount(subtotalSinIVA, items);
     if (best) {
@@ -201,7 +205,8 @@ export default function PosCheckoutPage() {
       setAppliedDiscount(best);
       setDiscountAmount(amount);
       const nuevaBaseImponible = Math.max(0, subtotalSinIVA - amount);
-      const nuevoIVA = Math.round((nuevaBaseImponible * ivaRate / 100) * 100) / 100;
+      const ratio = subtotalSinIVA > 0 ? nuevaBaseImponible / subtotalSinIVA : 1;
+      const nuevoIVA = Math.round(ivaTotal * ratio * 100) / 100;
       const nuevoTotal = nuevaBaseImponible + nuevoIVA;
       setTotalOrdenConDescuento(nuevoTotal);
     } else {
@@ -209,7 +214,7 @@ export default function PosCheckoutPage() {
       setDiscountAmount(0);
       setTotalOrdenConDescuento(getOrderTotal());
     }
-  }, [selectedOrder, getSubtotalSinIVA, getIvaRate, getOrderTotal, getBestApplicableDiscount, calculateDiscountAmountForOrder]);
+  }, [selectedOrder, getSubtotalSinIVA, getIvaTotal, getOrderTotal, getBestApplicableDiscount, calculateDiscountAmountForOrder]);
 
   useEffect(() => {
     updateDiscountValues();
@@ -263,6 +268,7 @@ export default function PosCheckoutPage() {
     setPagosRegistrados([]);
     setTotalPagadoAcumulado(0);
     setModoDividido(false);
+    setModoPorCobrar(false);
     setFacturaIndividual(false);
     setMetodoPagoNormal('cash');
     setAppliedDiscount(null);
@@ -389,6 +395,7 @@ export default function PosCheckoutPage() {
     setPagosRegistrados([]);
     setTotalPagadoAcumulado(0);
     setModoDividido(false);
+    setModoPorCobrar(false);
     setFacturaIndividual(false);
     setError('');
   };
@@ -425,7 +432,6 @@ export default function PosCheckoutPage() {
       transfer: field === 'transfer' ? value : (mixtoActive.has('transfer') ? (parseFloat(transferPaid) || 0) : 0),
     };
 
-    // El único campo activo no-manual recibe el resto
     const activeList = [...mixtoActive];
     const autoFields = activeList.filter(f => !newManual.has(f));
     if (autoFields.length === 1) {
@@ -448,7 +454,6 @@ export default function PosCheckoutPage() {
     };
 
     if (newActive.has(method)) {
-      // Desactivar: poner a 0 y redistribuir
       newActive.delete(method);
       newManual.delete(method);
       vals[method] = 0;
@@ -461,7 +466,6 @@ export default function PosCheckoutPage() {
         vals[autoActive[0]] = total;
       }
     } else {
-      // Activar: si es el único campo automático, recibe el resto
       newActive.add(method);
       const autoActive = [...newActive].filter(f => !newManual.has(f));
       if (autoActive.length === 1 && autoActive[0] === method) {
@@ -477,10 +481,12 @@ export default function PosCheckoutPage() {
 
   const subtotalSinIVAMostrar = getSubtotalSinIVA();
   const ivaRateMostrar = getIvaRate();
+  const ivaTotalMostrar = getIvaTotal();
   const nuevaBaseImponible = Math.max(0, subtotalSinIVAMostrar - discountAmount);
-  const nuevoIVAMostrar = Math.round((nuevaBaseImponible * ivaRateMostrar / 100) * 100) / 100;
+  const ratioDescuento = subtotalSinIVAMostrar > 0 ? nuevaBaseImponible / subtotalSinIVAMostrar : 1;
+  const nuevoIVAMostrar = Math.round(ivaTotalMostrar * ratioDescuento * 100) / 100;
 
-  // Funciones cuenta dividida
+  // ─── Funciones cuenta dividida ─────────────────────────────────────────────
   const agregarComensal = () => {
     setClientesDivididos([
       ...clientesDivididos,
@@ -619,12 +625,11 @@ export default function PosCheckoutPage() {
 
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
-  // Función emitirFactura ahora acepta un parámetro adicional customerEmail
+  // ─── Función emitirFactura ─────────────────────────────────────────────────
   async function emitirFactura(order, custCedula, custNombre, method, discountData = null, customerEmail = null) {
     const cedula = custCedula?.trim() || '9999999999';
     const isCF = cedula === '9999999999' || cedula === '9999999999999';
     const tipoId = isCF ? '07' : (cedula.length === 13 ? '04' : '05');
-    // 🔥 Usar el email explícito si se pasa, sino el del cliente principal o foundCliente
     const email = customerEmail || foundCliente?.email || clienteEmail.trim() || null;
 
     let subtotalOriginal = 0;
@@ -650,8 +655,11 @@ export default function PosCheckoutPage() {
       else if (discountData.type === 'fixed') descuentoTotal = Math.min(Number(discountData.value), subtotalOriginal);
     }
     const nuevaBaseImponible = Math.max(0, subtotalOriginal - descuentoTotal);
+    const ivaSumado = (order.items || []).reduce((s, item) =>
+      s + (Number(item.tax_rate) || 0) * (Number(item.quantity) || 1), 0);
+    const ratioFact = subtotalOriginal > 0 ? nuevaBaseImponible / subtotalOriginal : 1;
+    const ivaConDescuento = Math.round(ivaSumado * ratioFact * 100) / 100;
     const ivaRate = ivaRateGlobal;
-    const ivaConDescuento = Math.round((nuevaBaseImponible * ivaRate / 100) * 100) / 100;
     const totalFactura = nuevaBaseImponible + ivaConDescuento;
 
     const payload = {
@@ -679,7 +687,6 @@ export default function PosCheckoutPage() {
         setError(`Error factura: ${result.error || response.status}`);
         return null;
       }
-      // Retornar objeto con id y número de factura
       return { id: result.id, invoice_number: result.invoice_number };
     } catch (e) {
       setError(`Error emitir factura: ${e.message}`);
@@ -688,7 +695,70 @@ export default function PosCheckoutPage() {
     }
   }
 
-  const imprimirTicket = async (order, paid, cambio, invoiceNumber = null, splitMode = null, customerName = null) => {
+  // ─── Función para guardar cuenta por cobrar (accounts_receivable) ──────────
+  const guardarCuentaPorCobrar = async () => {
+    if (!selectedOrder) return null;
+
+    const clienteId   = foundCliente?.id   || null;
+    const nombreCliente = foundCliente?.name || clienteNombre || 'CONSUMIDOR FINAL';
+    const fechaVencimiento = new Date();
+    fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
+
+    try {
+      const response = await fetchWithAuth('/api/accounting-receivable/receivables', {
+        method: 'POST',
+        body: JSON.stringify({
+          order_number:  selectedOrder.order_number,
+          customer_id:   clienteId,
+          customer_name: nombreCliente,
+          amount:        totalOrdenConDescuento,
+          issue_date:    new Date().toISOString().split('T')[0],
+          due_date:      fechaVencimiento.toISOString().split('T')[0],
+          description:   `Venta pendiente - Orden #${selectedOrder.order_number}`,
+          notes:         orderNotes || null,
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Error al guardar cuenta por cobrar');
+      return data.data;
+    } catch (err) {
+      console.error('Error guardando cuenta por cobrar:', err);
+      setError(`Error al guardar cuenta por cobrar: ${err.message}`);
+      return null;
+    }
+  };
+
+  // ─── PAGO DIFERIDO: registra cuenta por cobrar, no genera factura ───────────
+  const pagoPorCobrar = async () => {
+    setPrintLoading(true);
+    try {
+      const receivable = await guardarCuentaPorCobrar();
+      if (!receivable) throw new Error('No se pudo guardar la cuenta por cobrar');
+
+      await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'pending',
+          payment_method: 'credit',
+          notes: `${orderNotes || ''} - Cuenta por cobrar registrada (ID: ${receivable.id})`.trim()
+        })
+      });
+
+      setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
+      setSuccess(`✅ Cuenta por cobrar registrada. Orden #${selectedOrder.order_number} pendiente de cobro. Vence en 30 días.`);
+      await resetForm();
+      setSelectedOrder(null);
+
+    } catch (err) {
+      setError(err.message || 'Error al procesar cuenta por cobrar');
+    } finally {
+      setPrintLoading(false);
+    }
+  };
+
+  // ─── IMPRESIÓN ─────────────────────────────────────────────────────────────
+  const imprimirTicket = async (order, paid, cambio, invoiceNumber = null, splitMode = null, customerName = null, openDrawer = false) => {
     try {
       const printerConfig = await getPrinterConfig('printer_main');
       const itemsToPrint = (order.items || []).map(item => ({
@@ -698,9 +768,12 @@ export default function PosCheckoutPage() {
         total: (Number(item.selling_price) || Number(item.unit_price) || 0) * item.quantity
       }));
       const printSubtotal = itemsToPrint.reduce((s, i) => s + i.total, 0);
-      const printTotal = Math.max(0, printSubtotal - discountAmount);
-      const nuevoIVAImpresion = Math.round((printTotal * ivaRateGlobal / 100) * 100) / 100;
-      const printTotalFinal = printTotal + nuevoIVAImpresion;
+      const printIvaBase = (order.items || []).reduce((s, item) =>
+        s + (Number(item.tax_rate) || 0) * (Number(item.quantity) || 1), 0);
+      const printBaseConDesc = Math.max(0, printSubtotal - discountAmount);
+      const printRatio = printSubtotal > 0 ? printBaseConDesc / printSubtotal : 1;
+      const nuevoIVAImpresion = Math.round(printIvaBase * printRatio * 100) / 100;
+      const printTotalFinal = printBaseConDesc + nuevoIVAImpresion;
       await print('printer_main', 'invoice', {
         bizInfo,
         invoice: { number: invoiceNumber || order.order_number || order.id, date: new Date().toISOString() },
@@ -714,14 +787,20 @@ export default function PosCheckoutPage() {
         payment: { cash: paid, card: 0, other: 0 },
         printerFooter: printerConfig.footer,
         discount: appliedDiscount ? { name: appliedDiscount.name, type: appliedDiscount.type, value: appliedDiscount.value, amount: discountAmount } : null
-      }, true);
+      }, openDrawer);
     } catch (err) {
       console.error('Error imprimiendo:', err);
       setError('Error al imprimir');
     }
   };
 
+  // ─── COBRAR COMENSAL (modo dividido) ──────────────────────────────────────
   const cobrarComensal = async (comensal) => {
+    if (modoPorCobrar) {
+      setError('En modo "Por Cobrar" no se puede cobrar comensales. Finaliza la orden como cuenta por pagar.');
+      return;
+    }
+    
     if (comensal.items.length === 0) {
       setError('Este comensal no tiene productos asignados');
       return;
@@ -764,13 +843,6 @@ export default function PosCheckoutPage() {
         if (comensal.transferAmount > 0) payments.push({ method: 'transfer', amount: comensal.transferAmount, reference_number: comensal.referencia || null });
       }
 
-      console.log('💰 Cobrando comensal. Items a pagar:', comensal.items);
-      console.log('Detalle de cada item:');
-      comensal.items.forEach(itemId => {
-        const item = selectedOrder?.items.find(i => i.id === itemId);
-        console.log(`  - ID: ${itemId} (${typeof itemId}) | producto: ${item?.product_name} | paid actual: ${item?.paid}`);
-      });
-
       await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/pay-items`, {
         method: 'POST',
         body: JSON.stringify({
@@ -786,13 +858,12 @@ export default function PosCheckoutPage() {
 
       const nuevoTotalPagado = totalPagadoAcumulado + totalComensal;
       setTotalPagadoAcumulado(nuevoTotalPagado);
+      const debeAbrirCajon = (comensal.metodoPago === 'cash') || (comensal.metodoPago === 'mixto' && (comensal.cashAmount || 0) > 0);
 
       if (facturaIndividual) {
         const partialOrder = { ...selectedOrder, items: selectedOrder.items.filter(i => comensal.items.includes(i.id)) };
-        // 🔥 Pasar el email del comensal como sexto parámetro
         const invoiceData = await emitirFactura(partialOrder, cedula, nombre, 'split', null, comensal.email);
-        await imprimirTicket(partialOrder, totalComensal, comensal.montoRecibido - totalComensal, invoiceData?.invoice_number, 'split', nombre);
-        // ❌ Ya no se necesita enviarFacturaEmail manual porque el backend lo hará automáticamente cuando la factura se autorice
+        await imprimirTicket(partialOrder, totalComensal, comensal.montoRecibido - totalComensal, invoiceData?.invoice_number, 'split', nombre, debeAbrirCajon);
         setSuccess(`Factura generada para ${nombre}`);
       } else {
         const itemsCompletos = comensal.items.map(itemId => selectedOrder?.items?.find(i => i.id === itemId)).filter(i => i);
@@ -805,28 +876,22 @@ export default function PosCheckoutPage() {
       const itemsPendientes = ordenActualizada?.items?.filter(i => !i.paid).length || 0;
 
       if (itemsPendientes === 0) {
-        // Todos los productos pagados
         if (!facturaIndividual) {
-          // Modo factura única final: reunir todos los items pagados y emitir una factura global
           let itemsFinales = [];
           for (const pago of pagosRegistrados) if (pago.items) itemsFinales.push(...pago.items);
-          // Agregar los items del último comensal
           const itemsActuales = comensal.items.map(itemId => selectedOrder?.items?.find(i => i.id === itemId)).filter(i => i);
           itemsActuales.forEach(item => { if (!itemsFinales.some(i => i.id === item.id)) itemsFinales.push(item); });
 
           if (itemsFinales.length > 0) {
             const ordenCompleta = { ...selectedOrder, items: itemsFinales };
             const discountInfo = appliedDiscount ? { id: appliedDiscount.id, name: appliedDiscount.name, amount: discountAmount } : null;
-            // 🔥 Pasar el email del cliente principal para la factura final
             const invoiceData = await emitirFactura(ordenCompleta, clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', 'split', discountInfo, clienteEmail);
-            await imprimirTicket(ordenCompleta, totalOrdenConDescuento, 0, invoiceData?.invoice_number, 'split', 'FACTURA FINAL');
-            // El backend enviará el correo automáticamente
+            await imprimirTicket(ordenCompleta, totalOrdenConDescuento, 0, invoiceData?.invoice_number, 'split', 'FACTURA FINAL', false);
           }
         } else {
           setSuccess('✅ Todos los comensales facturados. Orden completada.');
         }
 
-        // Marcar orden como pagada en el backend
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
           method: 'PATCH',
           body: JSON.stringify({
@@ -839,7 +904,6 @@ export default function PosCheckoutPage() {
           })
         });
 
-        // Limpiar estado y actualizar lista de órdenes
         setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
         setSelectedOrder(null);
         setClientesDivididos([]);
@@ -847,7 +911,6 @@ export default function PosCheckoutPage() {
         setTotalPagadoAcumulado(0);
         setSuccess(prev => prev.includes('Factura final') ? prev : '✅ Orden completada');
       } else {
-        // Todavía quedan productos pendientes
         const comensalesPendientes = clientesDivididos.filter(c => c.id !== comensal.id);
         if (comensalesPendientes.length === 0) {
           setClientesDivididos([{ id: Date.now(), cedula: '', nombre: '', email: '', items: [], metodoPago: 'cash', montoRecibido: 0, referencia: '', cashAmount: 0, cardAmount: 0, transferAmount: 0 }]);
@@ -863,7 +926,13 @@ export default function PosCheckoutPage() {
     }
   };
 
+  // ─── PAGO NORMAL ──────────────────────────────────────────────────────────
   const pagoNormal = async () => {
+    if (modoPorCobrar) {
+      await pagoPorCobrar();
+      return;
+    }
+    
     setPrintLoading(true);
     try {
       let cedula = clienteCedula?.trim() || '9999999999';
@@ -871,6 +940,8 @@ export default function PosCheckoutPage() {
       let clienteId = await guardarCliente(cedula, nombre, clienteEmail?.trim() || null);
       let invoiceData = null;
       const discountInfo = appliedDiscount ? { id: appliedDiscount.id, name: appliedDiscount.name, amount: discountAmount } : null;
+
+      let debeAbrirCajon = false;
 
       if (metodoPagoNormal === 'cash') {
         const paid = parseFloat(amountPaid) || 0;
@@ -890,7 +961,8 @@ export default function PosCheckoutPage() {
           }),
         });
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'cash', discountInfo, clienteEmail);
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, paid - totalOrdenConDescuento, invoiceData?.invoice_number);
+        debeAbrirCajon = true;
+        await imprimirTicket(selectedOrder, totalOrdenConDescuento, paid - totalOrdenConDescuento, invoiceData?.invoice_number, null, null, debeAbrirCajon);
       } else if (metodoPagoNormal === 'card') {
         if (!refCard) throw new Error('Ingrese la referencia de la tarjeta');
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
@@ -909,7 +981,8 @@ export default function PosCheckoutPage() {
           }),
         });
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'card', discountInfo, clienteEmail);
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceData?.invoice_number);
+        debeAbrirCajon = false;
+        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceData?.invoice_number, null, null, debeAbrirCajon);
       } else if (metodoPagoNormal === 'transfer') {
         if (!refTransfer) throw new Error('Ingrese la referencia de la transferencia');
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
@@ -928,7 +1001,8 @@ export default function PosCheckoutPage() {
           }),
         });
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'transfer', discountInfo, clienteEmail);
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceData?.invoice_number);
+        debeAbrirCajon = false;
+        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceData?.invoice_number, null, null, debeAbrirCajon);
       } else if (metodoPagoNormal === 'mixto') {
         const cashAmt = parseFloat(amountPaid) || 0;
         const cardAmt = parseFloat(cardPaid) || 0;
@@ -955,10 +1029,9 @@ export default function PosCheckoutPage() {
           }),
         });
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'mixto', discountInfo, clienteEmail);
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, cashAmt - cashNeeded, invoiceData?.invoice_number);
+        debeAbrirCajon = (cashNeeded > 0);
+        await imprimirTicket(selectedOrder, totalOrdenConDescuento, cashAmt - cashNeeded, invoiceData?.invoice_number, null, null, debeAbrirCajon);
       }
-
-      // El backend enviará el correo automáticamente si hay email en la factura
 
       setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
       await resetForm();
@@ -970,7 +1043,7 @@ export default function PosCheckoutPage() {
     }
   };
 
-  // Render (sin cambios estructurales)
+  // ─── RENDER ────────────────────────────────────────────────────────────────
   return (
     <PageTemplate title="Cobrar Orden" subtitle="Cobrar órdenes abiertas, imprimir recibo y abrir caja" backButton>
       <div className="checkout-modern-main">
@@ -1009,17 +1082,31 @@ export default function PosCheckoutPage() {
           {selectedOrder && (
             <>
               <div className="pay-methods">
-                <button className={!modoDividido ? "pay-btn selected" : "pay-btn"} onClick={() => { setModoDividido(false); setClientesDivididos([]); setSelectedItems([]); }}>
+                <button className={!modoDividido && !modoPorCobrar ? "pay-btn selected" : "pay-btn"} onClick={() => { 
+                  setModoDividido(false); 
+                  setModoPorCobrar(false);
+                  setClientesDivididos([]); 
+                  setSelectedItems([]); 
+                }}>
                   <DollarSign size={15} /> Normal
                 </button>
                 <button className={modoDividido ? "pay-btn selected" : "pay-btn"} onClick={() => {
                   setModoDividido(true);
+                  setModoPorCobrar(false);
                   setFacturaIndividual(false);
                   if (clientesDivididos.length === 0) {
                     setClientesDivididos([{ id: Date.now(), cedula: '', nombre: '', email: '', items: [], metodoPago: 'cash', montoRecibido: 0, referencia: '', cashAmount: 0, cardAmount: 0, transferAmount: 0 }]);
                   }
                 }}>
                   <Users size={15} /> Dividir Cuenta
+                </button>
+                <button className={modoPorCobrar ? "pay-btn selected" : "pay-btn"} onClick={() => {
+                  setModoPorCobrar(true);
+                  setModoDividido(false);
+                  setClientesDivididos([]);
+                  setSelectedItems([]);
+                }}>
+                  <FiClock size={15} /> Por Pagar
                 </button>
               </div>
 
@@ -1037,14 +1124,20 @@ export default function PosCheckoutPage() {
                 </div>
               )}
 
+              {modoPorCobrar && (
+                <div className="por-cobrar-info">
+                  <small>ℹ️ Esta orden se guardará como cuenta por pagar a proveedor. No se emitirá factura ni se abrirá cajón.</small>
+                </div>
+              )}
+
               <div className="order-details">
                 <div className="order-head">
                   <b>{selectedOrder.mesa_numero ? `Mesa ${selectedOrder.mesa_numero}` : selectedOrder.order_type} #{selectedOrder.order_number || selectedOrder.id}</b>
                   {modoDividido && selectedItems.length > 0 && <span className="badge">{selectedItems.length} producto(s) seleccionado(s)</span>}
                 </div>
 
-                {!modoDividido ? (
-                  // Modo normal (sin cambios)
+                {!modoDividido && !modoPorCobrar ? (
+                  // Modo normal
                   <>
                     <div className="order-items">
                       {selectedOrder.items.filter(item => !item.paid).map((item, idx) => (
@@ -1089,12 +1182,11 @@ export default function PosCheckoutPage() {
 
                     {metodoPagoNormal === 'mixto' && (
                       <>
-                        {/* Toggles de selección */}
                         <div className="mixto-toggle-row">
                           {[
-                            { key: 'cash',     label: 'Efectivo',       icon: <FaHandHoldingDollar size={16}/> },
-                            { key: 'card',     label: 'Tarjeta',         icon: <FiCreditCard size={16}/> },
-                            { key: 'transfer', label: 'Transferencia',   icon: <FaMoneyBillTransfer size={16}/> },
+                            { key: 'cash', label: 'Efectivo', icon: <FaHandHoldingDollar size={16} /> },
+                            { key: 'card', label: 'Tarjeta', icon: <FiCreditCard size={16} /> },
+                            { key: 'transfer', label: 'Transferencia', icon: <FaMoneyBillTransfer size={16} /> },
                           ].map(({ key, label, icon }) => (
                             <button key={key} type="button"
                               className={`mixto-toggle${mixtoActive.has(key) ? ' active' : ''}`}
@@ -1105,33 +1197,32 @@ export default function PosCheckoutPage() {
                           ))}
                         </div>
 
-                        {/* Campos solo para métodos activos */}
                         {mixtoActive.size > 0 && (
                           <div className="payment-mixed-row">
                             {mixtoActive.has('cash') && (
                               <div className="mixed-field">
-                                <label><FaHandHoldingDollar size={20}/> Efectivo:</label>
+                                <label><FaHandHoldingDollar size={20} /> Efectivo:</label>
                                 <input type="text" inputMode="numeric" value={amountPaidRaw}
-                                  onChange={e => { let d = e.target.value.replace(/\D/g,''); if(!d) d='0'; if(d.length>8) d=d.slice(0,8); handleMixtoField('cash', d); }}
+                                  onChange={e => { let d = e.target.value.replace(/\D/g, ''); if (!d) d = '0'; if (d.length > 8) d = d.slice(0, 8); handleMixtoField('cash', d); }}
                                   placeholder="0.00" />
                               </div>
                             )}
                             {mixtoActive.has('card') && (
                               <div className="mixed-field">
-                                <label><FiCreditCard size={20}/> Tarjeta:</label>
+                                <label><FiCreditCard size={20} /> Tarjeta:</label>
                                 <input type="text" inputMode="numeric" value={cardPaidRaw}
-                                  onChange={e => { let d = e.target.value.replace(/\D/g,''); if(!d) d='0'; if(d.length>8) d=d.slice(0,8); handleMixtoField('card', d); }}
+                                  onChange={e => { let d = e.target.value.replace(/\D/g, ''); if (!d) d = '0'; if (d.length > 8) d = d.slice(0, 8); handleMixtoField('card', d); }}
                                   placeholder="0.00" />
-                                <input type="text" placeholder="Ref. tarjeta" value={refCard} onChange={e => setRefCard(e.target.value)} style={{marginTop:4}} />
+                                <input type="text" placeholder="Ref. tarjeta" value={refCard} onChange={e => setRefCard(e.target.value)} style={{ marginTop: 4 }} />
                               </div>
                             )}
                             {mixtoActive.has('transfer') && (
                               <div className="mixed-field">
-                                <label><FaMoneyBillTransfer size={20}/> Transferencia:</label>
+                                <label><FaMoneyBillTransfer size={20} /> Transferencia:</label>
                                 <input type="text" inputMode="numeric" value={transferPaidRaw}
-                                  onChange={e => { let d = e.target.value.replace(/\D/g,''); if(!d) d='0'; if(d.length>8) d=d.slice(0,8); handleMixtoField('transfer', d); }}
+                                  onChange={e => { let d = e.target.value.replace(/\D/g, ''); if (!d) d = '0'; if (d.length > 8) d = d.slice(0, 8); handleMixtoField('transfer', d); }}
                                   placeholder="0.00" />
-                                <input type="text" placeholder="Ref. transferencia" value={refTransfer} onChange={e => setRefTransfer(e.target.value)} style={{marginTop:4}} />
+                                <input type="text" placeholder="Ref. transferencia" value={refTransfer} onChange={e => setRefTransfer(e.target.value)} style={{ marginTop: 4 }} />
                               </div>
                             )}
                           </div>
@@ -1139,16 +1230,16 @@ export default function PosCheckoutPage() {
 
                         {mixtoActive.size > 0 && (
                           <div className="mixed-total-row">
-                            <div className="mixed-total-item"><span><IoFileTrayFull size={20}/> Total Ingresado:</span><strong>{fmt(totalPagadoMixto)}</strong></div>
-                            {faltanteMixto > 0 && <div className="mixed-total-item warning"><span><CiWarning size={20}/> Faltante:</span><strong>{fmt(faltanteMixto)}</strong></div>}
-                            {cambioMixto > 0 && <div className="mixed-total-item success"><span><BsCurrencyExchange size={20}/> Cambio:</span><strong>{fmt(cambioMixto)}</strong></div>}
+                            <div className="mixed-total-item"><span><IoFileTrayFull size={20} /> Total Ingresado:</span><strong>{fmt(totalPagadoMixto)}</strong></div>
+                            {faltanteMixto > 0 && <div className="mixed-total-item warning"><span><CiWarning size={20} /> Faltante:</span><strong>{fmt(faltanteMixto)}</strong></div>}
+                            {cambioMixto > 0 && <div className="mixed-total-item success"><span><BsCurrencyExchange size={20} /> Cambio:</span><strong>{fmt(cambioMixto)}</strong></div>}
                           </div>
                         )}
                       </>
                     )}
                   </>
-                ) : (
-                  // Modo dividido (sin cambios estructurales)
+                ) : modoDividido ? (
+                  // Modo dividido (acortado por brevedad, igual al original)
                   <div className="order-items">
                     <div className="section-title"><IoFileTrayFull size={14} /> Productos pendientes:</div>
                     {selectedOrder.items.filter(item => !item.paid).map((item, idx) => (
@@ -1294,14 +1385,43 @@ export default function PosCheckoutPage() {
                       {selectedItems.length > 0 && <div className="warning-box"><CiWarning size={14} /> {selectedItems.length} producto(s) sin asignar</div>}
                     </div>
                   </div>
+                ) : (
+                  // Modo "Por Pagar" - vista simplificada
+                  <div className="por-cobrar-view">
+                    <div className="order-items">
+                      {selectedOrder.items.filter(item => !item.paid).map((item, idx) => (
+                        <div key={idx} className="item-line">
+                          <span>{item.quantity}x {item.product_name}</span>
+                          <span className="item-amt">{fmt((Number(item.selling_price) || Number(item.unit_price)) * item.quantity)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="totals-footer">
+                      <div className="sub-iva-total"><span>SUBTOTAL:</span><span>{fmt(subtotalSinIVAMostrar)}</span></div>
+                      {appliedDiscount && discountAmount > 0 && (
+                        <div className="sub-iva-total discount-row">
+                          <span>DESCUENTO ({appliedDiscount.type === 'percentage' ? `${appliedDiscount.value}%` : `$${appliedDiscount.value}`}):</span>
+                          <span style={{ color: '#10b981' }}>-{fmt(discountAmount)}</span>
+                        </div>
+                      )}
+                      <div className="sub-iva-total"><span>BASE IMPONIBLE:</span><span>{fmt(nuevaBaseImponible)}</span></div>
+                      <div className="sub-iva-total"><span>IVA ({ivaRateMostrar}%):</span><span>{fmt(nuevoIVAMostrar)}</span></div>
+                      <div className="sub-iva-total total-row"><span><strong>TOTAL:</strong></span><span className="total-amount"><strong>{fmt(totalOrdenConDescuento)}</strong></span></div>
+                    </div>
+                  </div>
                 )}
               </div>
 
               <div className="actions-row">
-                <button className="btn-guardar" disabled={printLoading || (!modoDividido && metodoPagoNormal === 'cash' && (!amountPaid || parseFloat(amountPaid) < totalOrdenConDescuento))} onClick={() => { if (!modoDividido) pagoNormal(); }}>
-                  <Check size={16} /> {printLoading ? 'Procesando...' : modoDividido ? 'CONTINUAR' : 'COBRAR'}
+                <button className="btn-guardar" disabled={printLoading || (!modoDividido && !modoPorCobrar && metodoPagoNormal === 'cash' && (!amountPaid || parseFloat(amountPaid) < totalOrdenConDescuento))}
+                  onClick={() => { 
+                    if (!modoDividido) {
+                      pagoNormal();
+                    }
+                  }}>
+                  <Check size={16} /> {printLoading ? 'Procesando...' : modoDividido ? 'CONTINUAR' : (modoPorCobrar ? 'REGISTRAR CUENTA POR PAGAR' : 'COBRAR')}
                 </button>
-                <button className="btn-cancelar" onClick={() => { setSelectedOrder(null); setClientesDivididos([]); setSelectedItems([]); setPagosRegistrados([]); setTotalPagadoAcumulado(0); setModoDividido(false); }}>
+                <button className="btn-cancelar" onClick={() => { setSelectedOrder(null); setClientesDivididos([]); setSelectedItems([]); setPagosRegistrados([]); setTotalPagadoAcumulado(0); setModoDividido(false); setModoPorCobrar(false); }}>
                   <X size={16} /> Cancelar
                 </button>
               </div>

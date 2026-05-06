@@ -7,7 +7,7 @@ import {
   FiUsers, FiUserCheck, FiMap, FiMapPin, FiList, FiGlobe,
   FiBell, FiFileText, FiThermometer
 } from 'react-icons/fi';
-import apiService from '../../services/apiService';
+import { adminApiService as apiService } from '../../services/apiService';
 import PageTemplate from '../../components/PageTemplate';
 import '../../styles/AdminPages.css';
 

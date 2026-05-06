@@ -13,19 +13,29 @@ export default function AddItemModal({
   setNotasItem,
   agregarItem,
   categorias,
+  extrasItem,
+  setExtrasItem,
 }) {
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
+  const [extraSel,  setExtraSel ] = useState('');
+  const [notaExtra, setNotaExtra] = useState('');
 
-  // Filtrar productos según la categoría seleccionada
+  const extrasProductos = productos.filter(p => p.category_name?.toLowerCase() === 'extras');
+  const categoriasFiltradas = categorias.filter(c => c.name?.toLowerCase() !== 'extras');
+
   const productosFiltrados = categoriaSeleccionada
     ? productos.filter(p => p.category_name === categoriaSeleccionada)
-    : productos;
+    : productos.filter(p => p.category_name?.toLowerCase() !== 'extras');
 
-  // Si el modal no está visible, no renderizamos nada
   if (!showAddItemModal) return null;
 
+  const handleClose = () => {
+    setShowAddItemModal(false);
+    setExtrasItem([]);
+  };
+
   return (
-    <div className="modal-overlay" onClick={() => setShowAddItemModal(false)}>
+    <div className="modal-overlay" onClick={handleClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         
         {/* HEADER */}
@@ -46,7 +56,7 @@ export default function AddItemModal({
                 onChange={(e) => setCategoriaSeleccionada(e.target.value)}
               >
                 <option value="">-- Selecciona una categoría --</option>
-                {categorias && categorias.map((cat) => (
+                {categoriasFiltradas && categoriasFiltradas.map((cat) => (
                   <option key={cat.id} value={cat.name}>
                     {cat.name}
                   </option>
@@ -111,8 +121,69 @@ export default function AddItemModal({
               />
             </div>
 
+            {/* EXTRAS */}
+            {extrasProductos.length > 0 && (
+              <div className="field" style={{ gridColumn: '1 / -1' }}>
+                <label>Extras</label>
+                <div className="extras-adder-row">
+                  <select
+                    className="extras-adder-sel"
+                    value={extraSel}
+                    onChange={e => setExtraSel(e.target.value)}
+                  >
+                    <option value="">— Selecciona un extra —</option>
+                    {extrasProductos.map(ex => (
+                      <option key={ex.id} value={ex.id}>{ex.name}</option>
+                    ))}
+                  </select>
+                  <input
+                    className="extras-adder-nota"
+                    type="text"
+                    placeholder="Nota del extra..."
+                    value={notaExtra}
+                    onChange={e => setNotaExtra(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && extraSel) e.currentTarget.closest('.extras-adder-row').querySelector('.extras-adder-btn').click();
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="extras-adder-btn"
+                    disabled={!extraSel}
+                    onClick={() => {
+                      const ex = extrasProductos.find(p => String(p.id) === extraSel);
+                      if (!ex) return;
+                      setExtrasItem(prev => [...prev, { id: ex.id, name: ex.name, nota: notaExtra.trim(), price: Number(ex.price) || 0, tax_rate: Number(ex.tax_rate) || 0 }]);
+                      setExtraSel('');
+                      setNotaExtra('');
+                    }}
+                  >
+                    + Agregar
+                  </button>
+                </div>
+                {extrasItem.length > 0 && (
+                  <ul className="extras-added-list">
+                    {extrasItem.map((e, i) => (
+                      <li key={i} className="extras-added-item">
+                        <span className="extras-added-name">+ {e.name}</span>
+                        {e.price > 0 && <span className="extras-added-price">+${Number(e.price).toFixed(2)}</span>}
+                        {e.nota && <span className="extras-added-nota"> — {e.nota}</span>}
+                        <button
+                          type="button"
+                          className="extras-added-remove"
+                          onClick={() => setExtrasItem(prev => prev.filter((_, j) => j !== i))}
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
             {/* NOTAS */}
-            <div className="field">
+            <div className="field" style={{ gridColumn: '1 / -1' }}>
               <label>Notas</label>
               <textarea
                 value={notasItem}
@@ -125,9 +196,9 @@ export default function AddItemModal({
 
         {/* FOOTER - BOTONES JUNTOS */}
         <div className="modal-footer">
-          <button 
-            className="btn btn-secondary" 
-            onClick={() => setShowAddItemModal(false)} 
+          <button
+            className="btn btn-secondary"
+            onClick={handleClose}
             type="button"
           >
             Cancelar

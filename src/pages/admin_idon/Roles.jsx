@@ -3,7 +3,7 @@ import {
   FiLock, FiPlus, FiEdit2, FiTrash2, FiCheck, FiRefreshCw,
   FiChevronDown, FiChevronRight, FiPackage, FiBriefcase, FiUsers
 } from 'react-icons/fi';
-import apiService from '../../services/apiService';
+import { adminApiService as apiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
 
 const inp = {

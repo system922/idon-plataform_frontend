@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiFileText, FiRefreshCw } from 'react-icons/fi';
-import apiService from '../../services/apiService';
+import { adminApiService as apiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
 
 const TYPE_CFG = {

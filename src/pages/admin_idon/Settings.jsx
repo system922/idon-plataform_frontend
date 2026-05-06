@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiCheck, FiRefreshCw, FiAlertCircle, FiSettings, FiMessageCircle } from 'react-icons/fi';
-import apiService from '../../services/apiService';
+import { adminApiService as apiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
 
 const inp = { width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px', background: 'var(--admin-bg-primary)', border: '1px solid var(--admin-border-light)', color: 'var(--admin-text-primary)', outline: 'none' };

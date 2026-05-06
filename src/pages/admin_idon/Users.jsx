@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FiRefreshCw, FiSearch, FiUser, FiMail, FiPhone, FiCheck, FiX } from 'react-icons/fi';
-import apiService from '../../services/apiService';
+import { adminApiService as apiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
 
 export default function UsersList() {

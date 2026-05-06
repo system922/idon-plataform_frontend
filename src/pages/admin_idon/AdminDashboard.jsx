@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiClipboard, FiUsers, FiTool, FiStar, FiServer, FiEdit, FiSettings, FiFileText, FiTrendingUp, FiRefreshCw } from 'react-icons/fi';
-import { fetchProtected } from '../../utils/auth';
-import API_BASE from '../../config/apiBase';
+import { adminApiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
 
 const AdminDashboard = () => {
@@ -21,7 +20,7 @@ const AdminDashboard = () => {
 
   const fetchDashboard = async () => {
     try {
-      const response = await fetchProtected(`/api/admin/stats`);
+      const response = await adminApiService.get('/admin/stats');
       if (!response || !response.data) return;
 
       const data = response.data;

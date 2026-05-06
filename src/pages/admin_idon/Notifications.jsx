@@ -3,7 +3,7 @@ import {
   FiBell, FiRefreshCw, FiAlertCircle, FiClock,
   FiCreditCard, FiClipboard, FiXCircle, FiCheckCircle,
 } from 'react-icons/fi';
-import apiService from '../../services/apiService';
+import { adminApiService as apiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
 
 const TYPE_CFG = {
