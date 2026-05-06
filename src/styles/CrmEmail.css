@@ -194,3 +194,58 @@
     justify-content: center;
   }
 }
+
+@media (max-width: 600px) {
+  .crm-email-container {
+    padding: 0;
+  }
+
+  /* Action buttons: 2×2 grid */
+  .campaign-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .icon-btn {
+    justify-content: center;
+    padding: 8px 6px;
+  }
+
+  /* Modal: bottom sheet */
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .modal-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 92dvh;
+    overflow-y: auto;
+  }
+
+  .modal-lg {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  /* Textarea: less tall on mobile */
+  .modal-body textarea {
+    rows: 6;
+    min-height: 120px !important;
+    max-height: 200px;
+  }
+
+  /* Preview content: limit height */
+  .preview-content {
+    max-height: 45vh;
+  }
+}

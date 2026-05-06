@@ -322,28 +322,28 @@ export default function CoreUsersPage() {
                 ) : (
                   filtrados.map(user => (
                     <tr key={user.id}>
-                      <td>{user.first_name}</td>
-                      <td>{user.last_name}</td>
-                      <td>{user.email}</td>
-                      <td>
+                      <td data-label="Nombre">{user.first_name}</td>
+                      <td data-label="Apellido">{user.last_name}</td>
+                      <td data-label="Email">{user.email}</td>
+                      <td data-label="Rol">
                         <span className="users-role-badge">
                           {roles.find(r => r.id === user.role_id)?.name ?? user.role_id}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Estado">
                         {user.is_active ? (
                           <div className="users-status-active">
-                            <CheckCircle size={16} /> 
+                            <CheckCircle size={16} />
                             <span>Activo</span>
                           </div>
                         ) : (
                           <div className="users-status-inactive">
-                            <AlertCircle size={16} /> 
+                            <AlertCircle size={16} />
                             <span>Inactivo</span>
                           </div>
                         )}
                       </td>
-                      <td>
+                      <td data-label="Acciones">
                         <div className="users-action-buttons">
                           <button onClick={() => openEdit(user)} className="users-btn-icon">
                             <Edit2 size={14} />

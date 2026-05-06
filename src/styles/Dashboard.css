@@ -112,7 +112,7 @@
 
 .stat-cards-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 18px;
   margin-bottom: 39px;
 }
@@ -276,115 +276,134 @@
 }
 
 /* ──────────────────────────────────────────────────────────────
+   GRAPHS ROW — flex con stacking en móvil
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-graphs-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.sales-chart-card {
+  padding: 32px;
+}
+
+/* ──────────────────────────────────────────────────────────────
    RESPONSIVE DESIGN
    ────────────────────────────────────────────────────────────── */
 
-/* Tablets y pantallas medianas */
-@media (max-width: 1120px) {
-  .dashboard-graphs-row { 
-    flex-direction: column; 
-    gap: 17px; 
-  }
-  .dashboard-graph-card { 
-    max-width: 100%; 
-    min-width: 0; 
-  }
-}
-
+/* Tablet grande: 4 → 2 columnas en stats */
 @media (max-width: 1100px) {
-  .stat-cards-row { 
-    grid-template-columns: 1fr; 
+  .stat-cards-row {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Móviles grandes */
+/* Tablet */
+@media (max-width: 1024px) {
+  .dashboard-graphs-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .dashboard-graph-card {
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+/* Móvil grande */
 @media (max-width: 768px) {
-  .dashboard-header h1 { 
-    font-size: 1.8rem; 
+  .dashboard-header h1 {
+    font-size: 1.8rem;
   }
-  
-  .stat-card-value { 
-    font-size: 1.5rem; 
+
+  .stat-card-value {
+    font-size: 1.5rem;
   }
-  
-  .dashboard-graph-card { 
-    padding: 14px 16px; 
+
+  .dashboard-graph-card {
+    padding: 16px !important;
   }
-  
-  /* Botones más compactos en móvil */
+
+  .sales-chart-card {
+    padding: 16px !important;
+  }
+
   .action-buttons {
     grid-template-columns: repeat(auto-fit, minmax(110px, auto));
     gap: 10px;
   }
-  
+
   .action-btn {
     padding: 6px 12px;
     font-size: 0.8rem;
   }
-  
+
   .action-btn svg {
     width: 14px;
     height: 14px;
   }
-  
-  /* Ocultar texto del botón actualizar en móvil */
+
+  /* Texto del botón actualizar se oculta */
   .dashboard-refresh-btn-header span {
     display: none;
   }
-  
+
   .dashboard-refresh-btn-header {
     padding: 8px 12px;
   }
 }
 
-/* Móviles pequeños */
+/* Móvil: stats en 1 columna */
 @media (max-width: 550px) {
-  .dashboard-quick-actions { 
-    padding: 15px 2vw; 
+  .stat-cards-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
   }
-  
+
+  .stat-card {
+    padding: 18px 14px;
+  }
+
+  .stat-card-value {
+    font-size: 1.4rem;
+  }
+
+  .dashboard-quick-actions {
+    padding: 15px 14px;
+  }
+
   .dashboard-quick-actions h3 {
     font-size: 16px;
     margin-bottom: 12px;
   }
-  
-  .dashboard-header { 
-    padding: 0 3vw; 
-  }
-  
-  .dashboard-header h1 { 
-    font-size: 1.25rem; 
-  }
-  
-  .stat-card-value { 
-    font-size: 1.25rem; 
-  }
-  
+
   .action-buttons {
-    grid-template-columns: repeat(auto-fit, minmax(100px, auto));
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
   }
-  
+
   .action-btn {
-    padding: 5px 10px;
+    padding: 8px 6px;
     font-size: 0.75rem;
+    flex-direction: column;
+    gap: 4px;
+    height: auto;
+    white-space: normal;
+    text-align: center;
   }
-  
+
   .action-btn svg {
-    width: 12px;
-    height: 12px;
+    width: 18px;
+    height: 18px;
   }
 }
 
-/* Para pantallas muy pequeñas, cambiar a columna */
-@media (max-width: 400px) {
+@media (max-width: 380px) {
   .action-buttons {
-    grid-template-columns: 1fr;
-  }
-  
-  .action-btn {
-    justify-content: flex-start;
-    padding: 8px 12px;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

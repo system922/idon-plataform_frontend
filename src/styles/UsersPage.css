@@ -543,27 +543,32 @@
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .users-search-wrapper {
     max-width: 100%;
   }
-  
+
   .users-btn-new {
     align-self: flex-start;
   }
-  
-  .users-table th,
-  .users-table td {
-    padding: 12px;
-  }
-  
+
+  /* Modal: limitar altura y permitir scroll interno */
   .users-modal {
-    max-width: 90%;
-    margin: 16px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - 48px);
+    display: flex;
+    flex-direction: column;
   }
-  
+
+  .users-modal-body {
+    overflow-y: auto;
+    flex: 1;
+  }
+
   .users-verif-modal {
-    min-width: 280px;
+    min-width: 0;
+    width: calc(100vw - 48px);
+    max-width: 400px;
     padding: 24px;
   }
 }
@@ -573,16 +578,97 @@
     flex-direction: column;
     gap: 16px;
   }
-  
-  .users-action-buttons {
-    flex-wrap: wrap;
-  }
-  
+
   .dashboard-refresh-btn-header span {
     display: none;
   }
-  
+
   .dashboard-refresh-btn-header {
     padding: 8px 12px;
+  }
+}
+
+/* ── Tabla → tarjetas en móvil ── */
+@media (max-width: 600px) {
+  .users-table-container {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+  }
+
+  .users-table-wrapper {
+    overflow-x: visible;
+  }
+
+  .users-table thead {
+    display: none;
+  }
+
+  .users-table,
+  .users-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .users-table tr {
+    display: block;
+    background: #18181b;
+    border: 1.5px solid #26272b;
+    border-radius: 14px;
+    margin-bottom: 12px;
+    padding: 4px 14px;
+  }
+
+  .users-table tr:hover {
+    background: #18181b;
+  }
+
+  .users-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 13px;
+    gap: 12px;
+  }
+
+  .users-table td:last-child {
+    border-bottom: none;
+  }
+
+  .users-table td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    flex-shrink: 0;
+    min-width: 72px;
+  }
+
+  .users-empty-state {
+    display: block;
+    padding: 40px 20px;
+    text-align: center;
+  }
+
+  /* Botones de acción alineados a la derecha */
+  .users-action-buttons {
+    justify-content: flex-end;
+  }
+
+  /* Modal en móvil: bottom sheet */
+  .users-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .users-modal {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 92dvh;
   }
 }

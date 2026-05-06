@@ -129,3 +129,117 @@ tfoot td {
 .alert-error, .alert-success {
   margin-bottom: 20px;
 }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .accounting-balance-container {
+    padding: 12px;
+  }
+
+  /* Filters: stack vertically */
+  .filters-bar {
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .filter-group input,
+  .filter-group select {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .filters-bar .btn-secondary {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* KPIs: 1 column */
+  .kpi-cards {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .kpi-value {
+    font-size: 22px;
+  }
+
+  /* Cards: reduce padding */
+  .chart-card,
+  .table-card {
+    padding: 14px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+  }
+
+  /* Table → cards */
+  .balance-table thead {
+    display: none;
+  }
+
+  .balance-table {
+    border-collapse: separate !important;
+    border-spacing: 0;
+  }
+
+  .bal-tbody-tr {
+    display: block !important;
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .balance-table td {
+    display: flex !important;
+    align-items: center;
+    padding: 9px 12px !important;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    white-space: normal !important;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 13px;
+  }
+
+  .bal-tbody-tr td:last-child {
+    border-bottom: none;
+  }
+
+  .balance-table td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 72px;
+    flex-shrink: 0;
+  }
+
+  /* tfoot totals row */
+  .bal-tfoot-tr {
+    display: block !important;
+    background: rgba(16,185,129,0.12) !important;
+    border: 1px solid rgba(16,185,129,0.35) !important;
+    border-radius: 10px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+
+  .bal-tfoot-tr td {
+    border-top: none !important;
+    padding-top: 9px !important;
+  }
+
+  .bal-tfoot-tr td:last-child {
+    border-bottom: none;
+  }
+}

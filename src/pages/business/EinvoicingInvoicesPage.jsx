@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { RefreshCw, Download, Send, AlertCircle, CheckCircle, XCircle, Clock, FileText, MessageCircle, Mail, X } from 'react-feather';
+import { RefreshCw, Download, Send, AlertCircle, CheckCircle, XCircle, Clock, FileText, MessageCircle, Mail, X, Search } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
+import '../../styles/EinvoicingInvoicesPage.css';
 
 const STATUS_STYLE = {
   autorizada: { color: '#15803d', bg: 'rgba(34,197,94,0.08)',  border: 'rgba(34,197,94,0.3)',  label: 'Autorizada', Icon: CheckCircle },
@@ -41,7 +42,7 @@ function EmailModal({ inv, onClose, onSent }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
          onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 24, width: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+      <div className="einv-email-modal" style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 24, width: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ background: 'rgba(104,66,254,0.15)', borderRadius: 8, padding: 6 }}>
@@ -110,6 +111,8 @@ export default function EinvoicingInvoicesPage() {
   const [error,     setError    ] = useState('');
   const [success,   setSuccess  ] = useState('');
   const [emailMdl,  setEmailMdl ] = useState(null);
+  const [search,    setSearch   ] = useState('');
+  const [filterDate,setFilterDate] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -167,6 +170,16 @@ export default function EinvoicingInvoicesPage() {
     }
   };
 
+  const filtered = invoices.filter(inv => {
+    const q = search.toLowerCase();
+    const matchSearch = !q ||
+      (inv.customer_name || '').toLowerCase().includes(q) ||
+      (inv.customer_ruc  || '').toLowerCase().includes(q);
+    const matchDate = !filterDate ||
+      (inv.emission_date || '').startsWith(filterDate);
+    return matchSearch && matchDate;
+  });
+
   const counts = Object.fromEntries(
     Object.keys(STATUS_STYLE).map(k => [k, invoices.filter(i => i.status === k).length])
   );
@@ -222,9 +235,40 @@ export default function EinvoicingInvoicesPage() {
         </div>
       )}
 
+      {/* Barra de búsqueda y filtro de fecha */}
+      <div className="einv-filter-bar">
+        <div className="einv-search-box">
+          <Search size={14} />
+          <input
+            type="text"
+            placeholder="Buscar por cédula, RUC o nombre..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="einv-clear-btn" onClick={() => setSearch('')} title="Limpiar">
+              <X size={13} />
+            </button>
+          )}
+        </div>
+        <div className="einv-date-filter">
+          <label>Fecha</label>
+          <input
+            type="date"
+            value={filterDate}
+            onChange={e => setFilterDate(e.target.value)}
+          />
+          {filterDate && (
+            <button className="einv-clear-btn" onClick={() => setFilterDate('')} title="Limpiar fecha">
+              <X size={13} />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Tabla */}
-      <div style={{ overflowX: 'auto', background: '#fff', border: '1.5px solid var(--color-border,#e2e8f0)', borderRadius: 12 }}>
-        <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+      <div className="einv-table-container" style={{ overflowX: 'auto', background: '#fff', border: '1.5px solid var(--color-border,#e2e8f0)', borderRadius: 12 }}>
+        <table className="einv-table" style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '2px solid var(--color-border,#e2e8f0)' }}>
               <th style={th()}>N° Factura</th>
@@ -250,17 +294,24 @@ export default function EinvoicingInvoicesPage() {
                 </td>
               </tr>
             )}
-            {!loading && invoices.map(inv => {
+            {!loading && invoices.length > 0 && filtered.length === 0 && (
+              <tr>
+                <td colSpan={8} style={{ textAlign: 'center', padding: 36, color: '#94a3b8', fontSize: 13 }}>
+                  Sin resultados para esa búsqueda
+                </td>
+              </tr>
+            )}
+            {!loading && filtered.map(inv => {
               const st    = STATUS_STYLE[inv.status] || STATUS_STYLE.pendiente;
               const isAct = actionId === inv.id;
               const date  = inv.emission_date
                 ? new Date(inv.emission_date).toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' })
                 : '—';
               return (
-                <tr key={inv.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '11px 10px', fontWeight: 700, color: '#6842fe', whiteSpace: 'nowrap' }}>{inv.invoice_number}</td>
-                  <td style={{ padding: '11px 10px', whiteSpace: 'nowrap', color: '#64748b' }}>{date}</td>
-                  <td style={{ padding: '11px 10px' }}>
+                <tr key={inv.id} className="einv-tbody-tr" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td className="einv-td" data-label="N° Factura" style={{ padding: '11px 10px', fontWeight: 700, color: '#6842fe', whiteSpace: 'nowrap' }}>{inv.invoice_number}</td>
+                  <td className="einv-td" data-label="Fecha" style={{ padding: '11px 10px', whiteSpace: 'nowrap', color: '#64748b' }}>{date}</td>
+                  <td className="einv-td" data-label="Cliente" style={{ padding: '11px 10px' }}>
                     <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
                     {inv.customer_ruc && <div style={{ fontSize: 11, color: '#94a3b8' }}>{inv.customer_ruc}</div>}
                     {inv.customer_phone && (
@@ -269,10 +320,10 @@ export default function EinvoicingInvoicesPage() {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: '11px 10px', textAlign: 'right' }}>${parseFloat(inv.subtotal || 0).toFixed(2)}</td>
-                  <td style={{ padding: '11px 10px', textAlign: 'right' }}>${parseFloat(inv.iva_amount || 0).toFixed(2)}</td>
-                  <td style={{ padding: '11px 10px', textAlign: 'right', fontWeight: 800, color: '#059669' }}>${parseFloat(inv.total || 0).toFixed(2)}</td>
-                  <td style={{ padding: '11px 10px', textAlign: 'center' }}>
+                  <td className="einv-td einv-td-right" data-label="Subtotal" style={{ padding: '11px 10px', textAlign: 'right' }}>${parseFloat(inv.subtotal || 0).toFixed(2)}</td>
+                  <td className="einv-td einv-td-right" data-label="IVA" style={{ padding: '11px 10px', textAlign: 'right' }}>${parseFloat(inv.iva_amount || 0).toFixed(2)}</td>
+                  <td className="einv-td einv-td-right" data-label="Total" style={{ padding: '11px 10px', textAlign: 'right', fontWeight: 800, color: '#059669' }}>${parseFloat(inv.total || 0).toFixed(2)}</td>
+                  <td className="einv-td" data-label="Estado" style={{ padding: '11px 10px', textAlign: 'center' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: st.color, background: st.bg, border: `1px solid ${st.border}`, borderRadius: 20, padding: '3px 9px', fontWeight: 700, fontSize: 11 }}>
                       <st.Icon size={11} /> {st.label}
                     </span>
@@ -287,27 +338,23 @@ export default function EinvoicingInvoicesPage() {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: '11px 10px' }}>
+                  <td className="einv-td einv-td-actions" data-label="Acciones" style={{ padding: '11px 10px' }}>
                     <div style={{ display: 'flex', gap: 5, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
-                      {/* Descargar PDF */}
                       {inv.signed_xml && (
                         <button onClick={() => handleDownloadPdf(inv)} title="Descargar RIDE (PDF)" style={btnStyle('#fff7ed', '#b45309', '#fcd34d')}>
                           <Download size={11} /> PDF
                         </button>
                       )}
-                      {/* Descargar XML */}
                       {inv.signed_xml && (
                         <button onClick={() => handleDownloadXml(inv)} title="Descargar XML firmado" style={btnStyle('#fff', '#6842fe', '#dad2fa')}>
                           <Download size={11} /> XML
                         </button>
                       )}
-                      {/* Reenviar al SRI */}
                       {(inv.status === 'pendiente' || inv.status === 'rechazada') && (
                         <button onClick={() => handleResend(inv)} disabled={isAct} title="Reenviar al SRI" style={btnStyle(isAct ? '#f1f5f9' : '#f0fdf4', '#15803d', '#bbf7d0', isAct)}>
                           <Send size={11} /> {isAct ? '...' : 'SRI'}
                         </button>
                       )}
-                      {/* Enviar por correo — solo autorizadas */}
                       {inv.status === 'autorizada' && (
                         <button onClick={() => setEmailMdl(inv)} title="Enviar RIDE por correo" style={btnStyle('#eef2ff', '#6842fe', '#c7d2fe')}>
                           <Mail size={11} /> Email

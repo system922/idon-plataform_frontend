@@ -5,8 +5,8 @@ export default function SalesChartSection({ salesData }) {
   const isEmpty = !salesData || salesData.length === 0;
 
   return (
-    <div className="dashboard-graph-card graph-big"
-      style={{ width: '100%', minHeight: 320, padding: 32, background: '#17192b', borderRadius: 16, marginBottom: 30 }}
+    <div className="dashboard-graph-card graph-big sales-chart-card"
+      style={{ width: '100%', minHeight: 320, background: '#17192b', borderRadius: 16, marginBottom: 30 }}
     >
       <div style={{ fontSize: 18, color: '#fff', fontWeight: 700, marginBottom: 8 }}>Ventas por día</div>
       {isEmpty ? (

@@ -323,20 +323,20 @@ export default function PurchasesHistory() {
                   ) : (
                     paginatedGastos.map(gasto => (
                       <tr key={gasto.id}>
-                        <td>{new Date(gasto.date).toLocaleDateString('es-ES')}</td>
-                        <td>
-                          <span 
+                        <td data-label="Fecha">{new Date(gasto.date).toLocaleDateString('es-ES')}</td>
+                        <td data-label="Categoría">
+                          <span
                             className="category-badge"
                             style={{ backgroundColor: gasto.category_color || '#e8f5e9', color: gasto.category_color_dark || '#2e7d32' }}
                           >
                             {gasto.category_name}
                           </span>
                         </td>
-                        <td>{gasto.description || '-'}</td>
-                        <td className="amount">${(parseFloat(gasto.amount) || 0).toFixed(2)}</td>
-                        <td>{gasto.reference || '-'}</td>
-                        <td>{gasto.created_by_name || 'Sistema'}</td>
-                        <td className="actions">
+                        <td data-label="Descripción">{gasto.description || '-'}</td>
+                        <td className="amount" data-label="Monto">${(parseFloat(gasto.amount) || 0).toFixed(2)}</td>
+                        <td data-label="Referencia">{gasto.reference || '-'}</td>
+                        <td data-label="Registrado por">{gasto.created_by_name || 'Sistema'}</td>
+                        <td className="actions" data-label="Acciones">
                           <button 
                             className="icon-btn edit" 
                             onClick={() => abrirEditar(gasto)}

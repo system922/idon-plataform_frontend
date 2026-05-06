@@ -217,11 +217,27 @@ export default function BusinessLayout({ user, onLogout }) {
   const navigate   = useNavigate();
 
   useEffect(() => {
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
+    const mq = window.matchMedia('(max-width: 768px)');
+
+    const applyOverflow = (isMobile) => {
+      if (isMobile) {
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+      } else {
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+      }
+    };
+
+    const handleChange = (e) => applyOverflow(e.matches);
+
+    applyOverflow(mq.matches);
+    mq.addEventListener('change', handleChange);
+
     return () => {
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
+      mq.removeEventListener('change', handleChange);
     };
   }, []);
 

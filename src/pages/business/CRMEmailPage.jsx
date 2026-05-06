@@ -1,11 +1,119 @@
 import React, { useState, useEffect } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { 
-  Plus, Edit2, Trash2, Send, Eye, X, Check, AlertCircle, 
-  Mail, Users, Calendar, Loader 
+import {
+  Plus, Edit2, Trash2, Send, Eye, X, Check, AlertCircle,
+  Mail, Users, Calendar, Loader, CheckCircle, XCircle
 } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/CrmEmail.css';
+
+// ── Modal de confirmación de envío ────────────────────────────────────────────
+function CampaignSendModal({ campaign, clientCount, onClose, onSent }) {
+  const [sending,  setSending ] = useState(false);
+  const [result,   setResult  ] = useState(null);
+  const [err,      setErr     ] = useState('');
+
+  const handleSend = async () => {
+    setSending(true); setErr('');
+    try {
+      const res  = await fetchWithAuth(`/api/crm/email-campaigns/${campaign.id}/send`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al enviar');
+      setResult(data);
+      onSent(data);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 24, width: '100%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.5)', boxSizing: 'border-box' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ background: 'rgba(16,185,129,0.15)', borderRadius: 8, padding: 6 }}>
+              <Mail size={18} color="#10b981" />
+            </div>
+            <span style={{ fontWeight: 700, fontSize: 15, color: '#f1f5f9' }}>Enviar campaña</span>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4 }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Campaign info */}
+        <div style={{ background: '#0f172a', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12 }}>
+          <div style={{ color: '#94a3b8', marginBottom: 2 }}>Campaña</div>
+          <div style={{ fontWeight: 700, color: '#10b981', fontSize: 14 }}>{campaign.title}</div>
+          <div style={{ color: '#cbd5e1', marginTop: 4 }}>Asunto: {campaign.subject}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 8, color: '#60d5c0', fontWeight: 600 }}>
+            <Users size={12} />
+            {clientCount !== null
+              ? `${clientCount} cliente${clientCount !== 1 ? 's' : ''} con correo registrado`
+              : 'Todos los clientes con correo'}
+          </div>
+        </div>
+
+        {/* Resultado */}
+        {result && (
+          <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', fontWeight: 700, marginBottom: 6 }}>
+              <CheckCircle size={14} /> Envío completado
+            </div>
+            <div style={{ color: '#cbd5e1' }}>
+              ✅ Enviados: <strong>{result.sent_count || 0}</strong> de <strong>{result.total || 0}</strong>
+            </div>
+            {result.failed > 0 && (
+              <div style={{ color: '#f87171', marginTop: 4 }}>
+                ❌ Fallidos: <strong>{result.failed}</strong>
+              </div>
+            )}
+          </div>
+        )}
+
+        {err && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#ef4444', fontSize: 12, marginBottom: 12 }}>
+            <XCircle size={13} /> {err}
+          </div>
+        )}
+
+        {/* Buttons */}
+        {!result ? (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={handleSend}
+              disabled={sending}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 0', background: sending ? '#064e3b' : '#10b981', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: sending ? 'default' : 'pointer' }}
+            >
+              {sending ? <Loader size={15} className="spin" /> : <Send size={15} />}
+              {sending ? 'Enviando…' : 'Confirmar envío'}
+            </button>
+            <button
+              onClick={onClose}
+              disabled={sending}
+              style={{ padding: '10px 16px', background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+            >
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onClose}
+            style={{ width: '100%', padding: '10px 0', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+          >
+            Cerrar
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function CrmEmail() {
   const [campaigns, setCampaigns] = useState([]);
@@ -17,8 +125,9 @@ export default function CrmEmail() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
-  const [sendResult, setSendResult] = useState(null); // para mostrar detalles del envío
-  const [clientCount, setClientCount] = useState(null); // para saber cuántos emails hay antes de enviar
+  const [sendResult, setSendResult] = useState(null);
+  const [clientCount, setClientCount] = useState(null);
+  const [sendModalCampaign, setSendModalCampaign] = useState(null);
 
   // Formulario de campaña
   const [formData, setFormData] = useState({
@@ -129,38 +238,16 @@ export default function CrmEmail() {
     }
   };
 
-  const handleSend = async (campaign) => {
-    const totalClients = clientCount !== null ? clientCount : 'todos los';
-    const confirmMsg = `¿Enviar "${campaign.title}" a ${totalClients} clientes? Esta acción puede tomar varios segundos.`;
-    if (!window.confirm(confirmMsg)) return;
-
-    setSending(true);
-    setSendResult(null);
-    setError('');
-    try {
-      const res = await fetchWithAuth(`/api/crm/email-campaigns/${campaign.id}/send`, { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al enviar');
-      
-      // Mostrar resultado detallado
-      let msg = `¡Campaña enviada! ✅ Enviados: ${data.sent_count || 0} de ${data.total || 0}`;
-      if (data.failed && data.failed > 0) {
-        msg += ` ❌ Fallidos: ${data.failed}`;
-        if (data.errors && data.errors.length) {
-          console.warn('Errores de envío:', data.errors);
-          msg += ` (ver consola para detalles)`;
-        }
-      }
-      setSuccess(msg);
-      setSendResult(data);
-      loadCampaigns(); // para actualizar la fecha de envío
-      setTimeout(() => setSuccess(''), 8000);
-    } catch (err) {
-      setError(err.message);
-      setTimeout(() => setError(''), 5000);
-    } finally {
-      setSending(false);
+  const handleSendDone = (data) => {
+    setSendResult(data);
+    let msg = `¡Campaña enviada! ✅ Enviados: ${data.sent_count || 0} de ${data.total || 0}`;
+    if (data.failed > 0) {
+      msg += ` ❌ Fallidos: ${data.failed}`;
+      if (data.errors?.length) console.warn('Errores de envío:', data.errors);
     }
+    setSuccess(msg);
+    loadCampaigns();
+    setTimeout(() => setSuccess(''), 8000);
   };
 
   const headerAction = (
@@ -213,14 +300,13 @@ export default function CrmEmail() {
                   <button className="icon-btn preview" onClick={() => { setEditingCampaign(camp); setPreviewOpen(true); }}>
                     <Eye size={16} /> Prever
                   </button>
-                  <button 
-                    className="icon-btn send" 
-                    onClick={() => handleSend(camp)} 
-                    disabled={sending || !camp.is_active}
+                  <button
+                    className="icon-btn send"
+                    onClick={() => setSendModalCampaign(camp)}
+                    disabled={!camp.is_active}
                     title={!camp.is_active ? 'La campaña está inactiva' : 'Enviar a todos los clientes'}
                   >
-                    {sending ? <Loader size={16} className="spin" /> : <Send size={16} />} 
-                    Enviar
+                    <Send size={16} /> Enviar
                   </button>
                   <button className="icon-btn delete" onClick={() => handleDelete(camp)} disabled={sending}>
                     <Trash2 size={16} /> Eliminar
@@ -250,7 +336,7 @@ export default function CrmEmail() {
                 </div>
                 <div className="form-group">
                   <label>Contenido (HTML) *</label>
-                  <textarea rows="10" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} placeholder="<p>Hola, tenemos ofertas...</p>" />
+                  <textarea rows="7" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} placeholder="<p>Hola, tenemos ofertas...</p>" style={{ minHeight: 120 }} />
                   <small>Puedes usar HTML. Se recomienda diseño responsive.</small>
                 </div>
                 <div className="form-group checkbox">

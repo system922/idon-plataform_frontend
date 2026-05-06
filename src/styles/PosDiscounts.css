@@ -581,47 +581,154 @@ textarea.input {
   .filters-bar {
     flex-direction: column;
     align-items: stretch;
+    overflow: hidden;
   }
-  
+
+  .stats-badges {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
   .filter-buttons {
     justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
-  
+
+  .filter-btn {
+    flex: 1;
+    min-width: 70px;
+    text-align: center;
+  }
+
   .discount-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .modal-tabs {
     overflow-x: auto;
     justify-content: flex-start;
   }
-  
+
   .form-row {
     flex-direction: column;
     gap: 0.75rem;
   }
-  
+
   .form-actions {
     flex-direction: column;
   }
-  
+
   .btn {
     width: 100%;
     text-align: center;
+    justify-content: center;
+  }
+
+  /* header action buttons wrap cleanly */
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .header-actions .btn {
+    flex: 1;
+    min-width: 130px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+/* Bottom sheet modal + mobile fixes */
+@media (max-width: 600px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal,
+  .modal-lg {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 92dvh;
+  }
+
+  .modal-header {
+    padding: 1rem;
+  }
+
+  .modal-body {
+    padding: 1rem;
+  }
+
+  .modal-tabs {
+    padding: 0 1rem;
+  }
+
+  /* filter buttons: full width, no overflow */
+  .filter-buttons {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .filter-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 0.375rem 0.5rem;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* empty state: columna centrada */
+  .empty-state {
+    padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .empty-state h3,
+  .empty-state p {
+    margin: 0;
+    text-align: center;
+  }
+
+  .empty-state .btn {
+    width: auto;
+    min-width: 160px;
   }
 }
 
 @media (max-width: 480px) {
-  .modal {
-    max-width: 95%;
-  }
-  
   .discount-card {
     padding: 1rem;
   }
-  
+
   .discount-value {
     font-size: 1.3rem;
+  }
+
+  .stat-badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .tab-btn {
+    padding: 0.6rem 0.875rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .discount-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
   }
 }
 

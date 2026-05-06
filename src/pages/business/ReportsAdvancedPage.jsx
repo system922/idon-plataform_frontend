@@ -484,11 +484,11 @@ export default function ReportsAdvanced() {
                       const gasto = data.expenses.find(e => e.date === s.date)?.total_expenses || 0;
                       const margen = s.total_sales - gasto;
                       return (
-                        <tr key={s.date}>
-                          <td>{s.date}</td>
-                          <td>${Number(s.total_sales).toFixed(2)}</td>
-                          <td>${Number(gasto).toFixed(2)}</td>
-                          <td style={{ color: margen >= 0 ? '#10b981' : '#ef4444' }}>${margen.toFixed(2)}</td>
+                        <tr key={s.date} className="rep-tbody-tr">
+                          <td data-label="Fecha">{s.date}</td>
+                          <td data-label="Ventas">${Number(s.total_sales).toFixed(2)}</td>
+                          <td data-label="Gastos">${Number(gasto).toFixed(2)}</td>
+                          <td data-label="Margen" style={{ color: margen >= 0 ? '#10b981' : '#ef4444' }}>${margen.toFixed(2)}</td>
                         </tr>
                       );
                     })}

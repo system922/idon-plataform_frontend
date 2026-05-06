@@ -613,98 +613,173 @@
    RESPONSIVE
    ────────────────────────────────────────────────────────────── */
 
-/* Tablets */
 @media (max-width: 768px) {
-  .roles-table-container {
-    overflow-x: auto;
-  }
-  
-  .roles-table {
-    min-width: 550px;
-  }
-  
-  .roles-table th,
-  .roles-table td {
-    padding: 10px 10px;
-  }
-  
-  .roles-permission-badge {
-    padding: 3px 6px;
-  }
-  
-  .roles-permission-module {
-    font-size: 10px;
-  }
-  
   .dashboard-refresh-btn-header span {
     display: none;
   }
-  
+
   .dashboard-refresh-btn-header {
     padding: 8px 12px;
   }
-  
-  .rol-modal-box {
-    max-width: 95%;
-    margin: 16px;
+
+  /* Modal: ajuste de padding */
+  .rol-modal-header {
+    padding: 20px 20px 12px;
   }
-  
+
+  .rol-modal-box form {
+    padding: 16px 20px 20px;
+  }
+
   .rol-modal-header h2 {
     font-size: 18px;
   }
-  
-  .rol-modal-header {
-    padding: 20px 20px 12px 20px;
-  }
-  
-  .rol-modal-box form {
-    padding: 16px 20px 20px 20px;
+
+  /* Lista de permisos: altura dinámica en pantallas pequeñas */
+  .rol-permisos-list {
+    max-height: 40dvh;
   }
 }
 
-/* Móviles */
 @media (max-width: 640px) {
   .roles-header-actions {
     gap: 8px;
   }
-  
+
   .roles-btn-primary {
     padding: 6px 12px;
     font-size: 12px;
   }
-  
-  .roles-btn-primary svg {
-    width: 14px;
-    height: 14px;
+}
+
+/* ── Tabla → tarjetas en móvil ── */
+@media (max-width: 600px) {
+  /* Quitar fondo y borde del contenedor */
+  .roles-table-container {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow-x: visible;
+    margin-top: 12px;
   }
-  
+
   .roles-table {
-    min-width: 500px;
+    min-width: 0;
   }
-  
-  .roles-table th,
+
+  .roles-table,
+  .roles-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .roles-table thead {
+    display: none;
+  }
+
+  /* Cada fila = tarjeta */
+  .roles-table tr {
+    display: block;
+    background: #18181b;
+    border: 1.5px solid #26272b;
+    border-radius: 14px;
+    margin-bottom: 12px;
+    padding: 4px 14px;
+  }
+
+  .roles-table tr:hover {
+    background: #18181b;
+  }
+
+  /* Reset de los anchos fijos del escritorio — clave del bug */
+  .roles-table td:first-child,
+  .roles-table td:nth-child(2),
+  .roles-table td:last-child {
+    width: 100%;
+    text-align: left;
+  }
+
+  /* Cada celda = fila flex etiqueta + valor */
   .roles-table td {
-    padding: 8px 8px;
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    gap: 10px;
+    font-size: 13px;
   }
-  
-  .roles-cell-name strong {
-    font-size: 12px;
+
+  .roles-table td:last-child {
+    border-bottom: none;
   }
-  
-  .roles-cell-description {
-    font-size: 9px;
+
+  /* Etiqueta a la izquierda */
+  .roles-table td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    flex-shrink: 0;
+    width: 72px;
+    padding-top: 2px;
   }
-  
-  .roles-permission-module {
-    font-size: 9px;
+
+  /* Contenido a la derecha: ocupa el resto y no desborda */
+  .roles-table td > *,
+  .roles-cell-name-inner {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
-  
-  .roles-permission-feature {
-    font-size: 8px;
-    padding: 1px 4px;
+
+  /* Wrapper del nombre: columna interna */
+  .roles-cell-name-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
-  
-  .rol-modulo-features {
-    margin-left: 30px;
+
+  /* Permisos: columna */
+  .roles-cell-permissions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .roles-permissions-container {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Acciones: botones en fila sin crecer */
+  .roles-cell-actions {
+    align-items: center;
+  }
+
+  .roles-cell-actions .roles-action-btn {
+    flex: none;
+  }
+
+  /* Estado vacío */
+  .roles-empty-state {
+    display: block;
+    padding: 40px 20px;
+  }
+
+  /* Modal como bottom sheet */
+  .rol-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .rol-modal-box {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 92dvh;
   }
 }

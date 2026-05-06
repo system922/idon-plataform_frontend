@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { Plus, Edit2, Trash2, Tag, X, Search, RefreshCw } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
+import '../../styles/InventoryCategoriesPage.css';
 
 const EMPTY_CATEGORY = { name: '', description: '' };
 
@@ -11,11 +12,11 @@ function CategoryModal({ category, onClose, onSave, saving }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   return (
-    <div style={{
+    <div className="invcat-modal-overlay" style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 14,
     }}>
-      <div style={{
+      <div className="invcat-modal" style={{
         background: '#fff', borderRadius: 14, boxShadow: '0 12px 40px #0002',
         border: '1px solid #f1f1f1', minWidth: 330, maxWidth: 400,
         width: '100%', padding: 0, display: 'flex', flexDirection: 'column'
@@ -149,10 +150,11 @@ export default function InventoryCategoriesPage() {
   );
 
   const headerAction = (
-    <div style={{ display: 'flex', gap: 9 }}>
-      <div style={{ position: 'relative' }}>
+    <div className="invcat-header-actions" style={{ display: 'flex', gap: 9 }}>
+      <div className="invcat-search-wrapper" style={{ position: 'relative' }}>
         <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#ccc' }} />
         <input
+          className="invcat-search-input"
           type="text"
           value={search}
           placeholder="Buscar categoría..."
@@ -189,7 +191,7 @@ export default function InventoryCategoriesPage() {
       onRetry={load}
       theme="business"
     >
-      <div style={{
+      <div className="invcat-grid" style={{
         display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px,1fr))', gap: 16, marginTop: 10
       }}>
         {filtered.length === 0 && (

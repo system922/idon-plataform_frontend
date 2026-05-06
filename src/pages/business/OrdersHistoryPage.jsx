@@ -656,31 +656,31 @@ export default function OrdersHistoryPage() {
                         className={selectedOrder?.id === order.id ? 'selected' : ''}
                         onClick={() => handleSelectOrder(order)}
                       >
-                        <td className="mesa-num">
+                        <td className="mesa-num" data-label="Mesa / Orden">
                           {order.mesa_numero != null ? `Mesa ${order.mesa_numero}` : 'S/Mesa'}
                           <br /><small>#{order.order_number || order.id.slice(0,8)}</small>
                         </td>
-                        <td>
+                        <td data-label="Estado">
                           <span className={`badge badge-${order.status === 'paid' ? 'success' : order.status === 'pending' ? 'warning' : 'danger'}`}>
                             {order.status === 'paid' ? 'Pagada' : order.status === 'pending' ? 'Pendiente' : order.status}
                           </span>
                         </td>
-                        <td>{order.items?.length || 0}</td>
-                        <td className="amount">{fmt(order.total)}</td>
-                        <td onClick={e => e.stopPropagation()}>
+                        <td data-label="Items">{order.items?.length || 0}</td>
+                        <td className="amount" data-label="Total">{fmt(order.total)}</td>
+                        <td data-label="Acciones" onClick={e => e.stopPropagation()}>
                           <div className="action-buttons">
-                            <button 
-                              className="btn-action btn-edit" 
-                              onClick={() => handleEditOrder(order)} 
+                            <button
+                              className="btn-action btn-edit"
+                              onClick={() => handleEditOrder(order)}
                               disabled={editMode}
                             >
-                              <Edit2 size={13} /> Editar
+                              <Edit2 size={13} /><span>Editar</span>
                             </button>
                             <button className="btn-action btn-delete" onClick={() => handleDeleteOrder(order.id)}>
-                              <Trash2 size={13} /> Eliminar
+                              <Trash2 size={13} /><span>Eliminar</span>
                             </button>
                             <button className="btn-action btn-print" onClick={() => handlePrintModification(order, [], [], order.items)}>
-                              <Printer size={13} /> Reimprimir
+                              <Printer size={13} /><span>Reimprimir</span>
                             </button>
                           </div>
                         </td>

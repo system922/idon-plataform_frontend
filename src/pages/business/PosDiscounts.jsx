@@ -917,7 +917,6 @@ export default function PosDiscounts() {
           <div className="empty-state">
             <FiGift size={48} />
             <h3>No hay descuentos configurados</h3>
-            <p>Crea tu primera promoción para aumentar las ventas</p>
             <button 
               className="btn btn-primary" 
               onClick={() => setShowModal(true)}

@@ -1,0 +1,59 @@
+/* ── Header actions ──────────────────────────────────────── */
+.invcat-header-actions {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.invcat-search-wrapper {
+  position: relative;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Header: apila en columna */
+  .invcat-header-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100%;
+    gap: 8px !important;
+  }
+
+  .invcat-search-wrapper {
+    width: 100%;
+  }
+
+  .invcat-search-input {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+
+  /* Grid: 1 columna en pantallas muy pequeñas */
+  .invcat-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Modal: bottom sheet */
+  .invcat-modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .invcat-modal {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 92dvh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 400px) {
+  /* 2 columnas en tarjetas muy pequeñas — solo si caben */
+  .invcat-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

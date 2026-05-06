@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { Plus, Edit2, Trash2, X, Search, RefreshCw, Package, AlertCircle } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
+import '../../styles/InventoryProductsPage.css';
 
 const EMPTY = {
   nombre: '', precioVenta: '', costo: '', descripcion: '',
@@ -55,12 +56,12 @@ function ProductModal({ product, categories, onClose, onSave, saving }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   return (
-    <div style={{
+    <div className="invp-modal-overlay" style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
       backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center',
       justifyContent: 'center', zIndex: 1000, padding: 16,
     }}>
-      <div style={{
+      <div className="invp-modal" style={{
         background: 'linear-gradient(135deg,#1a1f2a 0%,#141920 100%)',
         border: '1px solid rgba(104,66,254,0.25)', borderRadius: 16,
         width: '100%', maxWidth: 580, maxHeight: '90vh',
@@ -90,7 +91,7 @@ function ProductModal({ product, categories, onClose, onSave, saving }) {
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="invp-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div style={{ gridColumn: '1/-1' }}>
               <Field label="Nombre *">
                 <input
@@ -175,7 +176,7 @@ function ProductModal({ product, categories, onClose, onSave, saving }) {
         </div>
 
         {/* Footer */}
-        <div style={{
+        <div className="invp-modal-footer" style={{
           padding: '18px 28px', borderTop: '1px solid rgba(255,255,255,0.08)',
           display: 'flex', justifyContent: 'flex-end', gap: 12,
         }}>
@@ -267,13 +268,14 @@ export default function InventoryProductsPage() {
   ];
 
   const headerAction = (
-    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-      <div style={{ position: 'relative' }}>
+    <div className="invp-header-actions" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div className="invp-search-wrapper" style={{ position: 'relative' }}>
         <Search size={14} style={{
           position: 'absolute', left: 10, top: '50%',
           transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.35)',
         }} />
         <input
+          className="invp-search-input"
           type="text" placeholder="Buscar nombre, código o SKU..."
           value={search} onChange={e => setSearch(e.target.value)}
           style={{
@@ -306,7 +308,7 @@ export default function InventoryProductsPage() {
       onRetry={load}
     >
       {/* Stats */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div className="invp-stats" style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {stats.map(s => (
           <div key={s.label} style={{
             background: 'rgba(255,255,255,0.04)',
@@ -320,13 +322,13 @@ export default function InventoryProductsPage() {
       </div>
 
       {/* Table */}
-      <div style={{
+      <div className="invp-table-wrapper" style={{
         background: 'rgba(255,255,255,0.03)',
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 12, overflow: 'hidden',
       }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <div className="invp-table-inner" style={{ overflowX: 'auto' }}>
+          <table className="invp-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{
                 background: 'rgba(104,66,254,0.12)',
@@ -360,6 +362,7 @@ export default function InventoryProductsPage() {
                 return (
                   <tr
                     key={p.id}
+                    className="invp-tbody-tr"
                     style={{
                       borderBottom: '1px solid rgba(255,255,255,0.05)',
                       background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
@@ -368,13 +371,13 @@ export default function InventoryProductsPage() {
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(104,66,254,0.07)'}
                     onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'}
                   >
-                    <td style={{
+                    <td className="invp-td" data-label="Código" style={{
                       padding: '11px 14px', color: 'rgba(255,255,255,0.4)',
                       fontSize: 11, fontFamily: 'monospace',
                     }}>
                       {p.code}
                     </td>
-                    <td style={{ padding: '11px 14px', color: '#fff', fontWeight: 600 }}>
+                    <td className="invp-td" data-label="Nombre" style={{ padding: '11px 14px', color: '#fff', fontWeight: 600 }}>
                       {p.name}
                       {p.sku && (
                         <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginLeft: 8 }}>
@@ -382,13 +385,13 @@ export default function InventoryProductsPage() {
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '11px 14px', color: 'rgba(255,255,255,0.6)' }}>
+                    <td className="invp-td" data-label="Categoría" style={{ padding: '11px 14px', color: 'rgba(255,255,255,0.6)' }}>
                       {p.category_name || <span style={{ color: 'rgba(255,255,255,0.2)' }}>—</span>}
                     </td>
-                    <td style={{ padding: '11px 14px', color: '#10b981', fontWeight: 700 }}>
+                    <td className="invp-td" data-label="Precio" style={{ padding: '11px 14px', color: '#10b981', fontWeight: 700 }}>
                       ${Number(p.price || 0).toFixed(2)}
                     </td>
-                    <td style={{ padding: '11px 14px' }}>
+                    <td className="invp-td" data-label="Stock" style={{ padding: '11px 14px' }}>
                       <span style={{
                         fontWeight: 700,
                         color: p.stock === 0 ? '#ef4444' : lowStock ? '#f59e0b' : '#10b981',
@@ -404,7 +407,7 @@ export default function InventoryProductsPage() {
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '11px 14px' }}>
+                    <td className="invp-td" data-label="Estado" style={{ padding: '11px 14px' }}>
                       <span style={{
                         fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 20,
                         background: p.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
@@ -413,7 +416,7 @@ export default function InventoryProductsPage() {
                         {p.is_active ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-                    <td style={{ padding: '11px 14px' }}>
+                    <td className="invp-td invp-td-actions" style={{ padding: '11px 14px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button
                           onClick={() => { setEditing(p); setShowModal(true); }}

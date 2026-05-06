@@ -432,23 +432,23 @@ export default function AccountingBalance() {
                         ? new Date(row.period).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
                         : new Date(row.period).toLocaleDateString();
                       return (
-                        <tr key={row.period}>
-                          <td>{periodDisplay}</td>
-                          <td className="sales">${row.Ventas.toFixed(2)}</td>
-                          <td className="expenses">${row.Gastos.toFixed(2)}</td>
-                          <td className={result >= 0 ? 'profit' : 'loss'}>${result.toFixed(2)}</td>
-                          <td className={margin >= 0 ? 'profit' : 'loss'}>{margin.toFixed(1)}%</td>
+                        <tr key={row.period} className="bal-tbody-tr">
+                          <td data-label="Período">{periodDisplay}</td>
+                          <td data-label="Ventas" className="sales">${row.Ventas.toFixed(2)}</td>
+                          <td data-label="Gastos" className="expenses">${row.Gastos.toFixed(2)}</td>
+                          <td data-label="Resultado" className={result >= 0 ? 'profit' : 'loss'}>${result.toFixed(2)}</td>
+                          <td data-label="Margen" className={margin >= 0 ? 'profit' : 'loss'}>{margin.toFixed(1)}%</td>
                         </tr>
                       );
                     })}
                   </tbody>
                   <tfoot>
-                    <tr>
-                      <td><strong>Totales</strong></td>
-                      <td><strong>${totalVentasPDF.toFixed(2)}</strong></td>
-                      <td><strong>${totalGastosPDF.toFixed(2)}</strong></td>
-                      <td className={netoPDF >= 0 ? 'profit' : 'loss'}><strong>${netoPDF.toFixed(2)}</strong></td>
-                      <td><strong>{margenPDF.toFixed(1)}%</strong></td>
+                    <tr className="bal-tfoot-tr">
+                      <td data-label="Período"><strong>Totales</strong></td>
+                      <td data-label="Ventas"><strong>${totalVentasPDF.toFixed(2)}</strong></td>
+                      <td data-label="Gastos"><strong>${totalGastosPDF.toFixed(2)}</strong></td>
+                      <td data-label="Resultado" className={netoPDF >= 0 ? 'profit' : 'loss'}><strong>${netoPDF.toFixed(2)}</strong></td>
+                      <td data-label="Margen"><strong>{margenPDF.toFixed(1)}%</strong></td>
                     </tr>
                   </tfoot>
                 </table>

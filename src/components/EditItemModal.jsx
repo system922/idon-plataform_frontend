@@ -13,8 +13,8 @@ export default function EditItemModal({
   setNotasItem,
   guardarEdicionItem,
   categorias,
-  extrasItem,
-  setExtrasItem,
+  extrasItem = [],
+  setExtrasItem = () => {},
 }) {
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
   const [extraSel,  setExtraSel ] = useState('');

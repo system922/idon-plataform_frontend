@@ -5,7 +5,7 @@ export default function GraphsRowSection({ purchasesData, hoursData, graphLoadin
   const noPurchases = !purchasesData || purchasesData.length === 0;
 
   return (
-    <div style={{ display: 'flex', gap: 16 }}>
+    <div className="dashboard-graphs-row">
       {/* Gráfico de Compras */}
       <div className="dashboard-graph-card"
         style={{ flex: 1, minWidth: 0, background: '#17192b', borderRadius: 14, padding: 22 }}

@@ -355,13 +355,15 @@ export default function RolesPage() {
               ) : (
                 roles.map(role => (
                   <tr key={role.id}>
-                    <td className="roles-cell-name">
-                      <strong>{role.name}</strong>
-                      {role.description && (
-                        <span className="roles-cell-description">{role.description}</span>
-                      )}
+                    <td className="roles-cell-name" data-label="Nombre">
+                      <div className="roles-cell-name-inner">
+                        <strong>{role.name}</strong>
+                        {role.description && (
+                          <span className="roles-cell-description">{role.description}</span>
+                        )}
+                      </div>
                     </td>
-                    <td className="roles-cell-permissions">
+                    <td className="roles-cell-permissions" data-label="Módulos">
                       <div className="roles-permissions-container">
                         {(Array.isArray(role.permissions) ? role.permissions : []).map(perm => {
                           const mod = modules.find(m => m.id === perm.modulo);
@@ -386,16 +388,16 @@ export default function RolesPage() {
                         })}
                       </div>
                     </td>
-                    <td className="roles-cell-actions">
-                      <button 
-                        className="roles-action-btn edit" 
+                    <td className="roles-cell-actions" data-label="Acciones">
+                      <button
+                        className="roles-action-btn edit"
                         onClick={() => openEdit(role)}
                         title="Editar rol"
                       >
                         <FiEdit2 size={14} />
                       </button>
-                      <button 
-                        className="roles-action-btn delete" 
+                      <button
+                        className="roles-action-btn delete"
                         onClick={() => handleDelete(role)}
                         title="Eliminar rol"
                       >

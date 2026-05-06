@@ -793,64 +793,140 @@
 
 @media (max-width: 768px) {
   .orders-table {
-    overflow-x: scroll;
+    overflow-x: auto;
   }
-  
-  .orders-table table {
-    min-width: 680px;
-  }
-  
+
   .checkout-shell {
     gap: 12px;
   }
-  
+
   .card-head h3 {
     font-size: 16px;
   }
-  
+
   .order-mesa {
     font-size: 18px;
   }
-  
+
   .summary-total {
     font-size: 17px;
   }
-  
+
   .summary-total span:last-child {
     font-size: 19px;
   }
-  
+
   .action-buttons-group {
     flex-direction: column;
   }
-  
+
   .btn-save,
   .btn-cancel-edit {
     width: 100%;
   }
-  
+
   .filters-container {
     flex-direction: column;
   }
-  
+
   .filter-date-container,
   .filter-status-container,
   .search-box,
   .btn-refresh {
     width: 100%;
   }
-  
+
   .btn-refresh {
     justify-content: center;
   }
-  
+
+  /* icon-only action buttons — hide text, keep icons */
   .action-buttons {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
   }
-  
+
+  .btn-action span {
+    display: none;
+  }
+
   .btn-action {
+    padding: 7px 9px;
     justify-content: center;
+  }
+}
+
+/* ── Card layout for very small screens ──────────────────── */
+@media (max-width: 600px) {
+  .orders-table thead {
+    display: none;
+  }
+
+  .orders-table table {
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    width: 100%;
+  }
+
+  .orders-table tbody tr {
+    display: block;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: 3px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    margin-bottom: 4px;
+    cursor: pointer;
+  }
+
+  .orders-table tbody tr.selected {
+    border-left-color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+  }
+
+  .orders-table tbody tr:hover {
+    background: rgba(16, 185, 129, 0.07);
+  }
+
+  .orders-table tbody td {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 13px;
+  }
+
+  .orders-table tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .orders-table tbody td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.45);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    min-width: 72px;
+    flex-shrink: 0;
+  }
+
+  /* mesa-num cell styled as card header */
+  .orders-table tbody td.mesa-num {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 9px 9px 0 0;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  /* action buttons row inside card */
+  .orders-table .action-buttons {
+    flex: 1;
+    justify-content: flex-end;
   }
 }
 
