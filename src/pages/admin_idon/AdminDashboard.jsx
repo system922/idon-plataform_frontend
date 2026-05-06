@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiClipboard, FiUsers, FiTool, FiStar, FiServer, FiEdit, FiSettings, FiFileText, FiTrendingUp, FiRefreshCw } from 'react-icons/fi';
+import PageTemplate from '../../components/PageTemplate';
+import {
+  FiClipboard, FiUsers, FiTool, FiStar, FiServer, FiTrendingUp,
+  FiRefreshCw, FiFileText, FiDollarSign, FiCheckCircle, FiClock,
+  FiGrid, FiBarChart2
+} from 'react-icons/fi';
 import { adminApiService } from '../../services/apiService';
-import '../../styles/AdminPages.css';
+import '../../styles/AdminDashboard.css';
 
-const AdminDashboard = () => {
+export default function AdminDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     activeBusinesses: 0,
@@ -12,11 +17,12 @@ const AdminDashboard = () => {
     totalModules: 0,
     totalFeatures: 0,
     totalUsers: 0,
-    modulesInUse: 0,
+    monthlyRevenue: 0,
   });
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchDashboard = async () => {
     try {
@@ -28,10 +34,11 @@ const AdminDashboard = () => {
         activeBusinesses: data.activeBusinesses || 0,
         pendingRequests: data.pendingRequests || 0,
         totalModules: data.totalModules || 0,
+        totalFeatures: data.totalFeatures || 0,
         monthlyRevenue: data.monthlyRevenue || 0,
         totalUsers: data.totalUsers || 0,
       });
-      setRecentActivity([]); // Not provided by backend
+      setRecentActivity(data.recentActivity || []);
       setLoading(false);
     } catch (err) {
       console.error('Error fetching dashboard:', err);
@@ -44,164 +51,128 @@ const AdminDashboard = () => {
     fetchDashboard();
   }, []);
 
-  const handleRetry = () => {
-    setLoading(true);
-    setError(null);
-    fetchDashboard();
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchDashboard();
+    setRefreshing(false);
   };
 
+  const formatCurrency = (value) => `$${Number(value || 0).toFixed(2)}`;
+
   const quickActions = [
-    {
-      label: 'Ver Solicitudes',
-      icon: FiClipboard,
-      onClick: () => navigate('/admin/requests'),
-    },
-    {
-      label: 'Gestionar Negocios',
-      icon: FiUsers,
-      onClick: () => navigate('/admin/businesses'),
-    },
-    {
-      label: 'Módulos',
-      icon: FiTool,
-      onClick: () => navigate('/admin/modules'),
-    },
-    {
-      label: 'Funcionalidades',
-      icon: FiStar,
-      onClick: () => navigate('/admin/features'),
-    },
+    { label: 'Ver Solicitudes', icon: FiClipboard, onClick: () => navigate('/admin/requests'), color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+    { label: 'Gestionar Negocios', icon: FiUsers, onClick: () => navigate('/admin/businesses'), color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+    { label: 'Módulos', icon: FiTool, onClick: () => navigate('/admin/modules'), color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
+    { label: 'Funcionalidades', icon: FiStar, onClick: () => navigate('/admin/features'), color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)' },
   ];
+
+  const statsCards = [
+    { label: 'Negocios Activos', value: stats.activeBusinesses, icon: <FiServer size={24} />, color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+    { label: 'Solicitudes Pendientes', value: stats.pendingRequests, icon: <FiClock size={24} />, color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+    { label: 'Módulos Base', value: stats.totalModules, icon: <FiGrid size={24} />, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
+    { label: 'Ingresos Mensuales', value: formatCurrency(stats.monthlyRevenue), icon: <FiDollarSign size={24} />, color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)' },
+    { label: 'Usuarios Activos', value: stats.totalUsers, icon: <FiUsers size={24} />, color: '#ec4899', bg: 'rgba(236,72,153,0.15)' },
+    { label: 'Funcionalidades', value: stats.totalFeatures, icon: <FiBarChart2 size={24} />, color: '#06b6d4', bg: 'rgba(6,182,212,0.15)' },
+  ];
+
+  const refreshButton = (
+    <button onClick={handleRefresh} className="admin-refresh-btn" disabled={refreshing}>
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
 
   if (loading) {
     return (
-      <div className="admin-page-container">
-        <div className="admin-page-header">
-          <h1 className="admin-page-title">Dashboard</h1>
-          <p className="admin-page-subtitle">IDON Plataforma de Gestión Multinegocios</p>
-        </div>
-        <div className="admin-loading">
-          <div className="admin-spinner"></div>
-          Cargando datos...
-        </div>
-      </div>
+      <PageTemplate title="PANEL DE CONTROL" subtitle="IDON Plataforma de Gestión Multinegocios" loading={true}>
+        <div className="admin-loading">Cargando datos...</div>
+      </PageTemplate>
     );
   }
 
   if (error) {
     return (
-      <div className="admin-page-container">
-        <div className="admin-page-header">
-          <h1 className="admin-page-title">Dashboard</h1>
-          <p className="admin-page-subtitle">IDON Plataforma de Gestión Multinegocios</p>
+      <PageTemplate title="PANEL DE CONTROL" subtitle="IDON Plataforma de Gestión Multinegocios" error={error} onRetry={fetchDashboard}>
+        <div className="admin-error-content">
+          <p>Error al cargar los datos del dashboard</p>
+          <button className="admin-retry-btn" onClick={fetchDashboard}>
+            <FiRefreshCw size={16} /> Reintentar
+          </button>
         </div>
-        <div className="admin-card">
-          <div className="admin-card-body">
-            <div style={{ textAlign: 'center', padding: '24px' }}>
-              <p style={{ color: '#ef4444', marginBottom: '12px' }}>Error: {error}</p>
-              <button className="admin-btn admin-btn-primary" onClick={handleRetry}>
-                <FiRefreshCw size={16} /> Reintentar
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      </PageTemplate>
     );
   }
 
   return (
-    <div className="admin-page-container">
-      {/* Header */}
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">Dashboard</h1>
-        <p className="admin-page-subtitle">IDON Plataforma de Gestión Multinegocios</p>
-      </div>
+    <PageTemplate
+      title="PANEL DE CONTROL"
+      subtitle="Resumen ejecutivo de la plataforma IDON"
+      theme="admin"
+      headerAction={refreshButton}
+    >
+      <div className="admin-dashboard-container">
+        {/* Tarjetas de estadísticas */}
+        <div className="admin-stats-grid">
+          {statsCards.map((stat, index) => (
+            <div key={index} className="admin-stat-card">
+              <div className="admin-stat-icon" style={{ background: stat.bg, color: stat.color }}>
+                {stat.icon}
+              </div>
+              <div className="admin-stat-content">
+                <div className="admin-stat-value">{stat.value}</div>
+                <div className="admin-stat-label">{stat.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
 
-      {/* Stats Grid */}
-      <div className="admin-stats-grid">
-        <div className="admin-stat-card">
-          <div className="admin-stat-icon"><FiServer /></div>
-          <div className="admin-stat-label">Negocios Activos</div>
-          <div className="admin-stat-value">{stats.activeBusinesses}</div>
-          <div className="admin-stat-subtitle">Empresas registradas</div>
-        </div>
-        <div className="admin-stat-card">
-          <div className="admin-stat-icon"><FiClipboard /></div>
-          <div className="admin-stat-label">Solicitudes Pendientes</div>
-          <div className="admin-stat-value">{stats.pendingRequests}</div>
-          <div className="admin-stat-subtitle">En espera de aprobación</div>
-        </div>
-        <div className="admin-stat-card">
-          <div className="admin-stat-icon"><FiTool /></div>
-          <div className="admin-stat-label">Módulos Base</div>
-          <div className="admin-stat-value">{stats.totalModules}</div>
-          <div className="admin-stat-subtitle">Disponibles en el sistema</div>
-        </div>
-        <div className="admin-stat-card">
-          <div className="admin-stat-icon"><FiTrendingUp /></div>
-          <div className="admin-stat-label">Ingresos Mensuales</div>
-          <div className="admin-stat-value">${Math.round(stats.monthlyRevenue)}</div>
-          <div className="admin-stat-subtitle">Total suscripciones activas</div>
-        </div>
-        <div className="admin-stat-card">
-          <div className="admin-stat-icon"><FiUsers /></div>
-          <div className="admin-stat-label">Usuarios Activos</div>
-          <div className="admin-stat-value">{stats.totalUsers}</div>
-          <div className="admin-stat-subtitle">En toda la plataforma</div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="admin-card">
-        <div className="admin-card-header">
-          <h2>Acciones Rápidas</h2>
-        </div>
-        <div className="admin-card-body">
-          <div className="admin-grid admin-grid-4">
+        {/* Acciones Rápidas */}
+        <div className="admin-section-card">
+          <div className="admin-section-header">
+            <h3>Acciones Rápidas</h3>
+          </div>
+          <div className="admin-actions-grid">
             {quickActions.map((action, index) => (
               <button
                 key={index}
-                className="admin-btn admin-btn-secondary"
+                className="admin-action-btn"
                 onClick={action.onClick}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  padding: '20px 16px',
-                  height: 'auto',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
               >
-                <span style={{ fontSize: '32px', display: 'flex', justifyContent: 'center', color: '#ff8c42' }}>
-                  <action.icon size={32} />
-                </span>
-                <span style={{ fontSize: '13px', fontWeight: '600' }}>
-                  {action.label}
-                </span>
+                <action.icon size={28} />
+                <span className="admin-action-label">{action.label}</span>
               </button>
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Empty Recent Activity */}
-      <div className="admin-card">
-        <div className="admin-card-header">
-          <h2>Actividad Reciente</h2>
-        </div>
-        <div className="admin-card-body">
-          <div className="admin-empty">
-            <div className="admin-empty-icon"><FiFileText /></div>
-            <p className="admin-empty-title">Sin actividad reciente</p>
-            <p className="admin-empty-text">El historial de actividad aparecerá aquí</p>
+        {/* Actividad Reciente */}
+        <div className="admin-section-card">
+          <div className="admin-section-header">
+            <h3>Actividad Reciente</h3>
+          </div>
+          <div className="admin-activity-list">
+            {recentActivity.length === 0 ? (
+              <div className="admin-empty-state">
+                <FiFileText size={48} />
+                <p>No hay actividad reciente</p>
+                <span>El historial de actividad aparecerá aquí</span>
+              </div>
+            ) : (
+              recentActivity.map((activity, index) => (
+                <div key={index} className="admin-activity-item">
+                  <div className="admin-activity-icon">
+                    <FiCheckCircle size={16} />
+                  </div>
+                  <div className="admin-activity-content">
+                    <div className="admin-activity-description">{activity.description}</div>
+                    <div className="admin-activity-time">{new Date(activity.created_at).toLocaleString()}</div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
-    </div>
+    </PageTemplate>
   );
 }
-
-export default AdminDashboard;

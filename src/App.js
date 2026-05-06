@@ -17,7 +17,9 @@ import Clientes     from './pages/admin_idon/Clientes';
 import Modulos      from './pages/admin_idon/Modulos';
 import Users        from './pages/admin_idon/Users';
 import Requests                from './pages/admin_idon/Requests';
+import BusinessTypes           from './pages/admin_idon/BusinessTypes';
 import ProfilePage             from './pages/ProfilePage';
+import PublicLayout            from './admin/layout/PublicLayout';
 
 // ── Business panel ──────────────────────────────────────────
 import BusinessLayout       from './admin/layout/BusinessLayout';
@@ -78,8 +80,8 @@ function AppRoutes({ user, setUser, handleLogout }) {
         }
       />
 
-      <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms-and-conditions" element={<PublicLayout><TermsAndConditions /></PublicLayout>} />
+      <Route path="/privacy-policy" element={<PublicLayout><PrivacyPolicy /></PublicLayout>} />
 
       <Route
         path="/pending-approval"
@@ -122,7 +124,8 @@ function AppRoutes({ user, setUser, handleLogout }) {
               <Route path="roles"      element={<Roles />} />
               <Route path="settings"                element={<Settings />} />
               <Route path="audit"                  element={<Audit />} />
-              <Route path="requests"   element={<Requests />} />
+              <Route path="requests"      element={<Requests />} />
+              <Route path="business-types" element={<BusinessTypes />} />
               <Route path="profile"    element={<ProfilePage user={user} />} />
             </Routes>
           </AdminLayout>

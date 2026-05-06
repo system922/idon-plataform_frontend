@@ -3,26 +3,8 @@ import {
   FiCreditCard, FiRefreshCw, FiCheck, FiAlertCircle,
   FiClock, FiXCircle, FiCheckCircle, FiCalendar,
 } from 'react-icons/fi';
-import API_BASE from '../../config/apiBase';
+import { adminApiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
-
-
-const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
-const apiFetch = async (path, opts = {}) => {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...opts,
-    headers: {
-      'Authorization': `Bearer ${getToken()}`,
-      'Content-Type': 'application/json',
-      ...(opts.headers || {}),
-    },
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Error ${res.status}`);
-  }
-  return res.json();
-};
 
 const SUB_BADGE = {
   active:             { cls: 'admin-badge-success', label: 'Activa' },
@@ -52,7 +34,7 @@ export default function Payments() {
   const load = async () => {
     try {
       setLoading(true);
-      const r = await apiFetch('/api/admin/payments');
+      const r = await adminApiService.get('/admin/payments');
       setData(r.data || r || []);
       setError(null);
     } catch (e) {
@@ -67,10 +49,7 @@ export default function Payments() {
   const handleMarkPaid = async (subId, notes) => {
     setActing(subId);
     try {
-      await apiFetch(`/api/admin/subscriptions/${subId}/mark-paid`, {
-        method: 'POST',
-        body: JSON.stringify({ notes }),
-      });
+      await adminApiService.post(`/admin/subscriptions/${subId}/mark-paid`, { notes });
       setPayModal(null);
       await load();
     } catch (e) {
@@ -84,10 +63,7 @@ export default function Payments() {
     if (!window.confirm('¿Suspender este negocio? El dueño no podrá iniciar sesión.')) return;
     setActing(subId);
     try {
-      await apiFetch(`/api/admin/subscriptions/${subId}/suspend`, {
-        method: 'POST',
-        body: JSON.stringify({}),
-      });
+      await adminApiService.post(`/admin/subscriptions/${subId}/suspend`, {});
       await load();
     } catch (e) {
       alert('Error: ' + e.message);

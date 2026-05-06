@@ -3,25 +3,8 @@ import {
   FiBox, FiPlus, FiEdit2, FiTrash2, FiCheck, FiX,
   FiRefreshCw, FiSettings, FiDollarSign,
 } from 'react-icons/fi';
-import API_BASE from '../../config/apiBase';
+import { adminApiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
-
-const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
-const apiFetch = async (path, opts = {}) => {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...opts,
-    headers: {
-      'Authorization': `Bearer ${getToken()}`,
-      'Content-Type': 'application/json',
-      ...(opts.headers || {}),
-    },
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Error ${res.status}`);
-  }
-  return res.json();
-};
 
 const inp = { width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px', background: 'var(--admin-bg-primary)', border: '1px solid var(--admin-border-light)', color: 'var(--admin-text-primary)' };
 const Lbl = ({ children }) => <label style={{ display: 'block', marginBottom: 5, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: '#8CB79B' }}>{children}</label>;
@@ -35,7 +18,7 @@ export default function AdminModulos() {
   const load = async () => {
     try {
       setLoading(true);
-      const r = await apiFetch('/api/admin/modules');
+      const r = await adminApiService.get('/admin/modules');
       setModules(Array.isArray(r.data) ? r.data : []);
       setError(null);
     } catch (e) {
@@ -50,7 +33,7 @@ export default function AdminModulos() {
   const handleDelete = async (id) => {
     if (!window.confirm('¿Eliminar este módulo?')) return;
     try {
-      await apiFetch(`/api/admin/modules/${id}`, { method: 'DELETE' });
+      await adminApiService.delete(`/admin/modules/${id}`);
       load();
     } catch (e) {
       alert('Error: ' + e.message);
@@ -156,15 +139,9 @@ function ModuloModal({ item, onClose, onSaved }) {
     setSaving(true);
     try {
       if (item) {
-        await apiFetch(`/api/admin/modules/${item.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(form),
-        });
+        await adminApiService.put(`/admin/modules/${item.id}`, form);
       } else {
-        await apiFetch('/api/admin/modules', {
-          method: 'POST',
-          body: JSON.stringify(form),
-        });
+        await adminApiService.post('/admin/modules', form);
       }
       onSaved(); onClose();
     } catch (e) {

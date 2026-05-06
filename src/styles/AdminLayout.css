@@ -3,11 +3,9 @@
    Ubicación: src/admin/layout/AdminLayout.css
    ============================================================ */
 
-/* Reset para que no haya scroll doble en body */
-html, body, #root {
+/* Scoped al admin layout — no afecta páginas públicas */
+.admin-layout-root {
   height: 100%;
-  margin: 0;
-  padding: 0;
   overflow: hidden;
 }
 

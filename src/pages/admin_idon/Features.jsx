@@ -1,25 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiStar, FiPlus, FiEdit2, FiTrash2, FiCheck, FiFilter, FiRefreshCw } from 'react-icons/fi';
-import API_BASE from '../../config/apiBase';
+import { adminApiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
-
-
-const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
-const apiFetch = async (path, opts = {}) => {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...opts,
-    headers: {
-      'Authorization': `Bearer ${getToken()}`,
-      'Content-Type': 'application/json',
-      ...(opts.headers || {}),
-    },
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Error ${res.status}`);
-  }
-  return res.json();
-};
 
 const inp = { width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px', background: 'var(--admin-bg-primary)', border: '1px solid var(--admin-border-light)', color: 'var(--admin-text-primary)' };
 const Lbl = ({ children }) => <label style={{ display: 'block', marginBottom: 5, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: '#8CB79B' }}>{children}</label>;
@@ -36,8 +18,8 @@ export default function Features() {
     try {
       setLoading(true);
       const [fr, mr] = await Promise.all([
-        apiFetch('/api/admin/features'),
-        apiFetch('/api/admin/modules')
+        adminApiService.get('/admin/features'),
+        adminApiService.get('/admin/modules'),
       ]);
       setFeatures(Array.isArray(fr.data) ? fr.data : []);
       setModules(Array.isArray(mr.data) ? mr.data : []);
@@ -54,7 +36,7 @@ export default function Features() {
   const handleDelete = async (id) => {
     if (!window.confirm('¿Eliminar esta funcionalidad?')) return;
     try {
-      await apiFetch(`/api/admin/features/${id}`, { method: 'DELETE' });
+      await adminApiService.delete(`/admin/features/${id}`);
       load();
     } catch (e) {
       alert('Error: ' + e.message);
@@ -159,15 +141,9 @@ function FeatureModal({ item, modules, onClose, onSaved, defaultModuleId }) {
     setSaving(true);
     try {
       if (item) {
-        await apiFetch(`/api/admin/features/${item.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(form),
-        });
+        await adminApiService.put(`/admin/features/${item.id}`, form);
       } else {
-        await apiFetch('/api/admin/features', {
-          method: 'POST',
-          body: JSON.stringify(form),
-        });
+        await adminApiService.post('/admin/features', form);
       }
       onSaved(); onClose();
     } catch (e) {

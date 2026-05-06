@@ -3,12 +3,7 @@
    Ubicación: src/layouts/BusinessLayout.css
    ============================================================ */
 
-html, body, #root {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
+/* overflow:hidden se aplica dinámicamente via useEffect en BusinessLayout */
 
 .business-layout {
   display: flex;

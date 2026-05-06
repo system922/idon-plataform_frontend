@@ -8,6 +8,7 @@ import {
   FiAlertCircle, FiInfo
 } from 'react-icons/fi';
 import '../styles/LoginPage.css';
+import Footer from '../components/common/Footer';
 
 const SYSTEM_LOGO_URL = process.env.PUBLIC_URL + '/system.svg';
 
@@ -516,7 +517,7 @@ export default function LoginPage({ onLogin }) {
   };
 
   return (
-    <div className="login-page">
+    <div className="login-page" style={{ position: 'relative', paddingBottom: 44 }}>
       <div className="login-container">
 
         {/* ═══ LEFT ═══ */}
@@ -965,6 +966,9 @@ export default function LoginPage({ onLogin }) {
             </div>
           </div>
         </main>
+      </div>
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+        <Footer />
       </div>
     </div>
   );

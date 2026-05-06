@@ -22,9 +22,10 @@ export const ADMIN_MENU = [
     label: 'Sistema',
     icon: 'layers',
     subitems: [
-      { label: 'Módulos',       path: '/admin/modules'    },
-      { label: 'Funcionalidades', path: '/admin/features' },
-      { label: 'Plantillas',    path: '/admin/templates'  },
+      { label: 'Tipos de Negocios',  path: '/admin/business-types' },
+      { label: 'Módulos',          path: '/admin/modules'        },
+      { label: 'Funcionalidades',  path: '/admin/features'       },
+      { label: 'Plantillas',       path: '/admin/templates'      },
     ],
   },
   {

@@ -6,7 +6,7 @@
  * Sidebar fijo a la izquierda, contenido ocupa el espacio restante.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SidebarModern from '../../components/SidebarModern';
 import Footer from '../../components/common/Footer';
 import { ADMIN_MENU } from '../config/adminMenu';
@@ -14,6 +14,15 @@ import '../../styles/AdminLayout.css';
 
 export default function AdminLayout({ user, onLogout, children }) {
   const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   return (
     <div className="admin-layout">

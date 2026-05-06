@@ -1,136 +1,135 @@
-/* IDON Global Footer - Minimalista */
+/* ─── IDON SaaS Footer ─────────────────────────────────────── */
 
-.idon-footer-global {
-  background: transparent;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 16px 24px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
-    'Helvetica Neue', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  position: relative;
-  z-index: 5;
+.saas-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 24px;
   width: 100%;
   box-sizing: border-box;
-  display: flex;
-  justify-content: center;
+  flex-shrink: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-.footer-wrapper {
-  max-width: 1400px;
-  margin: 0 auto;
+.saas-footer--dark {
+  background: transparent;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.saas-footer--light {
+  background: transparent;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* ── Brand ── */
+.saas-footer__brand {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
-/* Left - Copyright */
-.footer-left {
-  flex: 1;
-  min-width: 200px;
+.saas-footer__logo {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  line-height: 1;
 }
 
-.footer-copyright {
-  font-size: 12px;
-  color: rgba(229, 247, 239, 0.5);
-  margin: 0;
+.saas-footer__logo-id { color: #fff; }
+.saas-footer--light .saas-footer__logo-id { color: #1a1a2e; }
+.saas-footer__logo-on { color: #ff8c42; }
+
+.saas-footer__version {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 7px;
+  border-radius: 20px;
   letter-spacing: 0.3px;
 }
-
-/* Right - Links */
-.footer-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  flex: 1;
-  min-width: 200px;
+.saas-footer--light .saas-footer__version {
+  color: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.05);
 }
 
-.footer-link {
+.saas-footer__divider {
+  width: 1px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+.saas-footer--light .saas-footer__divider { background: rgba(0, 0, 0, 0.12); }
+
+.saas-footer__copy {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+.saas-footer--light .saas-footer__copy { color: rgba(0, 0, 0, 0.4); }
+
+/* ── Links ── */
+.saas-footer__links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.saas-footer__sep {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.12);
+  user-select: none;
+}
+.saas-footer--light .saas-footer__sep { color: rgba(0, 0, 0, 0.15); }
+
+.saas-footer__link {
   background: none;
   border: none;
-  color: rgba(229, 247, 239, 0.5);
-  font-size: 12px;
-  cursor: pointer;
   padding: 0;
   font-family: inherit;
-  transition: all 0.2s ease;
+  font-size: 11px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.3);
+  transition: color 0.15s ease;
   text-decoration: none;
-  letter-spacing: 0.3px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.saas-footer--light .saas-footer__link { color: rgba(0, 0, 0, 0.4); }
+
+.saas-footer__link:hover { color: rgba(255, 255, 255, 0.75); }
+.saas-footer--light .saas-footer__link:hover { color: rgba(0, 0, 0, 0.75); }
+
+/* WhatsApp dot */
+.saas-footer__wa-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #25d366;
+  box-shadow: 0 0 5px rgba(37, 211, 102, 0.55);
+  flex-shrink: 0;
 }
 
-.footer-link:hover {
-  color: rgba(229, 247, 239, 0.8);
+.saas-footer__link--whatsapp:hover {
+  color: #25d366 !important;
 }
 
-.footer-separator {
-  color: rgba(255, 255, 255, 0.1);
-  font-size: 12px;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .idon-footer-global {
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .saas-footer {
+    flex-direction: column;
+    gap: 8px;
     padding: 12px 16px;
   }
 
-  .footer-wrapper {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .footer-left,
-  .footer-right {
-    flex: none;
-    width: 100%;
-    justify-content: center;
-    min-width: auto;
-  }
-
-  .footer-right {
-    justify-content: center;
-  }
-
-  .footer-copyright {
-    text-align: center;
-    font-size: 12px;
-  }
-
-  .footer-link {
-    font-size: 12px;
-  }
+  .saas-footer__brand { justify-content: center; }
+  .saas-footer__copy  { display: none; }
+  .saas-footer__links { justify-content: center; }
 }
-
-@media (max-width: 480px) {
-  .idon-footer-global {
-    padding: 10px 12px;
-  }
-
-  .footer-copyright,
-  .footer-link,
-  .footer-separator {
-    font-size: 11px;
-  }
-
-  .footer-right {
-    gap: 8px;
-  }
-}
-
-/* Print */
-@media print {
-  .idon-footer-global {
-    background: white;
-    border-top: 1px solid #333;
-  }
-
-  .footer-copyright,
-  .footer-link {
-    color: #333;
-  }
-}
-

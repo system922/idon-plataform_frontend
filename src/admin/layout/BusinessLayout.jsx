@@ -17,6 +17,7 @@ import {
 } from 'react-icons/fi';
 import API_BASE, { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/BusinessLayout.css';
+import Footer from '../../components/common/Footer';
 
 import { BusinessContextProvider } from '../../admin/config/BusinessContext';
 import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';
@@ -214,7 +215,16 @@ function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
 ══════════════════════════════════════════════════════════ */
 export default function BusinessLayout({ user, onLogout }) {
   const navigate   = useNavigate();
-  
+
+  useEffect(() => {
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   // HOOKS
   const { openDrawer } = useCashDrawer();
   
@@ -592,6 +602,7 @@ export default function BusinessLayout({ user, onLogout }) {
             )}
             <Outlet />
           </div>
+          <Footer />
         </div>
       </div>
     </BusinessContextProvider>

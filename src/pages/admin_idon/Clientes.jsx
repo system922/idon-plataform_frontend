@@ -10,26 +10,8 @@ import {
 } from 'react-icons/fi';
 import PageTemplate from '../../components/PageTemplate';
 import SubscriptionModal from './SubscriptionModal';
-import API_BASE from '../../config/apiBase';
+import { adminApiService } from '../../services/apiService';
 import '../../styles/AdminDashboard.css';
-
-const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
-
-const apiFetch = async (path, opts = {}) => {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...opts,
-    headers: {
-      'Authorization': `Bearer ${getToken()}`,
-      'Content-Type': 'application/json',
-      ...(opts.headers || {}),
-    },
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Error ${res.status}`);
-  }
-  return res.json();
-};
 
 const MOD_ICONS = {
   core: <FiSettings size={12}/>, pos: <FiShoppingCart size={12}/>,
@@ -46,7 +28,6 @@ const MOD_ICONS = {
   einvoicing: <FiFileText size={12}/>,
 };
 
-// Iconos grandes para el selector de módulos
 const MOD_ICON_LG = {
   core: <FiSettings size={16}/>, pos: <FiShoppingCart size={16}/>,
   inventory: <FiBox size={16}/>, reports: <FiBarChart2 size={16}/>,
@@ -76,16 +57,6 @@ const Lbl = ({ children }) => (
   </label>
 );
 
-const Section = ({ title, children }) => (
-  <div style={{ marginBottom:'20px', paddingBottom:'20px', borderBottom:'1px solid var(--admin-border-light)' }}>
-    <h3 style={{ fontSize:'12px', fontWeight:'700', color:'#8CB79B', marginBottom:'12px',
-      textTransform:'uppercase', letterSpacing:'.5px' }}>
-      {title}
-    </h3>
-    {children}
-  </div>
-);
-
 /* ══ MODAL MÓDULOS DEL NEGOCIO ═════════════════════════════ */
 const BusinessModulesModal = ({ business, onClose, onSaved }) => {
   const [allModules,    setAllModules]    = useState([]);
@@ -100,19 +71,15 @@ const BusinessModulesModal = ({ business, onClose, onSaved }) => {
     const load = async () => {
       try {
         setLoading(true);
-        // Cargar todos los módulos disponibles
-        const allRes = await apiFetch('/api/admin/modules-with-features');
+        const allRes = await adminApiService.get('/admin/modules-with-features');
         const mods = allRes.data || [];
         setAllModules(mods);
-
-        // Cargar módulos actuales del negocio (los que tiene en business_modules)
-        const bizRes = await apiFetch(`/api/admin/businesses/${business.id}/modules`);
+        const bizRes = await adminApiService.get(`/admin/businesses/${business.id}/modules`);
         const preModIds  = bizRes.data?.moduleIds  || [];
         const preFeatIds = bizRes.data?.featureIds || [];
-
         setSelectedMods(preModIds);
         setSelectedFeats(preFeatIds);
-        setExpandedMods(preModIds); // expandir los ya seleccionados
+        setExpandedMods(preModIds);
       } catch (e) {
         console.error('Error cargando módulos:', e);
       } finally {
@@ -123,12 +90,12 @@ const BusinessModulesModal = ({ business, onClose, onSaved }) => {
   }, [business.id]);
 
   const toggleModule = (modId) => {
-    const mod     = allModules.find(m => m.id === modId);
+    const mod = allModules.find(m => m.id === modId);
     const featIds = (mod?.features || []).map(f => f.id);
     if (selectedMods.includes(modId)) {
-      setSelectedMods(prev  => prev.filter(id => id !== modId));
+      setSelectedMods(prev => prev.filter(id => id !== modId));
       setSelectedFeats(prev => prev.filter(id => !featIds.includes(id)));
-      setExpandedMods(prev  => prev.filter(id => id !== modId));
+      setExpandedMods(prev => prev.filter(id => id !== modId));
     } else {
       setSelectedMods(prev => [...prev, modId]);
       setExpandedMods(prev => [...prev, modId]);
@@ -157,9 +124,8 @@ const BusinessModulesModal = ({ business, onClose, onSaved }) => {
   const handleSave = async () => {
     setSaving(true); setMsg(null);
     try {
-      await apiFetch(`/api/admin/businesses/${business.id}/modules`, {
-        method: 'PUT',
-        body: JSON.stringify({ moduleIds: selectedMods, featureIds: selectedFeats }),
+      await adminApiService.put(`/admin/businesses/${business.id}/modules`, {
+        moduleIds: selectedMods, featureIds: selectedFeats,
       });
       setMsg({ ok: true, text: '✅ Módulos actualizados correctamente' });
       onSaved();
@@ -184,7 +150,6 @@ const BusinessModulesModal = ({ business, onClose, onSaved }) => {
         display:'flex', flexDirection:'column', color:'var(--admin-text-primary)', overflow:'hidden' }}
         onClick={e => e.stopPropagation()}>
 
-        {/* Header */}
         <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid var(--admin-border-light)',
           display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
           <div>
@@ -211,7 +176,6 @@ const BusinessModulesModal = ({ business, onClose, onSaved }) => {
           </div>
         </div>
 
-        {/* Body */}
         <div style={{ overflowY:'auto', flex:1, padding:'16px 24px' }}>
           {loading ? (
             <div style={{ textAlign:'center', padding:'40px', color:'var(--admin-text-muted)' }}>
@@ -220,36 +184,30 @@ const BusinessModulesModal = ({ business, onClose, onSaved }) => {
           ) : (
             <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
               {allModules.map(mod => {
-                const modSel       = selectedMods.includes(mod.id);
-                const expanded     = expandedMods.includes(mod.id);
-                const feats        = mod.features || [];
+                const modSel = selectedMods.includes(mod.id);
+                const expanded = expandedMods.includes(mod.id);
+                const feats = mod.features || [];
                 const featSelCount = feats.filter(f => selectedFeats.includes(f.id)).length;
-
                 return (
                   <div key={mod.id} style={{
                     border:`1px solid ${modSel ? 'rgba(255,140,66,.5)' : 'var(--admin-border-light)'}`,
                     borderRadius:'10px', overflow:'hidden',
                     background: modSel ? 'rgba(255,140,66,.04)' : 'var(--admin-bg-primary)',
-                    transition:'border-color .2s, background .2s',
                   }}>
-                    {/* Fila módulo */}
                     <div style={{ display:'flex', alignItems:'center', gap:'10px',
                       padding:'10px 14px', cursor:'pointer', userSelect:'none' }}
                       onClick={() => toggleModule(mod.id)}>
-                      {/* Checkbox */}
                       <div style={{ width:'18px', height:'18px', borderRadius:'5px', flexShrink:0,
                         border:`2px solid ${modSel ? '#ff8c42' : 'var(--admin-border-light)'}`,
                         background: modSel ? '#ff8c42' : 'transparent',
-                        display:'flex', alignItems:'center', justifyContent:'center', transition:'all .2s' }}>
+                        display:'flex', alignItems:'center', justifyContent:'center' }}>
                         {modSel && <FiCheck size={11} color="#fff" strokeWidth={3}/>}
                       </div>
-                      {/* Icono */}
                       <span style={{ display:'flex', alignItems:'center', justifyContent:'center',
                         width:'28px', height:'28px', borderRadius:'7px', flexShrink:0,
                         background:'rgba(255,140,66,.12)', color:'#ff8c42' }}>
                         {MOD_ICON_LG[mod.code] || <FiBox size={16}/>}
                       </span>
-                      {/* Info */}
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ fontWeight:700, fontSize:'13px',
                           color: modSel ? 'var(--admin-text-primary)' : 'var(--admin-text-secondary)' }}>
@@ -278,8 +236,6 @@ const BusinessModulesModal = ({ business, onClose, onSaved }) => {
                         </div>
                       )}
                     </div>
-
-                    {/* Features expandidas */}
                     {expanded && feats.length > 0 && (
                       <div style={{ borderTop:'1px solid var(--admin-border-light)',
                         padding:'10px 14px 12px 48px',
@@ -288,16 +244,14 @@ const BusinessModulesModal = ({ business, onClose, onSaved }) => {
                         {feats.map(feat => {
                           const featSel = selectedFeats.includes(feat.id);
                           return (
-                            <div key={feat.id}
-                              onClick={() => toggleFeature(feat.id, mod.id)}
+                            <div key={feat.id} onClick={() => toggleFeature(feat.id, mod.id)}
                               title={feat.description || feat.name}
                               style={{ display:'flex', alignItems:'center', gap:'5px',
                                 padding:'4px 10px', borderRadius:'20px', cursor:'pointer',
                                 userSelect:'none', fontSize:'12px', fontWeight:600,
                                 border:`1px solid ${featSel ? '#ff8c42' : 'var(--admin-border-light)'}`,
                                 background: featSel ? 'rgba(255,140,66,.18)' : 'transparent',
-                                color: featSel ? '#ff8c42' : 'var(--admin-text-muted)',
-                                transition:'all .15s' }}>
+                                color: featSel ? '#ff8c42' : 'var(--admin-text-muted)' }}>
                               {featSel ? <FiCheck size={10} strokeWidth={3}/> : <span style={{ width:10 }}/>}
                               {feat.name}
                               {feat.is_premium && <FiStar size={9} style={{ color:'#f59e0b' }}/>}
@@ -313,13 +267,12 @@ const BusinessModulesModal = ({ business, onClose, onSaved }) => {
           )}
         </div>
 
-        {/* Footer */}
         <div style={{ padding:'14px 24px', borderTop:'1px solid var(--admin-border-light)',
           flexShrink:0, display:'flex', flexDirection:'column', gap:'10px' }}>
           {msg && (
             <div style={{ padding:'9px 13px', borderRadius:'8px', fontSize:'13px', fontWeight:600,
               background: msg.ok ? 'rgba(34,197,94,.1)' : 'rgba(239,68,68,.1)',
-              color:      msg.ok ? '#22c55e' : '#ef4444',
+              color: msg.ok ? '#22c55e' : '#ef4444',
               border:`1px solid ${msg.ok ? 'rgba(34,197,94,.3)' : 'rgba(239,68,68,.3)'}` }}>
               {msg.text}
             </div>
@@ -356,7 +309,7 @@ const EditClientModal = ({ client, onClose, onSaved }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await apiFetch(`/api/admin/clients/${client.id}`, { method:'PUT', body: JSON.stringify(form) });
+      await adminApiService.put(`/admin/clients/${client.id}`, form);
       onSaved(); onClose();
     } catch (e) { alert('❌ ' + e.message); } finally { setSaving(false); }
   };
@@ -377,12 +330,9 @@ const EditClientModal = ({ client, onClose, onSaved }) => {
           <div><Lbl>Apellido</Lbl><input style={inputStyle} value={form.last_name} onChange={e => setForm({...form, last_name:e.target.value})}/></div>
           <div style={{ gridColumn:'1/-1' }}><Lbl>Email</Lbl><input style={inputStyle} type="email" value={form.email} onChange={e => setForm({...form, email:e.target.value})}/></div>
           <div><Lbl>Teléfono</Lbl><input style={inputStyle} value={form.phone} onChange={e => setForm({...form, phone:e.target.value})}/></div>
-          <div>
-            <Lbl>Tipo Documento</Lbl>
+          <div><Lbl>Tipo Documento</Lbl>
             <select style={inputStyle} value={form.document_type} onChange={e => setForm({...form, document_type:e.target.value})}>
-              <option value="cedula">Cédula</option>
-              <option value="pasaporte">Pasaporte</option>
-              <option value="ruc">RUC</option>
+              <option value="cedula">Cédula</option><option value="pasaporte">Pasaporte</option><option value="ruc">RUC</option>
             </select>
           </div>
           <div style={{ gridColumn:'1/-1' }}><Lbl>Número Documento</Lbl><input style={inputStyle} value={form.document_number} onChange={e => setForm({...form, document_number:e.target.value})}/></div>
@@ -400,13 +350,13 @@ const EditClientModal = ({ client, onClose, onSaved }) => {
 
 /* ══ MODAL EDITAR NEGOCIO ═══════════════════════════════════ */
 const EditBusinessModal = ({ business, onClose, onSaved }) => {
-  const [name, setName]     = useState(business.business_name || '');
+  const [name, setName] = useState(business.business_name || '');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await apiFetch(`/api/admin/businesses/${business.id}`, { method:'PUT', body: JSON.stringify({ name }) });
+      await adminApiService.put(`/admin/businesses/${business.id}`, { name });
       onSaved(); onClose();
     } catch (e) { alert('❌ ' + e.message); } finally { setSaving(false); }
   };
@@ -439,21 +389,21 @@ const EditBusinessModal = ({ business, onClose, onSaved }) => {
 
 /* ══ COMPONENTE PRINCIPAL ═══════════════════════════════════ */
 export default function ClientsPage() {
-  const [clients,      setClients]      = useState([]);
-  const [filtered,     setFiltered]     = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState(null);
-  const [search,       setSearch]       = useState('');
-  const [expanded,     setExpanded]     = useState({});
-  const [editClient,   setEditClient]   = useState(null);
+  const [clients, setClients] = useState([]);
+  const [filtered, setFiltered] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState({});
+  const [editClient, setEditClient] = useState(null);
   const [editBusiness, setEditBusiness] = useState(null);
-  const [subBusiness,  setSubBusiness]  = useState(null);
-  const [modBusiness,  setModBusiness]  = useState(null); // modal módulos
+  const [subBusiness, setSubBusiness] = useState(null);
+  const [modBusiness, setModBusiness] = useState(null);
 
   const loadData = async () => {
     setLoading(true); setError(null);
     try {
-      const res = await apiFetch('/api/admin/clients');
+      const res = await adminApiService.get('/admin/clients');
       setClients(res.data || []);
       setFiltered(res.data || []);
     } catch (e) { setError(e.message); }
@@ -484,7 +434,6 @@ export default function ClientsPage() {
       theme="admin" loading={loading} error={error} onRetry={loadData}
       headerAction={<button className="admin-btn admin-btn-secondary" onClick={loadData}><FiRefreshCw size={15}/> Actualizar</button>}>
 
-      {/* Búsqueda */}
       <div className="admin-card" style={{ marginBottom:20 }}>
         <div className="admin-card-body">
           <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
@@ -496,7 +445,6 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* Lista */}
       <div className="admin-card">
         <div className="admin-card-header">
           <h2>Clientes ({filtered.length})</h2>
@@ -511,8 +459,6 @@ export default function ClientsPage() {
             <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
               {filtered.map(client => (
                 <div key={client.id} style={{ border:'1px solid var(--admin-border-light)', borderRadius:'10px', overflow:'hidden' }}>
-
-                  {/* Header cliente */}
                   <div style={{ background:'var(--admin-bg-secondary)', padding:'14px 16px',
                     display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer' }}
                     onClick={() => setExpanded(p => ({ ...p, [client.id]: !p[client.id] }))}>
@@ -540,7 +486,6 @@ export default function ClientsPage() {
                     </div>
                   </div>
 
-                  {/* Negocios */}
                   {expanded[client.id] && (
                     <div style={{ background:'var(--admin-bg-primary)', padding:'14px 16px',
                       borderTop:'1px solid var(--admin-border-light)', display:'flex', flexDirection:'column', gap:'10px' }}>
@@ -557,7 +502,6 @@ export default function ClientsPage() {
                                 <p style={{ margin:'3px 0 0', fontSize:'12px', color:'var(--admin-text-muted)' }}>
                                   {biz.business_type_name} · slug: {biz.slug}
                                 </p>
-
                                 {biz.modules?.length > 0 && (
                                   <div style={{ marginTop:'6px', display:'flex', flexWrap:'wrap', gap:'4px' }}>
                                     {biz.modules.map(m => (
@@ -570,7 +514,6 @@ export default function ClientsPage() {
                                     ))}
                                   </div>
                                 )}
-
                                 {hasSub && (
                                   <div style={{ marginTop:'8px', padding:'6px 10px', borderRadius:'6px',
                                     background:'rgba(34,197,94,.08)', border:'1px solid rgba(34,197,94,.2)',
@@ -599,7 +542,6 @@ export default function ClientsPage() {
                                   onClick={() => setEditBusiness(biz)}>
                                   <FiEdit2 size={13}/> Editar
                                 </button>
-
                                 <button className="admin-btn admin-btn-secondary"
                                   style={{ padding:'5px 10px', fontSize:'12px',
                                     background:'rgba(255,140,66,.1)', color:'#ff8c42',
@@ -607,22 +549,21 @@ export default function ClientsPage() {
                                   onClick={() => setModBusiness(biz)}>
                                   <FiPackage size={13}/> Módulos
                                 </button>
-
+                                {/* 🔥 Botón de suscripción - ahora pasa la suscripción existente */}
                                 <button
                                   style={{
                                     display:'flex', alignItems:'center', gap:'5px',
                                     padding:'5px 10px', fontSize:'12px', borderRadius:'6px',
-                                    cursor: hasSub ? 'default' : 'pointer',
+                                    cursor: 'pointer',
                                     border: hasSub ? '1px solid rgba(34,197,94,.3)' : '1px solid rgba(255,140,66,.4)',
                                     background: hasSub ? 'rgba(34,197,94,.1)' : 'linear-gradient(135deg,#ff9d55,#ff8c42)',
                                     color: hasSub ? '#22c55e' : '#fff',
-                                    fontWeight:600,
+                                    fontWeight: 600,
                                   }}
-                                  onClick={() => !hasSub && setSubBusiness(biz)}
-                                  disabled={hasSub}
-                                  title={hasSub ? 'Ya tiene suscripción' : 'Crear suscripción'}>
+                                  onClick={() => setSubBusiness({ ...biz, existingSubscription: biz.subscription })}
+                                  title={hasSub ? 'Editar suscripción' : 'Crear suscripción'}>
                                   <FiCreditCard size={13}/>
-                                  {hasSub ? 'Suscrito' : 'Suscripción'}
+                                  {hasSub ? 'Editar Suscripción' : 'Suscripción'}
                                 </button>
                               </div>
                             </div>
@@ -642,7 +583,12 @@ export default function ClientsPage() {
 
       {editClient   && <EditClientModal      client={editClient}     onClose={() => setEditClient(null)}   onSaved={loadData}/>}
       {editBusiness && <EditBusinessModal   business={editBusiness} onClose={() => setEditBusiness(null)} onSaved={loadData}/>}
-      {subBusiness  && <SubscriptionModal business={subBusiness} apiFetch={apiFetch} onClose={() => setSubBusiness(null)} onSaved={loadData}/>}
+      {subBusiness  && <SubscriptionModal
+        business={subBusiness}
+        existingSubscription={subBusiness.existingSubscription}
+        onClose={() => setSubBusiness(null)}
+        onSaved={loadData}
+      />}
       {modBusiness  && <BusinessModulesModal business={modBusiness} onClose={() => setModBusiness(null)}  onSaved={loadData}/>}
     </PageTemplate>
   );

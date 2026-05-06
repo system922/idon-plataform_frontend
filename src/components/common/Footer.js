@@ -2,40 +2,39 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/Footer.css';
 
-export default function Footer() {
+export default function Footer({ variant = 'dark' }) {
   const navigate = useNavigate();
-  const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="idon-footer-global">
-      <div className="footer-wrapper">
-        {/* Left - Copyright */}
-        <div className="footer-left">
-          <span className="footer-copyright">
-            © {currentYear} IDON. All rights reserved.
-          </span>
-        </div>
+    <footer className={`saas-footer saas-footer--${variant}`}>
+      <div className="saas-footer__brand">
+        <span className="saas-footer__logo">
+          <span className="saas-footer__logo-id">ID</span>
+          <span className="saas-footer__logo-on">ON</span>
+        </span>
+        <span className="saas-footer__version">v1.0</span>
+        <span className="saas-footer__divider" />
+        <span className="saas-footer__copy">© 2026 IDON PLATAFORM by SYSTEM DESIGN</span>
+      </div>
 
-        {/* Right - Links */}
-        <div className="footer-right">
-          <button
-            className="footer-link"
-            onClick={() => navigate('/privacy-policy')}
-            type="button"
-            title="Ver Política de Privacidad"
-          >
-            Privacy Policy
-          </button>
-          <span className="footer-separator">•</span>
-          <button
-            className="footer-link"
-            onClick={() => navigate('/terms-and-conditions')}
-            type="button"
-            title="Ver Términos y Condiciones"
-          >
-            Terms & Conditions
-          </button>
-        </div>
+      <div className="saas-footer__links">
+        <button className="saas-footer__link" onClick={() => navigate('/privacy-policy')}>
+          Privacidad
+        </button>
+        <span className="saas-footer__sep">·</span>
+        <button className="saas-footer__link" onClick={() => navigate('/terms-and-conditions')}>
+          Términos
+        </button>
+        <span className="saas-footer__sep">·</span>
+        <a
+          href="https://wa.link/jhxo9m"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="saas-footer__link saas-footer__link--whatsapp"
+        >
+          <span className="saas-footer__wa-dot" />
+          Soporte
+        </a>
       </div>
     </footer>
   );

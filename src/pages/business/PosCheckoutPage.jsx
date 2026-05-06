@@ -1233,7 +1233,7 @@ export default function PosCheckoutPage() {
 
                     {metodoPagoNormal === 'cash' && (
                       <div className="payment-cash-row">
-                        <div className="payment-field"><label><BsCurrencyExchange size={20} /> Recibido:</label><input type="text" inputMode="numeric" value={amountPaidRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; if (digits.length > 8) digits = digits.slice(0,8); setAmountPaidRaw(digits); setAmountPaid((parseInt(digits,10)/100).toFixed(2)); }} placeholder="0.00" /></div>
+                        <div className="payment-field"><label><BsCurrencyExchange size={20} /> Recibido:</label><input type="text" inputMode="numeric" value={amountPaid} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; if (digits.length > 8) digits = digits.slice(0,8); setAmountPaidRaw(digits); setAmountPaid((parseInt(digits,10)/100).toFixed(2)); }} placeholder="0.00" /></div>
                         <div className="payment-field cambio-field"><label><BsCurrencyExchange size={20} /> Cambio:</label><span className="cambio-amount">{fmt(changeNormal)}</span></div>
                       </div>
                     )}
@@ -1267,7 +1267,7 @@ export default function PosCheckoutPage() {
                             {mixtoActive.has('cash') && (
                               <div className="mixed-field">
                                 <label><FaHandHoldingDollar size={20} /> Efectivo:</label>
-                                <input type="text" inputMode="numeric" value={amountPaidRaw}
+                                <input type="text" inputMode="numeric" value={amountPaid}
                                   onChange={e => { let d = e.target.value.replace(/\D/g, ''); if (!d) d = '0'; if (d.length > 8) d = d.slice(0, 8); handleMixtoField('cash', d); }}
                                   placeholder="0.00" />
                               </div>
@@ -1275,7 +1275,7 @@ export default function PosCheckoutPage() {
                             {mixtoActive.has('card') && (
                               <div className="mixed-field">
                                 <label><FiCreditCard size={20} /> Tarjeta:</label>
-                                <input type="text" inputMode="numeric" value={cardPaidRaw}
+                                <input type="text" inputMode="numeric" value={cardPaid}
                                   onChange={e => { let d = e.target.value.replace(/\D/g, ''); if (!d) d = '0'; if (d.length > 8) d = d.slice(0, 8); handleMixtoField('card', d); }}
                                   placeholder="0.00" />
                                 <input type="text" placeholder="Ref. tarjeta" value={refCard} onChange={e => setRefCard(e.target.value)} style={{ marginTop: 4 }} />
@@ -1284,7 +1284,7 @@ export default function PosCheckoutPage() {
                             {mixtoActive.has('transfer') && (
                               <div className="mixed-field">
                                 <label><FaMoneyBillTransfer size={20} /> Transferencia:</label>
-                                <input type="text" inputMode="numeric" value={transferPaidRaw}
+                                <input type="text" inputMode="numeric" value={transferPaid}
                                   onChange={e => { let d = e.target.value.replace(/\D/g, ''); if (!d) d = '0'; if (d.length > 8) d = d.slice(0, 8); handleMixtoField('transfer', d); }}
                                   placeholder="0.00" />
                                 <input type="text" placeholder="Ref. transferencia" value={refTransfer} onChange={e => setRefTransfer(e.target.value)} style={{ marginTop: 4 }} />
@@ -1393,7 +1393,7 @@ export default function PosCheckoutPage() {
 
                             {comensal.metodoPago === 'cash' && (
                               <div className="payment-cash-row">
-                                <div className="payment-field"><label><BsCurrencyExchange size={16} /> Recibido:</label><input type="text" inputMode="numeric" value={recibidoRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; const value = parseInt(digits,10)/100; actualizarComensal(comensal.id, 'montoRecibido', value); }} placeholder="0.00" /></div>
+                                <div className="payment-field"><label><BsCurrencyExchange size={16} /> Recibido:</label><input type="text" inputMode="numeric" value={recibido > 0 ? recibido.toFixed(2) : ''} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; const value = parseInt(digits,10)/100; actualizarComensal(comensal.id, 'montoRecibido', value); }} placeholder="0.00" /></div>
                                 <div className="payment-field cambio-field"><label><BsCurrencyExchange size={16} /> Cambio:</label><span className="cambio-amount">{fmt(Math.max(0, cambioC))}</span></div>
                               </div>
                             )}
@@ -1408,9 +1408,9 @@ export default function PosCheckoutPage() {
                             {comensal.metodoPago === 'mixto' && (
                               <>
                                 <div className="payment-mixed-row">
-                                  <div className="mixed-field"><label><FaHandHoldingDollar size={16} /> Efectivo:</label><input type="text" inputMode="numeric" value={cashRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; const value = parseInt(digits,10)/100; actualizarMontoMixtoComensal(comensal.id, 'cash', value); }} placeholder="0.00" /></div>
-                                  <div className="mixed-field"><label><FiCreditCard size={16} /> Tarjeta:</label><input type="text" inputMode="numeric" value={cardRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; const value = parseInt(digits,10)/100; actualizarMontoMixtoComensal(comensal.id, 'card', value); }} placeholder="0.00" /></div>
-                                  <div className="mixed-field"><label><FaMoneyBillTransfer size={16} /> Transferencia:</label><input type="text" inputMode="numeric" value={transferRaw} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; const value = parseInt(digits,10)/100; actualizarMontoMixtoComensal(comensal.id, 'transfer', value); }} placeholder="0.00" /></div>
+                                  <div className="mixed-field"><label><FaHandHoldingDollar size={16} /> Efectivo:</label><input type="text" inputMode="numeric" value={comensal.cashAmount > 0 ? comensal.cashAmount.toFixed(2) : ''} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; const value = parseInt(digits,10)/100; actualizarMontoMixtoComensal(comensal.id, 'cash', value); }} placeholder="0.00" /></div>
+                                  <div className="mixed-field"><label><FiCreditCard size={16} /> Tarjeta:</label><input type="text" inputMode="numeric" value={comensal.cardAmount > 0 ? comensal.cardAmount.toFixed(2) : ''} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; const value = parseInt(digits,10)/100; actualizarMontoMixtoComensal(comensal.id, 'card', value); }} placeholder="0.00" /></div>
+                                  <div className="mixed-field"><label><FaMoneyBillTransfer size={16} /> Transferencia:</label><input type="text" inputMode="numeric" value={comensal.transferAmount > 0 ? comensal.transferAmount.toFixed(2) : ''} onChange={e => { let digits = e.target.value.replace(/\D/g, ''); if (!digits) digits = '0'; const value = parseInt(digits,10)/100; actualizarMontoMixtoComensal(comensal.id, 'transfer', value); }} placeholder="0.00" /></div>
                                 </div>
                                 <div className="mixed-total-row">
                                   <div className="mixed-total-item"><span><IoFileTrayFull size={14} /> Total Ingresado:</span><strong>{fmt(totalPagadoMixtoComensal)}</strong></div>
