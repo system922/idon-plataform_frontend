@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import ExcelJS from 'exceljs';
 import {
   FiDollarSign, FiPlus, FiEdit2, FiTrash2, FiRefreshCw,
@@ -442,6 +443,7 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function AccountingReceivablePage() {
   const { selectedBusiness } = useBusinessContext();
+  const navigate = useNavigate();
   const [receivables, setReceivables] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -469,7 +471,7 @@ export default function AccountingReceivablePage() {
   const loadCustomers = useCallback(async () => {
     if (!selectedBusiness?.id) return;
     try {
-      const res = await fetchWithAuth('/api/accounting/customers');
+      const res = await fetchWithAuth('/api/accounting-receivable/customers');
       const data = await res.json();
       setCustomers(Array.isArray(data.data) ? data.data : data.customers || []);
     } catch (err) {
@@ -490,7 +492,7 @@ export default function AccountingReceivablePage() {
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (search) params.append('search', search);
       
-      const res = await fetchWithAuth(`/api/accounting/receivables?${params}`);
+      const res = await fetchWithAuth(`/api/accounting-receivable/receivables?${params}`);
       const data = await res.json();
       const receivablesList = Array.isArray(data.data) ? data.data : data.receivables || [];
       setReceivables(receivablesList);
@@ -719,7 +721,7 @@ export default function AccountingReceivablePage() {
     setError('');
     try {
       const isEdit = !!editingReceivable;
-      const url = isEdit ? `/api/accounting/receivables/${editingReceivable.id}` : '/api/accounting/receivables';
+      const url = isEdit ? `/api/accounting-receivable/receivables/${editingReceivable.id}` : '/api/accounting-receivable/receivables';
       const method = isEdit ? 'PUT' : 'POST';
       const res = await fetchWithAuth(url, { method, body: JSON.stringify(form) });
       const data = await res.json();
@@ -738,7 +740,7 @@ export default function AccountingReceivablePage() {
     if (!window.confirm(`¿Eliminar la cuenta por cobrar "${receivable.description}"?`)) return;
     setSaving(true);
     try {
-      await fetchWithAuth(`/api/accounting/receivables/${receivable.id}`, { method: 'DELETE' });
+      await fetchWithAuth(`/api/accounting-receivable/receivables/${receivable.id}`, { method: 'DELETE' });
       loadReceivables();
     } catch (e) {
       setError(e.message);
@@ -750,7 +752,7 @@ export default function AccountingReceivablePage() {
   const handleRegisterPayment = async (paymentData) => {
     setSaving(true);
     try {
-      const res = await fetchWithAuth(`/api/accounting/receivables/${selectedReceivable.id}/payments`, {
+      const res = await fetchWithAuth(`/api/accounting-receivable/receivables/${selectedReceivable.id}/payments`, {
         method: 'POST',
         body: JSON.stringify(paymentData)
       });
@@ -769,7 +771,7 @@ export default function AccountingReceivablePage() {
     setSaving(true);
     try {
       const isEdit = !!editingCustomer;
-      const url = isEdit ? `/api/accounting/customers/${editingCustomer.id}` : '/api/accounting/customers';
+      const url = isEdit ? `/api/accounting-receivable/customers/${editingCustomer.id}` : '/api/accounting-receivable/customers';
       const method = isEdit ? 'PUT' : 'POST';
       const res = await fetchWithAuth(url, { method, body: JSON.stringify(form) });
       if (!res.ok) throw new Error('Error al guardar cliente');
@@ -795,6 +797,11 @@ export default function AccountingReceivablePage() {
     setShowModal(true);
   };
   const openPaymentModal = (receivable) => {
+    const orderNum = receivable.order_number || receivable.invoice_number;
+    if (orderNum) {
+      navigate('/app/pos/pos.sales', { state: { orderNumber: orderNum } });
+      return;
+    }
     setSelectedReceivable(receivable);
     setShowPaymentModal(true);
   };

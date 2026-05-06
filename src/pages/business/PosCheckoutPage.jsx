@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Check, X, DollarSign, Users } from 'react-feather';
 import PageTemplate from '../../components/PageTemplate';
 import {
@@ -27,6 +28,8 @@ export default function PosCheckoutPage() {
   const { selectedBusiness } = useBusinessContext();
   const { printerError } = useQzTray();
   const { print, getPrinterConfig } = usePrinterService();
+  const location = useLocation();
+  const autoSelectRef = useRef(location.state?.orderNumber || null);
 
   const [orders, setOrders] = useState([]);
   const [bizInfo, setBizInfo] = useState(null);
@@ -280,7 +283,45 @@ export default function PosCheckoutPage() {
     try {
       const res = await fetchWithAuth('/api/ordenes');
       const raw = await res.json();
-      if (Array.isArray(raw)) setOrders(raw.filter(o => o.status !== 'paid'));
+      const todosActivos = Array.isArray(raw) ? raw.filter(o => o.status !== 'paid') : [];
+
+      if (autoSelectRef.current) {
+        const orderNum = String(autoSelectRef.current);
+        // Buscar en TODOS (incluye draft) para encontrar la orden por cobrar
+        const target = todosActivos.find(o =>
+          String(o.order_number)  === orderNum ||
+          String(o.numero_pedido) === orderNum
+        );
+        // En el combobox mostrar solo las no-draft, más la orden encontrada si es draft
+        const listaCombobox = target && target.status === 'draft'
+          ? [target, ...todosActivos.filter(o => o.status !== 'draft')]
+          : todosActivos.filter(o => o.status !== 'draft');
+        setOrders(listaCombobox);
+
+        if (target) {
+          setSelectedOrder(target);
+          setClienteCedula(target.customer_document_number || '9999999999');
+          setClienteNombre(target.customer_name || '');
+          setClienteEmail('');
+          setFoundCliente(null);
+          setOrderNotes(target.notes || '');
+          setAmountPaid('');
+          setAmountPaidRaw('');
+          setSelectedItems([]);
+          setClientesDivididos([]);
+          setPagosRegistrados([]);
+          setTotalPagadoAcumulado(0);
+          setModoDividido(false);
+          setModoPorCobrar(false);
+          setFacturaIndividual(false);
+          setError('');
+        }
+        autoSelectRef.current = null;
+      } else {
+        // Flujo normal: excluir órdenes draft (son cuentas por cobrar pendientes)
+        setOrders(todosActivos.filter(o => o.status !== 'draft'));
+      }
+
       const bizRes = await fetchWithAuth('/api/settings/receipt-info');
       const bizData = await bizRes.json();
       setBizInfo(bizData);
@@ -739,7 +780,7 @@ export default function PosCheckoutPage() {
       await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({
-          status: 'pending',
+          status: 'draft',
           payment_method: 'credit',
           notes: `${orderNotes || ''} - Cuenta por cobrar registrada (ID: ${receivable.id})`.trim()
         })
@@ -926,6 +967,26 @@ export default function PosCheckoutPage() {
     }
   };
 
+  // ─── Actualizar cuenta por cobrar cuando se paga una orden draft ──────────
+  const marcarCuentaPorCobrarComoPagada = async (orderNumber, total, metodoPago) => {
+    try {
+      const res = await fetchWithAuth(`/api/accounting-receivable/receivables?search=${encodeURIComponent(orderNumber)}&limit=5`);
+      const data = await res.json();
+      const lista = Array.isArray(data.data) ? data.data : data.receivables || [];
+      const receivable = lista.find(r =>
+        String(r.order_number) === String(orderNumber) ||
+        String(r.invoice_number) === String(orderNumber)
+      );
+      if (!receivable) return;
+      await fetchWithAuth(`/api/accounting-receivable/receivables/${receivable.id}/payments`, {
+        method: 'POST',
+        body: JSON.stringify({ amount: total, payment_method: metodoPago })
+      });
+    } catch (err) {
+      console.error('Error actualizando cuenta por cobrar:', err);
+    }
+  };
+
   // ─── PAGO NORMAL ──────────────────────────────────────────────────────────
   const pagoNormal = async () => {
     if (modoPorCobrar) {
@@ -1031,6 +1092,10 @@ export default function PosCheckoutPage() {
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'mixto', discountInfo, clienteEmail);
         debeAbrirCajon = (cashNeeded > 0);
         await imprimirTicket(selectedOrder, totalOrdenConDescuento, cashAmt - cashNeeded, invoiceData?.invoice_number, null, null, debeAbrirCajon);
+      }
+
+      if (selectedOrder.status === 'draft') {
+        await marcarCuentaPorCobrarComoPagada(selectedOrder.order_number, totalOrdenConDescuento, metodoPagoNormal);
       }
 
       setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
