@@ -32,9 +32,12 @@ export function useAutoPrint({ businessId, enabled = true }) {
     if (printedIdsRef.current.has(order.id)) return false; // ya impreso
     if (!qz.websocket.isActive()) return false;
 
-    // Si la orden llegó sin ítems (socket no los incluye), buscarlos del backend
+    // Si los ítems llegaron sin product_name (payload antiguo), buscar orden completa
     let orderToprint = order;
-    if (!Array.isArray(order.items) || order.items.length === 0) {
+    const sinNombre = !Array.isArray(order.items) || order.items.length === 0 ||
+      !order.items.some(i => i.product_name || i.nombre || i.name || i.descripcion || i.producto);
+
+    if (sinNombre) {
       try {
         const res = await fetchWithAuth(`/api/ordenes/${order.id}`);
         if (res.ok) {
@@ -42,7 +45,7 @@ export function useAutoPrint({ businessId, enabled = true }) {
           orderToprint = { ...order, ...full, items: full.items || full.pedido?.items || [] };
         }
       } catch {
-        // si falla la búsqueda, imprime con lo que hay
+        // si falla, imprime con lo que hay
       }
     }
 
