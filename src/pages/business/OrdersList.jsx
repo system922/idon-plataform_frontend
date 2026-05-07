@@ -42,8 +42,10 @@ export default function OrdersList() {
   });
 
   const handleDelete = async (id) => {
+    if (loading) return; // ✅ Prevención de doble envío
     if (!window.confirm('¿Estás seguro de eliminar esta orden?')) return;
     try {
+      setLoading(true);
       await apiService.delete(`/api/orders/${id}`);
       await loadOrders();
     } catch (err) {

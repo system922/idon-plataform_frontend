@@ -41,12 +41,14 @@ export default function Settings() {
   const set = k => e => setCfg(c => ({ ...c, [k]: e.target.value }));
 
   const handleSave = async () => {
+    if (saving) return; // ✅ Prevención de doble envío
     setSaving(true); setMsg(null);
     try { await apiService.put('/admin/fiscal-config', cfg); setMsg({ ok: true, text: '✅ Configuración guardada correctamente' }); setTimeout(() => setMsg(null), 4000); }
     catch (e) { setMsg({ ok: false, text: '❌ Error: ' + e.message }); } finally { setSaving(false); }
   };
 
   const handleSavePlatform = async () => {
+    if (savingWa) return; // ✅ Prevención de doble envío
     setSavingWa(true); setMsgWa(null);
     try {
       await apiService.put('/admin/platform-settings', platform);

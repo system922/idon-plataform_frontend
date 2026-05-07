@@ -42,6 +42,8 @@ export default function PosCheckoutPage() {
   const [clienteEmail, setClienteEmail] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [printLoading, setPrintLoading] = useState(false);
+  const [processingCliente, setProcessingCliente] = useState(false); // ✅ Para guardarCliente
+  const [processingCxC, setProcessingCxC] = useState(false); // ✅ Para guardarCuentaPorCobrar
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [clientApiLoading, setClientApiLoading] = useState(false);
@@ -399,8 +401,10 @@ export default function PosCheckoutPage() {
   };
 
   const guardarCliente = async (documento, nombre, email = null) => {
+    if (processingCliente) return null; // ✅ Prevención de doble envío
     const tipo_documento = documento.length === 13 ? 'ruc' : 'cedula';
     try {
+      setProcessingCliente(true);
       const resBusqueda = await fetchWithAuth(`/api/customers/by-document?document_number=${documento}&document_type=${tipo_documento}`);
       if (resBusqueda.ok) {
         const existe = await resBusqueda.json();
@@ -418,6 +422,8 @@ export default function PosCheckoutPage() {
     } catch (err) {
       console.error('Error guardando cliente:', err);
       return null;
+    } finally {
+      setProcessingCliente(false);
     }
   };
 
@@ -738,6 +744,7 @@ export default function PosCheckoutPage() {
 
   // ─── Función para guardar cuenta por cobrar (accounts_receivable) ──────────
   const guardarCuentaPorCobrar = async () => {
+    if (processingCxC) return null; // ✅ Prevención de doble envío
     if (!selectedOrder) return null;
 
     const clienteId   = foundCliente?.id   || null;
@@ -746,6 +753,7 @@ export default function PosCheckoutPage() {
     fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
 
     try {
+      setProcessingCxC(true);
       const response = await fetchWithAuth('/api/accounting-receivable/receivables', {
         method: 'POST',
         body: JSON.stringify({
@@ -767,6 +775,8 @@ export default function PosCheckoutPage() {
       console.error('Error guardando cuenta por cobrar:', err);
       setError(`Error al guardar cuenta por cobrar: ${err.message}`);
       return null;
+    } finally {
+      setProcessingCxC(false);
     }
   };
 

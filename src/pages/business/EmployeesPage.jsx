@@ -191,6 +191,7 @@ export default function EmployeesManagePage() {
 
   /* ===== SAVE (CREATE / UPDATE) ===== */
   async function handleSave(form) {
+    if (saving) return; // ✅ Prevención de doble envío
     try {
       setSaving(true);
 

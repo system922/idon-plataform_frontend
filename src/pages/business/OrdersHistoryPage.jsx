@@ -176,6 +176,7 @@ export default function OrdersHistoryPage() {
   const [notasItem, setNotasItem] = useState('');
   const [itemEditando, setItemEditando] = useState(null);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // ✅ NUEVO: Para prevenir doble envío en operaciones
 
   // Conexión QZ Tray
   useEffect(() => {
@@ -428,6 +429,7 @@ export default function OrdersHistoryPage() {
   };
 
   const guardarEdicionItem = async () => {
+    if (isSaving) return; // ✅ Prevención de doble envío
     if (!productoSeleccionado || cantidadItem <= 0) {
       showNotification('Selecciona un producto y cantidad válida', 'warning');
       return;
@@ -472,7 +474,9 @@ export default function OrdersHistoryPage() {
   };
 
   const handleSaveEdit = async () => {
+    if (isSaving) return; // ✅ Prevención de doble envío
     try {
+      setIsSaving(true);
       const remainingItems = editItems.filter(i => !i._remove);
       
       // Calcular totales actualizados
@@ -517,6 +521,8 @@ export default function OrdersHistoryPage() {
     } catch (err) {
       console.error(err);
       showNotification('Error al guardar cambios', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 

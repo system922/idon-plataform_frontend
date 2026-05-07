@@ -44,6 +44,7 @@ export default function CashRegisterClosePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return; // ✅ Prevención de doble envío
     setMessage('');
     setError('');
     if (!efectivoFisico || !transferFisico || !propinaFisico) { setError('Ingrese todos los montos físicos'); return; }

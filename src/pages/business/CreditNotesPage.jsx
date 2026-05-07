@@ -7,6 +7,7 @@ import '../../styles/CreditNotes.css';
 export default function CreditNotes() {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false); // ✅ NUEVO: Para prevenir doble envío
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -75,11 +76,13 @@ export default function CreditNotes() {
   };
 
   const handleSubmit = async () => {
+    if (submitting) return; // ✅ Prevención de doble envío
     if (!selectedInvoice || !formData.reason) {
       setError('Seleccione una factura y escriba un motivo');
       return;
     }
     try {
+      setSubmitting(true);
       const totalCredited = formData.items.reduce((sum, i) => sum + i.subtotal_credited, 0);
       const ivaCredited = totalCredited * 0.15; // simplificado, debería calcular según ítems
       const payload = {
@@ -112,6 +115,8 @@ export default function CreditNotes() {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -220,8 +225,8 @@ export default function CreditNotes() {
                 )}
               </div>
               <div className="modal-footer">
-                <button className="btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button className="btn-primary" onClick={handleSubmit}>Emitir Nota de Crédito</button>
+                <button className="btn-secondary" onClick={() => setShowModal(false)} disabled={submitting}>Cancelar</button>
+                <button className="btn-primary" onClick={handleSubmit} disabled={submitting}>{submitting ? 'Emitiendo...' : 'Emitir Nota de Crédito'}</button>
               </div>
             </div>
           </div>

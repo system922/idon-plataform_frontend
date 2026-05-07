@@ -122,6 +122,7 @@ const BusinessModulesModal = ({ business, onClose, onSaved }) => {
   };
 
   const handleSave = async () => {
+    if (saving) return; // ✅ Prevención de doble envío
     setSaving(true); setMsg(null);
     try {
       await adminApiService.put(`/admin/businesses/${business.id}/modules`, {
@@ -307,6 +308,7 @@ const EditClientModal = ({ client, onClose, onSaved }) => {
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
+    if (saving) return; // ✅ Prevención de doble envío
     setSaving(true);
     try {
       await adminApiService.put(`/admin/clients/${client.id}`, form);
@@ -354,6 +356,7 @@ const EditBusinessModal = ({ business, onClose, onSaved }) => {
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
+    if (saving) return; // ✅ Prevención de doble envío
     setSaving(true);
     try {
       await adminApiService.put(`/admin/businesses/${business.id}`, { name });

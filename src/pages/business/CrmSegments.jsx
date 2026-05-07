@@ -331,6 +331,7 @@ export default function CrmSegments() {
   };
 
   const handleCreateSegment = async (form) => {
+    if (saving) return; // Prevention of double submit
     try {
       setSaving(true);
       const response = await fetchWithAuth('/api/crm/segments/custom', {

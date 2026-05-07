@@ -130,6 +130,7 @@ export default function InventoryCategoriesPage() {
   };
 
   const handleSave = async (form) => {
+    if (saving) return; // ✅ Prevención de doble envío
     try {
       setSaving(true);
       const url = editingCat ? `/api/categories/${editingCat.id}` : `/api/categories`;

@@ -495,6 +495,9 @@ export default function ProductoPage() {
   }
 
   async function handleSaveFromModal(payload) {
+    // ✅ Prevención de doble envío
+    if (loading) return;
+    
     // payload has costo, precio as numbers
     if (editingItem) {
       // optimistic local update

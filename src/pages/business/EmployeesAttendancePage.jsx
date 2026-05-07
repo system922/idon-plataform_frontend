@@ -152,6 +152,7 @@ export default function AttendancePage() {
   }
 
   async function handleSave(data) {
+    if (saving) return; // ✅ Prevención de doble envío
     try {
       setSaving(true);
 

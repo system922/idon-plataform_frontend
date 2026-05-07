@@ -532,16 +532,16 @@ export default function BusinessLayout({ user, onLogout }) {
 
   return (
     <BusinessContextProvider>
-      {/* Alerta de apertura requerida - Solo si NO está suspendido */}
-      {!isSuspended && aperturaChecked && mostrarAlerta && !mostrarFormulario && !mostrarCierreForm && (
+      {/* Alerta de apertura requerida */}
+      {aperturaChecked && mostrarAlerta && !mostrarFormulario && !mostrarCierreForm && (
         <AlertaAperturaModal 
           onAceptar={handleAceptarAlerta}
           abriendo={abriendoCaja}
         />
       )}
 
-      {/* Formulario de apertura de caja - Solo si NO está suspendido */}
-      {!isSuspended && aperturaChecked && mostrarFormulario && (
+      {/* Formulario de apertura de caja */}
+      {aperturaChecked && mostrarFormulario && (
         <AperturaCajaPage 
           onAperturaCompleta={handleAperturaCompleta}
           onCancel={() => {
@@ -551,8 +551,8 @@ export default function BusinessLayout({ user, onLogout }) {
         />
       )}
 
-      {/* Modal de confirmación para cierre de caja - Solo si NO está suspendido */}
-      {!isSuspended && mostrarConfirmacionCierre && (
+      {/* Modal de confirmación para cierre de caja */}
+      {mostrarConfirmacionCierre && (
         <ConfirmarCierreModal
           onConfirm={handleConfirmarCierre}
           onCancel={handleCancelarCierre}
@@ -560,8 +560,8 @@ export default function BusinessLayout({ user, onLogout }) {
         />
       )}
 
-      {/* Formulario de cierre de caja - Solo si NO está suspendido */}
-      {!isSuspended && mostrarCierreForm && datosCierre && (
+      {/* Formulario de cierre de caja */}
+      {mostrarCierreForm && datosCierre && (
         <CierreDeCajaPage
           cajaData={datosCierre}
           onClose={(exitoso) => {
@@ -584,15 +584,14 @@ export default function BusinessLayout({ user, onLogout }) {
         <div className={`business-sidebar-wrapper ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
           <SidebarModern
             user={user}
-            menu={!isSuspended && navData ? buildSidebarMenu(navData) : []}
+            menu={navData ? buildSidebarMenu(navData) : []}
             onLogout={handleLogout}
-            onCerrarCaja={!isSuspended ? handleClickCerrarCaja : undefined}
-            onAbrirCaja={!isSuspended ? handleClickAbrirCaja : undefined}
+            onCerrarCaja={handleClickCerrarCaja}
+            onAbrirCaja={handleClickAbrirCaja}
             aperturaHecha={aperturaHecha}
             collapsed={collapsed}
             setCollapsed={setCollapsed}
             onMobileClose={() => setMobileOpen(false)}
-            isSuspended={isSuspended}
           />
         </div>
 

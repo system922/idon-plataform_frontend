@@ -742,6 +742,7 @@ function DiscountCard({ d, onEdit, onDelete, onDuplicate }) {
 export default function PosDiscounts() {
   const [discounts, setDiscounts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // ✅ Para delete/duplicate
   const [err, setErr] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState(null);
@@ -779,9 +780,11 @@ export default function PosDiscounts() {
   };
 
   const handleDelete = async (discount) => {
+    if (isProcessing) return; // ✅ Prevención de doble envío
     if (!window.confirm(`¿Eliminar el descuento "${discount.name}"? Esta acción no se puede deshacer.`)) return;
 
     try {
+      setIsProcessing(true);
       const res = await fetchWithAuth(`/api/discounts/${discount.id}?hard_delete=true`, {
         method: 'DELETE',
       });
@@ -792,14 +795,18 @@ export default function PosDiscounts() {
       alert('Descuento eliminado exitosamente');
     } catch (e) {
       alert(e.message || 'Error al eliminar descuento');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleDuplicate = async (discount) => {
+    if (isProcessing) return; // ✅ Prevención de doble envío
     const newName = `${discount.name} (Copia)`;
     if (!window.confirm(`¿Duplicar el descuento "${discount.name}"?`)) return;
 
     try {
+      setIsProcessing(true);
       const duplicateData = {
         name: newName,
         description: discount.description,
@@ -835,6 +842,8 @@ export default function PosDiscounts() {
       alert('Descuento duplicado exitosamente');
     } catch (e) {
       alert(e.message || 'Error al duplicar descuento');
+    } finally {
+      setIsProcessing(false);
     }
   };
 

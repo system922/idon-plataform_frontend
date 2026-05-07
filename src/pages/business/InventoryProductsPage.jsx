@@ -227,6 +227,7 @@ export default function InventoryProductsPage() {
   useEffect(() => { load(); }, [load]);
 
   const handleSave = async (form) => {
+    if (saving) return; // ✅ Prevención de doble envío
     try {
       setSaving(true);
       const url    = editing ? `/api/products/${editing.id}` : '/api/products';

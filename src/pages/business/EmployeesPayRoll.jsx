@@ -44,7 +44,9 @@ export default function EmployeesPayRollPage() {
   }
 
   async function savePayroll() {
+    if (loading) return; // ✅ Prevención de doble envío
     try {
+      setLoading(true);
       await fetchWithAuth('/api/payroll', {
         method: 'POST',
         body: JSON.stringify({ rows: data, start, end, type })
@@ -52,6 +54,8 @@ export default function EmployeesPayRollPage() {
       alert('Nómina guardada');
     } catch {
       alert('Error guardando');
+    } finally {
+      setLoading(false);
     }
   }
 

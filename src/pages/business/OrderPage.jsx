@@ -179,6 +179,11 @@ export default function TakeOrderPageNew() {
   // ── Guardar orden ─────────────────────────────────────────────────────────
 
   async function guardarOrden() {
+  // ✅ PREVENCIÓN DE DOBLE ENVÍO: Si ya está guardando, no continuar
+  if (guardando) {
+    return;
+  }
+
   if (orderType === 'dine_in' && !numeroMesa) {
     setError('Debe ingresar un número de mesa');
     return;
