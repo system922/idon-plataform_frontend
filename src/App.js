@@ -25,7 +25,6 @@ import PublicLayout from './admin/layout/PublicLayout';
 import BusinessLayout from './admin/layout/BusinessLayout';
 import { businessRoutes } from './routes/businessRoutes';
 import PendingApprovalPage from './pages/PendingApprovalPage';
-import PaymentRequiredPage from './pages/business/PaymentRequiredPage';
 
 /* Páginas Legales */
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -34,7 +33,6 @@ import TermsAndConditions from './pages/TermsAndConditions';
 // ========== NUEVO: Contexto global para gastos pendientes ==========
 import { DrawerProvider } from './context/DrawerContext';
 import GlobalExpenseBubble from './components/GlobalExpenseBubble';
-// ==================================================================
 
 function RegisterPageWrapper({ setUser }) {
   const navigate = useNavigate();
@@ -50,17 +48,6 @@ function RegisterPageWrapper({ setUser }) {
 }
 
 function AppRoutes({ user, setUser, handleLogout }) {
-  // Debug: Verificar estado del usuario
-  console.log('🔍 AppRoutes - user:', {
-    id: user?.id,
-    email: user?.email,
-    userType: user?.userType,
-    subscription_status: user?.subscription_status,
-    business_status: user?.business_status,
-    businessId: user?.businessId,
-    status: user?.status
-  });
-
   return (
     <Routes>
       <Route
@@ -103,37 +90,14 @@ function AppRoutes({ user, setUser, handleLogout }) {
         }
       />
 
-      <Route
-        path="/payment-required"
-        element={
-          user
-            ? <PaymentRequiredPage onLogout={handleLogout} />
-            : <Navigate to="/login" replace />
-        }
-      />
-
-      {/* RUTA PRINCIPAL - CON PRIORIDAD AL ESTADO DE SUSCRIPCIÓN */}
+      {/* RUTA PRINCIPAL - SIMPLIFICADA */}
       <Route
         path="/"
         element={
           user ? (
-            // 1. Admin IDON
-            user?.userType === 'admin_idon' || user?.type === 'admin_idon'
+            user?.userType === 'admin_idon'
               ? <Navigate to="/admin/dashboard" replace />
-              // 2. 🔥 PRIORIDAD MÁXIMA: Suscripción suspendida o cancelada
-              : (user?.subscription_status === 'suspended' || user?.subscription_status === 'cancelled')
-                ? <Navigate to="/payment-required" replace />
-                // 3. Negocio no aprobado
-                : (user?.business_status !== 'approved' && user?.status !== 'approved')
-                  ? <Navigate to="/pending-approval" replace />
-                  // 4. Empleado con negocio aprobado
-                  : (user?.userType === 'schema_employee' && user?.businessId)
-                    ? <Navigate to="/app/dashboard" replace />
-                    // 5. Usuario sin negocio
-                    : (user?.userType === 'business_user' || !user?.businessId)
-                      ? <Navigate to="/pending-approval" replace />
-                      // 6. Dueño con negocio aprobado y suscripción activa
-                      : <Navigate to="/app/dashboard" replace />
+              : <Navigate to="/app/dashboard" replace />
           ) : (
             <Navigate to="/login" replace />
           )
@@ -164,22 +128,14 @@ function AppRoutes({ user, setUser, handleLogout }) {
         } />
       )}
 
-      {/* DASHBOARD ROUTE */}
+      {/* DASHBOARD ROUTE - SIMPLIFICADA */}
       <Route
         path="/dashboard"
         element={
           user ? (
             user?.userType === 'admin_idon'
               ? <Navigate to="/admin/dashboard" replace />
-              : (user?.subscription_status === 'suspended' || user?.subscription_status === 'cancelled')
-                ? <Navigate to="/payment-required" replace />
-                : (user?.business_status !== 'approved' && user?.status !== 'approved')
-                  ? <Navigate to="/pending-approval" replace />
-                  : (user?.userType === 'schema_employee' && user?.businessId)
-                    ? <Navigate to="/app/dashboard" replace />
-                    : (user?.userType === 'business_user' || !user?.businessId)
-                      ? <Navigate to="/pending-approval" replace />
-                      : <Navigate to="/app/dashboard" replace />
+              : <Navigate to="/app/dashboard" replace />
           ) : (
             <Navigate to="/login" replace />
           )
@@ -190,18 +146,10 @@ function AppRoutes({ user, setUser, handleLogout }) {
       <Route
         path="/app/*"
         element={
-          !!user ? (
+          user ? (
             user?.userType === 'admin_idon'
               ? <Navigate to="/admin/dashboard" replace />
-              : (user?.subscription_status === 'suspended' || user?.subscription_status === 'cancelled')
-                ? <Navigate to="/payment-required" replace />
-                : (user?.business_status !== 'approved' && user?.status !== 'approved')
-                  ? <Navigate to="/pending-approval" replace />
-                  : (user?.userType === 'schema_employee' && user?.businessId)
-                    ? <BusinessLayout user={user} onLogout={handleLogout} />
-                    : (user?.userType === 'business_user' || !user?.businessId)
-                      ? <Navigate to="/pending-approval" replace />
-                      : <BusinessLayout user={user} onLogout={handleLogout} />
+              : <BusinessLayout user={user} onLogout={handleLogout} />
           ) : (
             <Navigate to="/login" replace />
           )
@@ -210,22 +158,14 @@ function AppRoutes({ user, setUser, handleLogout }) {
         {businessRoutes}
       </Route>
 
-      {/* CATCH ALL - 404 REDIRECT */}
+      {/* CATCH ALL */}
       <Route
         path="*"
         element={
           user ? (
             user?.userType === 'admin_idon'
               ? <Navigate to="/admin/dashboard" replace />
-              : (user?.subscription_status === 'suspended' || user?.subscription_status === 'cancelled')
-                ? <Navigate to="/payment-required" replace />
-                : (user?.business_status !== 'approved' && user?.status !== 'approved')
-                  ? <Navigate to="/pending-approval" replace />
-                  : (user?.userType === 'schema_employee' && user?.businessId)
-                    ? <Navigate to="/app/dashboard" replace />
-                    : (user?.userType === 'business_user' || !user?.businessId)
-                      ? <Navigate to="/pending-approval" replace />
-                      : <Navigate to="/app/dashboard" replace />
+              : <Navigate to="/app/dashboard" replace />
           ) : (
             <Navigate to="/login" replace />
           )
@@ -238,13 +178,7 @@ function AppRoutes({ user, setUser, handleLogout }) {
 function AppContent() {
   const [user, setUser] = useState(() => {
     try {
-      const storedUser = localStorage.getItem('idonUser');
-      if (storedUser) {
-        const parsed = JSON.parse(storedUser);
-        console.log('📦 Usuario cargado de localStorage:', parsed);
-        return parsed;
-      }
-      return null;
+      return JSON.parse(localStorage.getItem('idonUser')) || null;
     } catch {
       return null;
     }
@@ -253,7 +187,7 @@ function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const PUBLIC_PATHS = ['/terms-and-conditions', '/privacy-policy', '/login', '/register', '/payment-required'];
+  const PUBLIC_PATHS = ['/terms-and-conditions', '/privacy-policy', '/login', '/register'];
 
   useEffect(() => {
     const token = localStorage.getItem('idonToken') || localStorage.getItem('token');

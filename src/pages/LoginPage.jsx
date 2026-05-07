@@ -50,20 +50,16 @@ export default function LoginPage({ onLogin }) {
     login: false, register: false, confirm: false
   });
 
-  // Ref para timer de error
   const errorTimerRef = useRef(null);
 
-  /* ─── Owner lookup state ─── */
   const [ownerExists, setOwnerExists] = useState(false);
   const [ownerSearching, setOwnerSearching] = useState(false);
   const [foundByApi, setFoundByApi] = useState(false);
 
-  /* ─── Business types from API ─── */
   const [businessTypes, setBusinessTypes] = useState([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [errorTypes, setErrorTypes] = useState('');
 
-  /* ─── Logo carousel ─── */
   const logos = [
     `${process.env.PUBLIC_URL}/IDON_1.svg`,
     `${process.env.PUBLIC_URL}/IDON_2.svg`,
@@ -76,29 +72,22 @@ export default function LoginPage({ onLogin }) {
   const [logoOpacity, setLogoOpacity] = useState(1);
   const [businessLogo, setBusinessLogo] = useState(null);
 
-  // Limpiar timer al desmontar
   useEffect(() => {
     return () => {
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     };
   }, []);
 
-  // Función para mostrar mensaje de error
   const showError = (message, type = 'general') => {
-    // Limpiar timer anterior
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
-    
     setError(message);
     setErrorType(type);
-    
-    // Auto-limpiar después de 5 segundos
     errorTimerRef.current = setTimeout(() => {
       setError('');
       setErrorType('');
     }, 5000);
   };
 
-  /* smooth logo cross-fade */
   useEffect(() => {
     const id = setInterval(() => {
       setLogoOpacity(0);
@@ -110,7 +99,6 @@ export default function LoginPage({ onLogin }) {
     return () => clearInterval(id);
   }, []);
 
-  /* color cycle */
   useEffect(() => {
     const id = setInterval(() => {
       setLogoColor(prev => (prev + 1) % colors.length);
@@ -118,7 +106,6 @@ export default function LoginPage({ onLogin }) {
     return () => clearInterval(id);
   }, []);
 
-  /* business data */
   useEffect(() => {
     const saved = localStorage.getItem('business_logo') || SYSTEM_LOGO_URL;
     if (saved) setBusinessLogo(saved);
@@ -138,7 +125,6 @@ export default function LoginPage({ onLogin }) {
     if (id) setBusinessSlugInput(id);
   }, []);
 
-  /* ─── Fetch business types when user reaches step 2 ─── */
   useEffect(() => {
     if (!isLogin && registroStep === 2 && businessTypes.length === 0) {
       setLoadingTypes(true);
@@ -158,7 +144,6 @@ export default function LoginPage({ onLogin }) {
     }
   }, [isLogin, registroStep]);
 
-  /* ─── Ecuador civil registry API ─── */
   async function buscarEnAPIEcuador(cedula) {
     try {
       const proxyUrl = 'https://infoplacas.herokuapp.com/';
@@ -176,7 +161,6 @@ export default function LoginPage({ onLogin }) {
     }
   }
 
-  /* ─── Document type change: reset dependent fields ─── */
   const handleDocTypeChange = (e) => {
     setRegForm(f => ({
       ...f,
@@ -192,7 +176,6 @@ export default function LoginPage({ onLogin }) {
     setError('');
   };
 
-  /* ─── Document number change: lookup owner then API ─── */
   const handleDocumentNumberChange = async (e) => {
     const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
     setRegForm(f => ({ ...f, documentNumber: value }));
@@ -262,68 +245,9 @@ export default function LoginPage({ onLogin }) {
     );
   };
 
-  /**
-   * Determina la ruta de redirección basada en el tipo de usuario y el estado del negocio
-   * @param {string} type - Tipo de usuario (admin_idon, owner, schema_employee, etc.)
-   * @param {object} user - Objeto del usuario con información del negocio
-   * @returns {string} - Ruta a redirigir
-   */
-  const getRedirectRoute = (type, user) => {
-    console.log('🔍 getRedirectRoute - type:', type);
-    console.log('🔍 getRedirectRoute - user:', user);
-    
-    // Admin IDON → Dashboard admin
-    if (type === 'admin_idon' || type === 'admin') {
-      console.log('➡️ Redirigiendo a: /admin/dashboard');
-      return '/admin/dashboard';
-    }
-    
-    // Verificar si el usuario tiene un negocio asociado
-    const hasBusiness = user?.businessId || user?.business_id;
-    console.log('📊 hasBusiness:', hasBusiness);
-    
-    if (!hasBusiness) {
-      console.log('➡️ Redirigiendo a: /pending-approval (sin negocio)');
-      return '/pending-approval';
-    }
-    
-    // Verificar estado de suscripción (suspendido o cancelado)
-    const subscriptionStatus = user?.subscription_status;
-    const isSuspended = subscriptionStatus === 'suspended' || subscriptionStatus === 'cancelled';
-    
-    console.log('📊 subscription_status:', subscriptionStatus);
-    console.log('⚠️ isSuspended:', isSuspended);
-    
-    if (isSuspended) {
-      console.log('➡️ Redirigiendo a: /payment-required (suscripción suspendida)');
-      return '/payment-required';
-    }
-    
-    // Verificar si el negocio está aprobado
-    const businessStatus = user?.business_status || user?.status;
-    const isApproved = businessStatus === 'approved';
-    
-    console.log('📊 business_status:', businessStatus);
-    console.log('✅ isApproved:', isApproved);
-    
-    if (!isApproved) {
-      console.log('➡️ Redirigiendo a: /pending-approval (negocio no aprobado)');
-      return '/pending-approval';
-    }
-    
-    // Usuario con negocio aprobado y suscripción activa
-    if (type === 'schema_employee' || user?.userType === 'schema_employee') {
-      console.log('➡️ Redirigiendo a: /app/dashboard (empleado)');
-      return '/app/dashboard';
-    }
-    
-    console.log('➡️ Redirigiendo a: /app/dashboard (dueño)');
-    return '/app/dashboard';
-  };
-
-  // ------------------------------------
-  // AUTENTICACIÓN Y GUARDADO DE USUARIO
-  // ------------------------------------
+  // ============================================
+  // AUTENTICACIÓN - REDIRECCIÓN DIRECTA
+  // ============================================
   const _commitLogin = (token, user, backendType) => {
     const schemaName = user.schemaName || user.schema || user.tenant || '';
     const userType = user?.userType || backendType;
@@ -339,12 +263,8 @@ export default function LoginPage({ onLogin }) {
             backendType === 'schema_employee' ? (user?.roleCode || 'employee') :
             (user?.role || 'user'),
       schemaName,
-      subscription_status: user?.subscription_status || 'pending',
-      business_status: user?.business_status || user?.status || 'pending',
     };
 
-    console.log('📦 Guardando usuario en localStorage:', userToStore);
-    
     localStorage.setItem('idonUser', JSON.stringify(userToStore));
     localStorage.setItem('idonToken', token);
 
@@ -362,13 +282,14 @@ export default function LoginPage({ onLogin }) {
     
     if (onLogin) onLogin(userToStore);
     
-    // Determinar y navegar a la ruta correcta
-    const redirectRoute = getRedirectRoute(backendType, userToStore);
-    console.log('🚀 Navegando a:', redirectRoute);
+    // 🔥 REDIRECCIÓN DIRECTA - SIN VERIFICAR NADA
+    const redirectRoute = (backendType === 'admin_idon' || backendType === 'admin') 
+      ? '/admin/dashboard' 
+      : '/app/dashboard';
+    
     navigate(redirectRoute, { replace: true });
   };
 
-  // Limpiar campos de login
   const clearLoginFields = () => {
     setEmail('');
     setPassword('');
@@ -378,7 +299,6 @@ export default function LoginPage({ onLogin }) {
     e.preventDefault();
     e.stopPropagation();
     
-    // Validar campos
     if (!email || !password) {
       showError('❌ Por favor ingresa tu correo y contraseña.', 'general');
       return;
@@ -401,7 +321,6 @@ export default function LoginPage({ onLogin }) {
       if (!res.ok) {
         setLoading(false);
         
-        // Mostrar mensaje de error según el código de estado
         if (res.status === 401) {
           const errorMessage = data.message || data.error || 'Credenciales inválidas';
           
@@ -430,7 +349,6 @@ export default function LoginPage({ onLogin }) {
       const payload = data.data;
       setLoading(false);
 
-      // Multi-business
       if (payload.requiresBusinessSelection && payload.businesses?.length > 1) {
         setPendingToken(payload.token);
         setPendingUser(payload.user);
@@ -439,7 +357,6 @@ export default function LoginPage({ onLogin }) {
         return;
       }
 
-      // ✅ ÉXITO: Redirigir directamente según estado del negocio
       _commitLogin(payload.token, payload.user, payload.type ?? payload.user?.userType);
       
     } catch (err) {
@@ -561,7 +478,6 @@ export default function LoginPage({ onLogin }) {
     clearLoginFields();
   };
 
-  /* ─── Step progress helper ─── */
   const stepStatus = (n) => {
     if (registroStep > n)  return 'done';
     if (registroStep === n) return 'active';
@@ -583,8 +499,6 @@ export default function LoginPage({ onLogin }) {
   return (
     <div className="login-page" style={{ position: 'relative', paddingBottom: 44 }}>
       <div className="login-container">
-
-        {/* ═══ LEFT ═══ */}
         <section className="login-left" aria-hidden="true">
           <div className="color-ring" style={{
             background: `radial-gradient(ellipse 60% 60% at 30% 40%, ${currentColor}18 0%, transparent 70%),
@@ -633,11 +547,9 @@ export default function LoginPage({ onLogin }) {
           </div>
         </section>
 
-        {/* ═══ RIGHT ═══ */}
         <main className="login-right">
           <div className="login-right-inner">
             <div className="form-container">
-
               {showBusinessSelector ? (
                 <div className="auth-form" key="biz-selector">
                   <h3 className="form-title">Selecciona tu negocio</h3>
@@ -793,7 +705,6 @@ export default function LoginPage({ onLogin }) {
                         </div>
                       )}
 
-                      {/* STEP 1 */}
                       {registroStep === 1 && (
                         <div className="step-content">
                           <div className="grid-2">

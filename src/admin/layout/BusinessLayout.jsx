@@ -214,7 +214,7 @@ function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
    BUSINESS LAYOUT
 ══════════════════════════════════════════════════════════ */
 export default function BusinessLayout({ user, onLogout }) {
-  const navigate   = useNavigate();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
@@ -249,8 +249,6 @@ export default function BusinessLayout({ user, onLogout }) {
   const [error,        setError]        = useState(null);
   const [collapsed,    setCollapsed]    = useState(false);
   const [mobileOpen,   setMobileOpen]   = useState(false);
-  const [isSuspended,  setIsSuspended]  = useState(false);
-  const [isApproved,   setIsApproved]   = useState(true);
   const [selectedBiz,  setSelectedBiz]  = useState(getStoredBiz);
 
   useAutoPrint({ businessId: selectedBiz?.id, enabled: !!selectedBiz?.id });
@@ -470,55 +468,17 @@ export default function BusinessLayout({ user, onLogout }) {
     setMostrarFormulario(false);
   };
 
-  // Cargar navegación y verificar estado del negocio
+  // 🔥 Cargar navegación - VERSIÓN SIMPLIFICADA SIN REDIRECCIONES
   useEffect(() => {
     const load = async () => {
       try {
-        let suspended = false;
-        let approved = true;
-        
-        try {
-          const bizRes = await fetch(`${API_BASE}/api/business-status/my-businesses`, {
-            headers: { 'Authorization': `Bearer ${getToken()}` },
-          });
-          if (bizRes.ok) {
-            const bizData = await bizRes.json();
-            if (bizData.ok && Array.isArray(bizData.businesses)) {
-              const stored  = getStoredBiz();
-              const current = bizData.businesses.find(b => b.id === stored?.id)
-                || bizData.businesses[0];
-              if (current) {
-                setSelectedBiz(current);
-                suspended = current.subscription_status === 'suspended' || current.isActive === false;
-                approved = current.status === 'approved' || current.business_status === 'approved';
-                setIsSuspended(suspended);
-                setIsApproved(approved);
-                
-                // 🔁 REDIRECCIONES SEGÚN ESTADO DEL NEGOCIO
-                if (suspended) {
-                  navigate('/payment-required', { replace: true });
-                  return;
-                }
-                
-                if (!approved) {
-                  navigate('/pending-approval', { replace: true });
-                  return;
-                }
-              }
-            }
-          }
-        } catch (err) {
-          console.warn('Error loading businesses:', err);
-        }
-
-        if (!suspended && approved) {
-          const navRes  = await fetch(`${API_BASE}/api/business-status/navigation`, {
-            headers: { 'Authorization': `Bearer ${getToken()}` },
-          });
-          if (navRes.ok) {
-            const navData = await navRes.json();
-            if (navData.ok) setNavData(navData.data);
-          }
+        // Cargar la navegación directamente sin verificar estado del negocio
+        const navRes = await fetch(`${API_BASE}/api/business-status/navigation`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` },
+        });
+        if (navRes.ok) {
+          const navData = await navRes.json();
+          if (navData.ok) setNavData(navData.data);
         }
       } catch (e) {
         console.error('Error cargando layout:', e);
@@ -528,7 +488,7 @@ export default function BusinessLayout({ user, onLogout }) {
       }
     };
     load();
-  }, [navigate]);
+  }, []);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -547,16 +507,16 @@ export default function BusinessLayout({ user, onLogout }) {
 
   return (
     <BusinessContextProvider>
-      {/* Alerta de apertura requerida - Solo si NO está suspendido Y está aprobado */}
-      {!isSuspended && isApproved && aperturaChecked && mostrarAlerta && !mostrarFormulario && !mostrarCierreForm && (
+      {/* Alerta de apertura requerida */}
+      {aperturaChecked && mostrarAlerta && !mostrarFormulario && !mostrarCierreForm && (
         <AlertaAperturaModal 
           onAceptar={handleAceptarAlerta}
           abriendo={abriendoCaja}
         />
       )}
 
-      {/* Formulario de apertura de caja - Solo si NO está suspendido Y está aprobado */}
-      {!isSuspended && isApproved && aperturaChecked && mostrarFormulario && (
+      {/* Formulario de apertura de caja */}
+      {aperturaChecked && mostrarFormulario && (
         <AperturaCajaPage 
           onAperturaCompleta={handleAperturaCompleta}
           onCancel={() => {
@@ -566,8 +526,8 @@ export default function BusinessLayout({ user, onLogout }) {
         />
       )}
 
-      {/* Modal de confirmación para cierre de caja - Solo si NO está suspendido Y está aprobado */}
-      {!isSuspended && isApproved && mostrarConfirmacionCierre && (
+      {/* Modal de confirmación para cierre de caja */}
+      {mostrarConfirmacionCierre && (
         <ConfirmarCierreModal
           onConfirm={handleConfirmarCierre}
           onCancel={handleCancelarCierre}
@@ -575,8 +535,8 @@ export default function BusinessLayout({ user, onLogout }) {
         />
       )}
 
-      {/* Formulario de cierre de caja - Solo si NO está suspendido Y está aprobado */}
-      {!isSuspended && isApproved && mostrarCierreForm && datosCierre && (
+      {/* Formulario de cierre de caja */}
+      {mostrarCierreForm && datosCierre && (
         <CierreDeCajaPage
           cajaData={datosCierre}
           onClose={(exitoso) => {
@@ -599,15 +559,14 @@ export default function BusinessLayout({ user, onLogout }) {
         <div className={`business-sidebar-wrapper ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
           <SidebarModern
             user={user}
-            menu={!isSuspended && isApproved && navData ? buildSidebarMenu(navData) : []}
+            menu={navData ? buildSidebarMenu(navData) : []}
             onLogout={handleLogout}
-            onCerrarCaja={!isSuspended && isApproved ? handleClickCerrarCaja : undefined}
-            onAbrirCaja={!isSuspended && isApproved ? handleClickAbrirCaja : undefined}
+            onCerrarCaja={handleClickCerrarCaja}
+            onAbrirCaja={handleClickAbrirCaja}
             aperturaHecha={aperturaHecha}
             collapsed={collapsed}
             setCollapsed={setCollapsed}
             onMobileClose={() => setMobileOpen(false)}
-            isSuspended={isSuspended}
           />
         </div>
 
