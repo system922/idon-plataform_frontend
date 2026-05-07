@@ -27,6 +27,7 @@ const toNumber = (val) => Number(val) || 0;
 function ReceivableModal({ receivable, customers, onClose, onSave, saving }) {
   const [form, setForm] = useState({
     customer_id: '',
+    customer_cedula: '', // ✅ Número de cédula del cliente
     amount: '',
     description: '',
     due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -40,6 +41,7 @@ function ReceivableModal({ receivable, customers, onClose, onSave, saving }) {
     if (receivable) {
       setForm({
         customer_id: receivable.customer_id || '',
+        customer_cedula: receivable.customer_cedula || '',
         amount: receivable.amount || '',
         description: receivable.description || '',
         due_date: receivable.due_date?.split('T')[0] || '',
@@ -50,6 +52,7 @@ function ReceivableModal({ receivable, customers, onClose, onSave, saving }) {
     } else {
       setForm({
         customer_id: '',
+        customer_cedula: '',
         amount: '',
         description: '',
         due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -81,7 +84,8 @@ function ReceivableModal({ receivable, customers, onClose, onSave, saving }) {
     
     onSave({
       ...form,
-      amount: parseFloat(form.amount)
+      amount: parseFloat(form.amount),
+      customer_cedula: form.customer_cedula // ✅ Enviar cédula al backend
     });
   };
 
@@ -114,7 +118,14 @@ function ReceivableModal({ receivable, customers, onClose, onSave, saving }) {
               <label>Cliente *</label>
               <select
                 value={form.customer_id}
-                onChange={e => setForm({ ...form, customer_id: e.target.value })}
+                onChange={e => {
+                  const selectedCustomer = customers.find(c => c.id === e.target.value);
+                  setForm({
+                    ...form,
+                    customer_id: e.target.value,
+                    customer_cedula: selectedCustomer?.tax_id || '' // ✅ Extraer cédula del cliente
+                  });
+                }}
                 required
               >
                 <option value="">Seleccionar cliente</option>
@@ -495,17 +506,27 @@ export default function AccountingReceivablePage() {
       const res = await fetchWithAuth(`/api/accounting-receivable/receivables?${params}`);
       const data = await res.json();
       const receivablesList = Array.isArray(data.data) ? data.data : data.receivables || [];
-      setReceivables(receivablesList);
+      
+      // ✅ Enriquecer receivables con cedula del cliente
+      const enrichedReceivables = receivablesList.map(r => {
+        const customer = customers.find(c => c.id === r.customer_id);
+        return {
+          ...r,
+          customer_cedula: customer?.tax_id || r.customer_cedula || ''
+        };
+      });
+      
+      setReceivables(enrichedReceivables);
       
       // Calcular estadísticas reales (a partir de los datos obtenidos)
-      const total = receivablesList.reduce((sum, r) => sum + toNumber(r.amount), 0);
-      const paid = receivablesList
+      const total = enrichedReceivables.reduce((sum, r) => sum + toNumber(r.amount), 0);
+      const paid = enrichedReceivables
         .filter(r => r.status === 'paid')
         .reduce((sum, r) => sum + toNumber(r.amount), 0);
-      const pending = receivablesList
+      const pending = enrichedReceivables
         .filter(r => r.status === 'pending' || r.status === 'partial')
         .reduce((sum, r) => sum + toNumber(r.balance !== undefined ? r.balance : r.amount), 0);
-      const overdue = receivablesList
+      const overdue = enrichedReceivables
         .filter(r => r.status === 'overdue')
         .reduce((sum, r) => sum + toNumber(r.balance !== undefined ? r.balance : r.amount), 0);
       
@@ -517,7 +538,7 @@ export default function AccountingReceivablePage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedBusiness, statusFilter, search]);
+  }, [selectedBusiness, statusFilter, search, customers]);
 
   useEffect(() => {
     loadCustomers();
@@ -799,7 +820,7 @@ export default function AccountingReceivablePage() {
   const openPaymentModal = (receivable) => {
     const orderNum = receivable.order_number || receivable.invoice_number;
     if (orderNum) {
-      navigate('/app/pos/pos.sales', { state: { orderNumber: orderNum } });
+      navigate('/app/pos/pos.sales', { state: { orderNumber: orderNum, customerCedula: receivable.customer_cedula } });
       return;
     }
     setSelectedReceivable(receivable);

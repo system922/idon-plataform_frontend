@@ -72,8 +72,6 @@ import EinvoicingInvoicesPage from '../pages/business/EinvoicingInvoicesPage';
 import CreditNotes            from '../pages/business/CreditNotesPage';
 
 
-
-
 function OwnerRoute({ children }) {
   const user = (() => {
     try { return JSON.parse(localStorage.getItem('idonUser') || 'null'); }
@@ -273,7 +271,6 @@ export const businessRoutes = (
     ──────────────────────────────────────────────── */}
     <Route path="einvoicing/einvoicing.status"          element={<EinvoicingInvoicesPage />} />
     <Route path="einvoicing/einvoicing.credit_notes" element={<CreditNotes />} />
-    
 
 
     {/* ── Catch-all ── */}

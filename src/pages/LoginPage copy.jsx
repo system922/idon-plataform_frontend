@@ -269,55 +269,43 @@ export default function LoginPage({ onLogin }) {
    * @returns {string} - Ruta a redirigir
    */
   const getRedirectRoute = (type, user) => {
-    console.log('🔍 getRedirectRoute - type:', type);
-    console.log('🔍 getRedirectRoute - user:', user);
-    
     // Admin IDON → Dashboard admin
     if (type === 'admin_idon' || type === 'admin') {
-      console.log('➡️ Redirigiendo a: /admin/dashboard');
       return '/admin/dashboard';
     }
     
     // Verificar si el usuario tiene un negocio asociado
     const hasBusiness = user?.businessId || user?.business_id;
-    console.log('📊 hasBusiness:', hasBusiness);
     
     if (!hasBusiness) {
-      console.log('➡️ Redirigiendo a: /pending-approval (sin negocio)');
+      // Usuario sin negocio → solicitud pendiente
       return '/pending-approval';
     }
     
-    // Verificar estado de suscripción (suspendido o cancelado)
-    const subscriptionStatus = user?.subscription_status;
-    const isSuspended = subscriptionStatus === 'suspended' || subscriptionStatus === 'cancelled';
-    
-    console.log('📊 subscription_status:', subscriptionStatus);
-    console.log('⚠️ isSuspended:', isSuspended);
+    // Verificar estado de suscripción (suspendido)
+    const isSuspended = user?.subscription_status === 'suspended' || 
+                        user?.isActive === false ||
+                        user?.business_status === 'suspended';
     
     if (isSuspended) {
-      console.log('➡️ Redirigiendo a: /payment-required (suscripción suspendida)');
       return '/payment-required';
     }
     
     // Verificar si el negocio está aprobado
-    const businessStatus = user?.business_status || user?.status;
-    const isApproved = businessStatus === 'approved';
-    
-    console.log('📊 business_status:', businessStatus);
-    console.log('✅ isApproved:', isApproved);
+    const isApproved = user?.business_status === 'approved' || 
+                       user?.status === 'approved' ||
+                       user?.isApproved === true;
     
     if (!isApproved) {
-      console.log('➡️ Redirigiendo a: /pending-approval (negocio no aprobado)');
       return '/pending-approval';
     }
     
     // Usuario con negocio aprobado y suscripción activa
     if (type === 'schema_employee' || user?.userType === 'schema_employee') {
-      console.log('➡️ Redirigiendo a: /app/dashboard (empleado)');
       return '/app/dashboard';
     }
     
-    console.log('➡️ Redirigiendo a: /app/dashboard (dueño)');
+    // Dueño de negocio o business_user
     return '/app/dashboard';
   };
 
@@ -339,12 +327,12 @@ export default function LoginPage({ onLogin }) {
             backendType === 'schema_employee' ? (user?.roleCode || 'employee') :
             (user?.role || 'user'),
       schemaName,
-      subscription_status: user?.subscription_status || 'pending',
+      // Asegurar que estos campos existan para la validación
       business_status: user?.business_status || user?.status || 'pending',
+      subscription_status: user?.subscription_status || 'active',
+      isActive: user?.isActive !== undefined ? user?.isActive : true
     };
 
-    console.log('📦 Guardando usuario en localStorage:', userToStore);
-    
     localStorage.setItem('idonUser', JSON.stringify(userToStore));
     localStorage.setItem('idonToken', token);
 
@@ -364,7 +352,6 @@ export default function LoginPage({ onLogin }) {
     
     // Determinar y navegar a la ruta correcta
     const redirectRoute = getRedirectRoute(backendType, userToStore);
-    console.log('🚀 Navegando a:', redirectRoute);
     navigate(redirectRoute, { replace: true });
   };
 

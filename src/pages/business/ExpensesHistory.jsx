@@ -3,6 +3,13 @@ import PageTemplate from '../../components/PageTemplate';
 import { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/PurchasesHistory.css';
 
+// ─── Helper para obtener fecha actual en Ecuador ────────────────────────────
+function getTodayDateInEcuador() {
+  const TZ = 'America/Guayaquil';
+  const now = new Date();
+  return now.toLocaleDateString('en-CA', { timeZone: TZ });
+}
+
 export default function PurchasesHistory() {
   const [gastos, setGastos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -27,7 +34,7 @@ export default function PurchasesHistory() {
   const [gastoEditando, setGastoEditando] = useState(null);
   
   // Form states
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [fecha, setFecha] = useState(getTodayDateInEcuador());
   const [categoriaId, setCategoriaId] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
@@ -183,7 +190,7 @@ export default function PurchasesHistory() {
   }
 
   function resetForm() {
-    setFecha(new Date().toISOString().split('T')[0]);
+    setFecha(getTodayDateInEcuador());
     setCategoriaId('');
     setDescripcion('');
     setMonto('');

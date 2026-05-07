@@ -6,6 +6,13 @@ import { fetchWithAuth } from '../config/apiBase';
 import { FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 import { usePrinterService } from '../services/usePrinterService';
 
+// ─── Helper para obtener fecha actual en Ecuador ────────────────────────────
+function getTodayDateInEcuador() {
+  const TZ = 'America/Guayaquil';
+  const now = new Date();
+  return now.toLocaleDateString('en-CA', { timeZone: TZ });
+}
+
 function GlobalExpenseBubble() {
   const { pendingExpense, clearExpense } = useDrawer();
   const { openCashDrawer } = usePrinterService();
@@ -63,7 +70,7 @@ function GlobalExpenseBubble() {
         reference: reason || null,   // ✅ Cambiado: antes era "notes"
         category_id: categoryId,
         created_by: pendingExpense?.userId || null,
-        date: new Date().toISOString().split('T')[0]
+        date: getTodayDateInEcuador()
       };
       console.log('📦 Enviando gasto:', payload);
       const resp = await fetchWithAuth('/api/expenses', {

@@ -125,7 +125,7 @@ export default function PendingApprovalPage({ onLogout }) {
                   </div>
                   {step.active && (
                     <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2 }}>
-                      Tiempo estimado: 24–48 horas hábiles
+                      Tiempo estimado: 1-2 horas (puede variar según la demanda actual)
                     </div>
                   )}
                 </div>
@@ -145,7 +145,7 @@ export default function PendingApprovalPage({ onLogout }) {
           }}>
             <FiMail size={18} color="#f97316" style={{ flexShrink: 0 }} />
             <div>
-              <div style={{ color: '#f97316', fontSize: 13, fontWeight: 600 }}>Notificación por mensaje de Whatsapp</div>
+              <div style={{ color: '#f97316', fontSize: 13, fontWeight: 600 }}>Notificación por correo electrónico</div>
               <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 }}>
                 Recibirás un mensaje en <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{user.phone}</strong> cuando tu negocio sea aprobado.
               </div>

@@ -1,0 +1,387 @@
+/**
+ * SuspendedSubscriptionPage.css
+ * Ubicación: src/pages/business/SuspendedSubscriptionPage.css
+ */
+
+/* Contenedor principal */
+.suspended-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* Tarjeta principal */
+.suspended-card {
+  max-width: 700px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 40px 32px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Icono de alerta */
+.suspended-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.suspended-icon-circle {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 40px rgba(239, 68, 68, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.suspended-icon-circle svg {
+  color: white;
+}
+
+/* Títulos y textos */
+.suspended-title {
+  color: #fff;
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0 0 16px 0;
+  letter-spacing: -0.5px;
+}
+
+.suspended-message {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0 0 32px 0;
+}
+
+.suspended-message strong {
+  color: #fff;
+}
+
+/* Tarjeta de información del titular */
+.owner-info-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.owner-info-title {
+  margin: 0 0 14px 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.owner-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.owner-info-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.owner-info-label {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+}
+
+.owner-info-value {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Sección de bancos */
+.banks-section {
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.banks-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin: 0 0 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.banks-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Tarjeta de cada banco */
+.bank-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 18px;
+  transition: all 0.2s ease;
+}
+
+.bank-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 140, 66, 0.3);
+}
+
+.bank-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bank-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: contain;
+  background: #fff;
+  padding: 6px;
+}
+
+.bank-initial {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1e40af, #1e3a8a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.bank-info {
+  flex: 1;
+}
+
+.bank-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.bank-type {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.bank-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.bank-holder {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.bank-number-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.bank-number {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ff8c42;
+  font-family: 'Monaco', 'Menlo', monospace;
+  letter-spacing: 0.5px;
+}
+
+/* Botón de copiar */
+.copy-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 140, 66, 0.5);
+  color: #ff8c42;
+}
+
+.copy-btn.copied {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+/* Nota informativa */
+.note-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: left;
+}
+
+.note-card svg {
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.note-card strong {
+  color: #10b981;
+}
+
+/* Botón de cerrar sesión */
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 28px;
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateY(-2px);
+}
+
+.logout-btn:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .suspended-card {
+    padding: 28px 20px;
+  }
+
+  .suspended-title {
+    font-size: 24px;
+  }
+
+  .bank-body {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .bank-number-wrapper {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .bank-number {
+    font-size: 14px;
+  }
+
+  .owner-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Scrollbar personalizado */
+.suspended-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.suspended-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.suspended-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.suspended-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 140, 66, 0.5);
+}

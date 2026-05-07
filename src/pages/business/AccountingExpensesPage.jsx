@@ -9,6 +9,13 @@ import { useBusinessContext } from '../../admin/config/BusinessContext';
 import { fetchWithAuth } from '../../config/apiBase';
 import "../../styles/AccountingExpensesPage.css";
 
+// ─── Helper para obtener fecha actual en Ecuador ────────────────────────────
+function getTodayDateInEcuador() {
+  const TZ = 'America/Guayaquil';
+  const now = new Date();
+  return now.toLocaleDateString('en-CA', { timeZone: TZ });
+}
+
 // ─── Helper para formatear fecha ────────────────────────────────────────────
 const formatDate = (dateValue) => {
   if (!dateValue) return '-';
@@ -23,7 +30,7 @@ function ExpenseModal({ expense, categories, onClose, onSave, saving }) {
     description: '',
     amount: '',
     category_id: '',
-    date: new Date().toISOString().split('T')[0],
+    date: getTodayDateInEcuador(),
     reference: ''
   });
   const [error, setError] = useState('');
@@ -34,7 +41,7 @@ function ExpenseModal({ expense, categories, onClose, onSave, saving }) {
         description: expense.description || '',
         amount: expense.amount || '',
         category_id: expense.category_id || '',
-        date: expense.date?.split('T')[0] || new Date().toISOString().split('T')[0],
+        date: expense.date?.split('T')[0] || getTodayDateInEcuador(),
         reference: expense.reference || ''
       });
     }

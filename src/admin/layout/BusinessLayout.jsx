@@ -250,6 +250,7 @@ export default function BusinessLayout({ user, onLogout }) {
   const [collapsed,    setCollapsed]    = useState(false);
   const [mobileOpen,   setMobileOpen]   = useState(false);
   const [isSuspended,  setIsSuspended]  = useState(false);
+  const [isApproved,   setIsApproved]   = useState(true);
   const [selectedBiz,  setSelectedBiz]  = useState(getStoredBiz);
 
   useAutoPrint({ businessId: selectedBiz?.id, enabled: !!selectedBiz?.id });
@@ -469,11 +470,13 @@ export default function BusinessLayout({ user, onLogout }) {
     setMostrarFormulario(false);
   };
 
-  // Cargar navegación
+  // Cargar navegación y verificar estado del negocio
   useEffect(() => {
     const load = async () => {
       try {
         let suspended = false;
+        let approved = true;
+        
         try {
           const bizRes = await fetch(`${API_BASE}/api/business-status/my-businesses`, {
             headers: { 'Authorization': `Bearer ${getToken()}` },
@@ -486,9 +489,21 @@ export default function BusinessLayout({ user, onLogout }) {
                 || bizData.businesses[0];
               if (current) {
                 setSelectedBiz(current);
-                suspended = current.subscription_status === 'suspended'
-                  || current.isActive === false;
+                suspended = current.subscription_status === 'suspended' || current.isActive === false;
+                approved = current.status === 'approved' || current.business_status === 'approved';
                 setIsSuspended(suspended);
+                setIsApproved(approved);
+                
+                // 🔁 REDIRECCIONES SEGÚN ESTADO DEL NEGOCIO
+                if (suspended) {
+                  navigate('/payment-required', { replace: true });
+                  return;
+                }
+                
+                if (!approved) {
+                  navigate('/pending-approval', { replace: true });
+                  return;
+                }
               }
             }
           }
@@ -496,7 +511,7 @@ export default function BusinessLayout({ user, onLogout }) {
           console.warn('Error loading businesses:', err);
         }
 
-        if (!suspended) {
+        if (!suspended && approved) {
           const navRes  = await fetch(`${API_BASE}/api/business-status/navigation`, {
             headers: { 'Authorization': `Bearer ${getToken()}` },
           });
@@ -513,7 +528,7 @@ export default function BusinessLayout({ user, onLogout }) {
       }
     };
     load();
-  }, []);
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -532,16 +547,16 @@ export default function BusinessLayout({ user, onLogout }) {
 
   return (
     <BusinessContextProvider>
-      {/* Alerta de apertura requerida - Solo si NO está suspendido */}
-      {!isSuspended && aperturaChecked && mostrarAlerta && !mostrarFormulario && !mostrarCierreForm && (
+      {/* Alerta de apertura requerida - Solo si NO está suspendido Y está aprobado */}
+      {!isSuspended && isApproved && aperturaChecked && mostrarAlerta && !mostrarFormulario && !mostrarCierreForm && (
         <AlertaAperturaModal 
           onAceptar={handleAceptarAlerta}
           abriendo={abriendoCaja}
         />
       )}
 
-      {/* Formulario de apertura de caja - Solo si NO está suspendido */}
-      {!isSuspended && aperturaChecked && mostrarFormulario && (
+      {/* Formulario de apertura de caja - Solo si NO está suspendido Y está aprobado */}
+      {!isSuspended && isApproved && aperturaChecked && mostrarFormulario && (
         <AperturaCajaPage 
           onAperturaCompleta={handleAperturaCompleta}
           onCancel={() => {
@@ -551,8 +566,8 @@ export default function BusinessLayout({ user, onLogout }) {
         />
       )}
 
-      {/* Modal de confirmación para cierre de caja - Solo si NO está suspendido */}
-      {!isSuspended && mostrarConfirmacionCierre && (
+      {/* Modal de confirmación para cierre de caja - Solo si NO está suspendido Y está aprobado */}
+      {!isSuspended && isApproved && mostrarConfirmacionCierre && (
         <ConfirmarCierreModal
           onConfirm={handleConfirmarCierre}
           onCancel={handleCancelarCierre}
@@ -560,8 +575,8 @@ export default function BusinessLayout({ user, onLogout }) {
         />
       )}
 
-      {/* Formulario de cierre de caja - Solo si NO está suspendido */}
-      {!isSuspended && mostrarCierreForm && datosCierre && (
+      {/* Formulario de cierre de caja - Solo si NO está suspendido Y está aprobado */}
+      {!isSuspended && isApproved && mostrarCierreForm && datosCierre && (
         <CierreDeCajaPage
           cajaData={datosCierre}
           onClose={(exitoso) => {
@@ -584,10 +599,10 @@ export default function BusinessLayout({ user, onLogout }) {
         <div className={`business-sidebar-wrapper ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
           <SidebarModern
             user={user}
-            menu={!isSuspended && navData ? buildSidebarMenu(navData) : []}
+            menu={!isSuspended && isApproved && navData ? buildSidebarMenu(navData) : []}
             onLogout={handleLogout}
-            onCerrarCaja={!isSuspended ? handleClickCerrarCaja : undefined}
-            onAbrirCaja={!isSuspended ? handleClickAbrirCaja : undefined}
+            onCerrarCaja={!isSuspended && isApproved ? handleClickCerrarCaja : undefined}
+            onAbrirCaja={!isSuspended && isApproved ? handleClickAbrirCaja : undefined}
             aperturaHecha={aperturaHecha}
             collapsed={collapsed}
             setCollapsed={setCollapsed}

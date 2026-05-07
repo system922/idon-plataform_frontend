@@ -30,6 +30,7 @@ export default function PosCheckoutPage() {
   const { print, getPrinterConfig } = usePrinterService();
   const location = useLocation();
   const autoSelectRef = useRef(location.state?.orderNumber || null);
+  const customerCedulaRef = useRef(location.state?.customerCedula || null); // ✅ Capturar cédula del cliente
 
   const [orders, setOrders] = useState([]);
   const [bizInfo, setBizInfo] = useState(null);
@@ -302,7 +303,7 @@ export default function PosCheckoutPage() {
 
         if (target) {
           setSelectedOrder(target);
-          setClienteCedula(target.customer_document_number || '9999999999');
+          setClienteCedula(customerCedulaRef.current || target.customer_document_number || '9999999999'); // ✅ Priorizar cédula del location.state
           setClienteNombre(target.customer_name || '');
           setClienteEmail('');
           setFoundCliente(null);
@@ -319,6 +320,7 @@ export default function PosCheckoutPage() {
           setError('');
         }
         autoSelectRef.current = null;
+        customerCedulaRef.current = null; // ✅ Limpiar ref después de usar
       } else {
         // Flujo normal: excluir órdenes draft (son cuentas por cobrar pendientes)
         setOrders(todosActivos.filter(o => o.status !== 'draft'));
