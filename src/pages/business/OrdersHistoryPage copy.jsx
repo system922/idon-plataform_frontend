@@ -59,14 +59,6 @@ function buildModificationComanda({
   added = [],
   remaining = [],
 }) {
-  const line = () => '='.repeat(32);
-  const sep = () => '-'.repeat(32);
-  const center = (text) => {
-    const str = String(text ?? '').trim();
-    const pad = Math.max(0, Math.floor((32 - str.length) / 2));
-    return ' '.repeat(pad) + str;
-  };
-
   let out = '';
   out += line() + '\n';
   out += center('***** COMANDA MODIFICADA *****') + '\n';
@@ -86,8 +78,7 @@ function buildModificationComanda({
     remaining.forEach((item) => {
       const qty = item.cantidad || item.quantity || 1;
       const name = String(item.nombre || item.product_name || 'Producto').toUpperCase();
-      const prefix = `${qty}x `;
-      out += prefix + name + '\n';
+      out += `${qty}x ${name}\n`;
       if (item.notas || item.notes) {
         out += ` - ${item.notas || item.notes}\n`;
       }
@@ -198,6 +189,7 @@ export default function OrdersHistoryPage() {
     } catch (err) {
       console.error('Error al cargar productos:', err);
       setError('Error al cargar productos');
+      setTimeout(() => setError(''), 3000);
     }
   };
 
@@ -209,6 +201,7 @@ export default function OrdersHistoryPage() {
     } catch (err) {
       console.error('Error al cargar categorías:', err);
       setError('Error al cargar categorías');
+      setTimeout(() => setError(''), 3000);
     }
   };
 
@@ -251,11 +244,9 @@ export default function OrdersHistoryPage() {
       }
     }));
     
-    const newSubtotal = enrichedItems.reduce((sum, item) => sum + (item.unit_price * (item.quantity || 1)), 0);
     return {
       ...order,
       items: enrichedItems,
-      subtotal: newSubtotal,
     };
   };
 
@@ -288,6 +279,7 @@ export default function OrdersHistoryPage() {
     } catch (err) {
       console.error(err);
       setError(`Error al cargar órdenes: ${err.message}`);
+      setTimeout(() => setError(''), 3000);
       setOrders([]);
     } finally {
       setLoadingOrders(false);
@@ -303,19 +295,30 @@ export default function OrdersHistoryPage() {
     setEditItems([]);
   };
 
+  // 🔥 FUNCIÓN CORREGIDA - Cargar items para edición con todos los campos necesarios
   const handleEditOrder = async (order) => {
     const enrichedOrder = await enrichOrderItemsWithPrices(order);
     setSelectedOrder(enrichedOrder);
     setEditMode(true);
-    setEditItems(enrichedOrder.items.map(i => ({ 
-      ...i, 
+    
+    // Crear editItems con la misma estructura que TakeOrderPageNew
+    const itemsParaEditar = enrichedOrder.items.map(i => ({ 
       id: i.id || Date.now() + Math.random(),
-      unit_price: i.unit_price || i.selling_price || 0,
-      price: i.selling_price || i.unit_price || 0,
-      quantity: i.quantity || 1,
-      cantidad: i.quantity || 1,
-      extras: i.extras || []
-    })));
+      nombre: i.nombre || i.product_name,
+      product_name: i.product_name || i.nombre,
+      product_id: i.product_id,
+      cantidad: i.quantity || i.cantidad || 1,
+      quantity: i.quantity || i.cantidad || 1,
+      precio: i.unit_price || i.price || i.selling_price || 0,
+      unit_price: i.unit_price || i.price || i.selling_price || 0,
+      subtotal: (i.unit_price || i.price || i.selling_price || 0) * (i.quantity || i.cantidad || 1),
+      line_total: (i.unit_price || i.price || i.selling_price || 0) * (i.quantity || i.cantidad || 1),
+      notas: i.notas || i.notes || '',
+      extras: i.extras || [],
+      tax_rate: i.tax_rate || 0,
+    }));
+    
+    setEditItems(itemsParaEditar);
   };
 
   const handleRefresh = () => {
@@ -327,49 +330,51 @@ export default function OrdersHistoryPage() {
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  const handlePrintModification = async (order, removedProducts = [], addedProducts = [], remainingItems = []) => {
+  const printModificationTicket = async (order, removedItems, addedItems, remainingItems) => {
+    const horaStr = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+    const texto = buildModificationComanda({
+      mesaNum: order.mesa_numero,
+      ordenNum: order.order_number || order.id.slice(0,8),
+      tipoOrden: order.order_type === 'dine_in' ? 'LOCAL' : order.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY',
+      hora: horaStr,
+      removed: removedItems,
+      added: addedItems,
+      remaining: remainingItems,
+    });
+
     try {
-      if (!printerConnected) throw new Error('No hay impresora');
-      const horaStr = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
-      const texto = buildModificationComanda({
-        mesaNum: order.mesa_numero,
-        ordenNum: order.order_number || order.id,
-        tipoOrden: 'LOCAL',
-        hora: horaStr,
-        removed: removedProducts,
-        added: addedProducts,
-        remaining: remainingItems,
-      });
-      const config = qz.configs.create(PRINTER_NAME);
-      await qz.print(config, [texto]);
-      setSuccess('Comanda modificada enviada a la impresora');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (e) {
-      setError('Error de QZ Tray. Usando impresión web');
-      const texto = buildModificationComanda({
-        mesaNum: order.mesa_numero,
-        ordenNum: order.order_number || order.id,
-        tipoOrden: 'LOCAL',
-        hora: new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
-        removed: removedProducts,
-        added: addedProducts,
-        remaining: remainingItems,
-      });
-      const escaped = texto.split('\n').map(l => l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')).join('\n');
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Comanda Modificada</title>
+      if (printerConnected) {
+        const config = qz.configs.create(PRINTER_NAME);
+        await qz.print(config, [texto]);
+        setSuccess('Comanda modificada enviada a la impresora');
+      } else {
+        const escaped = texto.split('\n').map(l => l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')).join('\n');
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Comanda Modificada</title>
 <style>@page { margin:3mm; size:58mm auto; } body { font-family:'Courier New',monospace; font-size:9pt; white-space:pre; width:50mm; margin:0 auto; color:#000; line-height:1.3; }</style></head><body>${escaped}</body></html>`;
-      const w = window.open('', '_blank', 'width=300,height=700,toolbar=0,menubar=0');
-      if (!w) {
-        alert('Permite ventanas emergentes para imprimir');
-        return;
+        const w = window.open('', '_blank', 'width=300,height=700,toolbar=0,menubar=0');
+        if (w) {
+          w.document.write(html);
+          w.document.close();
+          setTimeout(() => {
+            w.focus();
+            w.print();
+          }, 300);
+          setSuccess('Comanda enviada a impresión web');
+        } else {
+          throw new Error('No se pudo abrir ventana de impresión');
+        }
       }
-      w.document.write(html);
-      w.document.close();
-      setTimeout(() => {
-        w.focus();
-        w.print();
-      }, 300);
+    } catch (e) {
+      setError(`Error de impresión: ${e.message}`);
     }
+    setTimeout(() => {
+      setSuccess('');
+      setError('');
+    }, 3000);
+  };
+
+  const handlePrintOriginalOrder = async (order) => {
+    await printModificationTicket(order, [], [], order.items);
   };
 
   const handleDeleteOrder = async (orderId) => {
@@ -388,7 +393,7 @@ export default function OrdersHistoryPage() {
   };
 
   // ============================================
-  // FUNCIONES DE EDICIÓN EXACTAMENTE COMO TakeOrderPageNew
+  // FUNCIONES DE EDICIÓN (igual que TakeOrderPageNew)
   // ============================================
   const abrirEditarItem = (item) => {
     setItemEditando(item);
@@ -399,7 +404,7 @@ export default function OrdersHistoryPage() {
       tax_rate: item.tax_rate || 0,
     });
     setCantidadItem(item.cantidad || item.quantity || 1);
-    setNotasItem(item.notas || item.notes || '');
+    setNotasItem(item.notas || '');
     setExtrasItem(item.extras || []);
     setShowEditItemModal(true);
   };
@@ -521,6 +526,14 @@ export default function OrdersHistoryPage() {
       setEditMode(false);
       setEditItems([]);
       
+      // Imprimir comanda modificada después de guardar
+      const originalItems = selectedOrder.items || [];
+      const removedItems = originalItems.filter(orig => 
+        !remainingItems.some(curr => curr.id === orig.id)
+      );
+      const addedItems = remainingItems.filter(curr => curr._added);
+      await printModificationTicket(selectedOrder, removedItems, addedItems, remainingItems);
+      
       setSuccess('Orden modificada correctamente');
       setTimeout(() => setSuccess(''), 3000);
       loadOrders();
@@ -548,7 +561,6 @@ export default function OrdersHistoryPage() {
     { value: '', label: 'Todas', color: 'info' },
   ];
 
-  // Calcular total de un item con extras
   const getItemTotal = (item) => {
     return Number(item.line_total) || Number(item.subtotal) || 0;
   };
@@ -632,7 +644,7 @@ export default function OrdersHistoryPage() {
                   <p>No hay órdenes para el día {filterDate}</p>
                 </div>
               ) : (
-                </table>
+                <table>
                   <thead>
                     <tr>
                       <th>MESA / ORDEN</th>
@@ -672,7 +684,7 @@ export default function OrdersHistoryPage() {
                             <button className="btn-action btn-delete" onClick={() => handleDeleteOrder(order.id)}>
                               <Trash2 size={13} /><span>Eliminar</span>
                             </button>
-                            <button className="btn-action btn-print" onClick={() => handlePrintModification(order, [], [], order.items)}>
+                            <button className="btn-action btn-print" onClick={() => handlePrintOriginalOrder(order)}>
                               <Printer size={13} /><span>Reimprimir</span>
                             </button>
                           </div>
@@ -720,7 +732,7 @@ export default function OrdersHistoryPage() {
                               <span className="item-qty">{item.cantidad}x</span>
                               <span className="item-name">{item.nombre}</span>
                             </div>
-                            <span className="item-price">{fmt(getItemTotal(item))}</span>
+                            <div className="item-price">{fmt(getItemTotal(item))}</div>
                           </div>
                           {item.extras && item.extras.length > 0 && (
                             <div className="item-extras">
@@ -729,6 +741,7 @@ export default function OrdersHistoryPage() {
                               ))}
                             </div>
                           )}
+                          {item.notas && <div className="item-notes">📝 {item.notas}</div>}
                           <div className="item-actions">
                             <button 
                               className="icon-btn edit-btn" 
@@ -757,10 +770,10 @@ export default function OrdersHistoryPage() {
                       <div key={idx} className="item-row">
                         <div className="item-info">
                           <div className="item-qty-name">
-                            <span className="item-qty">{item.cantidad}x</span>
-                            <span className="item-name">{item.nombre}</span>
+                            <span className="item-qty">{item.cantidad || 1}x</span>
+                            <span className="item-name">{item.nombre || item.product_name}</span>
                           </div>
-                          <span className="item-price">{fmt(getItemTotal(item))}</span>
+                          <div className="item-price">{fmt((item.unit_price || item.price || 0) * (item.cantidad || 1))}</div>
                         </div>
                         {item.extras && item.extras.length > 0 && (
                           <div className="item-extras">
@@ -769,6 +782,7 @@ export default function OrdersHistoryPage() {
                             ))}
                           </div>
                         )}
+                        {item.notas && <div className="item-notes">📝 {item.notas}</div>}
                       </div>
                     ))
                   )}

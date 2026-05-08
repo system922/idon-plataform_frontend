@@ -224,6 +224,63 @@
 }
 
 /* ============================================================
+   BOTONES DE EDICIÓN - SEPARAR PRODUCTOS
+============================================================ */
+.edit-actions-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.btn-add-product {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #10b981;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  flex: 1;
+  justify-content: center;
+}
+
+.btn-add-product:hover {
+  background: rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.6);
+  transform: translateY(-1px);
+}
+
+.btn-separar-productos {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.15));
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  flex: 1;
+  justify-content: center;
+}
+
+.btn-separar-productos:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(217, 119, 6, 0.25));
+  border-color: rgba(245, 158, 11, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+/* ============================================================
    TABLA DE ÓRDENES
 ============================================================ */
 .orders-table {
@@ -378,18 +435,6 @@
   transform: translateY(-1px);
 }
 
-.btn-print {
-  background: rgba(59, 130, 246, 0.15);
-  border-color: rgba(59, 130, 246, 0.4);
-  color: #60a5fa;
-}
-
-.btn-print:hover {
-  background: rgba(59, 130, 246, 0.25);
-  border-color: rgba(59, 130, 246, 0.6);
-  transform: translateY(-1px);
-}
-
 /* ============================================================
    PANEL DERECHO - DETALLE ORDEN
 ============================================================ */
@@ -437,31 +482,6 @@
   font-weight: 600;
 }
 
-/* Botón Agregar Producto */
-.btn-add-product {
-  background: rgba(16, 185, 129, 0.2);
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  color: #10b981;
-  padding: 10px 16px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s ease;
-  margin-bottom: 16px;
-  width: 100%;
-  justify-content: center;
-}
-
-.btn-add-product:hover {
-  background: rgba(16, 185, 129, 0.3);
-  border-color: rgba(16, 185, 129, 0.6);
-  transform: translateY(-1px);
-}
-
 /* Items List Modern */
 .items-list-modern {
   display: grid;
@@ -501,6 +521,28 @@
   border-color: rgba(16, 185, 129, 0.2);
 }
 
+/* Estilos para items separados */
+.item-row.separado {
+  border-left: 3px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.item-row.separado:hover {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.item-row.added {
+  background: rgba(34, 211, 238, 0.08);
+  border-color: rgba(34, 211, 238, 0.25);
+  border-left: 3px solid #22d3ee;
+}
+
+.item-row.modified {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
 .item-row.removed {
   opacity: 0.4;
   background: rgba(239, 68, 68, 0.1);
@@ -509,16 +551,6 @@
 
 .item-row.removed .item-name {
   text-decoration: line-through;
-}
-
-.item-row.added {
-  background: rgba(34, 211, 238, 0.08);
-  border-color: rgba(34, 211, 238, 0.25);
-}
-
-.item-row.modified {
-  background: rgba(245, 158, 11, 0.08);
-  border-color: rgba(245, 158, 11, 0.25);
 }
 
 .item-info {
@@ -559,6 +591,31 @@
   white-space: nowrap;
 }
 
+/* Extras y notas */
+.item-extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  margin-bottom: 4px;
+}
+
+.item-extra-tag {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.item-notes {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 4px;
+  font-style: italic;
+}
+
 /* Icon buttons en items */
 .item-actions {
   display: flex;
@@ -584,6 +641,16 @@
 
 .edit-btn:hover {
   background: rgba(104, 66, 254, 0.15);
+  transform: scale(1.05);
+}
+
+/* Botón separar individual */
+.separar-btn {
+  color: #fbbf24;
+}
+
+.separar-btn:hover {
+  background: rgba(245, 158, 11, 0.2);
   transform: scale(1.05);
 }
 
@@ -634,7 +701,7 @@
 }
 
 /* ============================================================
-   BOTONES DE EDICIÓN
+   BOTONES DE EDICIÓN - GUARDAR/CANCELAR
 ============================================================ */
 .action-buttons-group {
   display: flex;
@@ -663,6 +730,12 @@
 .btn-save:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-cancel-edit {
@@ -788,6 +861,15 @@
   .btn-refresh {
     flex: 1;
     min-width: auto;
+  }
+  
+  .edit-actions-bar {
+    flex-direction: column;
+  }
+  
+  .btn-add-product,
+  .btn-separar-productos {
+    width: 100%;
   }
 }
 
@@ -915,7 +997,6 @@
     flex-shrink: 0;
   }
 
-  /* mesa-num cell styled as card header */
   .orders-table tbody td.mesa-num {
     background: rgba(0, 0, 0, 0.2);
     border-radius: 9px 9px 0 0;
@@ -923,7 +1004,6 @@
     font-size: 14px;
   }
 
-  /* action buttons row inside card */
   .orders-table .action-buttons {
     flex: 1;
     justify-content: flex-end;
@@ -966,6 +1046,10 @@
   .empty-panel {
     padding: 50px 20px;
     min-height: 250px;
+  }
+  
+  .item-extras {
+    flex-wrap: wrap;
   }
 }
 
@@ -1036,7 +1120,9 @@
   }
   
   .btn-save,
-  .btn-cancel-edit {
+  .btn-cancel-edit,
+  .btn-add-product,
+  .btn-separar-productos {
     padding: 10px 16px;
     font-size: 13px;
   }
@@ -1049,5 +1135,13 @@
   .badge {
     padding: 4px 8px;
     font-size: 9px;
+  }
+  
+  .icon-btn {
+    padding: 4px;
+  }
+  
+  .separar-btn {
+    padding: 4px 8px;
   }
 }

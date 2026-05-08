@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, X, Printer, Edit2, Trash2, Save, Calendar, RefreshCw } from 'react-feather';
 import qz from 'qz-tray';
 import PageTemplate from '../../components/PageTemplate';
@@ -18,38 +18,10 @@ const center = (txt) => {
   const pad = Math.max(0, Math.floor((WIDTH - t.length) / 2));
   return ' '.repeat(pad) + t;
 };
-const wrap = (txt, width = WIDTH) => {
-  const str = String(txt ?? '').trim();
-  if (!str) return [];
-  const words = str.split(/\s+/);
-  const lines = [];
-  let cur = '';
-  for (const word of words) {
-    const next = cur ? `${cur} ${word}` : word;
-    if (next.length <= width) cur = next;
-    else { if (cur) lines.push(cur); cur = word; }
-  }
-  if (cur) lines.push(cur);
-  return lines;
-};
 
 const fmt = (n) => `$${parseFloat(n || 0).toFixed(2)}`;
 
-// --- Función para obtener precio actual de un producto ---
-const getProductPrice = async (productId) => {
-  try {
-    const res = await fetchWithAuth(`/api/products/${productId}`);
-    if (res.ok) {
-      const product = await res.json();
-      return Number(product.selling_price) || Number(product.price) || 0;
-    }
-    return 0;
-  } catch {
-    return 0;
-  }
-};
-
-// --- Comanda modificada estilo cocina ---
+// --- Construir comanda modificada ---
 function buildModificationComanda({
   mesaNum,
   ordenNum,
@@ -116,6 +88,61 @@ function buildModificationComanda({
   out += '\n\n\n\n\n';
   return out;
 }
+
+// --- Función para imprimir comanda ---
+const printTicket = async (order, removedItems, addedItems, remainingItems, printerConnected) => {
+  const horaStr = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+  const texto = buildModificationComanda({
+    mesaNum: order.mesa_numero,
+    ordenNum: order.order_number || order.id.slice(0, 8),
+    tipoOrden: order.order_type === 'dine_in' ? 'LOCAL' : order.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY',
+    hora: horaStr,
+    removed: removedItems,
+    added: addedItems,
+    remaining: remainingItems,
+  });
+
+  try {
+    if (printerConnected) {
+      const config = qz.configs.create(PRINTER_NAME);
+      await qz.print(config, [texto]);
+      return true;
+    } else {
+      const escaped = texto.split('\n').map(l => l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')).join('\n');
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Comanda Modificada</title>
+<style>@page { margin:3mm; size:58mm auto; } body { font-family:'Courier New',monospace; font-size:9pt; white-space:pre; width:50mm; margin:0 auto; color:#000; line-height:1.3; }</style></head><body>${escaped}</body></html>`;
+      const w = window.open('', '_blank', 'width=300,height=700,toolbar=0,menubar=0');
+      if (w) {
+        w.document.write(html);
+        w.document.close();
+        setTimeout(() => {
+          w.focus();
+          w.print();
+        }, 300);
+        return true;
+      } else {
+        throw new Error('No se pudo abrir ventana de impresión');
+      }
+    }
+  } catch (e) {
+    console.error('Error de impresión:', e);
+    return false;
+  }
+};
+
+// --- Función para obtener precio actual de un producto ---
+const getProductPrice = async (productId) => {
+  try {
+    const res = await fetchWithAuth(`/api/products/${productId}`);
+    if (res.ok) {
+      const product = await res.json();
+      return Number(product.selling_price) || Number(product.price) || 0;
+    }
+    return 0;
+  } catch {
+    return 0;
+  }
+};
 
 export default function OrdersHistoryPage() {
   const { selectedBusiness } = useBusinessContext();
@@ -295,13 +322,11 @@ export default function OrdersHistoryPage() {
     setEditItems([]);
   };
 
-  // 🔥 FUNCIÓN CORREGIDA - Cargar items para edición con todos los campos necesarios
   const handleEditOrder = async (order) => {
     const enrichedOrder = await enrichOrderItemsWithPrices(order);
     setSelectedOrder(enrichedOrder);
     setEditMode(true);
     
-    // Crear editItems con la misma estructura que TakeOrderPageNew
     const itemsParaEditar = enrichedOrder.items.map(i => ({ 
       id: i.id || Date.now() + Math.random(),
       nombre: i.nombre || i.product_name,
@@ -330,53 +355,6 @@ export default function OrdersHistoryPage() {
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  const printModificationTicket = async (order, removedItems, addedItems, remainingItems) => {
-    const horaStr = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
-    const texto = buildModificationComanda({
-      mesaNum: order.mesa_numero,
-      ordenNum: order.order_number || order.id.slice(0,8),
-      tipoOrden: order.order_type === 'dine_in' ? 'LOCAL' : order.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY',
-      hora: horaStr,
-      removed: removedItems,
-      added: addedItems,
-      remaining: remainingItems,
-    });
-
-    try {
-      if (printerConnected) {
-        const config = qz.configs.create(PRINTER_NAME);
-        await qz.print(config, [texto]);
-        setSuccess('Comanda modificada enviada a la impresora');
-      } else {
-        const escaped = texto.split('\n').map(l => l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')).join('\n');
-        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Comanda Modificada</title>
-<style>@page { margin:3mm; size:58mm auto; } body { font-family:'Courier New',monospace; font-size:9pt; white-space:pre; width:50mm; margin:0 auto; color:#000; line-height:1.3; }</style></head><body>${escaped}</body></html>`;
-        const w = window.open('', '_blank', 'width=300,height=700,toolbar=0,menubar=0');
-        if (w) {
-          w.document.write(html);
-          w.document.close();
-          setTimeout(() => {
-            w.focus();
-            w.print();
-          }, 300);
-          setSuccess('Comanda enviada a impresión web');
-        } else {
-          throw new Error('No se pudo abrir ventana de impresión');
-        }
-      }
-    } catch (e) {
-      setError(`Error de impresión: ${e.message}`);
-    }
-    setTimeout(() => {
-      setSuccess('');
-      setError('');
-    }, 3000);
-  };
-
-  const handlePrintOriginalOrder = async (order) => {
-    await printModificationTicket(order, [], [], order.items);
-  };
-
   const handleDeleteOrder = async (orderId) => {
     if (!window.confirm('¿Seguro que deseas eliminar la orden?')) return;
     try {
@@ -393,8 +371,112 @@ export default function OrdersHistoryPage() {
   };
 
   // ============================================
-  // FUNCIONES DE EDICIÓN (igual que TakeOrderPageNew)
+  // FUNCIONES PARA SEPARAR PRODUCTOS (SOLO GUARDAR, SIN IMPRESIÓN)
   // ============================================
+  
+  const separarProductosPorUnidad = () => {
+    if (!editMode) {
+      setError('Primero debes entrar en modo edición');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    const itemsConMultiplesUnidades = editItems.filter(item => 
+      !item._remove && (item.cantidad || item.quantity || 1) > 1
+    );
+
+    if (itemsConMultiplesUnidades.length === 0) {
+      setError('No hay productos con cantidad mayor a 1 para separar');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    const confirmar = window.confirm(
+      `¿Separar ${itemsConMultiplesUnidades.length} producto(s) en unidades individuales?\n\n` +
+      itemsConMultiplesUnidades.map(i => 
+        `• ${i.nombre}: ${i.cantidad || i.quantity} unidades → se convertirá en ${i.cantidad || i.quantity} items`
+      ).join('\n') +
+      '\n\n⚠️ Esta operación solo guardará los cambios, NO imprimirá comanda.'
+    );
+
+    if (!confirmar) return;
+
+    const nuevosItems = [];
+    
+    editItems.forEach(item => {
+      if (item._remove) return;
+      
+      const cantidad = item.cantidad || item.quantity || 1;
+      
+      if (cantidad > 1) {
+        const precioUnitario = item.precio || item.unit_price || 0;
+        for (let i = 0; i < cantidad; i++) {
+          nuevosItems.push({
+            ...item,
+            id: Date.now() + i + Math.random(),
+            cantidad: 1,
+            quantity: 1,
+            subtotal: precioUnitario,
+            line_total: precioUnitario,
+            precio: precioUnitario,
+            unit_price: precioUnitario,
+            _separado: true,
+          });
+        }
+      } else {
+        nuevosItems.push(item);
+      }
+    });
+    
+    setEditItems(nuevosItems);
+    setSuccess(`✅ ${itemsConMultiplesUnidades.length} producto(s) separados en ${nuevosItems.length} unidades`);
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const separarProductoIndividual = (item) => {
+    if (!editMode) return;
+    
+    const cantidad = item.cantidad || item.quantity || 1;
+    if (cantidad <= 1) {
+      setError('Este producto ya está como unidad individual');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+    
+    const confirmar = window.confirm(
+      `¿Separar "${item.nombre}" (${cantidad} unidades) en ${cantidad} items individuales?\n\n⚠️ Esta operación solo guardará los cambios, NO imprimirá comanda.`
+    );
+    
+    if (!confirmar) return;
+    
+    const nuevosItems = [];
+    const precioUnitario = item.precio || item.unit_price || 0;
+    
+    for (let i = 0; i < cantidad; i++) {
+      nuevosItems.push({
+        ...item,
+        id: Date.now() + i + Math.random(),
+        cantidad: 1,
+        quantity: 1,
+        subtotal: precioUnitario,
+        line_total: precioUnitario,
+        precio: precioUnitario,
+        unit_price: precioUnitario,
+        _separado: true,
+      });
+    }
+    
+    const nuevosEditItems = editItems.filter(it => it.id !== item.id);
+    setEditItems([...nuevosEditItems, ...nuevosItems]);
+    
+    setSuccess(`✅ "${item.nombre}" separado en ${cantidad} unidades`);
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  // ============================================
+  // FUNCIONES DE EDICIÓN (AGREGAR/MODIFICAR/ELIMINAR)
+  // ============================================
+  
   const abrirEditarItem = (item) => {
     setItemEditando(item);
     setProductoSeleccionado({
@@ -438,6 +520,7 @@ export default function OrdersHistoryPage() {
       quantity: cantidad,
       unit_price: precio,
       line_total: totalUnit * cantidad,
+      _modified: true,
     };
     
     setEditItems(prev => prev.map(item =>
@@ -481,6 +564,7 @@ export default function OrdersHistoryPage() {
       quantity: cantidad,
       unit_price: precio,
       line_total: totalUnit * cantidad,
+      _added: true,
     };
     
     setEditItems(prev => [...prev, nuevoItem]);
@@ -495,6 +579,34 @@ export default function OrdersHistoryPage() {
 
   const handleSaveEdit = async () => {
     if (isSaving) return;
+    
+    // Detectar qué cambios hubo
+    const originalItems = selectedOrder.items || [];
+    const currentItems = editItems.filter(i => !i._remove);
+    
+    const removedItems = originalItems.filter(orig => 
+      !currentItems.some(curr => curr.id === orig.id)
+    );
+    const addedItems = currentItems.filter(curr => curr._added);
+    const modifiedItems = currentItems.filter(curr => curr._modified);
+    
+    const hasChanges = removedItems.length > 0 || addedItems.length > 0 || modifiedItems.length > 0;
+    
+    if (!hasChanges) {
+      setError('No hay cambios para guardar');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+    
+    const confirmar = window.confirm(
+      `¿Guardar los cambios en la orden?\n\n` +
+      (addedItems.length > 0 ? `➕ Agregados: ${addedItems.length}\n` : '') +
+      (removedItems.length > 0 ? `❌ Eliminados: ${removedItems.length}\n` : '') +
+      (modifiedItems.length > 0 ? `✏️ Modificados: ${modifiedItems.length}\n` : '') +
+      `\n⚠️ Se imprimirá una comanda con los cambios.`
+    );
+    if (!confirmar) return;
+    
     try {
       setIsSaving(true);
       const remainingItems = editItems.filter(i => !i._remove);
@@ -523,19 +635,25 @@ export default function OrdersHistoryPage() {
       };
       
       setSelectedOrder(updatedOrder);
+      
+      // IMPRIMIR solo si hubo cambios (agregar/eliminar/modificar)
+      const successPrint = await printTicket(
+        selectedOrder, 
+        removedItems, 
+        addedItems, 
+        remainingItems,
+        printerConnected
+      );
+      
       setEditMode(false);
       setEditItems([]);
       
-      // Imprimir comanda modificada después de guardar
-      const originalItems = selectedOrder.items || [];
-      const removedItems = originalItems.filter(orig => 
-        !remainingItems.some(curr => curr.id === orig.id)
-      );
-      const addedItems = remainingItems.filter(curr => curr._added);
-      await printModificationTicket(selectedOrder, removedItems, addedItems, remainingItems);
-      
-      setSuccess('Orden modificada correctamente');
-      setTimeout(() => setSuccess(''), 3000);
+      if (successPrint) {
+        setSuccess('✅ Orden guardada y comanda enviada a cocina');
+      } else {
+        setSuccess('✅ Orden guardada (error al imprimir, pero datos guardados)');
+      }
+      setTimeout(() => setSuccess(''), 5000);
       loadOrders();
     } catch (err) {
       console.error(err);
@@ -684,9 +802,6 @@ export default function OrdersHistoryPage() {
                             <button className="btn-action btn-delete" onClick={() => handleDeleteOrder(order.id)}>
                               <Trash2 size={13} /><span>Eliminar</span>
                             </button>
-                            <button className="btn-action btn-print" onClick={() => handlePrintOriginalOrder(order)}>
-                              <Printer size={13} /><span>Reimprimir</span>
-                            </button>
                           </div>
                         </td>
                       </tr>
@@ -717,16 +832,25 @@ export default function OrdersHistoryPage() {
                 </div>
 
                 {editMode && (
-                  <button className="btn-add-product" onClick={() => setShowAddItemModal(true)}>
-                    + Agregar producto
-                  </button>
+                  <div className="edit-actions-bar">
+                    <button className="btn-add-product" onClick={() => setShowAddItemModal(true)}>
+                      + Agregar producto
+                    </button>
+                    <button 
+                      className="btn-separar-productos" 
+                      onClick={separarProductosPorUnidad}
+                      title="Convertir productos con cantidad > 1 en items individuales (solo guarda, no imprime)"
+                    >
+                      🔄 Separar productos por unidad
+                    </button>
+                  </div>
                 )}
 
                 <div className="items-list-modern">
                   {editMode ? (
                     editItems.filter(i => !i._remove).length > 0 ? (
                       editItems.filter(i => !i._remove).map((item, idx) => (
-                        <div key={idx} className={`item-row ${item._added ? 'added' : ''} ${item._modified ? 'modified' : ''}`}>
+                        <div key={idx} className={`item-row ${item._added ? 'added' : ''} ${item._modified ? 'modified' : ''} ${item._separado ? 'separado' : ''}`}>
                           <div className="item-info">
                             <div className="item-qty-name">
                               <span className="item-qty">{item.cantidad}x</span>
@@ -750,6 +874,15 @@ export default function OrdersHistoryPage() {
                             >
                               <Edit2 size={14} />
                             </button>
+                            {(item.cantidad || item.quantity || 1) > 1 && (
+                              <button 
+                                className="icon-btn separar-btn" 
+                                onClick={() => separarProductoIndividual(item)}
+                                title="Separar en unidades individuales (solo guarda, no imprime)"
+                              >
+                                🔄
+                              </button>
+                            )}
                             <button 
                               className="icon-btn delete-btn" 
                               onClick={() => setEditItems(editItems.map((it, i) => i === idx ? { ...it, _remove: true } : it))}
@@ -812,7 +945,7 @@ export default function OrdersHistoryPage() {
               </>
             ) : (
               <div className="empty-panel">
-                <p>Selecciona una orden para ver, editar o imprimir</p>
+                <p>Selecciona una orden para ver o editar</p>
               </div>
             )}
           </div>
