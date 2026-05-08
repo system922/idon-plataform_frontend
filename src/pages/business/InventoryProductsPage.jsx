@@ -41,6 +41,10 @@ const ProductosPage = () => {
       if (isMounted.current) showToast(ERROR_MESSAGES.LOAD_PRODUCTS, 'error');
     }
   }, [loadProductsAsync, showToast]);
+  
+  useEffect(() => {
+    loadProducts();
+  }, []);
 
   // Guardar producto
   const handleSaveProduct = useCallback(async (payload) => {
@@ -137,7 +141,7 @@ const ProductosPage = () => {
 
   return (
     <PageTemplate
-      title="Productos"
+      title=" Gestión de Productos"
       subtitle="Gestión de inventario"
       theme="business"
       loading={isLoading}
