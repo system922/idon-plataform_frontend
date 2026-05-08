@@ -30,14 +30,17 @@ const inputStyle = {
   background: 'rgba(0,0,0,0.3)', color: '#fff',
   fontSize: 13, fontFamily: 'inherit', boxSizing: 'border-box',
 };
+
 const btnPrimary = {
   padding: '10px 22px', background: '#6842fe', color: '#fff',
   border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13,
+  transition: 'all 0.2s ease',
 };
+
 const btnSecondary = {
   padding: '10px 22px', background: 'transparent', color: 'rgba(255,255,255,0.7)',
   border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8,
-  cursor: 'pointer', fontWeight: 600, fontSize: 13,
+  cursor: 'pointer', fontWeight: 600, fontSize: 13, transition: 'all 0.2s ease',
 };
 
 function ProductModal({ product, categories, onClose, onSave, saving }) {
@@ -55,15 +58,23 @@ function ProductModal({ product, categories, onClose, onSave, saving }) {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  const handleSave = () => {
+    if (!form.nombre || !form.precioVenta) {
+      alert('Nombre y precio de venta son requeridos');
+      return;
+    }
+    onSave(form);
+  };
+
   return (
     <div className="invp-modal-overlay" style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
-      backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center',
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+      backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center',
       justifyContent: 'center', zIndex: 1000, padding: 16,
-    }}>
+    }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="invp-modal" style={{
         background: 'linear-gradient(135deg,#1a1f2a 0%,#141920 100%)',
-        border: '1px solid rgba(104,66,254,0.25)', borderRadius: 16,
+        border: '1px solid rgba(104,66,254,0.25)', borderRadius: 20,
         width: '100%', maxWidth: 580, maxHeight: '90vh',
         display: 'flex', flexDirection: 'column',
         boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
@@ -84,7 +95,9 @@ function ProductModal({ product, categories, onClose, onSave, saving }) {
           <button onClick={onClose} style={{
             background: 'none', border: 'none', cursor: 'pointer',
             color: 'rgba(255,255,255,0.5)', padding: 4,
-          }}>
+            transition: 'color 0.2s',
+          }} onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+             onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>
             <X size={20} />
           </button>
         </div>
@@ -180,13 +193,29 @@ function ProductModal({ product, categories, onClose, onSave, saving }) {
           padding: '18px 28px', borderTop: '1px solid rgba(255,255,255,0.08)',
           display: 'flex', justifyContent: 'flex-end', gap: 12,
         }}>
-          <button onClick={onClose} disabled={saving} style={btnSecondary}>
+          <button 
+            onClick={onClose} 
+            disabled={saving} 
+            style={btnSecondary}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
             Cancelar
           </button>
           <button
-            onClick={() => onSave(form)}
+            onClick={handleSave}
             disabled={saving || !form.nombre || !form.precioVenta}
             style={{ ...btnPrimary, opacity: (!form.nombre || !form.precioVenta) ? 0.5 : 1 }}
+            onMouseEnter={e => {
+              if (!saving && form.nombre && form.precioVenta) {
+                e.currentTarget.style.background = '#7c5cff';
+              }
+            }}
+            onMouseLeave={e => {
+              if (!saving && form.nombre && form.precioVenta) {
+                e.currentTarget.style.background = '#6842fe';
+              }
+            }}
           >
             {saving ? 'Guardando...' : product ? 'Guardar cambios' : 'Crear producto'}
           </button>
@@ -227,12 +256,23 @@ export default function InventoryProductsPage() {
   useEffect(() => { load(); }, [load]);
 
   const handleSave = async (form) => {
-    if (saving) return; // ✅ Prevención de doble envío
+    if (saving) return;
     try {
       setSaving(true);
+      const payload = {
+        name:        form.nombre,
+        price:       parseFloat(form.precioVenta),
+        unit_cost:   parseFloat(form.costo) || 0,
+        description: form.descripcion,
+        category_name: form.categoria || null,
+        sku:         form.sku || null,
+        stock:       parseInt(form.stock) || 0,
+        min_stock:   parseInt(form.minStock) || 0,
+        is_taxable:  form.iva,
+      };
       const url    = editing ? `/api/products/${editing.id}` : '/api/products';
       const method = editing ? 'PUT' : 'POST';
-      const res    = await fetchWithAuth(url, { method, body: JSON.stringify(form) });
+      const res    = await fetchWithAuth(url, { method, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error((await res.json()).error || 'Error al guardar');
       await load();
       setShowModal(false);
@@ -287,12 +327,20 @@ export default function InventoryProductsPage() {
           }}
         />
       </div>
-      <button onClick={load} title="Recargar" style={{ ...btnSecondary, padding: '9px 12px' }}>
+      <button 
+        onClick={load} 
+        title="Recargar" 
+        style={{ ...btnSecondary, padding: '9px 12px' }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+      >
         <RefreshCw size={14} />
       </button>
       <button
         onClick={() => { setEditing(null); setShowModal(true); }}
         style={{ display: 'flex', alignItems: 'center', gap: 6, ...btnPrimary, padding: '9px 18px' }}
+        onMouseEnter={e => e.currentTarget.style.background = '#7c5cff'}
+        onMouseLeave={e => e.currentTarget.style.background = '#6842fe'}
       >
         <Plus size={15} /> Nuevo producto
       </button>
@@ -335,7 +383,7 @@ export default function InventoryProductsPage() {
                 background: 'rgba(104,66,254,0.12)',
                 borderBottom: '1px solid rgba(255,255,255,0.08)',
               }}>
-                {['Código', 'Nombre', 'Categoría', 'Precio', 'Stock', 'Estado', ''].map(h => (
+                {['Código', 'Nombre', 'Categoría', 'Precio', 'Stock', 'Estado', 'Acciones'].map(h => (
                   <th key={h} style={{
                     padding: '12px 14px', textAlign: 'left', fontSize: 11,
                     fontWeight: 700, color: 'rgba(255,255,255,0.5)',
@@ -418,30 +466,58 @@ export default function InventoryProductsPage() {
                       </span>
                     </td>
                     <td className="invp-td invp-td-actions" style={{ padding: '11px 14px' }}>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', gap: 8 }}>
                         <button
                           onClick={() => { setEditing(p); setShowModal(true); }}
-                          title="Editar"
+                          title="Editar producto"
                           style={{
                             padding: '6px 10px',
-                            background: 'rgba(104,66,254,0.15)', color: '#6842fe',
+                            background: 'rgba(104,66,254,0.15)',
+                            color: '#6842fe',
                             border: '1px solid rgba(104,66,254,0.25)',
-                            borderRadius: 6, cursor: 'pointer',
+                            borderRadius: 8,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = '#6842fe';
+                            e.currentTarget.style.color = '#fff';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'rgba(104,66,254,0.15)';
+                            e.currentTarget.style.color = '#6842fe';
                           }}
                         >
-                          <Edit2 size={13} />
+                          <Edit2 size={13} /> Editar
                         </button>
                         <button
                           onClick={() => handleDelete(p)}
-                          title="Desactivar"
+                          title="Desactivar producto"
                           style={{
                             padding: '6px 10px',
-                            background: 'rgba(239,68,68,0.12)', color: '#ef4444',
+                            background: 'rgba(239,68,68,0.12)',
+                            color: '#ef4444',
                             border: '1px solid rgba(239,68,68,0.22)',
-                            borderRadius: 6, cursor: 'pointer',
+                            borderRadius: 8,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = '#ef4444';
+                            e.currentTarget.style.color = '#fff';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'rgba(239,68,68,0.12)';
+                            e.currentTarget.style.color = '#ef4444';
                           }}
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={13} /> Eliminar
                         </button>
                       </div>
                     </td>

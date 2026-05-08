@@ -10,7 +10,9 @@ import {
   FiPlus,
   FiUsers as FiUsersIcon,
   FiCheck,
-  FiClock
+  FiClock,
+  FiPercent,
+  FiTag
 } from 'react-icons/fi';
 import { FaHandHoldingDollar } from "react-icons/fa6";
 import { BsCurrencyExchange } from "react-icons/bs";
@@ -30,7 +32,7 @@ export default function PosCheckoutPage() {
   const { print, getPrinterConfig } = usePrinterService();
   const location = useLocation();
   const autoSelectRef = useRef(location.state?.orderNumber || null);
-  const customerCedulaRef = useRef(location.state?.customerCedula || null); // ✅ Capturar cédula del cliente
+  const customerCedulaRef = useRef(location.state?.customerCedula || null);
 
   const [orders, setOrders] = useState([]);
   const [bizInfo, setBizInfo] = useState(null);
@@ -43,8 +45,8 @@ export default function PosCheckoutPage() {
   const [clienteEmail, setClienteEmail] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [printLoading, setPrintLoading] = useState(false);
-  const [processingCliente, setProcessingCliente] = useState(false); // ✅ Para guardarCliente
-  const [processingCxC, setProcessingCxC] = useState(false); // ✅ Para guardarCuentaPorCobrar
+  const [processingCliente, setProcessingCliente] = useState(false);
+  const [processingCxC, setProcessingCxC] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [clientApiLoading, setClientApiLoading] = useState(false);
@@ -71,41 +73,182 @@ export default function PosCheckoutPage() {
   const [availableDiscounts, setAvailableDiscounts] = useState([]);
   const [appliedDiscount, setAppliedDiscount] = useState(null);
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountDetails, setDiscountDetails] = useState(null); // Para detalles del descuento aplicado
   const [totalOrdenConDescuento, setTotalOrdenConDescuento] = useState(0);
 
   // ========== CONFIGURACIÓN FISCAL ==========
   const [ivaRateGlobal, setIvaRateGlobal] = useState(15);
   const [currencySymbol, setCurrencySymbol] = useState('$');
 
-  const loadFiscalConfig = async () => {
-    try {
-      const res = await fetchWithAuth('/api/fiscal/config');
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.iva_rate) setIvaRateGlobal(Number(data.iva_rate));
-        if (data && data.currency_symbol) setCurrencySymbol(data.currency_symbol);
-      }
-    } catch (err) {
-      console.error('Error cargando configuración fiscal:', err);
-    }
-  };
+  // ========== FUNCIONES DE DESCUENTOS COMPLETAS ==========
 
-  const loadDiscounts = async () => {
-    try {
-      const res = await fetchWithAuth('/api/discounts');
-      if (res.ok) {
-        const data = await res.json();
-        const validDiscounts = (Array.isArray(data) ? data : []).filter(d =>
-          d && d.id && d.name && d.is_active !== undefined && d.type && d.value !== undefined
-        );
-        setAvailableDiscounts(validDiscounts);
-      } else {
-        setAvailableDiscounts([]);
+  // Obtener subtotal por categoría
+  const getSubtotalByCategory = useCallback((items, categoryId) => {
+    return items.reduce((sum, item) => {
+      if (item.category_id === categoryId) {
+        const price = Number(item.selling_price) || Number(item.unit_price) || 0;
+        const quantity = Number(item.quantity) || 1;
+        return sum + (price * quantity);
       }
-    } catch (err) {
-      setAvailableDiscounts([]);
+      return sum;
+    }, 0);
+  }, []);
+
+  // Obtener subtotal por producto específico
+  const getSubtotalByProduct = useCallback((items, productId) => {
+    return items.reduce((sum, item) => {
+      if (item.product_id === productId) {
+        const price = Number(item.selling_price) || Number(item.unit_price) || 0;
+        const quantity = Number(item.quantity) || 1;
+        return sum + (price * quantity);
+      }
+      return sum;
+    }, 0);
+  }, []);
+
+  // Obtener cantidad total de un producto específico
+  const getQuantityByProduct = useCallback((items, productId) => {
+    return items.reduce((sum, item) => {
+      if (item.product_id === productId) {
+        return sum + (Number(item.quantity) || 1);
+      }
+      return sum;
+    }, 0);
+  }, []);
+
+  // Verificar si un descuento aplica (COMPLETO - con producto y categoría)
+  const isDiscountApplicable = useCallback((discount, orderTotal, items = []) => {
+    if (!discount.is_active) return false;
+    if (!discount.type || discount.value === undefined) return false;
+    
+    const now = new Date();
+    if (discount.start_date && new Date(discount.start_date) > now) return false;
+    if (discount.end_date && new Date(discount.end_date) < now) return false;
+    if (discount.days_of_week?.length && !discount.days_of_week.includes(now.getDay())) return false;
+    if (discount.start_time && discount.end_time) {
+      const currentTime = now.toTimeString().slice(0,5);
+      if (currentTime < discount.start_time || currentTime > discount.end_time) return false;
     }
-  };
+    
+    // 🔥 Descuento por PRODUCTO ESPECÍFICO
+    if (discount.applies_to === 'product') {
+      if (!discount.product_id) return false;
+      const productTotal = getSubtotalByProduct(items, discount.product_id);
+      if (productTotal === 0) return false;
+      if (discount.min_amount && productTotal < Number(discount.min_amount)) return false;
+      if (discount.min_quantity) {
+        const productQty = getQuantityByProduct(items, discount.product_id);
+        if (productQty < discount.min_quantity) return false;
+      }
+      return true;
+    }
+    
+    // 🔥 Descuento por CATEGORÍA
+    if (discount.applies_to === 'category') {
+      if (!discount.category_id) return false;
+      const categoryTotal = getSubtotalByCategory(items, discount.category_id);
+      if (categoryTotal === 0) return false;
+      if (discount.min_amount && categoryTotal < Number(discount.min_amount)) return false;
+      return true;
+    }
+    
+    // 🔥 Descuento por ORDEN COMPLETA
+    if (discount.applies_to === 'order') {
+      if (discount.min_amount && orderTotal < Number(discount.min_amount)) return false;
+      return true;
+    }
+    
+    return false;
+  }, [getSubtotalByCategory, getSubtotalByProduct, getQuantityByProduct]);
+
+  // Calcular monto del descuento (COMPLETO)
+  const calculateDiscountAmountForOrder = useCallback((discount, subtotalSinIVA, items = []) => {
+    if (!discount || !discount.type || discount.value === undefined) return 0;
+    
+    let baseAmount = 0;
+    let discountType = discount.type;
+    let discountValue = Number(discount.value);
+    
+    // 🔥 Base según tipo de aplicación
+    if (discount.applies_to === 'product' && discount.product_id) {
+      baseAmount = getSubtotalByProduct(items, discount.product_id);
+    } else if (discount.applies_to === 'category' && discount.category_id) {
+      baseAmount = getSubtotalByCategory(items, discount.category_id);
+    } else {
+      baseAmount = subtotalSinIVA;
+    }
+    
+    let amount = 0;
+    
+    // 🔥 Cálculo según tipo de descuento
+    if (discountType === 'percentage') {
+      amount = baseAmount * (discountValue / 100);
+    } else if (discountType === 'fixed') {
+      amount = Math.min(discountValue, baseAmount);
+    } else if (discountType === 'buy_x_get_y') {
+      // Compra X, lleva Y gratis - ejemplo: compra 2, lleva 1 gratis = 33% descuento
+      const minQty = discount.min_quantity || 2;
+      const freeQty = discount.free_quantity || 1;
+      const discountPercent = (freeQty / (minQty + freeQty)) * 100;
+      amount = baseAmount * (discountPercent / 100);
+    } else if (discountType === 'bulk') {
+      // Descuento por volumen
+      let totalQty = 0;
+      if (discount.applies_to === 'product' && discount.product_id) {
+        totalQty = getQuantityByProduct(items, discount.product_id);
+      } else {
+        totalQty = items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
+      }
+      if (totalQty >= (discount.min_quantity || 1)) {
+        amount = baseAmount * (discountValue / 100);
+      }
+    } else if (discountType === 'coupon') {
+      if (discountValue > 0) {
+        amount = Math.min(discountValue, baseAmount);
+      }
+    }
+    
+    // Aplicar límite máximo de descuento
+    if (discount.max_discount && amount > Number(discount.max_discount)) {
+      amount = Number(discount.max_discount);
+    }
+    
+    // No puede exceder la base
+    if (amount > baseAmount) amount = baseAmount;
+    
+    return amount;
+  }, [getSubtotalByCategory, getSubtotalByProduct, getQuantityByProduct]);
+
+  // Obtener el mejor descuento aplicable (prioridad)
+  const getBestApplicableDiscount = useCallback((subtotalSinIVA, items) => {
+    if (availableDiscounts.length === 0) return null;
+    
+    const applicable = availableDiscounts.filter(d => isDiscountApplicable(d, subtotalSinIVA, items));
+    if (applicable.length === 0) return null;
+    
+    const applicableWithAmount = applicable.map(d => ({ 
+      discount: d, 
+      amount: calculateDiscountAmountForOrder(d, subtotalSinIVA, items),
+      details: {
+        name: d.name,
+        type: d.type,
+        applies_to: d.applies_to,
+        value: d.value,
+        product_name: d.product_name,
+        category_name: d.category_name
+      }
+    }));
+    
+    // Ordenar por prioridad (mayor primero) y luego por monto
+    applicableWithAmount.sort((a, b) => {
+      if (a.discount.priority !== b.discount.priority) {
+        return (b.discount.priority || 0) - (a.discount.priority || 0);
+      }
+      return b.amount - a.amount;
+    });
+    
+    return applicableWithAmount[0];
+  }, [availableDiscounts, isDiscountApplicable, calculateDiscountAmountForOrder]);
 
   const getSubtotalSinIVA = useCallback(() => {
     if (!selectedOrder) return 0;
@@ -131,86 +274,27 @@ export default function PosCheckoutPage() {
     return getSubtotalSinIVA() + getIvaTotal();
   }, [selectedOrder, getSubtotalSinIVA, getIvaTotal]);
 
-  const getSubtotalByCategory = useCallback((items, categoryId) => {
-    return items.reduce((sum, item) => {
-      if (item.category_id === categoryId) {
-        const price = Number(item.selling_price) || Number(item.unit_price) || 0;
-        const quantity = Number(item.quantity) || 1;
-        return sum + (price * quantity);
-      }
-      return sum;
-    }, 0);
-  }, []);
-
-  const isDiscountApplicable = useCallback((discount, orderTotal, items = []) => {
-    if (!discount.is_active) return false;
-    if (!discount.type || discount.value === undefined) return false;
-    const now = new Date();
-    if (discount.start_date && new Date(discount.start_date) > now) return false;
-    if (discount.end_date && new Date(discount.end_date) < now) return false;
-    if (discount.days_of_week?.length && !discount.days_of_week.includes(now.getDay())) return false;
-    if (discount.start_time && discount.end_time) {
-      const currentTime = now.toTimeString().slice(0,5);
-      if (currentTime < discount.start_time || currentTime > discount.end_time) return false;
-    }
-    if (discount.applies_to === 'category') {
-      if (!discount.category_id) return false;
-      const categoryTotal = getSubtotalByCategory(items, discount.category_id);
-      if (categoryTotal === 0) return false;
-      if (discount.min_amount && categoryTotal < Number(discount.min_amount)) return false;
-      return true;
-    }
-    if (discount.applies_to === 'order') {
-      if (discount.min_amount && orderTotal < Number(discount.min_amount)) return false;
-      return true;
-    }
-    return false;
-  }, [getSubtotalByCategory]);
-
-  const calculateDiscountAmountForOrder = useCallback((discount, subtotalSinIVA, items = []) => {
-    if (!discount || !discount.type || discount.value === undefined) return 0;
-    let baseAmount = 0;
-    if (discount.applies_to === 'category' && discount.category_id)
-      baseAmount = getSubtotalByCategory(items, discount.category_id);
-    else
-      baseAmount = subtotalSinIVA;
-    let amount = 0;
-    if (discount.type === 'percentage')
-      amount = baseAmount * (Number(discount.value) / 100);
-    else if (discount.type === 'fixed')
-      amount = Math.min(Number(discount.value), baseAmount);
-    else
-      return 0;
-    if (discount.max_discount && amount > Number(discount.max_discount)) amount = Number(discount.max_discount);
-    if (amount > baseAmount) amount = baseAmount;
-    return amount;
-  }, [getSubtotalByCategory]);
-
-  const getBestApplicableDiscount = useCallback((subtotalSinIVA, items) => {
-    if (availableDiscounts.length === 0) return null;
-    const applicable = availableDiscounts.filter(d => isDiscountApplicable(d, subtotalSinIVA, items));
-    if (applicable.length === 0) return null;
-    const applicableWithAmount = applicable.map(d => ({ discount: d, amount: calculateDiscountAmountForOrder(d, subtotalSinIVA, items) }));
-    applicableWithAmount.sort((a,b) => b.amount - a.amount);
-    return applicableWithAmount[0].discount;
-  }, [availableDiscounts, isDiscountApplicable, calculateDiscountAmountForOrder]);
-
+  // Actualizar valores de descuento
   const updateDiscountValues = useCallback(() => {
     if (!selectedOrder) {
       setAppliedDiscount(null);
       setDiscountAmount(0);
+      setDiscountDetails(null);
       setTotalOrdenConDescuento(getOrderTotal());
       return;
     }
+    
     const subtotalSinIVA = getSubtotalSinIVA();
     const ivaTotal = getIvaTotal();
     const items = selectedOrder.items || [];
     const best = getBestApplicableDiscount(subtotalSinIVA, items);
-    if (best) {
-      const amount = calculateDiscountAmountForOrder(best, subtotalSinIVA, items);
-      setAppliedDiscount(best);
-      setDiscountAmount(amount);
-      const nuevaBaseImponible = Math.max(0, subtotalSinIVA - amount);
+    
+    if (best && best.amount > 0) {
+      setAppliedDiscount(best.discount);
+      setDiscountAmount(best.amount);
+      setDiscountDetails(best.details);
+      
+      const nuevaBaseImponible = Math.max(0, subtotalSinIVA - best.amount);
       const ratio = subtotalSinIVA > 0 ? nuevaBaseImponible / subtotalSinIVA : 1;
       const nuevoIVA = Math.round(ivaTotal * ratio * 100) / 100;
       const nuevoTotal = nuevaBaseImponible + nuevoIVA;
@@ -218,9 +302,43 @@ export default function PosCheckoutPage() {
     } else {
       setAppliedDiscount(null);
       setDiscountAmount(0);
+      setDiscountDetails(null);
       setTotalOrdenConDescuento(getOrderTotal());
     }
-  }, [selectedOrder, getSubtotalSinIVA, getIvaTotal, getOrderTotal, getBestApplicableDiscount, calculateDiscountAmountForOrder]);
+  }, [selectedOrder, getSubtotalSinIVA, getIvaTotal, getOrderTotal, getBestApplicableDiscount]);
+
+  // Cargar configuración fiscal
+  const loadFiscalConfig = async () => {
+    try {
+      const res = await fetchWithAuth('/api/fiscal/config');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.iva_rate) setIvaRateGlobal(Number(data.iva_rate));
+        if (data && data.currency_symbol) setCurrencySymbol(data.currency_symbol);
+      }
+    } catch (err) {
+      console.error('Error cargando configuración fiscal:', err);
+    }
+  };
+
+  // Cargar descuentos disponibles
+  const loadDiscounts = async () => {
+    try {
+      const res = await fetchWithAuth('/api/discounts');
+      if (res.ok) {
+        const data = await res.json();
+        const validDiscounts = (Array.isArray(data) ? data : []).filter(d =>
+          d && d.id && d.name && d.is_active !== undefined && d.type && d.value !== undefined
+        );
+        setAvailableDiscounts(validDiscounts);
+      } else {
+        setAvailableDiscounts([]);
+      }
+    } catch (err) {
+      console.error('Error cargando descuentos:', err);
+      setAvailableDiscounts([]);
+    }
+  };
 
   useEffect(() => {
     updateDiscountValues();
@@ -279,6 +397,7 @@ export default function PosCheckoutPage() {
     setMetodoPagoNormal('cash');
     setAppliedDiscount(null);
     setDiscountAmount(0);
+    setDiscountDetails(null);
     setTotalOrdenConDescuento(0);
   };
 
@@ -290,12 +409,10 @@ export default function PosCheckoutPage() {
 
       if (autoSelectRef.current) {
         const orderNum = String(autoSelectRef.current);
-        // Buscar en TODOS (incluye draft) para encontrar la orden por cobrar
         const target = todosActivos.find(o =>
           String(o.order_number)  === orderNum ||
           String(o.numero_pedido) === orderNum
         );
-        // En el combobox mostrar solo las no-draft, más la orden encontrada si es draft
         const listaCombobox = target && target.status === 'draft'
           ? [target, ...todosActivos.filter(o => o.status !== 'draft')]
           : todosActivos.filter(o => o.status !== 'draft');
@@ -303,7 +420,7 @@ export default function PosCheckoutPage() {
 
         if (target) {
           setSelectedOrder(target);
-          setClienteCedula(customerCedulaRef.current || target.customer_document_number || '9999999999'); // ✅ Priorizar cédula del location.state
+          setClienteCedula(customerCedulaRef.current || target.customer_document_number || '9999999999');
           setClienteNombre(target.customer_name || '');
           setClienteEmail('');
           setFoundCliente(null);
@@ -320,9 +437,8 @@ export default function PosCheckoutPage() {
           setError('');
         }
         autoSelectRef.current = null;
-        customerCedulaRef.current = null; // ✅ Limpiar ref después de usar
+        customerCedulaRef.current = null;
       } else {
-        // Flujo normal: excluir órdenes draft (son cuentas por cobrar pendientes)
         setOrders(todosActivos.filter(o => o.status !== 'draft'));
       }
 
@@ -403,7 +519,7 @@ export default function PosCheckoutPage() {
   };
 
   const guardarCliente = async (documento, nombre, email = null) => {
-    if (processingCliente) return null; // ✅ Prevención de doble envío
+    if (processingCliente) return null;
     const tipo_documento = documento.length === 13 ? 'ruc' : 'cedula';
     try {
       setProcessingCliente(true);
@@ -697,19 +813,14 @@ export default function PosCheckoutPage() {
     });
     if (itemsPayload.length === 0) return null;
 
-    let descuentoTotal = 0;
-    if (discountData && discountData.amount) descuentoTotal = discountData.amount;
-    else if (discountData && discountData.type && discountData.value) {
-      if (discountData.type === 'percentage') descuentoTotal = subtotalOriginal * (Number(discountData.value) / 100);
-      else if (discountData.type === 'fixed') descuentoTotal = Math.min(Number(discountData.value), subtotalOriginal);
-    }
-    const nuevaBaseImponible = Math.max(0, subtotalOriginal - descuentoTotal);
+    let descuentoTotal = discountAmount || 0;
+    const nuevaBaseImponibleFact = Math.max(0, subtotalOriginal - descuentoTotal);
     const ivaSumado = (order.items || []).reduce((s, item) =>
       s + (Number(item.tax_rate) || 0) * (Number(item.quantity) || 1), 0);
-    const ratioFact = subtotalOriginal > 0 ? nuevaBaseImponible / subtotalOriginal : 1;
+    const ratioFact = subtotalOriginal > 0 ? nuevaBaseImponibleFact / subtotalOriginal : 1;
     const ivaConDescuento = Math.round(ivaSumado * ratioFact * 100) / 100;
     const ivaRate = ivaRateGlobal;
-    const totalFactura = nuevaBaseImponible + ivaConDescuento;
+    const totalFactura = nuevaBaseImponibleFact + ivaConDescuento;
 
     const payload = {
       order_id: order.id,
@@ -744,9 +855,9 @@ export default function PosCheckoutPage() {
     }
   }
 
-  // ─── Función para guardar cuenta por cobrar (accounts_receivable) ──────────
+  // ─── Función para guardar cuenta por cobrar ────────────────────────────────
   const guardarCuentaPorCobrar = async () => {
-    if (processingCxC) return null; // ✅ Prevención de doble envío
+    if (processingCxC) return null;
     if (!selectedOrder) return null;
 
     const clienteId   = foundCliente?.id   || null;
@@ -782,7 +893,7 @@ export default function PosCheckoutPage() {
     }
   };
 
-  // ─── PAGO DIFERIDO: registra cuenta por cobrar, no genera factura ───────────
+  // ─── PAGO DIFERIDO ─────────────────────────────────────────────────────────
   const pagoPorCobrar = async () => {
     setPrintLoading(true);
     try {
@@ -839,7 +950,14 @@ export default function PosCheckoutPage() {
         total: printTotalFinal,
         payment: { cash: paid, card: 0, other: 0 },
         printerFooter: printerConfig.footer,
-        discount: appliedDiscount ? { name: appliedDiscount.name, type: appliedDiscount.type, value: appliedDiscount.value, amount: discountAmount } : null
+        discount: appliedDiscount ? { 
+          name: appliedDiscount.name, 
+          type: appliedDiscount.type, 
+          value: appliedDiscount.value, 
+          amount: discountAmount,
+          applies_to: appliedDiscount.applies_to,
+          details: discountDetails
+        } : null
       }, openDrawer);
     } catch (err) {
       console.error('Error imprimiendo:', err);
@@ -1012,7 +1130,7 @@ export default function PosCheckoutPage() {
       let nombre = clienteNombre?.trim() || 'CONSUMIDOR FINAL';
       let clienteId = await guardarCliente(cedula, nombre, clienteEmail?.trim() || null);
       let invoiceData = null;
-      const discountInfo = appliedDiscount ? { id: appliedDiscount.id, name: appliedDiscount.name, amount: discountAmount } : null;
+      const discountInfo = appliedDiscount ? { id: appliedDiscount.id, name: appliedDiscount.name, amount: discountAmount, type: appliedDiscount.type, applies_to: appliedDiscount.applies_to } : null;
 
       let debeAbrirCajon = false;
 
@@ -1211,6 +1329,11 @@ export default function PosCheckoutPage() {
                 <div className="order-head">
                   <b>{selectedOrder.mesa_numero ? `Mesa ${selectedOrder.mesa_numero}` : selectedOrder.order_type} #{selectedOrder.order_number || selectedOrder.id}</b>
                   {modoDividido && selectedItems.length > 0 && <span className="badge">{selectedItems.length} producto(s) seleccionado(s)</span>}
+                  {appliedDiscount && discountAmount > 0 && (
+                    <span className="discount-badge">
+                      <FiPercent size={12} /> {appliedDiscount.name} - {fmt(discountAmount)} OFF
+                    </span>
+                  )}
                 </div>
 
                 {!modoDividido && !modoPorCobrar ? (
@@ -1228,13 +1351,16 @@ export default function PosCheckoutPage() {
                       <div className="sub-iva-total"><span>SUBTOTAL:</span><span>{fmt(subtotalSinIVAMostrar)}</span></div>
                       {appliedDiscount && discountAmount > 0 && (
                         <div className="sub-iva-total discount-row">
-                          <span>DESCUENTO ({appliedDiscount.type === 'percentage' ? `${appliedDiscount.value}%` : `$${appliedDiscount.value}`}):</span>
+                          <span>
+                            <FiTag size={12} /> DESCUENTO ({appliedDiscount.name}): 
+                            {appliedDiscount.type === 'percentage' ? ` ${appliedDiscount.value}%` : ` $${appliedDiscount.value}`}
+                          </span>
                           <span style={{ color: '#10b981' }}>-{fmt(discountAmount)}</span>
                         </div>
                       )}
                       <div className="sub-iva-total"><span>BASE IMPONIBLE:</span><span>{fmt(nuevaBaseImponible)}</span></div>
                       <div className="sub-iva-total"><span>IVA ({ivaRateMostrar}%):</span><span>{fmt(nuevoIVAMostrar)}</span></div>
-                      <div className="sub-iva-total total-row"><span><strong>TOTAL:</strong></span><span className="total-amount"><strong>{fmt(totalOrdenConDescuento)}</strong></span></div>
+                      <div className="sub-iva-total total-row"><span><strong>TOTAL CON DESCUENTO:</strong></span><span className="total-amount"><strong>{fmt(totalOrdenConDescuento)}</strong></span></div>
                     </div>
                     <div className="metodo-pago-seleccion">
                       <button className={metodoPagoNormal === 'cash' ? "selected" : ""} onClick={() => setMetodoPagoNormal('cash')}><FaHandHoldingDollar size={20} /> Efectivo</button>
@@ -1316,7 +1442,7 @@ export default function PosCheckoutPage() {
                     )}
                   </>
                 ) : modoDividido ? (
-                  // Modo dividido (acortado por brevedad, igual al original)
+                  // Modo dividido
                   <div className="order-items">
                     <div className="section-title"><IoFileTrayFull size={14} /> Productos pendientes:</div>
                     {selectedOrder.items.filter(item => !item.paid).map((item, idx) => (
@@ -1345,10 +1471,6 @@ export default function PosCheckoutPage() {
                         const totalC = subtotalC + ivaC;
                         const recibido = comensal.montoRecibido || 0;
                         const cambioC = recibido - totalC;
-                        const cashRaw = comensal.cashAmount ? String(Math.round(comensal.cashAmount * 100)) : '';
-                        const cardRaw = comensal.cardAmount ? String(Math.round(comensal.cardAmount * 100)) : '';
-                        const transferRaw = comensal.transferAmount ? String(Math.round(comensal.transferAmount * 100)) : '';
-                        const recibidoRaw = recibido > 0 ? String(Math.round(recibido * 100)) : '';
                         const totalPagadoMixtoComensal = (comensal.cashAmount || 0) + (comensal.cardAmount || 0) + (comensal.transferAmount || 0);
                         const cambioMixtoComensal = Math.max(0, totalPagadoMixtoComensal - totalC);
                         const faltanteMixtoComensal = Math.max(0, totalC - totalPagadoMixtoComensal);

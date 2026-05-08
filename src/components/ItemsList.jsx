@@ -1,65 +1,57 @@
 import React from 'react';
-import { FiTrash2, FiEdit2 } from 'react-icons/fi';  // 👈 AGREGAR FiEdit2
+import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 
-export default function ItemsList({
-  items,
-  eliminarItem,
-  abrirEditarItem  // 👈 NUEVA PROP
-}) {
+export default function ItemsList({ items, eliminarItem, abrirEditarItem }) {
+  if (!items || items.length === 0) {
+    return (
+      <div className="items-empty-panel">
+        <div className="empty-state">
+          <div className="empty-title">No hay items</div>
+          <div className="empty-desc">Agrega productos a la orden</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="items-body">
-      {items.length === 0 ? (
-        <div className="items-empty-panel">
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.5 }}>📦</div>
-            <div className="empty-desc">Haz clic en "Agregar item" para comenzar</div>
+    <div className="items-list-modern">
+      {items.map((item, idx) => (
+        <div key={item.id || idx} className="item-row">
+          <div className="item-info">
+            <div className="item-name">{item.cantidad}x {item.nombre}</div>
+            <div className="item-meta">
+              <span>${(item.precio || 0).toFixed(2)} c/u</span>
+              {item.extras && item.extras.length > 0 && (
+                <div className="item-extras">
+                  {item.extras.map((extra, i) => (
+                    <span key={i} className="item-extra-tag">+ {extra.name}</span>
+                  ))}
+                </div>
+              )}
+              {item.notas && <span className="item-note">📝 {item.notas}</span>}
+            </div>
+          </div>
+          <div className="item-right">
+            <div className="item-price">${(item.line_total || item.subtotal || 0).toFixed(2)}</div>
+            <div className="item-actions">
+              <button
+                className="icon-btn edit-btn"
+                onClick={() => abrirEditarItem(item)}
+                title="Editar item"
+              >
+                <FiEdit2 size={16} />
+              </button>
+              <button
+                className="icon-btn delete-btn"
+                onClick={() => eliminarItem(item.id)}
+                title="Eliminar item"
+              >
+                <FiTrash2 size={16} />
+              </button>
+            </div>
           </div>
         </div>
-      ) : (
-        <div className="items-list-modern">
-          {items.map((item) => (
-            <div key={item.id} className="item-row">
-              <div className="item-main">
-                <div className="item-name">{item.nombre}</div>
-                <div className="item-meta">
-                  ${(Number(item.precio) || 0).toFixed(2)} × {item.cantidad}
-                  {item.notas ? ` • ${item.notas}` : ''}
-                </div>
-                {item.extras?.length > 0 && (
-                  <div className="item-extras">
-                    {item.extras.map((e, i) => (
-                      <span key={i} className="item-extra-tag">
-                        + {e.name}{e.price > 0 ? ` +$${Number(e.price).toFixed(2)}` : ''}{e.nota ? ` — ${e.nota}` : ''}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="item-right">
-                <div className="item-price">${(Number(item.subtotal) || 0).toFixed(2)}</div>
-                <div className="item-actions">
-                  <button
-                    className="icon-btn edit-btn"
-                    onClick={() => abrirEditarItem(item)}
-                    title="Editar"
-                    type="button"
-                  >
-                    <FiEdit2 size={16} />
-                  </button>
-                  <button
-                    className="icon-btn delete-btn"
-                    onClick={() => eliminarItem(item.id)}
-                    title="Eliminar"
-                    type="button"
-                  >
-                    <FiTrash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      ))}
     </div>
   );
 }
