@@ -1,361 +1,395 @@
-/* MODAL PERSONALIZADO, POS DASHBOARD PREMIUM (Mejorado) */
-.modal {
-  background: linear-gradient(135deg, #1d242e 0%, #151922 100%);
-  border: 1.5px solid rgba(16, 185, 129, 0.14);
-  border-radius: 18px;
-  box-shadow: 0 30px 56px rgba(9, 13, 29, 0.64), 0 1.5px 0 #99f6e8;
-  max-width: 900px;
-  width: min(900px, 95vw);
+/* ============================================================
+   MODAL AGREGAR ITEM - POS DARK THEME PREMIUM
+============================================================ */
+
+/* Overlay del modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
 }
 
-/* MODAL HEADER */
-.modal-header {
-  padding: 23px 24px 16px 24px;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.modal-header h2 {
-  font-size: 23px;
-  font-family: inherit;
-  font-weight: 900;
-  color: #ffffda;
-  text-shadow: 0 1px 8px rgba(74, 163, 120, 0.02);
-  letter-spacing: -0.6px;
-}
-.modal-header p {
-  font-size: 13px;
-  margin: 0 0 0 2px;
-  color: rgba(255,242,202,0.52);
-}
-
-/* MODAL BODY */
-.modal-body {
-  padding: 16px 24px;
-}
-
-/* FORM GRID */
-.modal-form-grid {
-  margin-top: 8px;
-  display: grid;
-  grid-template-columns: 2.2fr 1.2fr 1.3fr 2.2fr;
-  gap: 16px;
-}
-@media (max-width: 720px) {
-  .modal-form-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* CAMPOS */
+/* Contenedor del modal */
+.modal {
+  background: linear-gradient(135deg, #1a1f2a 0%, #0f1319 100%);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 30px 56px rgba(0, 0, 0, 0.5);
+  max-width: 950px;
+  width: min(950px, 95vw);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+  overflow: hidden;
+}
+
+/* ============================================================
+   MODAL HEADER
+============================================================ */
+
+.modal-header {
+  padding: 20px 24px 16px 24px;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.modal-header h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+  margin: 0 0 6px 0;
+}
+
+.modal-header p {
+  font-size: 13px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ============================================================
+   MODAL BODY
+============================================================ */
+
+.modal-body {
+  padding: 20px 24px;
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+/* Custom scrollbar */
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.3);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.5);
+}
+
+/* ============================================================
+   FORM GRID - DISTRIBUCIÓN MEJORADA
+   Categoría (1fr) - Producto (2fr) - Cantidad (auto) - Precio (1fr)
+============================================================ */
+
+.modal-form-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 2.2fr 0.8fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Campos */
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .field label {
-  font-size: 13px;
-  font-weight: bold;
-  color: #c9f9e0;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(16, 185, 129, 0.9);
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  margin-bottom: 2px;
 }
 
-/* INPUTS, SELECT, TEXTAREA */
-.field input,
+/* ============================================================
+   SELECT / COMBOBOX - TEXTO LEGIBLE (CORREGIDO)
+============================================================ */
+
+/* Estilos base para todos los selects */
 .field select,
-.field textarea,
-.modal input,
 .modal select,
-.modal textarea,
-.modal .stepper-input {
-  height: 43px;
-  padding: 0 11px;
-  color: #fcfbe6;
-  font-size: 15px;
-  font-weight: 700;
-  background: #1e2834 !important;
-  border: 2px solid rgba(16,185,129,0.22) !important;
-  border-radius: 12px !important;
-  box-sizing: border-box;
-  transition: border 0.14s, background 0.15s;
+.extras-adder-sel {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  color: #ffffff !important;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: #1a1f2a !important;
+  border: 1.5px solid rgba(16, 185, 129, 0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2310b981' viewBox='0 0 24 24' width='16' height='16'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: all 0.2s ease;
+}
+
+/* Opciones del select - TEXTO BLANCO LEGIBLE */
+.field select option,
+.modal select option,
+.extras-adder-sel option {
+  background-color: #1a1f2a;
+  color: #ffffff !important;
+  padding: 10px;
+  font-size: 14px;
+}
+
+/* Hover en opciones */
+.field select option:hover,
+.modal select option:hover,
+.extras-adder-sel option:hover {
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+/* Select enfocado */
+.field select:focus,
+.modal select:focus,
+.extras-adder-sel:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  background-color: #1e2533 !important;
+}
+
+/* Select deshabilitado */
+.field select:disabled,
+.modal select:disabled,
+.extras-adder-sel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   INPUTS Y TEXTAREA
+============================================================ */
+
+.field input,
+.field textarea {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  background: #1a1f2a;
+  border: 1.5px solid rgba(16, 185, 129, 0.2);
+  border-radius: 10px;
+  transition: all 0.2s ease;
 }
 
 .field textarea {
-  min-height: 45px;
-  max-height: 90px;
+  min-height: 80px;
   resize: vertical;
-  padding: 9px 11px;
-  font-size: 13.5px;
+  padding: 10px 12px;
 }
 
 .field input:focus,
-.field select:focus,
 .field textarea:focus {
-  border-color: #10b981 !important;
-  background: #202c3c !important;
-  color: #fff !important;
+  outline: none;
+  border-color: #10b981;
+  background: #1e2533;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.field input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .field input::placeholder,
 .field textarea::placeholder {
-  color: #b7f2f0b5;
-  opacity: 0.69;
+  color: rgba(255, 255, 255, 0.4);
 }
 
-/* SELECT */
-.field select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg fill='rgba(16,185,129,0.9)' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7.293 9.293a1 1 0 011.414 0L10 10.586l1.293-1.293a1 1 0 011.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.85em top 51%;
-  background-size: 16px 16px;
-}
+/* ============================================================
+   STEPPER - CONTROL DE CANTIDAD
+============================================================ */
 
-/* STEPPER */
 .stepper {
   display: flex;
   align-items: center;
-  height: 43px;
-  background: #1e2834;
-  border-radius: 12px;
-  border: 2px solid rgba(16,185,129,0.22);
+  height: 42px;
+  background: #1a1f2a;
+  border: 1.5px solid rgba(16, 185, 129, 0.2);
+  border-radius: 10px;
   overflow: hidden;
 }
+
 .stepper-btn {
-  width: 40px;
+  width: 36px;
   height: 100%;
-  background: #172126;
+  background: transparent;
   border: none;
-  color: #21d295;
-  font-size: 23px;
-  font-weight: 900;
+  color: #10b981;
+  font-size: 20px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.13s, color 0.13s;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
-.stepper-btn:first-child { border-radius: 10px 0 0 10px; }
-.stepper-btn:last-child { border-radius: 0 10px 10px 0; }
+
 .stepper-btn:hover {
-  background: #10b98155;
-  color: #affae0;
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
 }
-.stepper-btn:hover {
-  background: #10b98155 !important;
-  color: #affae0 !important;
-}
+
 .stepper-input {
+  width: 50px;
+  height: 100%;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: transparent;
   border: none;
   outline: none;
-  width: 54px;
-  max-width: 80px;
-  height: 100%;
-  background: transparent;
-  text-align: center;
-  font-size: 18px;
-  color: #fbfcf5;
-  font-weight: 700;
-  border-radius: 0;
-  padding: 0;
 }
-/* Quita las flechitas en inputs number */
+
 .stepper-input::-webkit-inner-spin-button,
 .stepper-input::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-.stepper-input[type="number"] {
-  -moz-appearance: textfield;
+
+/* ============================================================
+   NOTAS - CAMPO COMPLETO
+============================================================ */
+
+.field[style*="grid-column: 1 / -1"] {
+  margin-top: 8px;
 }
 
-/* Cuando deshabilitado */
-.stepper-input:disabled,
-.stepper-btn:disabled {
-  color: #a1b4b9 !important;
-  background: #232a38 !important;
-  cursor: not-allowed;
-}
+/* ============================================================
+   EXTRAS - SECCIÓN MEJORADA
+============================================================ */
 
-.modal-footer {
-  padding: 17px 28px 23px 28px;
-  border-top: 1px solid rgba(16, 185, 129, 0.13);
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.modal-footer .btn-primary,
-.modal-footer .btn-secondary {
-  flex: 1 1 0;
-  min-width: 120px;
-  max-width: 250px;
-}
-
-.btn {
-  padding: 0 26px;
-  height: 45px;
-  border-radius: 13px;
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #10b981 61%, #11c28b 100%);
-  color: #fff;
-  border: none;
-  box-shadow: 0 1px 8px #10b98229;
-}
-.btn-primary:disabled {
-  opacity: 0.44;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: #ed2f1a8c;
-  border: 2px solid #b92c108c;
-  color: #dafbeb;
-  font-weight: 800;
-  padding: 0 26px;
-  height: 45px;
-  min-width: 124px;
-  max-width: 240px;
-  border-radius: 13px;
-  font-size: 16px;
-  letter-spacing: 0.5px;
-  transition: all 0.16s;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  flex: 1 1 0;
-}
-
-.btn-secondary:hover {
-  background: #ffffff6e;
-  color: #b92c108c;
-  border-color: #b92c108c;
-}
-.btn-secondary:hover {
-  background: #ffffff8c;
-  color: #fff;
-}
-
-/* Responsive */
-@media (max-width: 640px) {
-  .modal {
-    width: 100%;
-    border-radius: 20px 20px 0 0;
-  }
-  .modal-form-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .modal-header { padding: 16px 16px 10px; }
-  .modal-body { padding: 10px 16px; }
-  .modal-footer { padding: 12px 16px 20px; }
-
-  .extras-adder-row {
-    flex-wrap: wrap;
-  }
-  .extras-adder-sel,
-  .extras-adder-nota {
-    flex: 1 1 100%;
-  }
-  .extras-adder-btn {
-    width: 100%;
-  }
-}
-
-@media (max-width: 400px) {
-  .modal-header, .modal-body, .modal-footer {
-    padding-left: 12px; padding-right: 12px;
-  }
-}
-
-/* EXTRAS adder */
 .extras-adder-row {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .extras-adder-sel {
-  flex: 1.4;
-  height: 43px;
-  padding: 0 11px;
-  color: #fcfbe6;
+  flex: 2;
+  height: 42px;
+  padding: 0 12px;
+  background: #1a1f2a;
+  border: 1.5px solid rgba(16, 185, 129, 0.3);
+  border-radius: 10px;
+  color: #ffffff !important;
   font-size: 14px;
-  font-weight: 700;
-  background: #1e2834;
-  border: 2px solid rgba(16,185,129,0.22);
-  border-radius: 12px;
-  box-sizing: border-box;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg fill='rgba(16,185,129,0.9)' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7.293 9.293a1 1 0 011.414 0L10 10.586l1.293-1.293a1 1 0 011.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.85em top 51%;
-  background-size: 16px 16px;
-  outline: none;
-  transition: border 0.14s;
+  cursor: pointer;
 }
-.extras-adder-sel:focus { border-color: #10b981; }
 
 .extras-adder-nota {
-  flex: 1.8;
-  height: 43px;
-  padding: 0 11px;
-  color: #fcfbe6;
+  flex: 2;
+  height: 42px;
+  padding: 0 12px;
+  background: #1a1f2a;
+  border: 1.5px solid rgba(16, 185, 129, 0.2);
+  border-radius: 10px;
+  color: #fff;
   font-size: 14px;
-  font-weight: 600;
-  background: #1e2834;
-  border: 2px solid rgba(16,185,129,0.22);
-  border-radius: 12px;
-  box-sizing: border-box;
-  outline: none;
-  transition: border 0.14s;
 }
-.extras-adder-nota:focus { border-color: #10b981; }
-.extras-adder-nota::placeholder { color: rgba(183,242,240,0.5); }
+
+.extras-adder-nota:focus {
+  outline: none;
+  border-color: #10b981;
+}
 
 .extras-adder-btn {
   flex-shrink: 0;
-  height: 43px;
-  padding: 0 18px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #10b981 61%, #11c28b 100%);
-  color: #fff;
+  height: 42px;
+  padding: 0 20px;
+  background: linear-gradient(135deg, #10b981, #059669);
   border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
   cursor: pointer;
-  transition: opacity 0.14s;
-  white-space: nowrap;
+  transition: all 0.2s ease;
 }
-.extras-adder-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.extras-adder-btn:not(:disabled):hover { opacity: 0.85; }
 
+.extras-adder-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.extras-adder-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Lista de extras agregados */
 .extras-added-list {
   list-style: none;
-  margin: 8px 0 0;
+  margin: 12px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.extras-added-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.extras-added-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.extras-added-list::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.3);
+  border-radius: 4px;
 }
 
 .extras-added-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(16,185,129,0.07);
-  border: 1px solid rgba(16,185,129,0.2);
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.15);
   border-radius: 8px;
-  padding: 5px 10px;
+  padding: 6px 10px;
   font-size: 13px;
 }
 
@@ -366,47 +400,176 @@
 
 .extras-added-price {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: #10b981;
-  background: rgba(16,185,129,0.12);
+  background: rgba(16, 185, 129, 0.15);
   border-radius: 6px;
-  padding: 1px 6px;
-  flex-shrink: 0;
+  padding: 2px 8px;
 }
 
 .extras-added-nota {
-  color: rgba(255,255,255,0.55);
-  font-weight: 400;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
   flex: 1;
 }
 
 .extras-added-remove {
-  margin-left: auto;
   background: none;
   border: none;
-  color: rgba(239,68,68,0.7);
+  color: rgba(239, 68, 68, 0.7);
   cursor: pointer;
-  font-size: 13px;
-  padding: 0 2px;
-  line-height: 1;
-  transition: color 0.12s;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
 }
-.extras-added-remove:hover { color: #ef4444; }
 
-/* EXTRAS en lista de items */
-.item-extras {
+.extras-added-remove:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* ============================================================
+   MODAL FOOTER - BOTONES
+============================================================ */
+
+.modal-footer {
+  padding: 16px 24px 20px;
+  border-top: 1px solid rgba(16, 185, 129, 0.1);
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 4px;
+  gap: 12px;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.2);
 }
 
-.item-extra-tag {
-  font-size: 11px;
-  font-weight: 600;
-  color: #10b981;
-  background: rgba(16,185,129,0.08);
-  border: 1px solid rgba(16,185,129,0.2);
-  border-radius: 10px;
-  padding: 2px 8px;
+.btn {
+  padding: 0 24px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 800px) {
+  .modal-form-grid {
+    grid-template-columns: 1fr 1.5fr 0.8fr 1fr;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 700px) {
+  .modal-form-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  
+  .field[style*="grid-column: 1 / -1"] {
+    grid-column: span 2;
+  }
+  
+  .extras-adder-row {
+    flex-direction: column;
+  }
+  
+  .extras-adder-sel,
+  .extras-adder-nota,
+  .extras-adder-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .modal {
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 90vh;
+  }
+  
+  .modal-header {
+    padding: 16px 16px 12px;
+  }
+  
+  .modal-header h2 {
+    font-size: 18px;
+  }
+  
+  .modal-header p {
+    font-size: 12px;
+  }
+  
+  .modal-body {
+    padding: 16px;
+  }
+  
+  .modal-footer {
+    padding: 12px 16px 16px;
+  }
+  
+  .modal-form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .field[style*="grid-column: 1 / -1"] {
+    grid-column: 1;
+  }
+  
+  .field label {
+    font-size: 11px;
+  }
+  
+  .field input,
+  .field select,
+  .field textarea,
+  .stepper,
+  .extras-adder-sel,
+  .extras-adder-nota {
+    height: 38px;
+    font-size: 13px;
+  }
+  
+  .btn {
+    flex: 1;
+    height: 40px;
+    font-size: 13px;
+    padding: 0 16px;
+  }
 }
