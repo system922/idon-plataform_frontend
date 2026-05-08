@@ -17,10 +17,27 @@ export default function AddItemModal({
   setExtrasItem,
 }) {
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
-  const [extraSel,  setExtraSel ] = useState('');
+  const [extraSel, setExtraSel] = useState('');
   const [notaExtra, setNotaExtra] = useState('');
 
-  const extrasProductos = productos.filter(p => p.category_name?.toLowerCase() === 'extras');
+  const getProductData = (product) => {
+    if (!product) return { selling_price: 0, tax_rate: 0, price: 0 };
+    return {
+      selling_price: Number(product.selling_price) || 0,
+      tax_rate: Number(product.tax_rate) || 0,
+      price: (Number(product.selling_price) || 0) + (Number(product.tax_rate) || 0),
+    };
+  };
+
+  const extrasProductos = productos
+    .filter(p => p.category_name?.toLowerCase() === 'extras')
+    .map(p => ({
+      ...p,
+      selling_price: Number(p.selling_price) || 0,
+      tax_rate: Number(p.tax_rate) || 0,
+      displayPrice: (Number(p.selling_price) || 0) + (Number(p.tax_rate) || 0),
+    }));
+
   const categoriasFiltradas = categorias.filter(c => c.name?.toLowerCase() !== 'extras');
 
   const productosFiltrados = categoriaSeleccionada
@@ -37,18 +54,13 @@ export default function AddItemModal({
   return (
     <div className="modal-overlay" onClick={handleClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        
-        {/* HEADER */}
         <div className="modal-header">
           <h2>Agregar item</h2>
           <p>Selecciona producto, cantidad y notas.</p>
         </div>
 
-        {/* BODY - GRID 4 COLUMNAS */}
         <div className="modal-body">
           <div className="modal-form-grid">
-
-            {/* CATEGORÍA */}
             <div className="field">
               <label>Categoría</label>
               <select
@@ -56,34 +68,35 @@ export default function AddItemModal({
                 onChange={(e) => setCategoriaSeleccionada(e.target.value)}
               >
                 <option value="">-- Selecciona una categoría --</option>
-                {categoriasFiltradas && categoriasFiltradas.map((cat) => (
-                  <option key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </option>
+                {categoriasFiltradas?.map((cat) => (
+                  <option key={cat.id} value={cat.name}>{cat.name}</option>
                 ))}
               </select>
             </div>
 
-            {/* PRODUCTO */}
             <div className="field">
               <label>Producto</label>
               <select
                 value={productoSeleccionado?.id || ''}
                 onChange={(e) => {
                   const producto = productosFiltrados.find((p) => String(p.id) === String(e.target.value));
-                  setProductoSeleccionado(producto || null);
+                  if (producto) {
+                    setProductoSeleccionado({
+                      ...producto,
+                      ...getProductData(producto),
+                    });
+                  } else {
+                    setProductoSeleccionado(null);
+                  }
                 }}
               >
                 <option value="">-- Selecciona --</option>
                 {productosFiltrados.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
+                  <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
             </div>
 
-            {/* CANTIDAD */}
             <div className="field">
               <label>Cantidad</label>
               <div className="stepper">
@@ -91,9 +104,7 @@ export default function AddItemModal({
                   type="button"
                   className="stepper-btn"
                   onClick={() => setCantidadItem((v) => Math.max(1, parseInt(v, 10) - 1))}
-                >
-                  −
-                </button>
+                >−</button>
                 <input
                   className="stepper-input"
                   type="number"
@@ -105,23 +116,19 @@ export default function AddItemModal({
                   type="button"
                   className="stepper-btn"
                   onClick={() => setCantidadItem((v) => parseInt(v, 10) + 1)}
-                >
-                  +
-                </button>
+                >+</button>
               </div>
             </div>
 
-            {/* PRECIO */}
             <div className="field">
               <label>Precio</label>
               <input
                 type="text"
-                value={productoSeleccionado ? `$ ${Number(productoSeleccionado.price || 0).toFixed(2)}` : ''}
+                value={productoSeleccionado ? `$ ${productoSeleccionado.price.toFixed(2)}` : ''}
                 disabled
               />
             </div>
 
-            {/* EXTRAS */}
             {extrasProductos.length > 0 && (
               <div className="field" style={{ gridColumn: '1 / -1' }}>
                 <label>Extras</label>
@@ -133,7 +140,7 @@ export default function AddItemModal({
                   >
                     <option value="">— Selecciona un extra —</option>
                     {extrasProductos.map(ex => (
-                      <option key={ex.id} value={ex.id}>{ex.name}</option>
+                      <option key={ex.id} value={ex.id}>{ex.name} - ${ex.displayPrice.toFixed(2)}</option>
                     ))}
                   </select>
                   <input
@@ -142,9 +149,6 @@ export default function AddItemModal({
                     placeholder="Nota del extra..."
                     value={notaExtra}
                     onChange={e => setNotaExtra(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && extraSel) e.currentTarget.closest('.extras-adder-row').querySelector('.extras-adder-btn').click();
-                    }}
                   />
                   <button
                     type="button"
@@ -153,13 +157,18 @@ export default function AddItemModal({
                     onClick={() => {
                       const ex = extrasProductos.find(p => String(p.id) === extraSel);
                       if (!ex) return;
-                      setExtrasItem(prev => [...prev, { id: ex.id, name: ex.name, nota: notaExtra.trim(), price: Number(ex.price) || 0, tax_rate: Number(ex.tax_rate) || 0 }]);
+                      setExtrasItem(prev => [...prev, {
+                        id: ex.id,
+                        name: ex.name,
+                        nota: notaExtra.trim(),
+                        selling_price: ex.selling_price,
+                        tax_rate: ex.tax_rate,
+                        price: ex.displayPrice,
+                      }]);
                       setExtraSel('');
                       setNotaExtra('');
                     }}
-                  >
-                    + Agregar
-                  </button>
+                  >+ Agregar</button>
                 </div>
                 {extrasItem.length > 0 && (
                   <ul className="extras-added-list">
@@ -172,9 +181,7 @@ export default function AddItemModal({
                           type="button"
                           className="extras-added-remove"
                           onClick={() => setExtrasItem(prev => prev.filter((_, j) => j !== i))}
-                        >
-                          ✕
-                        </button>
+                        >✕</button>
                       </li>
                     ))}
                   </ul>
@@ -182,7 +189,6 @@ export default function AddItemModal({
               </div>
             )}
 
-            {/* NOTAS */}
             <div className="field" style={{ gridColumn: '1 / -1' }}>
               <label>Notas</label>
               <textarea
@@ -194,23 +200,9 @@ export default function AddItemModal({
           </div>
         </div>
 
-        {/* FOOTER - BOTONES JUNTOS */}
         <div className="modal-footer">
-          <button
-            className="btn btn-secondary"
-            onClick={handleClose}
-            type="button"
-          >
-            Cancelar
-          </button>
-          <button 
-            className="btn btn-primary" 
-            onClick={agregarItem} 
-            disabled={!productoSeleccionado} 
-            type="button"
-          >
-            Agregar
-          </button>
+          <button className="btn btn-secondary" onClick={handleClose} type="button">Cancelar</button>
+          <button className="btn btn-primary" onClick={agregarItem} disabled={!productoSeleccionado} type="button">Agregar</button>
         </div>
       </div>
     </div>

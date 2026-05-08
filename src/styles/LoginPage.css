@@ -199,7 +199,7 @@
   align-items: center;
   gap: 12px;
   font-size: 13px;
-  color: var(--txt-muted);
+  color: #ffffff;
   transition: color .3s, transform .3s;
   cursor: default;
 }
@@ -289,7 +289,7 @@
   backdrop-filter: blur(30px);
   border: 1px solid var(--border);
   border-radius: 24px;
-  overflow: visible;
+  overflow: hidden;
   box-shadow: 0 0 0 1px rgba(255,255,255,.03) inset,
               0 8px 40px rgba(0,0,0,.6),
               0 0 60px rgba(255,140,66,.08);
@@ -307,48 +307,86 @@
   background: linear-gradient(90deg, transparent, rgba(255,140,66,.6), transparent);
 }
 
-/* ── Tabs ── */
+/* Tabs container */
 .form-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  border-bottom: 1px solid rgba(255,255,255,.06);
+  background: transparent;
+  gap: 0;
+  margin: 0;
+  padding: 0;
 }
 
+/* Tabs base */
 .tab {
   padding: 14px 16px;
-  background: none;
+  background: transparent;
   border: none;
-  color: var(--txt-muted);
+  color: #ffffff !important;
   font-family: 'Syne', sans-serif;
   font-weight: 700;
   font-size: 12px;
   letter-spacing: 1px;
   text-transform: uppercase;
   cursor: pointer;
-  transition: color .3s, background .3s;
+  transition: all .3s ease;
   position: relative;
+  margin: 0;
 }
+
+/* Tab inactivo */
+.tab:not(.active) {
+  background: transparent !important;
+  color: #ffffff !important;
+}
+
 .tab:hover { 
-  color: var(--orange); 
-  background: rgba(255,140,66,.04); 
+  color: var(--orange) !important; 
+  background: rgba(255,140,66,.15); 
 }
-.tab.active { 
-  color: var(--orange); 
+
+/* Tab activo - Iniciar Sesión (izquierda) */
+.tab:first-child.active { 
+  background: var(--orange) !important;
+  color: #ffffff !important;
+  border-radius: 24px 0 0 0 !important;
 }
+
+/* Tab activo - Registrarse (derecha) */
+.tab:last-child.active { 
+  background: var(--orange) !important;
+  color: #ffffff !important;
+  border-radius: 0 24px 0 0 !important;
+}
+
+/* Línea blanca debajo del tab activo */
 .tab.active::after {
   content: '';
-  position: absolute; 
-  bottom: 0; 
-  left: 0; 
-  width: 100%; 
-  height: 2px;
-  background: linear-gradient(90deg, var(--orange), var(--orange));
-  box-shadow: 0 0 12px var(--orange-glow);
-  animation: slideTabIn .35s cubic-bezier(.34,1.56,.64,1);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #ffffff !important;
+  border-radius: 0;
 }
-@keyframes slideTabIn {
-  from { width:0; left:50%; }
-  to   { width:100%; left:0; }
+
+.tab:first-child.active::after {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.tab:last-child.active::after {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Quitar bordes extra */
+.form-tabs::before,
+.form-tabs::after,
+.tab::before,
+.tab:not(.active)::after {
+  display: none !important;
 }
 
 /* ── Auth form ── */
@@ -492,9 +530,9 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #ff8c42;
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff !important;
   text-transform: uppercase;
   letter-spacing: .6px;
 }
@@ -504,7 +542,7 @@
 }
 
 /* ═══════════════════════════════════════
-   PASSWORD INPUT - ÍCONO FIJO
+   PASSWORD INPUT
 ═══════════════════════════════════════ */
 .password-input { 
   position: relative; 
@@ -558,14 +596,6 @@
   background: rgba(255,140,66,0.1);
 }
 
-.password-toggle:active {
-  transform: translateY(-50%);
-}
-
-.password-toggle:focus {
-  outline: none;
-}
-
 .password-toggle svg {
   width: 18px;
   height: 18px;
@@ -574,7 +604,7 @@
 }
 
 /* ═══════════════════════════════════════
-   ALERTAS Y MENSAJES - CORREGIDO
+   ALERTAS Y MENSAJES
 ═══════════════════════════════════════ */
 .alert {
   padding: 14px 16px;
@@ -619,7 +649,7 @@
   }
 }
 
-/* Input con error - resalta el campo incorrecto */
+/* Input con error */
 .input-error {
   border-color: #ef4444 !important;
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
@@ -951,6 +981,7 @@
   }
 }
 
+/* Móvil ≤640px - TODO EN UNA SOLA LÍNEA */
 /* Móvil ≤640px */
 @media (max-width: 640px) {
   .login-page { 
@@ -960,30 +991,60 @@
     max-width: 100%; 
     border-radius: 20px; 
   }
+  
+  /* ✅ Logo más grande */
   .login-left {
-    padding: 16px;
-    gap: 12px;
-    flex-direction: row;
-    justify-content: space-between;
+    display: flex !important;
+    flex-direction: row !important;
     align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(0,0,0,0.2);
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
   }
+  
+  /* ✅ Logo más grande - aumentado de 32px a 60px */
   .logo-carousel { 
-    width: 48px; 
-    height: 48px; 
+    width: 60px !important; 
+    height: 60px !important; 
+    flex-shrink: 0;
+    margin: 0;
   }
   .logo-carousel::before { 
     display: none; 
   }
+  .animated-logo {
+    width: 100%;
+    height: 100%;
+  }
+  
   .logo-wordmark { 
     text-align: left; 
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row !important;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: nowrap;
   }
+  
   .logo-wordmark .brand-name { 
-    font-size: 22px; 
-    letter-spacing: -1px; 
+    font-size: 18px !important; 
+    letter-spacing: -0.5px; 
+    display: inline-block;
+    white-space: nowrap;
   }
+  
   .logo-wordmark .brand-tagline { 
-    font-size: 8px; 
+    font-size: 9px !important; 
+    margin-top: 0;
+    display: inline-block;
+    white-space: nowrap;
+    color: #ff8c42;
   }
+  
   .color-indicators { 
     display: none; 
   }
@@ -1010,7 +1071,6 @@
     border-radius: 16px; 
   }
   
-  /* Ajustes móvil para inputs con ícono */
   .input-icon {
     left: 12px;
     width: 14px;
@@ -1027,7 +1087,6 @@
     padding-right: 32px !important;
   }
   
-  /* Ajustes móvil para password */
   .password-input input { 
     padding: 10px 40px 10px 12px;
     font-size: 12px;
@@ -1048,7 +1107,6 @@
     font-size: 11px; 
   }
   
-  /* Ajustes multi-step móvil */
   .register-progress {
     gap: 6px;
     margin-bottom: 20px;
@@ -1067,28 +1125,28 @@
     margin-top: 20px;
   }
   
-  /* Ajustes alertas móvil */
   .alert {
     padding: 10px 12px;
     font-size: 12px;
   }
 }
 
-/* Móvil pequeño ≤480px */
+/* Móvil pequeño ≤480px - ajuste proporcional */
 @media (max-width: 480px) {
   .login-left { 
-    padding: 12px; 
-    gap: 8px; 
+    padding: 10px 12px; 
+    gap: 10px; 
   }
+  /* ✅ Logo reducido proporcionalmente para móvil pequeño */
   .logo-carousel { 
-    width: 40px; 
-    height: 40px; 
+    width: 50px !important; 
+    height: 50px !important; 
   }
   .logo-wordmark .brand-name { 
-    font-size: 18px; 
+    font-size: 16px !important; 
   }
   .logo-wordmark .brand-tagline { 
-    font-size: 7px; 
+    font-size: 8px !important; 
   }
 
   .auth-form { 
@@ -1099,7 +1157,6 @@
     gap: 0; 
   }
   
-  /* Ajustes multi-step móvil pequeño */
   .register-progress { 
     gap: 4px; 
     margin-bottom: 16px;
@@ -1134,6 +1191,7 @@
     font-size: 0.8rem; 
   }
 }
+
 
 /* Landscape móvil corto */
 @media (max-height: 600px) and (max-width: 1024px) {

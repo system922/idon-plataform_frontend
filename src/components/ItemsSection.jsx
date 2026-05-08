@@ -8,10 +8,10 @@ export default function ItemsSection({
   eliminarItem,
   abrirEditarItem,
   setShowAddItemModal,
-  subtotal,
-  ivaAmount,
-  totalConIva,
-  ivaLabel,
+  subtotal,        // ✅ subtotal base (sin IVA) = suma de selling_price × cantidad
+  ivaAmount,       // ✅ IVA total = suma de tax_rate × cantidad
+  totalConIva,     // ✅ total con IVA = subtotal + ivaAmount
+  ivaLabel,        // ✅ porcentaje de IVA (ej: "15%")
   guardando,
   orderType,
   numeroMesa,

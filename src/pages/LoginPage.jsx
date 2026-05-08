@@ -520,7 +520,7 @@ export default function LoginPage({ onLogin }) {
 
           <div className="logo-wordmark">
             <div className="brand-name" data-text="IDON">IDON</div>
-            <div className="brand-tagline">Sistema de Gestión Multi-Negocios</div>
+            <div className="brand-tagline">Plataforma de Gestión Multi-Negocios</div>
           </div>
 
           <div className="feature-list">
@@ -624,12 +624,12 @@ export default function LoginPage({ onLogin }) {
                       )}
 
                       <div className="form-group">
-                        <label><FiMail size={14} /> Correo Electrónico</label>
+                        <label><FiMail size={14} /> EMAIL</label>
                         <input
                           type="email"
                           value={email}
                           onChange={e => setEmail(e.target.value)}
-                          placeholder="tu@email.com"
+                          placeholder="tu_email@email.com"
                           required
                           disabled={loading}
                           className={errorType === 'user' ? 'input-error' : ''}
@@ -637,7 +637,7 @@ export default function LoginPage({ onLogin }) {
                       </div>
 
                       <div className="form-group">
-                        <label><FiLock size={14} /> Contraseña</label>
+                        <label><FiLock size={14} /> CONTRASEÑA</label>
                         <div className="password-input">
                           <input
                             type={showPassword ? 'text' : 'password'}
@@ -733,38 +733,35 @@ export default function LoginPage({ onLogin }) {
                               {ownerSearching && <small style={{ color: '#aaa' }}>Buscando...</small>}
                             </div>
                           </div>
-
-                          <div className="grid-2">
-                            <div className="form-group">
-                              <div className="input-with-icon">
-                                <FiUser size={14} className="input-icon" />
-                                <input
-                                  type="text"
-                                  value={regForm.firstName}
-                                  onChange={e => setRegForm({ ...regForm, firstName: e.target.value })}
-                                  placeholder="Nombres"
-                                  readOnly={ownerExists}
-                                  disabled={ownerExists}
-                                  required
-                                />
-                              </div>
-                            </div>
-                            <div className="form-group">
-                              <div className="input-with-icon">
-                                <FiUser size={14} className="input-icon" />
-                                <input
-                                  type="text"
-                                  value={regForm.lastName}
-                                  onChange={e => setRegForm({ ...regForm, lastName: e.target.value })}
-                                  placeholder="Apellidos"
-                                  readOnly={ownerExists}
-                                  disabled={ownerExists}
-                                  required
-                                />
-                              </div>
+                          
+                          <div className="form-group">
+                            <div className="input-with-icon">
+                              <FiUser size={14} className="input-icon" />
+                              <input
+                                type="text"
+                                value={regForm.firstName}
+                                onChange={e => setRegForm({ ...regForm, firstName: e.target.value })}
+                                placeholder="Nombres"
+                                readOnly={ownerExists}
+                                disabled={ownerExists}
+                                required
+                              />
                             </div>
                           </div>
-
+                          <div className="form-group">
+                            <div className="input-with-icon">
+                              <FiUser size={14} className="input-icon" />
+                              <input
+                                type="text"
+                                value={regForm.lastName}
+                                onChange={e => setRegForm({ ...regForm, lastName: e.target.value })}
+                                placeholder="Apellidos"
+                                readOnly={ownerExists}
+                                disabled={ownerExists}
+                                required
+                              />
+                            </div>
+                          </div>
                           <div className="form-group">
                             <div className="input-with-icon">
                               <FiMail size={14} className="input-icon" />

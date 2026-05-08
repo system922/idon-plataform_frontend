@@ -1,0 +1,302 @@
+/* ============================================================================
+   DATATABLE - Estilos universales para tablas
+   ============================================================================ */
+
+.datatable-container {
+  width: 100%;
+  background: var(--bg-secondary, #0f0f0f);
+  border-radius: 16px;
+  border: 1px solid var(--border-color, #2a2a2a);
+  overflow: hidden;
+}
+
+/* Header */
+.datatable-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--bg-primary, #0a0a0a);
+  border-bottom: 1px solid var(--border-color, #2a2a2a);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.datatable-search {
+  position: relative;
+  min-width: 250px;
+}
+
+.datatable-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #888);
+}
+
+.datatable-search-input {
+  width: 100%;
+  padding: 8px 32px 8px 36px;
+  background: var(--bg-tertiary, #1a1a1a);
+  border: 1px solid var(--border-color, #2a2a2a);
+  border-radius: 8px;
+  color: var(--text-primary, #fff);
+  font-size: 13px;
+}
+
+.datatable-search-input:focus {
+  outline: none;
+  border-color: var(--primary-color, #006648);
+}
+
+.datatable-search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted, #888);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.datatable-search-clear:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #fff);
+}
+
+.datatable-header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Tabla */
+.datatable-wrapper {
+  overflow-x: auto;
+}
+
+.datatable-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+.datatable-table thead th {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary, #a0a0a0);
+  background: var(--bg-primary, #0a0a0a);
+  border-bottom: 1px solid var(--border-color, #2a2a2a);
+}
+
+.datatable-th-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.datatable-sort-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.datatable-table tbody td {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text-primary, #fff);
+  border-bottom: 1px solid var(--border-color-light, #1a1a1a);
+}
+
+.datatable-table tbody tr:hover {
+  background: rgba(0, 102, 72, 0.05);
+}
+
+.datatable-clickable {
+  cursor: pointer;
+}
+
+/* Alineación de texto */
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+/* Acciones */
+.datatable-actions {
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.datatable-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: var(--text-secondary, #a0a0a0);
+}
+
+.datatable-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #fff);
+}
+
+/* Estado vacío */
+.datatable-empty {
+  text-align: center;
+  padding: 48px !important;
+  color: var(--text-muted, #888);
+}
+
+/* Estado de carga */
+.datatable-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  gap: 12px;
+  color: var(--text-muted, #888);
+}
+
+.datatable-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color, #2a2a2a);
+  border-top-color: var(--primary-color, #006648);
+  border-radius: 50%;
+  animation: datatable-spin 0.8s linear infinite;
+}
+
+@keyframes datatable-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Paginación */
+.datatable-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: var(--bg-primary, #0a0a0a);
+  border-top: 1px solid var(--border-color, #2a2a2a);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.datatable-info {
+  font-size: 12px;
+  color: var(--text-muted, #888);
+}
+
+.datatable-pagination {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.datatable-pagination-btn {
+  padding: 6px 12px;
+  background: var(--bg-tertiary, #1a1a1a);
+  border: 1px solid var(--border-color, #2a2a2a);
+  border-radius: 6px;
+  color: var(--text-secondary, #a0a0a0);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.datatable-pagination-btn:hover:not(:disabled) {
+  background: rgba(0, 102, 72, 0.2);
+  border-color: var(--primary-color, #006648);
+  color: var(--text-primary, #fff);
+}
+
+.datatable-pagination-btn.active {
+  background: var(--primary-color, #006648);
+  border-color: var(--primary-color, #006648);
+  color: white;
+}
+
+.datatable-pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.datatable-pagination-dots {
+  padding: 0 8px;
+  color: var(--text-muted, #888);
+}
+
+/* Responsive - Mobile */
+@media (max-width: 768px) {
+  .datatable-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .datatable-search {
+    width: 100%;
+  }
+  
+  .datatable-footer {
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  /* Convertir tabla en cards */
+  .datatable-table thead {
+    display: none;
+  }
+  
+  .datatable-table tbody tr {
+    display: block;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color, #2a2a2a);
+    border-radius: 12px;
+    background: var(--bg-tertiary, #1a1a1a);
+  }
+  
+  .datatable-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color-light, #1a1a1a);
+  }
+  
+  .datatable-table tbody td:last-child {
+    border-bottom: none;
+  }
+  
+  .datatable-table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-secondary, #a0a0a0);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .datatable-actions {
+    justify-content: flex-end;
+  }
+  
+  .datatable-actions::before {
+    flex: 1;
+  }
+}

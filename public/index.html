@@ -3,9 +3,16 @@
   <head>
     <meta charset="utf-8" />
 
-    <!-- Favicon -->
-    <link rel="icon" href="%PUBLIC_URL%/IDON_3.svg" type="image/svg" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/IDON_3.svg" />
+    <!-- ============================================ -->
+    <!-- FAVICON - Logo en la pestaña del navegador   -->
+    <!-- ============================================ -->
+    <!-- ✅ Usando IDON_2.svg para la pestaña -->
+    <link rel="icon" href="%PUBLIC_URL%/IDON_2.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/IDON_2.svg" />
+    
+    <!-- Fallback para navegadores que no soportan SVG -->
+    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/IDON_2.svg" />
+    <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/IDON_2.svg" />
 
     <!-- Viewport -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -35,16 +42,22 @@
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.idonplataform.site/" />
-    
-    <!-- 🔥 USANDO TU PNG EXISTENTE -->
-    <meta property="og:image" content="https://www.idonplataform.site/IDON_3.svg" />
-    <meta property="og:image:secure_url" content="https://www.idonplataform.site/IDON_3.svg" />
-    <meta property="og:image:type" content="image/svg+xml" />
+    <meta property="og:site_name" content="IDON" />
+    <meta property="og:locale" content="es_ES" />
+
+    <!-- ✅ IMAGEN PARA REDES SOCIALES - Usar PNG (mejor compatibilidad) -->
+    <!-- Asegúrate de tener el archivo IDON_3.png en la carpeta public -->
+    <meta property="og:image" content="https://www.idonplataform.site/IDON_3.png" />
+    <meta property="og:image:secure_url" content="https://www.idonplataform.site/IDON_3.png" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="IDON - Plataforma de Gestión Multinegocio" />
-    <meta property="og:site_name" content="IDON" />
-    <meta property="og:locale" content="es_ES" />
+
+    <!-- Fallback: si no encuentra PNG, usar SVG -->
+    <meta property="og:image" content="https://www.idonplataform.site/IDON_2.svg" />
+    <meta property="og:image:secure_url" content="https://www.idonplataform.site/IDON_2.svg" />
+    <meta property="og:image:type" content="image/svg+xml" />
 
     <!-- ============================================ -->
     <!-- TWITTER CARDS (Twitter/X)                    -->
@@ -55,7 +68,7 @@
       name="twitter:description"
       content="Administra múltiples negocios en un solo lugar con IDON. Solución moderna, escalable y eficiente."
     />
-    <meta name="twitter:image" content="https://www.idonplataform.site/IDON_3.svg" />
+    <meta name="twitter:image" content="https://www.idonplataform.site/IDON_3.png" />
     <meta name="twitter:image:alt" content="IDON Logo" />
     <meta name="twitter:site" content="@IDON" />
 

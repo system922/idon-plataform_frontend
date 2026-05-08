@@ -38,11 +38,12 @@ export default function TakeOrderPageNew() {
 
   async function cargarIva() {
     try {
-      const res = await fetchWithAuth('/api/settings/tax');
+      const res = await fetchWithAuth('/api/productos/fiscal-rates');
       if (!res.ok) return;
       const data = await res.json();
-      const rate = Number(data?.vat_rate ?? data?.iva_rate ?? data?.iva_percentage);
-      if (Number.isFinite(rate)) setVatRate(rate > 1 ? rate / 100 : rate);
+      let rate = Number(data?.iva_rate ?? 0.15);
+      if (rate > 1) rate = rate / 100;
+      setVatRate(rate);
     } catch {}
   }
 
@@ -61,7 +62,21 @@ export default function TakeOrderPageNew() {
       setGuardando(true);
       const res = await fetchWithAuth('/api/products');
       const data = await res.json();
-      setProductos(Array.isArray(data) ? data : data?.productos ?? data?.data ?? []);
+      const productosList = Array.isArray(data) ? data : data?.productos ?? data?.data ?? [];
+      
+      const productosTransformados = productosList.map(p => ({
+        ...p,
+        id: p.id,
+        name: p.name,
+        selling_price: Number(p.selling_price) || 0,
+        tax_rate: Number(p.tax_rate) || 0,
+        unit_cost: Number(p.unit_cost) || 0,
+        stock: Number(p.stock) || 0,
+        is_taxable: p.is_taxable === true,
+        price: (Number(p.selling_price) || 0) + (Number(p.tax_rate) || 0),
+      }));
+      
+      setProductos(productosTransformados);
     } catch {
       setError('Error al cargar productos');
     } finally {
@@ -76,26 +91,39 @@ export default function TakeOrderPageNew() {
       setError('Selecciona un producto y cantidad válida');
       return;
     }
-    const precio = Number(productoSeleccionado.price) || 0;
+    
+    const sellingPrice = Number(productoSeleccionado.selling_price) || 0;
     const taxRate = Number(productoSeleccionado.tax_rate) || 0;
+    const pvp = sellingPrice + taxRate;
     const cantidad = parseInt(cantidadItem, 10);
-    const extrasUnitCost = extrasItem.reduce((s, e) => s + (Number(e.price) || 0), 0);
-    const totalUnit = precio + extrasUnitCost;
+    
+    const extrasSellingTotal = extrasItem.reduce((s, e) => s + (Number(e.selling_price) || 0), 0);
+    const extrasTaxTotal = extrasItem.reduce((s, e) => s + (Number(e.tax_rate) || 0), 0);
+    
+    const subtotalBase = (sellingPrice + extrasSellingTotal) * cantidad;
+    const ivaTotal = (taxRate + extrasTaxTotal) * cantidad;
+    const totalConIva = subtotalBase + ivaTotal;
 
     const nuevoItem = {
       id: Date.now(),
       nombre: productoSeleccionado.name,
-      precio: precio,
+      selling_price: sellingPrice,
       tax_rate: taxRate,
+      pvp: pvp,
       cantidad: cantidad,
-      subtotal: totalUnit * cantidad,
+      subtotal_base: subtotalBase,
+      iva: ivaTotal,
+      total: totalConIva,
       notas: notasItem,
       extras: extrasItem,
       product_id: productoSeleccionado.id,
       product_name: productoSeleccionado.name,
       quantity: cantidad,
-      unit_price: precio,
-      line_total: totalUnit * cantidad,
+      unit_selling_price: sellingPrice,
+      unit_tax_rate: taxRate,
+      line_total_base: subtotalBase,
+      line_iva: ivaTotal,
+      line_total: totalConIva,
     };
 
     setItems(prev => [...prev, nuevoItem]);
@@ -112,8 +140,9 @@ export default function TakeOrderPageNew() {
     setProductoSeleccionado({
       id: item.product_id,
       name: item.nombre,
-      price: item.precio,
+      selling_price: item.selling_price,
       tax_rate: item.tax_rate,
+      price: item.pvp,
     });
     setCantidadItem(item.cantidad);
     setNotasItem(item.notas || '');
@@ -127,26 +156,38 @@ export default function TakeOrderPageNew() {
       return;
     }
 
-    const precio = Number(productoSeleccionado.price) || 0;
+    const sellingPrice = Number(productoSeleccionado.selling_price) || 0;
     const taxRate = Number(productoSeleccionado.tax_rate) || 0;
+    const pvp = sellingPrice + taxRate;
     const cantidad = parseInt(cantidadItem, 10);
-    const extrasUnitCost = extrasItem.reduce((s, e) => s + (Number(e.price) || 0), 0);
-    const totalUnit = precio + extrasUnitCost;
+    
+    const extrasSellingTotal = extrasItem.reduce((s, e) => s + (Number(e.selling_price) || 0), 0);
+    const extrasTaxTotal = extrasItem.reduce((s, e) => s + (Number(e.tax_rate) || 0), 0);
+    
+    const subtotalBase = (sellingPrice + extrasSellingTotal) * cantidad;
+    const ivaTotal = (taxRate + extrasTaxTotal) * cantidad;
+    const totalConIva = subtotalBase + ivaTotal;
 
     const itemActualizado = {
       ...itemEditando,
       nombre: productoSeleccionado.name,
-      precio: precio,
+      selling_price: sellingPrice,
       tax_rate: taxRate,
+      pvp: pvp,
       cantidad: cantidad,
-      subtotal: totalUnit * cantidad,
+      subtotal_base: subtotalBase,
+      iva: ivaTotal,
+      total: totalConIva,
       notas: notasItem,
       extras: extrasItem,
       product_id: productoSeleccionado.id,
       product_name: productoSeleccionado.name,
       quantity: cantidad,
-      unit_price: precio,
-      line_total: totalUnit * cantidad,
+      unit_selling_price: sellingPrice,
+      unit_tax_rate: taxRate,
+      line_total_base: subtotalBase,
+      line_iva: ivaTotal,
+      line_total: totalConIva,
     };
 
     setItems(prev => prev.map(item =>
@@ -166,14 +207,16 @@ export default function TakeOrderPageNew() {
 
   // ── Totales ───────────────────────────────────────────────────────────────
 
-  const subtotal = useMemo(() => items.reduce((s, i) => s + (Number(i.line_total) || Number(i.subtotal) || 0), 0), [items]);
-  const ivaAmount = useMemo(() => items.reduce((s, i) => {
-    const mainIva = (Number(i.tax_rate) || 0) * (i.cantidad || i.quantity || 1);
-    const extrasIva = (i.extras || []).reduce((se, e) => se + (Number(e.tax_rate) || 0) * (i.cantidad || i.quantity || 1), 0);
-    return s + mainIva + extrasIva;
-  }, 0), [items]);
-  const totalConIva = useMemo(() => subtotal + ivaAmount, [subtotal, ivaAmount]);
-  const ivaLabel = useMemo(() => `${Math.round((vatRate || 0) * 1000) / 10}%`, [vatRate]);
+  const subtotalBase = useMemo(() => {
+    return items.reduce((s, i) => s + (Number(i.subtotal_base) || Number(i.line_total_base) || 0), 0);
+  }, [items]);
+
+  const ivaTotal = useMemo(() => {
+    return items.reduce((s, i) => s + (Number(i.iva) || Number(i.line_iva) || 0), 0);
+  }, [items]);
+
+  const totalConIva = useMemo(() => subtotalBase + ivaTotal, [subtotalBase, ivaTotal]);
+  const ivaLabel = useMemo(() => `${Math.round((vatRate || 0) * 100)}%`, [vatRate]);
 
   // ── Guardar orden ─────────────────────────────────────────────────────────
 
@@ -200,8 +243,10 @@ export default function TakeOrderPageNew() {
           product_id: item.product_id,
           product_name: item.product_name,
           quantity: item.quantity,
-          unit_price: item.unit_price,
-          line_total: item.unit_price * item.quantity,
+          unit_price: item.unit_selling_price,
+          line_total: item.unit_selling_price * item.quantity,
+          tax_rate: item.unit_tax_rate,
+          iva_amount: item.unit_tax_rate * item.quantity,
           notes: item.notas || null,
         };
 
@@ -209,8 +254,10 @@ export default function TakeOrderPageNew() {
           product_id: e.id,
           product_name: e.name,
           quantity: item.quantity,
-          unit_price: Number(e.price) || 0,
-          line_total: (Number(e.price) || 0) * item.quantity,
+          unit_price: Number(e.selling_price) || 0,
+          line_total: (Number(e.selling_price) || 0) * item.quantity,
+          tax_rate: Number(e.tax_rate) || 0,
+          iva_amount: (Number(e.tax_rate) || 0) * item.quantity,
           notes: `__EXT__: + ${e.name}${e.nota ? ': ' + e.nota : ''}`,
         }));
 
@@ -228,8 +275,8 @@ export default function TakeOrderPageNew() {
           order_type: orderType,
           vat_rate: vatRate,
           iva_percentage: vatRate * 100,
-          iva_amount: ivaAmount,
-          subtotal,
+          iva_amount: ivaTotal,
+          subtotal: subtotalBase,
           total: totalConIva,
         }),
       });
@@ -293,8 +340,8 @@ export default function TakeOrderPageNew() {
             eliminarItem={eliminarItem}
             abrirEditarItem={abrirEditarItem}
             setShowAddItemModal={setShowAddItemModal}
-            subtotal={subtotal}
-            ivaAmount={ivaAmount}
+            subtotal={subtotalBase}
+            ivaAmount={ivaTotal}
             totalConIva={totalConIva}
             ivaLabel={ivaLabel}
             guardando={guardando}
