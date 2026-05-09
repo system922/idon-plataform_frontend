@@ -34,7 +34,7 @@ export default function StatsCardsSection({ stats }) {
       />
       <StatCard
         icon={<FiShoppingCart size={28} />}
-        label="COMPRAS HOY"
+        label="GASTOS HOY"
         value={fmt(purchases.total)}
         detail="Gastos operativos"
         color="#3b82f6"

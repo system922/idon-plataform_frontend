@@ -6,9 +6,12 @@ import ItemsSection from '../../components/ItemsSection';
 import AddItemModal from '../../components/AddItemModal';
 import EditItemModal from '../../components/EditItemModal';
 import { fetchWithAuth } from '../../config/apiBase';
+import { usePrinterService } from '../../services/usePrinterService'; // ← AGREGAR
 import '../../styles/CreateOrder.css';
 
 export default function TakeOrderPageNew() {
+  const { print, getPrinterConfig } = usePrinterService(); // ← AGREGAR
+  
   const [vatRate, setVatRate] = useState(0.15);
   const [categorias, setCategorias] = useState([]);
   const [productos, setProductos] = useState([]);
@@ -27,14 +30,28 @@ export default function TakeOrderPageNew() {
   const [notasItem, setNotasItem] = useState('');
   const [itemEditando, setItemEditando] = useState(null);
   const [extrasItem, setExtrasItem] = useState([]);
+  
+  // Estado para info del negocio (para la comanda)
+  const [bizInfo, setBizInfo] = useState(null);
 
   // ── Carga inicial ─────────────────────────────────────────────────────────
-
   useEffect(() => {
     cargarDatos();
     cargarIva();
     cargarCategorias();
+    cargarInfoNegocio(); // ← AGREGAR
   }, []);
+
+  // ← AGREGAR: Cargar información del negocio para la comanda
+  async function cargarInfoNegocio() {
+    try {
+      const res = await fetchWithAuth('/api/settings/receipt-info');
+      const data = await res.json();
+      setBizInfo(data);
+    } catch (err) {
+      console.error('Error cargando info negocio:', err);
+    }
+  }
 
   async function cargarIva() {
     try {
@@ -218,6 +235,48 @@ export default function TakeOrderPageNew() {
   const totalConIva = useMemo(() => subtotalBase + ivaTotal, [subtotalBase, ivaTotal]);
   const ivaLabel = useMemo(() => `${Math.round((vatRate || 0) * 100)}%`, [vatRate]);
 
+  // 🔥 FUNCIÓN PARA IMPRIMIR COMANDA (AGREGAR)
+  async function imprimirComanda(orderNumber, orderId) {
+    try {
+      // Obtener configuración de la impresora de comanda
+      const printerConfig = await getPrinterConfig('printer_comanda');
+      
+      if (!printerConfig?.name) {
+        console.log('⚠️ No hay impresora configurada para comanda (printer_comanda)');
+        return;
+      }
+
+      // Formatear items para la comanda
+      const itemsParaComanda = items.map(item => ({
+        producto: item.product_name,
+        cantidad: item.quantity,
+        notas: item.notas || null,
+        extras: item.extras || []
+      }));
+
+      // Datos para la comanda
+      const comandaData = {
+        comanda: { number: orderNumber },
+        table: orderType === 'dine_in' ? (numeroMesa || 'MESA') : 'PARA LLEVAR',
+        items: itemsParaComanda,
+        notes: notas || '',
+        timestamp: new Date().toISOString(),
+        bizInfo: bizInfo || { trade_name: 'MI NEGOCIO', company_name: 'MI NEGOCIO' }
+      };
+
+      console.log('🖨️ Imprimiendo comanda para orden #', orderNumber);
+      
+      // Imprimir usando el template 'comanda'
+      await print('printer_comanda', 'comanda', comandaData, false);
+      
+      console.log('✅ Comanda impresa correctamente');
+      
+    } catch (err) {
+      console.error('❌ Error imprimiendo comanda:', err);
+      // No interrumpir el flujo si falla la impresión
+    }
+  }
+
   // ── Guardar orden ─────────────────────────────────────────────────────────
 
   async function guardarOrden() {
@@ -287,7 +346,12 @@ export default function TakeOrderPageNew() {
       }
 
       const data = await res.json();
-      setSuccess(`✅ Orden ${data?.pedido?.numero_pedido ?? ''} enviada a cocina`);
+      const orderNumber = data?.pedido?.numero_pedido || data?.pedido?.order_number || '';
+      
+      setSuccess(`✅ Orden ${orderNumber} enviada a cocina`);
+
+      // 🔥 IMPRIMIR COMANDA AUTOMÁTICAMENTE
+      await imprimirComanda(orderNumber, data?.pedido?.id);
 
       setTimeout(() => {
         setNumeroMesa('');

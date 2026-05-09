@@ -224,7 +224,7 @@ export default function PurchasesHistory() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <PageTemplate title="Historial de Compras" subtitle="Gestión de gastos y compras realizadas">
+    <PageTemplate title="Historial de Gastos" subtitle="Gestión de gastos y compras realizadas">
       <div className="purchases-history-shell">
         {error && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
