@@ -13,7 +13,7 @@ import {
   FiCalendar, FiStar, FiShoppingBag, FiClock, FiUsers,
   FiUserCheck, FiMap, FiMapPin, FiList, FiGlobe, FiBell,
   FiFileText, FiUser, FiAlertCircle, FiZap, FiMenu, FiInbox,
-  FiLock
+  FiLock, FiLoader
 } from 'react-icons/fi';
 import API_BASE, { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/BusinessLayout.css';
@@ -156,7 +156,14 @@ function AlertaAperturaModal({ onAceptar, abriendo }) {
           onClick={onAceptar}
           disabled={abriendo}
         >
-          {abriendo ? 'Abriendo caja...' : 'Aceptar y Abrir Caja'}
+          {abriendo ? (
+            <>
+              <FiLoader size={16} className="spinning" />
+              Abriendo cajón...
+            </>
+          ) : (
+            'Aceptar y Abrir Caja'
+          )}
         </button>
       </div>
     </div>
@@ -202,7 +209,14 @@ function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
             onClick={onConfirm}
             disabled={cargando}
           >
-            {cargando ? 'Abriendo cajón...' : 'Sí, Cerrar Caja'}
+            {cargando ? (
+              <>
+                <FiLoader size={16} className="spinning" />
+                Abriendo cajón...
+              </>
+            ) : (
+              'Sí, Cerrar Caja'
+            )}
           </button>
         </div>
       </div>
@@ -259,6 +273,7 @@ export default function BusinessLayout({ user, onLogout }) {
   const [mostrarAlerta,       setMostrarAlerta]       = useState(false);
   const [mostrarFormulario,   setMostrarFormulario]   = useState(false);
   const [abriendoCaja,        setAbriendoCaja]        = useState(false);
+  const [aperturaIniciada,    setAperturaIniciada]    = useState(false);
   
   // Cierre de caja
   const [mostrarConfirmacionCierre, setMostrarConfirmacionCierre] = useState(false);
@@ -412,6 +427,54 @@ export default function BusinessLayout({ user, onLogout }) {
     await checkApertura();
   };
 
+  /**
+   * 🔥 FUNCIÓN CORREGIDA: Maneja la aceptación de la alerta de apertura
+   * Ahora abre el cajón correctamente y luego muestra el formulario
+   */
+  const handleAceptarAlerta = async () => {
+    // Evitar múltiples ejecuciones
+    if (aperturaIniciada || abriendoCaja) return;
+    
+    setAperturaIniciada(true);
+    setAbriendoCaja(true);
+
+    try {
+      // 1. Primero abrir el cajón físico
+      console.log('🔓 Abriendo cajón para apertura...');
+      await openDrawer();
+      console.log('✅ Cajón abierto exitosamente');
+      
+      // 2. Cerrar la alerta y mostrar el formulario de apertura
+      setMostrarAlerta(false);
+      setMostrarFormulario(true);
+      
+    } catch (err) {
+      console.error('❌ Error al abrir el cajón:', err);
+      // Si hay error al abrir el cajón, igual mostramos el formulario
+      // El usuario puede ingresar los datos manualmente
+      setMostrarAlerta(false);
+      setMostrarFormulario(true);
+      
+      // Mostrar advertencia al usuario
+      alert('⚠️ No se pudo abrir el cajón automáticamente. Por favor, verifica que QZ Tray esté conectado o abre el cajón manualmente.');
+      
+    } finally {
+      setAbriendoCaja(false);
+      setAperturaIniciada(false);
+    }
+  };
+
+  // Función para abrir caja manualmente desde el sidebar
+  const handleClickAbrirCaja = () => {
+    if (aperturaHecha) {
+      alert('Ya hay una apertura de caja activa para hoy');
+      return;
+    }
+    setMostrarAlerta(true);
+    setMostrarFormulario(false);
+    setAperturaIniciada(false);
+  };
+
   const handleAperturaCompleta = async (data) => {
     const operador = getOperatorUser();
     const userName = operador?.nombre || operador?.name || operador?.username || operador?.email || 'Usuario';
@@ -446,33 +509,10 @@ export default function BusinessLayout({ user, onLogout }) {
     setMostrarAlerta(false);
   };
 
-  const handleAceptarAlerta = async () => {
-    setAbriendoCaja(true);
-
-    try {
-      await openDrawer();
-      console.log('Cajón abierto exitosamente');
-      setMostrarAlerta(false);
-      setMostrarFormulario(true);
-    } catch (err) {
-      console.error('Error en apertura:', err);
-      setMostrarAlerta(false);
-      setMostrarFormulario(true);
-    } finally {
-      setAbriendoCaja(false);
-    }
-  };
-
-  const handleClickAbrirCaja = () => {
-    setMostrarAlerta(true);
-    setMostrarFormulario(false);
-  };
-
-  // 🔥 Cargar navegación - VERSIÓN SIMPLIFICADA SIN REDIRECCIONES
+  // 🔥 Cargar navegación
   useEffect(() => {
     const load = async () => {
       try {
-        // Cargar la navegación directamente sin verificar estado del negocio
         const navRes = await fetch(`${API_BASE}/api/business-status/navigation`, {
           headers: { 'Authorization': `Bearer ${getToken()}` },
         });
@@ -522,6 +562,7 @@ export default function BusinessLayout({ user, onLogout }) {
           onCancel={() => {
             setMostrarFormulario(false);
             setMostrarAlerta(true);
+            setAperturaIniciada(false);
           }}
         />
       )}

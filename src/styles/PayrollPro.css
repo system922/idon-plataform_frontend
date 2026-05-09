@@ -1,390 +1,679 @@
-/* ===== FILTERS ===== */
-.pay-filters {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+/* ============================================================================
+   PAYROLL PRO STYLES - Nómina Inteligente
+   ============================================================================ */
+
+/* ============================================================================
+   VARIABLES Y TEMAS
+   ============================================================================ */
+
+:root {
+  /* Colores principales por tema */
+  --theme-payroll-primary: #10b981;
+  --theme-payroll-primary-hover: #34d399;
+  --theme-payroll-primary-light: rgba(16, 185, 129, 0.15);
+  --theme-payroll-secondary: #f59e0b;
+  --theme-payroll-secondary-hover: #fbbf24;
+  --theme-payroll-secondary-light: rgba(245, 158, 11, 0.15);
+  
+  /* Colores generales */
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+  --warning: #f59e0b;
+  --success: #10b981;
+  --info: #3b82f6;
+  
+  /* Fondos */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #0f0f0f;
+  --bg-tertiary: #1a1a1a;
+  --bg-card: rgba(255, 255, 255, 0.03);
+  --bg-card-hover: rgba(255, 255, 255, 0.05);
+  --bg-table-header: #1f2937;
+  --bg-table-row: rgba(255, 255, 255, 0.02);
+  --bg-table-row-hover: rgba(255, 255, 255, 0.05);
+  
+  /* Bordes */
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color-light: rgba(255, 255, 255, 0.04);
+  --border-color-hover: rgba(255, 255, 255, 0.12);
+  
+  /* Textos */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --text-disabled: rgba(255, 255, 255, 0.3);
+  
+  /* Sombras */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+  
+  /* Espaciados */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+  --spacing-3xl: 32px;
+  
+  /* Radios */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+  
+  /* Transiciones */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
 }
 
-.pay-filters input,
-.pay-filters select {
-  background: rgba(0,0,0,0.25);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #fff;
-  padding: 8px;
-  border-radius: 8px;
-}
+/* ============================================================================
+   TOOLBAR Y BOTONES DE ACCIÓN
+   ============================================================================ */
 
-/* ===== TOOLBAR ===== */
 .pay-toolbar {
   display: flex;
-  gap: 10px;
+  gap: var(--spacing-md);
+  align-items: center;
+  margin-bottom: var(--spacing-2xl);
+  flex-wrap: wrap;
 }
 
-.pay-btn {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  padding: 8px 12px;
-  border-radius: 10px;
-  color: #fff;
-  display: flex;
-  gap: 6px;
+/* Botón base */
+.pay-btn,
+.pay-btn-print,
+.pay-btn-canc {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-xl);
+  min-width: 100px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+  user-select: none;
+  border: 1px solid transparent;
 }
 
-.pay-btn.primary {
-  background: linear-gradient(135deg,#6842fe,#7c5cff);
+.pay-btn:disabled,
+.pay-btn-print:disabled,
+.pay-btn-canc:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-/* ===== STATS ===== */
+/* Botón primario (Generar) */
+.pay-btn {
+  background: var(--theme-payroll-primary);
+  color: #ffffff;
+  border-color: var(--theme-payroll-primary);
+}
+
+.pay-btn:hover:not(:disabled) {
+  background: var(--theme-payroll-primary-hover);
+  border-color: var(--theme-payroll-primary-hover);
+  transform: translateY(-1px);
+}
+
+/* Botón guardar */
+.pay-btn-print {
+  background: var(--theme-payroll-secondary);
+  color: #ffffff;
+  border-color: var(--theme-payroll-secondary);
+}
+
+.pay-btn-print:hover:not(:disabled) {
+  background: var(--theme-payroll-secondary-hover);
+  border-color: var(--theme-payroll-secondary-hover);
+  transform: translateY(-1px);
+}
+
+/* Botón cancelar / cerrar */
+.pay-btn-canc {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: var(--border-color);
+}
+
+.pay-btn-canc:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Botón pequeño para tablas */
+.pay-btn-small {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pay-btn-small:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  border-color: var(--theme-payroll-primary);
+  color: var(--theme-payroll-primary);
+}
+
+.pay-btn-small:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   FILTROS
+   ============================================================================ */
+
+.pay-filters {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+  margin-bottom: var(--spacing-2xl);
+  flex-wrap: wrap;
+}
+
+.pay-filters select,
+.pay-filters input[type="date"] {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 140px;
+}
+
+.pay-filters select:hover:not(:disabled),
+.pay-filters input[type="date"]:hover:not(:disabled) {
+  border-color: var(--border-color-hover);
+}
+
+.pay-filters select:focus,
+.pay-filters input[type="date"]:focus {
+  outline: none;
+  border-color: var(--theme-payroll-primary);
+  box-shadow: 0 0 0 2px var(--theme-payroll-primary-light);
+}
+
+.pay-filters select:disabled,
+.pay-filters input[type="date"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.date-separator {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Payment type select especial */
+.payment-type-select {
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+  border-color: var(--theme-payroll-primary) !important;
+}
+
+/* ============================================================================
+   TARJETAS DE ESTADÍSTICAS
+   ============================================================================ */
+
 .pay-stats {
   display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-2xl);
+  flex-wrap: wrap;
 }
 
 .pay-card {
   flex: 1;
-  background: linear-gradient(135deg,#1a1f2a,#141920);
-  padding: 16px;
-  border-radius: 14px;
+  min-width: 160px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg) var(--spacing-xl);
   display: flex;
-  gap: 10px;
   align-items: center;
+  gap: var(--spacing-lg);
+  transition: all var(--transition-normal);
+}
+
+.pay-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-color-hover);
+  background: var(--bg-card-hover);
+}
+
+.pay-card svg {
+  color: var(--theme-payroll-primary);
+  opacity: 0.8;
+  width: 28px;
+  height: 28px;
+}
+
+.pay-card.extra svg {
+  color: var(--theme-payroll-secondary);
+}
+
+.pay-card div {
+  flex: 1;
 }
 
 .pay-card span {
-  font-size: 20px;
-  font-weight: bold;
-  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: block;
+  line-height: 1.2;
 }
 
 .pay-card p {
-  color: rgba(255,255,255,0.5);
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: var(--spacing-xs);
 }
 
 .pay-card.extra span {
-  color: #f59e0b;
+  color: var(--theme-payroll-secondary);
 }
 
-/* ===== TABLE ===== */
+/* ============================================================================
+   TABLA PRINCIPAL
+   ============================================================================ */
+
 .pay-table-wrapper {
-  background: linear-gradient(135deg,#1a1f2a,#141920);
-  border-radius: 14px;
-  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  overflow-x: auto;
+  margin-bottom: var(--spacing-lg);
 }
 
 .pay-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 800px;
 }
 
 .pay-table th {
-  padding: 12px;
-  font-size: 12px;
-  color: rgba(255,255,255,0.05);
+  background: var(--bg-table-header);
+  padding: var(--spacing-md) var(--spacing-lg);
+  text-align: left;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .pay-table td {
-  padding: 12px;
-  color: #fff;
-  border-top: 1px solid rgba(255,255,255,0.05);
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: var(--text-primary);
+  font-size: 14px;
+  border-bottom: 1px solid var(--border-color-light);
+  transition: background var(--transition-fast);
+}
+
+.pay-table tbody tr {
+  background: var(--bg-table-row);
+}
+
+.pay-table tbody tr:hover {
+  background: var(--bg-table-row-hover);
+}
+
+.pay-table tbody tr:hover td {
+  color: var(--text-primary);
+}
+
+.pay-table tfoot td {
+  background: var(--bg-tertiary);
+  font-weight: 700;
+  border-top: 1px solid var(--border-color);
+}
+
+.extra-hours {
+  color: var(--theme-payroll-secondary) !important;
+  font-weight: 700;
 }
 
 .pay-total {
-  color: #10b981;
-  font-weight: bold;
-}
-
-/* PayrollPro.css */
-
-/* ========== Toolbar y Encabezado ========== */
-.pay-toolbar {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 17px;
-}
-
-.pay-btn {
-  display: inline-flex;
-  gap: 7px;
-  align-items: center;
-  padding: 8px 19px;
-  min-width: 85px;
-  background: #4d4d4d;
-  color: #ffffff;
-  border: 1.2px solid #c7c7e0;
-  border-radius: 7px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.18s, color 0.18s, border 0.18s;
-  outline: none;
-  user-select: none;
-}
-.pay-btn {
-  background: #be3333;
-  color: #4d4d4d;
-}
-
-.pay-btn-canc {
-  display: inline-flex;
-  gap: 7px;
-  align-items: center;
-  padding: 8px 19px;
-  min-width: 85px;
-  background: #be3333;
-  color: #ffffff;
-  border: 1.2px solid #c7c7e0;
-  border-radius: 7px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.18s, color 0.18s, border 0.18s;
-  outline: none;
-  user-select: none;
-}
-.pay-btn {
-  background: #be3333;
-  color: #ffffff;
-}
-
-.pay-btn-print {
-  display: inline-flex;
-  gap: 7px;
-  align-items: center;
-  padding: 8px 19px;
-  min-width: 85px;
-  background: #19570a;
-  color: #fefefe;
-  border: 1.2px solid #c7c7e0;
-  border-radius: 7px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.18s, color 0.18s, border 0.18s;
-  outline: none;
-  user-select: none;
-}
-
-.pay-btn-print:hover {
-  background: #ffffff;
-  color: #19570a;
-}
-
-.pay-btn.primary {
-  background: #6044e9;
-  color: #fff;
-  border: 1.5px solid #4b20c7;
-}
-.pay-btn:active,
-.pay-btn:focus {
-  background: #eceffd;
-  border-color: #a187f2;
-}
-.pay-btn.primary:active,
-.pay-btn.primary:focus {
-  background: #462982;
-  color: #fff;
-}
-
-
-/* ========== Filtros de Período ========== */
-.pay-filters {
-  display: flex;
-  gap: 13px;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.pay-filters select,
-.pay-filters input[type="date"] {
-  padding: 5px 12px;
-  border: 1.3px solid #ccc;
-  border-radius: 6px;
-  min-width: 123px;
-  font-size: 15px;
-}
-
-/* ========== Tarjetas de Estadísticas ========== */
-.pay-stats {
-  display: flex;
-  gap: 25px;
-  margin-bottom: 17px;
-}
-
-.pay-card {
-  flex: 1 1 160px;
-  background: #f6f8fe;
-  border-radius: 12px;
-  padding: 19px 23px 13px 23px;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  box-shadow: 0 3px 8px 0 rgba(24,33,54,0.07);
-}
-.pay-card.extra {
-  background: #f8faf5;
-}
-.pay-card svg {
-  color: #514ccd;
-  opacity: 0.6;
-}
-.pay-card.extra svg {
-  color: #72a94e;
-  opacity: 0.7;
-}
-.pay-card span {
-  font-size: 20px;
-  font-weight: bold;
-  color: #413c73;
-}
-.pay-card.extra span {
-  color: #356112;
-}
-.pay-card p {
-  margin: 0;
-  color: #786fae;
-  font-size: 13px;
-}
-
-/* ========== Tabla Nómina Empleados ========== */
-.pay-table-wrapper {
-  overflow-x: auto;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px 0 rgba(22,17,69,0.07);
-}
-
-.pay-table {
-  border-collapse: collapse;
-  width: 100%;
-  min-width: 580px;
-  background: transparent;
-  font-size: 15px;
-}
-.pay-table th, .pay-table td {
-  background: rgba(255,255,255,0.1);
-  padding: 11px 12px;
-  text-align: left;
-}
-.pay-table td {
-  background: rgba(255, 255, 255, 0.1);
-  color: #000;
-  padding: 11px 12px;
-  text-align: left;
-}
-.pay-table td:hover {
-  background: #f3f3f3;
-  color: #000;
-  padding: 11px 12px;
-  text-align: left;
-}
-
-.pay-table th {
-  background: #373839;
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: .02em;
-}
-.pay-table tr:last-child td {
-  border-bottom: none;
-}
-.pay-table tbody tr:hover {
-  background: #000000;
-  color: #ffffff;
-}
-.pay-table .extra-hours {
-  color: #ffffff;
-  font-weight: 700;
-}
-.pay-table .pay-total {
-  color: #413d88;
+  color: var(--theme-payroll-primary);
   font-weight: 700;
 }
 
-@media (max-width:700px) {
-  .pay-table-wrapper {overflow-x: scroll;}
-}
+/* ============================================================================
+   MODALES
+   ============================================================================ */
 
-.pay-table button.pay-btn {
-  min-width: unset;
-  min-height: 0;
-  padding: 4.5px 11px;
-}
-
-/* ========== Modales NOMINA Y DETALLE ========== */
 .pay-modal-backdrop {
   position: fixed;
   z-index: 3000;
   inset: 0;
-  background: rgba(34,32,45,0.18);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: fadeIn var(--transition-normal);
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .pay-modal {
-  color: #10b981;
-  background: #000000;
-  border-radius: 13px;
-  box-shadow: 0 8px 32px 0 rgba(0,0,0,0.23);
-  padding: 22px 30px;
-  min-width: 330px;
-  animation: payModalIn .16s;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-2xl);
+  max-width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp var(--transition-normal);
 }
-@keyframes payModalIn {
-  from {transform:scale(0.96);opacity:0;}
-  to {transform:scale(1);opacity:1;}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
+
 .pay-modal table {
-  border-collapse: collapse;
   width: 100%;
-  font-family: monospace;
-  font-size: 14px;
+  border-collapse: collapse;
+  margin: var(--spacing-lg) 0;
 }
-.pay-modal th, .pay-modal td {
-  padding: 7px 10px;
-  border-bottom: 1px solid #eadcdd;
+
+.pay-modal th,
+.pay-modal td {
+  padding: var(--spacing-sm) var(--spacing-md);
   text-align: left;
+  border-bottom: 1px solid var(--border-color-light);
 }
+
 .pay-modal th {
-  background: #f2f3fa;
-  color: #2a2a51;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   font-weight: 700;
-  font-size: 13.5px;
-}
-.pay-modal tr:last-child td {
-  border-bottom: none;
+  font-size: 12px;
 }
 
-/* ========== Notificaciones, mensajes, estados ========== */
-.pay-table-wrapper .notification,
-.pay-modal .notification {
-  margin: 9px 0 0 0;
-  padding: 11px 12px;
-  background: #fbfbcc;
-  border: 1px solid #f3ea6d;
-  color: #947203;
-  border-radius: 6px;
+.pay-modal td {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.pay-modal b {
+  color: var(--theme-payroll-primary);
+}
+
+/* Scrollbar personalizada para modales */
+.pay-modal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pay-modal::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+}
+
+.pay-modal::-webkit-scrollbar-thumb {
+  background: var(--border-color-hover);
+  border-radius: var(--radius-full);
+}
+
+/* ============================================================================
+   LEYENDA INFORMATIVA
+   ============================================================================ */
+
+.pay-legend {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-md);
+}
+
+.pay-legend small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ============================================================================
+   SPINNER DE CARGA
+   ============================================================================ */
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--theme-payroll-primary);
+  border-radius: var(--radius-full);
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================================
+   NOTIFICACIONES Y MENSAJES
+   ============================================================================ */
+
+.notification {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-size: 13px;
   font-weight: 600;
-  font-size: 14px;
+  margin: var(--spacing-md) 0;
 }
 
-.pay-modal b, .pay-table b {
-  color: #312d5f;
+.notification.success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: var(--success);
 }
 
-/* ========== Responsive Deck ========== */
-@media (max-width:750px) {
-  .pay-stats { flex-direction: column; gap:12px;}
-  .pay-filters { flex-direction: column; align-items:start;}
-  .pay-modal { padding: 14px 3vw; }
+.notification.error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--danger);
 }
 
-/* ========== Extra: Inputs destacados ========== */
-.pay-filters input[type="date"]:focus,
-.pay-filters select:focus,
-.pay-table-wrapper table input:focus {
-  outline: 2px solid #62a7fd;
-  background: #fafdff;
+.notification.warning {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--warning);
+}
+
+.validation-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.validation-message.warning {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--warning);
+}
+
+/* ============================================================================
+   UTILIDADES
+   ============================================================================ */
+
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-left { text-align: left; }
+
+.mt-1 { margin-top: var(--spacing-sm); }
+.mt-2 { margin-top: var(--spacing-md); }
+.mt-3 { margin-top: var(--spacing-lg); }
+.mt-4 { margin-top: var(--spacing-xl); }
+
+.mb-1 { margin-bottom: var(--spacing-sm); }
+.mb-2 { margin-bottom: var(--spacing-md); }
+.mb-3 { margin-bottom: var(--spacing-lg); }
+.mb-4 { margin-bottom: var(--spacing-xl); }
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }
+.gap-1 { gap: var(--spacing-sm); }
+.gap-2 { gap: var(--spacing-md); }
+.gap-3 { gap: var(--spacing-lg); }
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 900px) {
+  .pay-stats {
+    flex-direction: column;
+  }
+  
+  .pay-card {
+    min-width: auto;
+  }
+  
+  .pay-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .pay-filters select,
+  .pay-filters .date-range {
+    width: 100%;
+  }
+  
+  .date-range {
+    flex-direction: column;
+  }
+  
+  .date-range input {
+    width: 100%;
+  }
+  
+  .pay-toolbar {
+    flex-direction: column;
+  }
+  
+  .pay-toolbar button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .pay-modal {
+    padding: var(--spacing-md);
+    width: 95%;
+  }
+  
+  .pay-modal table {
+    font-size: 12px;
+  }
+  
+  .pay-modal th,
+  .pay-modal td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+  
+  .pay-table th,
+  .pay-table td {
+    padding: var(--spacing-sm);
+    font-size: 12px;
+  }
+  
+  .pay-card {
+    padding: var(--spacing-md);
+  }
+  
+  .pay-card span {
+    font-size: 18px;
+  }
+  
+  .pay-btn-small {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 11px;
+  }
+}
+
+/* ============================================================================
+   ANIMACIONES ADICIONALES
+   ============================================================================ */
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.loading-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Efecto hover para filas de tabla */
+.pay-table tbody tr {
+  transition: background var(--transition-fast);
+}
+
+/* Scrollbar para toda la página */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color-hover);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-payroll-primary);
 }
