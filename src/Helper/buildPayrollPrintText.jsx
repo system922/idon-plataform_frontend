@@ -1,23 +1,5 @@
-/**
- * buildPayrollPrintText - genera el texto del ticket de nómina
- *
- * @param {object} payroll - Datos del empleado (full_name, total_pay, etc.)
- * @param {array} details - Detalles adicionales de la nómina
- * @param {object} periodInfo - Información del período
- * @param {object} business - Datos del negocio
- * @param {string} userName - Nombre del usuario que imprime
- * @param {number} width - Ancho en caracteres (default 32)
- * @param {string} footer - Pie de página opcional
- */
-export function buildPayrollPrintText(
-  payroll,
-  details,
-  periodInfo,
-  business,
-  userName,
-  width = 32,
-  footer = null
-) {
+// src/Helper/buildPayrollPrintText.js
+export function buildPayrollPrintText(payroll, details, periodInfo, business, userName, width = 32, footer = null) {
   const n = v => Number(v || 0);
   
   const LINE = '='.repeat(width);
@@ -44,8 +26,8 @@ export function buildPayrollPrintText(
     return lines;
   };
 
-  const row = (label, val, rawVal = false) => {
-    const right = rawVal ? String(val ?? '') : val;
+  const row2 = (label, val) => {
+    const right = String(val ?? '');
     const left = String(label ?? '').substring(0, width - right.length - 1);
     return left + ' '.repeat(Math.max(1, width - left.length - right.length)) + right;
   };
@@ -56,20 +38,14 @@ export function buildPayrollPrintText(
   };
 
   const now = new Date();
-  const nowStr = now.toLocaleString('es-EC', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  const nowStr = now.toLocaleString('es-EC', { hour12: false });
 
   let out = '';
 
   // Encabezado negocio
   out += LINE + '\n';
   if (business) {
-    const bizName = business.trade_name || business.company_name || 'NEGOCIO';
+    const bizName = business.trade_name || business.company_name || business.name || 'NEGOCIO';
     wrap(bizName.toUpperCase()).forEach(l => (out += center(l) + '\n'));
     if (business.address) wrap(business.address).forEach(l => (out += center(l) + '\n'));
     if (business.phone) out += center(`Tel: ${business.phone}`) + '\n';
@@ -80,11 +56,11 @@ export function buildPayrollPrintText(
   out += LINE + '\n';
 
   // Datos del colaborador
-  out += row('Colaborador:', payroll?.full_name || 'N/A', true) + '\n';
-  out += row('Período:', periodInfo?.period_text || 'N/A', true) + '\n';
-  out += row('Tipo pago:', periodInfo?.payment_type === 'hourly' ? 'POR HORAS' : 'PAGO DIARIO', true) + '\n';
-  out += row('Fecha:', nowStr, true) + '\n';
-  out += row('Usuario:', userName || 'Operador', true) + '\n';
+  out += row2('Colaborador:', payroll?.full_name || 'N/A') + '\n';
+  out += row2('Período:', periodInfo?.period_text || 'N/A') + '\n';
+  out += row2('Tipo pago:', periodInfo?.payment_type === 'hourly' ? 'POR HORAS' : 'PAGO DIARIO') + '\n';
+  out += row2('Fecha emisión:', nowStr) + '\n';
+  out += row2('Usuario:', userName || 'Operador') + '\n';
   out += SEP + '\n';
 
   // Detalle del pago
@@ -92,18 +68,18 @@ export function buildPayrollPrintText(
   out += SEP + '\n';
 
   if (periodInfo?.payment_type === 'hourly') {
-    out += row('Horas trabajadas:', `${n(payroll?.total_hours).toFixed(2)} h`, true) + '\n';
-    out += row('Valor por hora:', fmt(payroll?.hourly_rate), true) + '\n';
+    out += row2('Horas trabajadas:', `${n(payroll?.total_hours).toFixed(2)} h`) + '\n';
+    out += row2('Valor por hora:', fmt(payroll?.hourly_rate)) + '\n';
     if (n(payroll?.extra_hours) > 0) {
-      out += row('Horas extras (150%):', `${n(payroll?.extra_hours).toFixed(2)} h`, true) + '\n';
+      out += row2('Horas extras (150%):', `${n(payroll?.extra_hours).toFixed(2)} h`) + '\n';
     }
   } else {
-    out += row('Días trabajados:', `${n(payroll?.days_worked || 1).toFixed(0)} días`, true) + '\n';
-    out += row('Sueldo diario:', fmt(payroll?.daily_rate), true) + '\n';
+    out += row2('Días trabajados:', `${n(payroll?.days_worked || 1).toFixed(0)} días`) + '\n';
+    out += row2('Sueldo diario:', fmt(payroll?.daily_rate)) + '\n';
   }
 
   out += SEP + '\n';
-  out += row('TOTAL A PAGAR:', fmt(payroll?.total_pay), true) + '\n';
+  out += row2('TOTAL A PAGAR:', fmt(payroll?.total_pay)) + '\n';
   out += LINE + '\n';
 
   // Firma
