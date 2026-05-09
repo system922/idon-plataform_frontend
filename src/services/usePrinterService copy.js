@@ -600,21 +600,13 @@ function formatReceiptTicket(data, width = 42) {
  *   printerFooter
  * }
  */
-/**
- * CIERRE DE CAJA - Formato profesional con gastos
- */
-/**
- * CIERRE DE CAJA - Formato profesional con gastos
- */
-function formatCashCloseTicket(data, width = 48) {
-  const { bizInfo, close, sales, payments, cashFlow, totals, summary, expenses = [], printerFooter } = data;
+function formatCashCloseTicket(data, width = 42) {
+  const { bizInfo, close, sales, payments, cashFlow, totals, summary, printerFooter } = data;
 
-  const line = '='.repeat(width);
-  const doubleLine = '═'.repeat(width);
-  const sep = '-'.repeat(width);
-  const dotted = '·'.repeat(width);
-  const mW = 14;
-  const labW = width - mW;
+  const line    = '='.repeat(width);
+  const sep     = '-'.repeat(width);
+  const mW      = 12;
+  const labW    = width - mW;
 
   const row = (label, val, opts = {}) => {
     const money = opts.raw ? String(val ?? '') : formatMoney(val);
@@ -622,218 +614,157 @@ function formatCashCloseTicket(data, width = 48) {
   };
 
   const sectionTitle = (title) =>
-    '\n' + dotted + '\n' + padCenter(title, width) + '\n' + dotted + '\n';
+    sep + '\n' + padCenter(title, width) + '\n' + sep + '\n';
 
   let t = '';
 
-  // ============ ENCABEZADO DEL NEGOCIO ============
+  // ── Encabezado negocio ────────────────────────────────────────────────────
   t += line + '\n';
-  
   if (bizInfo?.trade_name) {
-    t += padCenter(bizInfo.trade_name.toUpperCase(), width) + '\n';
+    wrap(bizInfo.trade_name.toUpperCase(), width).forEach(l => (t += padCenter(l, width) + '\n'));
   }
-  
-  if (bizInfo?.company_name && bizInfo.company_name !== bizInfo?.trade_name) {
-    t += padCenter(bizInfo.company_name, width) + '\n';
+  if (bizInfo?.company_name) {
+    wrap(bizInfo.company_name, width).forEach(l => (t += padCenter(l, width) + '\n'));
   }
-  
   if (bizInfo?.ruc) {
     t += padCenter(`RUC: ${bizInfo.ruc}`, width) + '\n';
   }
-  
   if (bizInfo?.address) {
-    t += padCenter(bizInfo.address, width) + '\n';
+    wrap(bizInfo.address, width).forEach(l => (t += padCenter(l, width) + '\n'));
   }
-  
-  if (bizInfo?.phone || bizInfo?.email) {
-    const contact = [bizInfo.phone, bizInfo.email].filter(Boolean).join(' / ');
-    t += padCenter(contact, width) + '\n';
+  if (bizInfo?.phone) {
+    t += padCenter(`Tel: ${bizInfo.phone}`, width) + '\n';
   }
-  
-  t += line + '\n';
-  t += padCenter('*** C I E R R E   D E   C A J A ***', width) + '\n';
-  t += doubleLine + '\n\n';
 
-  // ============ DATOS DE LA SESIÓN ============
-  t += padCenter('DATOS DE LA SESIÓN', width) + '\n';
-  t += sep + '\n';
-  
+  // ── Título ────────────────────────────────────────────────────────────────
+  t += line + '\n';
+  t += padCenter('*** CIERRE DE CAJA ***', width) + '\n';
+  t += line + '\n';
+
+  // ── Datos de sesión ───────────────────────────────────────────────────────
   if (close?.cash_register_id) {
-    t += `  ${padRight('Caja No.:', 18)} ${close.cash_register_id}\n`;
+    t += padRight(`Caja No.:`, labW) + padLeft(String(close.cash_register_id), mW) + '\n';
   }
   if (close?.session_id) {
-    t += `  ${padRight('Sesión ID:', 18)} ${close.session_id}\n`;
+    t += padRight(`Sesión:`, labW) + padLeft(String(close.session_id), mW) + '\n';
   }
   if (close?.opening_user) {
-    t += `  ${padRight('Apertura por:', 18)} ${close.opening_user}\n`;
+    t += `Apertura por: ${close.opening_user}\n`;
   }
   if (close?.closing_user || close?.closing_user_id) {
-    const nombreReal = close.closing_user_name || close.closing_user || close.closing_user_id;
-    t += `  ${padRight('Cierre por:', 18)} ${nombreReal}\n`;
+    t += `Cierre por:   ${close.closing_user || close.closing_user_id}\n`;
   }
   if (close?.opening_date) {
-    t += `  ${padRight('Fecha apertura:', 18)} ${formatDate(close.opening_date, 'long')}\n`;
+    t += `Apertura:     ${formatDate(close.opening_date, 'long')}\n`;
   }
   if (close?.closing_date) {
-    t += `  ${padRight('Fecha cierre:', 18)} ${formatDate(close.closing_date, 'long')}\n`;
+    t += `Cierre:       ${formatDate(close.closing_date, 'long')}\n`;
   }
-  
-  t += sep + '\n\n';
 
-  // ============ RESUMEN DE VENTAS (simplificado - solo TOTAL VENTAS) ============
-  t += padCenter('R E S U M E N   D E   V E N T A S', width) + '\n';
-  t += dotted + '\n';
+  // ── Resumen de ventas ─────────────────────────────────────────────────────
+  t += sectionTitle('RESUMEN DE VENTAS');
 
   if (sales) {
-    // Solo Transacciones y No. de comandas
-    if (sales.transaction_count != null) {
-      t += row('Transacciones:', sales.transaction_count, { raw: true });
-    }
-    if (sales.comandas_count != null) {
-      t += row('No. de comandas:', sales.comandas_count, { raw: true });
-    } else if (sales.invoice_count != null) {
-      t += row('No. de comandas:', sales.invoice_count, { raw: true });
-    }
+    if (sales.transaction_count != null) t += row('Transacciones:', sales.transaction_count, { raw: true });
+    if (sales.invoice_count     != null) t += row('  Facturas:',    sales.invoice_count,     { raw: true });
+    if (sales.receipt_count     != null) t += row('  Recibos:',     sales.receipt_count,     { raw: true });
+    if (sales.void_count        != null) t += row('  Anulaciones:', sales.void_count,         { raw: true });
 
-    t += dotted + '\n';
-    
-    // SOLO TOTAL VENTAS (sin desglose de IVA)
-    t += row('💰 TOTAL VENTAS:', sales.total ?? 0);
+    t += sep + '\n';
+
+    const taxLabel = sales.tax_rate ? `${Math.round(Number(sales.tax_rate) * 100)}%` : '15%';
+
+    if ((sales.subtotal_15 ?? 0) > 0 || (sales.subtotal_0 ?? 0) > 0) {
+      t += row(`Subtotal grav. ${taxLabel}:`, sales.subtotal_15 ?? 0);
+      t += row('Subtotal exento 0%:',         sales.subtotal_0  ?? 0);
+    }
+    if ((sales.discount ?? 0) > 0) {
+      t += row('Descuentos:',  sales.discount ?? 0);
+    }
+    t += row('Subtotal neto:', sales.subtotal_net ?? (Number(sales.subtotal_15 ?? 0) + Number(sales.subtotal_0 ?? 0) - Number(sales.discount ?? 0)));
+    if ((sales.tax ?? 0) > 0) {
+      t += row(`IVA ${taxLabel}:`, sales.tax ?? 0);
+    }
+    t += row('TOTAL VENTAS:', sales.total ?? 0);
   }
 
-  // ============ FORMAS DE PAGO ============
-  t += sectionTitle('F O R M A S   D E   P A G O');
+  // ── Formas de pago ────────────────────────────────────────────────────────
+  t += sectionTitle('FORMAS DE PAGO');
 
-  const paymentSection = (label, icon, block) => {
+  const paymentSection = (label, block) => {
     if (!block) return;
     const { system, counted, diff } = block;
-    t += `${icon} ${label}\n`;
+    t += `${label}\n`;
     t += row('  Sistema:', system ?? 0);
     t += row('  Contado:', counted ?? 0);
     const d = diff ?? (Number(counted ?? 0) - Number(system ?? 0));
-    const diffIcon = d >= 0 ? '🟢' : '🔴';
-    t += row(`  Diferencia ${diffIcon}:`, Math.abs(d));
+    t += row('  Diferencia:', d);
     t += sep + '\n';
   };
 
   if (payments) {
-    paymentSection('EFECTIVO', '💵', payments.cash);
-    paymentSection('TARJETA', '💳', payments.card);
-    paymentSection('TRANSFERENCIA', '🏦', payments.transfer);
+    paymentSection('EFECTIVO',      payments.cash);
+    paymentSection('TRANSFERENCIA', payments.transfer);
+    paymentSection('TARJETA',       payments.card);
     if (payments.other && (payments.other.system ?? 0) + (payments.other.counted ?? 0) > 0) {
-      paymentSection('OTROS', '📝', payments.other);
+      paymentSection('OTROS',       payments.other);
     }
   } else if (summary) {
-    paymentSection('EFECTIVO', '💵', { system: summary.cash_system, counted: summary.cash_counted, diff: summary.diff_cash });
-    paymentSection('TRANSFERENCIA', '🏦', { system: summary.transfer_system, counted: summary.transfer_counted, diff: summary.diff_transfer });
-    paymentSection('TARJETA', '💳', { system: summary.card_system, counted: summary.card_counted, diff: summary.diff_card });
+    // compat. con estructura legacy plana
+    paymentSection('EFECTIVO',      { system: summary.cash_system,     counted: summary.cash_counted,     diff: summary.diff_cash });
+    paymentSection('TRANSFERENCIA', { system: summary.transfer_system, counted: summary.transfer_counted, diff: summary.diff_transfer });
+    paymentSection('TARJETA',       { system: summary.card_system,     counted: summary.card_counted,     diff: summary.diff_card });
   }
 
-  // ============ GASTOS DEL DÍA ============
-  if (expenses && expenses.length > 0) {
-    t += sectionTitle('G A S T O S   D E L   D Í A');
-    
-    let totalGastos = 0;
-    expenses.forEach(expense => {
-      const monto = Number(expense.amount || expense.monto || 0);
-      totalGastos += monto;
-      const concepto = expense.concept || expense.description || expense.concepto || 'Gasto';
-      t += `  📝 ${padRight(concepto, width - 20)} ${padLeft(formatMoney(monto), 14)}\n`;
-    });
-    
-    t += dotted + '\n';
-    t += row('💰 TOTAL GASTOS:', totalGastos);
-  }
-
-  // ============ MOVIMIENTO DE CAJA ============
+  // ── Movimiento de caja ────────────────────────────────────────────────────
   if (cashFlow) {
-    t += sectionTitle('M O V I M I E N T O   D E   C A J A');
-    
-    if (cashFlow.opening_float != null) {
-      t += row('💰 Fondo inicial:', cashFlow.opening_float);
-    }
-    if (cashFlow.extra_income != null && cashFlow.extra_income > 0) {
-      t += row('📈 Ingresos extra:', cashFlow.extra_income);
-    }
-    
-    // Mostrar gastos totales si existen
-    const totalGastos = expenses.reduce((sum, e) => sum + Number(e.amount || e.monto || 0), 0);
-    if (totalGastos > 0) {
-      t += row('📉 Total gastos:', totalGastos);
-    }
-    
-    if (cashFlow.withdrawals != null && cashFlow.withdrawals > 0) {
-      t += row('📉 Egresos/Retiros:', cashFlow.withdrawals);
-    }
-    
-    t += dotted + '\n';
-    
-    if (cashFlow.expected_cash != null) {
-      t += row('📊 Efectivo esperado:', cashFlow.expected_cash);
-    }
-    if (cashFlow.counted_cash != null) {
-      t += row('💵 Efectivo contado:', cashFlow.counted_cash);
-    }
-    
+    t += sectionTitle('MOVIMIENTO DE CAJA');
+    if (cashFlow.opening_float != null) t += row('Fondo inicial:',    cashFlow.opening_float);
+    if (cashFlow.extra_income  != null) t += row('Ingresos extra:',   cashFlow.extra_income);
+    if (cashFlow.withdrawals   != null) t += row('Egresos/Retiros:',  cashFlow.withdrawals);
+    t += sep + '\n';
+    if (cashFlow.expected_cash != null) t += row('Efectivo esperado:', cashFlow.expected_cash);
+    if (cashFlow.counted_cash  != null) t += row('Efectivo contado:',  cashFlow.counted_cash);
     const df = cashFlow.cash_diff ?? (Number(cashFlow.counted_cash ?? 0) - Number(cashFlow.expected_cash ?? 0));
-    const diffIcon = df >= 0 ? '🟢 SOBRANTE:' : '🔴 FALTANTE:';
-    t += row(diffIcon, Math.abs(df));
+    t += row('Diferencia:', df);
   }
 
-  // ============ TOTALES GENERALES ============
-  t += sectionTitle('T O T A L E S   G E N E R A L E S');
+  // ── Totales generales ─────────────────────────────────────────────────────
+  t += sectionTitle('TOTALES GENERALES');
 
   if (totals) {
-    t += row('💰 Total sistema:', totals.system_total ?? 0);
-    t += row('💵 Total contado:', totals.counted_total ?? 0);
+    t += row('Total sistema:', totals.system_total ?? 0);
+    t += row('Total contado:', totals.counted_total ?? 0);
     const td = totals.total_diff ?? (Number(totals.counted_total ?? 0) - Number(totals.system_total ?? 0));
-    const totalIcon = td >= 0 ? '✅ CUADRADO (+)' : '❌ DESCUADRE (-)';
-    t += row(totalIcon, Math.abs(td));
+    t += row('Diferencia total:', td);
   } else if (summary) {
-    t += row('💰 Total sistema:', summary.total_system ?? 0);
-    t += row('💵 Total contado:', summary.total_counted ?? 0);
+    t += row('Total sistema:', summary.total_system ?? 0);
+    t += row('Total contado:', summary.total_counted ?? 0);
     const td = summary.diff_total ?? (Number(summary.total_counted ?? 0) - Number(summary.total_system ?? 0));
-    const totalIcon = td >= 0 ? '✅ CUADRADO (+)' : '❌ DESCUADRE (-)';
-    t += row(totalIcon, Math.abs(td));
+    t += row('Diferencia total:', td);
   }
 
   t += line + '\n';
 
-  // ============ OBSERVACIONES ============
-  if (close?.remarks && close.remarks.trim()) {
-    t += '\n' + padCenter('📝 O B S E R V A C I O N E S', width) + '\n';
-    t += dotted + '\n';
-    wrap(close.remarks, width).forEach(l => (t += l + '\n'));
-    t += dotted + '\n';
+  // ── Observaciones ─────────────────────────────────────────────────────────
+  if (close?.remarks) {
+    t += '\n';
+    wrap(`Obs: ${close.remarks}`, width).forEach(l => (t += l + '\n'));
   }
 
-  // ============ FIRMA CON NOMBRE REAL ============
-  t += '\n' + dotted + '\n';
-  t += padCenter('F I R M A   D E L   R E S P O N S A B L E', width) + '\n';
-  t += dotted + '\n\n';
-  t += padCenter('_________________________', width) + '\n';
-  
-  // Obtener el nombre real del responsable
-  const nombreResponsable = close?.closing_user_name || 
-                           close?.closing_user || 
-                           close?.closing_user_id || 
-                           getOperatorName() ||
-                           'Responsable';
-  
-  t += padCenter(nombreResponsable, width) + '\n\n';
+  // ── Firma ─────────────────────────────────────────────────────────────────
+  t += '\n';
+  t += padCenter('Firma responsable:', width) + '\n';
+  t += '\n';
+  t += padCenter('_'.repeat(Math.floor(width * 0.6)), width) + '\n';
+  t += padCenter(close?.closing_user || close?.closing_user_id || 'Operador', width) + '\n';
 
-  // ============ PIE DE PÁGINA ============
-  t += dotted + '\n';
-  t += padCenter(`🕐 Impreso: ${formatDateTime()}`, width) + '\n';
-  t += padCenter(`👤 Usuario: ${getOperatorName()}`, width) + '\n';
-  
+  // ── Footer ────────────────────────────────────────────────────────────────
+  t += '\n' + sep + '\n';
+  t += padCenter(`Impreso: ${formatDate(new Date().toISOString(), 'long')}`, width) + '\n';
   if (printerFooter) {
     t += padCenter(printerFooter, width) + '\n';
   }
-  
-  t += line + '\n';
-  t += padCenter('¡Gracias por su trabajo!', width) + '\n';
-  t += padCenter(`Cierre #${Date.now()}`, width) + '\n';
   t += line + '\n\n';
 
   return t;
