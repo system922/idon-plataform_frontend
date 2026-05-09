@@ -1,5 +1,12 @@
+/**
+ * buildPayrollPrintText — genera el texto del ticket de nómina
+ */
 export function buildPayrollPrintText(payroll, details, periodInfo, business, userName, width = 32, footer = null) {
-  const n = v => Number(v || 0);
+  // Función segura para convertir a número
+  const n = v => {
+    const num = Number(v);
+    return isNaN(num) ? 0 : num;
+  };
   
   const LINE = '='.repeat(width);
   const SEP = '-'.repeat(width);
@@ -35,14 +42,21 @@ export function buildPayrollPrintText(payroll, details, periodInfo, business, us
   };
 
   const sectionTitle = (title) => SEP + '\n' + center(title) + '\n' + SEP;
-  const fmt = (n) => `$${parseFloat(n || 0).toFixed(2)}`;
+  
+  const fmt = (value) => {
+    const num = n(value);
+    return `$${num.toFixed(2)}`;
+  };
 
   const now = new Date();
-  const nowStr = now.toLocaleString('es-EC', { hour12: false });
+  const nowStr = now.toLocaleString('es-EC', { 
+    hour12: false,
+    timeZone: 'America/Guayaquil'
+  });
 
   let out = '';
 
-  // Encabezado
+  // Encabezado negocio
   out += LINE + '\n';
   if (business) {
     const bizName = business.trade_name || business.company_name || business.name || 'NEGOCIO';
@@ -59,7 +73,7 @@ export function buildPayrollPrintText(payroll, details, periodInfo, business, us
   out += row('Colaborador:', payroll?.full_name || 'N/A', true) + '\n';
   out += row('Período:', periodInfo?.period_text || 'N/A', true) + '\n';
   out += row('Tipo pago:', periodInfo?.payment_type === 'hourly' ? 'POR HORAS' : 'PAGO DIARIO', true) + '\n';
-  out += row('Fecha:', nowStr, true) + '\n';
+  out += row('Fecha emisión:', nowStr, true) + '\n';
   out += row('Usuario:', userName || 'Operador', true) + '\n';
   out += SEP + '\n';
 
@@ -67,24 +81,34 @@ export function buildPayrollPrintText(payroll, details, periodInfo, business, us
   out += sectionTitle('DETALLE DEL PAGO') + '\n';
 
   if (periodInfo?.payment_type === 'hourly') {
-    out += row('Horas trabajadas:', `${n(payroll?.total_hours).toFixed(2)} h`, true) + '\n';
-    out += row('Valor por hora:', fmt(payroll?.hourly_rate)) + '\n';
-    if (n(payroll?.extra_hours) > 0) {
-      out += row('Horas extras (150%):', `${n(payroll?.extra_hours).toFixed(2)} h`, true) + '\n';
+    const totalHours = n(payroll?.total_hours);
+    const extraHours = n(payroll?.extra_hours);
+    const hourlyRate = n(payroll?.hourly_rate);
+    
+    out += row('Horas trabajadas:', `${totalHours.toFixed(2)} h`, true) + '\n';
+    out += row('Valor por hora:', fmt(hourlyRate)) + '\n';
+    if (extraHours > 0) {
+      out += row('Horas extras (150%):', `${extraHours.toFixed(2)} h`, true) + '\n';
     }
   } else {
-    out += row('Días trabajados:', `${n(payroll?.days_worked || 1).toFixed(0)} días`, true) + '\n';
-    out += row('Sueldo diario:', fmt(payroll?.daily_rate)) + '\n';
+    const daysWorked = n(payroll?.days_worked || payroll?.total_days || 1);
+    const dailyRate = n(payroll?.daily_rate);
+    
+    out += row('Días trabajados:', `${daysWorked.toFixed(0)} días`, true) + '\n';
+    out += row('Sueldo diario:', fmt(dailyRate)) + '\n';
   }
 
   out += SEP + '\n';
-  out += row('TOTAL A PAGAR:', fmt(payroll?.total_pay)) + '\n';
+  
+  const totalPay = n(payroll?.total_pay);
+  out += row('TOTAL A PAGAR:', fmt(totalPay)) + '\n';
   out += LINE + '\n';
 
   // Firma
   out += '\n' + center('Firma del empleado:') + '\n\n';
   out += center('_'.repeat(Math.floor(width * 0.6))) + '\n';
-  out += center(payroll?.full_name?.split(' ')[0] || '') + '\n';
+  const firstName = payroll?.full_name?.split(' ')[0] || '';
+  out += center(firstName) + '\n';
 
   // Footer
   out += '\n' + SEP + '\n';

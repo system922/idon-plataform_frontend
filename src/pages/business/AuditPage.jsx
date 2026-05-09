@@ -14,7 +14,8 @@ import {
   FiSun,
   FiCalendar,
   FiFilter,
-  FiX
+  FiX,
+  FiUsers
 } from "react-icons/fi";
 import { User } from "react-feather";
 import { fetchWithAuth } from '../../config/apiBase';
@@ -45,23 +46,17 @@ function formatDateForDisplay(dateStr) {
 }
 
 // Función para extraer solo la fecha de un timestamp (YYYY-MM-DD)
-// Timestamp puede venir como "2026-05-02 08:10:08.939545" o "2026-05-02T08:10:08.939545Z"
 function extractDateFromTimestamp(timestamp) {
   if (!timestamp) return null;
-  // Manejar formato "2026-05-02 08:10:08.939545"
   if (typeof timestamp === 'string') {
-    // Si tiene espacio, tomar la parte de la fecha
     if (timestamp.includes(' ')) {
       return timestamp.split(' ')[0];
     }
-    // Si tiene T (formato ISO), tomar la parte de la fecha
     if (timestamp.includes('T')) {
       return timestamp.split('T')[0];
     }
-    // Si ya es solo fecha
     return timestamp;
   }
-  // Si es objeto Date
   if (timestamp instanceof Date) {
     return timestamp.toISOString().split('T')[0];
   }
@@ -91,6 +86,14 @@ function getActionIcon(action, metadata = {}) {
     case "aporte_extra":
     case "ingreso_externo":
       return <FiTrendingUp size={20} />;
+    case "payroll_payment":
+    case "pago_nomina":
+    case "pago_rol":
+      return <FiUsers size={20} />;
+    case "compra":
+    case "purchase":
+    case "gasto_compra":
+      return <FiDollarSign size={20} />;
     default:
       return <FiFileText size={20} />;
   }
@@ -154,6 +157,24 @@ function getActionStyle(action, metadata = {}) {
         background: "rgba(6, 182, 212, 0.08)",
         iconBg: "#06b6d4"
       };
+    case "payroll_payment":
+    case "pago_nomina":
+    case "pago_rol":
+      return {
+        label: "PAGO DE NÓMINA",
+        color: "#10b981",
+        background: "rgba(16, 185, 129, 0.08)",
+        iconBg: "#10b981"
+      };
+    case "compra":
+    case "purchase":
+    case "gasto_compra":
+      return {
+        label: "COMPRA",
+        color: "#f59e0b",
+        background: "rgba(245, 158, 11, 0.08)",
+        iconBg: "#f59e0b"
+      };
     default:
       return {
         label: (action || "OTRO").toUpperCase(),
@@ -173,7 +194,7 @@ export default function CoreAuditLog() {
   const [refreshing, setRefreshing] = useState(false);
   const [err, setErr] = useState('');
   const [selectedDate, setSelectedDate] = useState(getCurrentEcuadorDate());
-  const [showFilter, setShowFilter] = useState(true); // Mostrar filtro por defecto
+  const [showFilter, setShowFilter] = useState(true);
 
   const loadAuditLogs = async () => {
     setLoading(true);
@@ -181,7 +202,6 @@ export default function CoreAuditLog() {
     try {
       const res = await fetchWithAuth('/api/audit-log');
       const data = await res.json();
-      // Extraer metadata de cada log si existe
       const logsWithMeta = (Array.isArray(data.logs) ? data.logs : []).map(log => {
         let metadata = {};
         try {
@@ -210,7 +230,6 @@ export default function CoreAuditLog() {
     }
   };
 
-  // Filtrar logs por fecha seleccionada (comparando solo la fecha, no la hora)
   useEffect(() => {
     if (!selectedDate) {
       setFilteredLogs(logs);
@@ -219,12 +238,10 @@ export default function CoreAuditLog() {
     
     const filtered = logs.filter(log => {
       if (!log.created_at) return false;
-      // Extraer solo la fecha del timestamp
       const logDateStr = extractDateFromTimestamp(log.created_at);
       return logDateStr === selectedDate;
     });
     
-    // Ordenar por fecha descendente (más reciente primero)
     const sorted = [...filtered].sort((a, b) => {
       const dateA = new Date(a.created_at);
       const dateB = new Date(b.created_at);
@@ -249,6 +266,24 @@ export default function CoreAuditLog() {
   };
 
   useEffect(() => { loadAuditLogs(); }, []);
+
+  // Función para extraer el monto de la descripción o metadata
+  const extractAmountFromLog = (log, isExpense, isIncome, isPayroll) => {
+    // Para pagos de nómina, buscar el monto en la descripción
+    if (isPayroll) {
+      const match = log.description?.match(/\$(\d+(?:\.\d{2})?)/);
+      if (match) {
+        return formatMoney(parseFloat(match[1]));
+      }
+    }
+    
+    // Para gastos/ingresos normales
+    if ((isExpense || isIncome) && log.new_values && typeof log.new_values === "object") {
+      return formatMoney(log.new_values.amount);
+    }
+    
+    return null;
+  };
 
   const refreshButton = (
     <button 
@@ -292,7 +327,6 @@ export default function CoreAuditLog() {
         </div>
       )}
 
-      {/* Filtro de fecha */}
       {showFilter && (
         <div className="audit-filter-bar">
           <div className="filter-content">
@@ -341,15 +375,18 @@ export default function CoreAuditLog() {
           </div>
         ) : (
           filteredLogs.map((log, idx) => {
-            const actionStyle = getActionStyle(log.action, log.metadata);
-            const isExpense = (log.action || "").toLowerCase() === "drawer_expense" || 
-                              (log.action || "").toLowerCase() === "gasto_operativo";
-            const isIncome = (log.action || "").toLowerCase() === "ingreso_extra" ||
-                             (log.action || "").toLowerCase() === "aporte_extra";
+            const actionLower = (log.action || "").toLowerCase();
+            const isExpense = actionLower === "drawer_expense" || actionLower === "gasto_operativo";
+            const isIncome = actionLower === "ingreso_extra" || actionLower === "aporte_extra";
+            const isPayroll = actionLower === "payroll_payment" || actionLower === "pago_nomina" || actionLower === "pago_rol";
+            const isPurchase = actionLower === "compra" || actionLower === "purchase" || actionLower === "gasto_compra";
             
-            let amount = "";
-            if ((isExpense || isIncome) && log.new_values && typeof log.new_values === "object") {
-              amount = formatMoney(log.new_values.amount);
+            const actionStyle = getActionStyle(log.action, log.metadata);
+            let amount = extractAmountFromLog(log, isExpense, isIncome, isPayroll);
+            
+            // Para compras, también buscar el monto
+            if (isPurchase && !amount && log.new_values && typeof log.new_values === "object") {
+              amount = formatMoney(log.new_values.amount || log.new_values.total);
             }
 
             return (
@@ -400,11 +437,18 @@ export default function CoreAuditLog() {
                   <strong>Descripción:</strong> {log.description || "Sin descripción"}
                 </div>
 
-                {(isExpense || isIncome) && amount && (
+                {(isExpense || isIncome || isPayroll || isPurchase) && amount && (
                   <div className="audit-card-amount" style={{ color: actionStyle.color }}>
                     <FiDollarSign size={16} />
                     <span>Total:</span>
                     <strong>{amount}</strong>
+                  </div>
+                )}
+
+                {/* Mostrar el método de pago para nóminas */}
+                {isPayroll && log.metadata?.payment_method && (
+                  <div className="audit-card-payment-method" style={{ marginTop: '8px', fontSize: '12px', color: '#a0a0b0' }}>
+                    <span>💳 Método: {log.metadata.payment_method === 'cash' ? 'Efectivo' : 'Transferencia'}</span>
                   </div>
                 )}
               </div>
