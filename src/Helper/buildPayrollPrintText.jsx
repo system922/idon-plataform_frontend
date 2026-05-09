@@ -1,4 +1,3 @@
-// src/Helper/buildPayrollPrintText.js
 export function buildPayrollPrintText(payroll, details, periodInfo, business, userName, width = 32, footer = null) {
   const n = v => Number(v || 0);
   
@@ -26,28 +25,29 @@ export function buildPayrollPrintText(payroll, details, periodInfo, business, us
     return lines;
   };
 
-  const row2 = (label, val) => {
-    const right = String(val ?? '');
-    const left = String(label ?? '').substring(0, width - right.length - 1);
+  const mW = 12;
+  const labW = width - mW;
+
+  const row = (label, val, rawVal = false) => {
+    const right = rawVal ? String(val ?? '') : fmt(val);
+    const left = String(label ?? '').substring(0, labW);
     return left + ' '.repeat(Math.max(1, width - left.length - right.length)) + right;
   };
 
-  const fmt = (n) => {
-    const v = parseFloat(n ?? 0);
-    return isNaN(v) ? '$0.00' : `$${Math.abs(v).toFixed(2)}`;
-  };
+  const sectionTitle = (title) => SEP + '\n' + center(title) + '\n' + SEP;
+  const fmt = (n) => `$${parseFloat(n || 0).toFixed(2)}`;
 
   const now = new Date();
   const nowStr = now.toLocaleString('es-EC', { hour12: false });
 
   let out = '';
 
-  // Encabezado negocio
+  // Encabezado
   out += LINE + '\n';
   if (business) {
     const bizName = business.trade_name || business.company_name || business.name || 'NEGOCIO';
-    wrap(bizName.toUpperCase()).forEach(l => (out += center(l) + '\n'));
-    if (business.address) wrap(business.address).forEach(l => (out += center(l) + '\n'));
+    wrap(bizName.toUpperCase()).forEach(l => out += center(l) + '\n');
+    if (business.address) wrap(business.address).forEach(l => out += center(l) + '\n');
     if (business.phone) out += center(`Tel: ${business.phone}`) + '\n';
     if (business.ruc) out += center(`RUC: ${business.ruc}`) + '\n';
   }
@@ -56,42 +56,40 @@ export function buildPayrollPrintText(payroll, details, periodInfo, business, us
   out += LINE + '\n';
 
   // Datos del colaborador
-  out += row2('Colaborador:', payroll?.full_name || 'N/A') + '\n';
-  out += row2('Período:', periodInfo?.period_text || 'N/A') + '\n';
-  out += row2('Tipo pago:', periodInfo?.payment_type === 'hourly' ? 'POR HORAS' : 'PAGO DIARIO') + '\n';
-  out += row2('Fecha emisión:', nowStr) + '\n';
-  out += row2('Usuario:', userName || 'Operador') + '\n';
+  out += row('Colaborador:', payroll?.full_name || 'N/A', true) + '\n';
+  out += row('Período:', periodInfo?.period_text || 'N/A', true) + '\n';
+  out += row('Tipo pago:', periodInfo?.payment_type === 'hourly' ? 'POR HORAS' : 'PAGO DIARIO', true) + '\n';
+  out += row('Fecha:', nowStr, true) + '\n';
+  out += row('Usuario:', userName || 'Operador', true) + '\n';
   out += SEP + '\n';
 
   // Detalle del pago
-  out += center('DETALLE DEL PAGO') + '\n';
-  out += SEP + '\n';
+  out += sectionTitle('DETALLE DEL PAGO') + '\n';
 
   if (periodInfo?.payment_type === 'hourly') {
-    out += row2('Horas trabajadas:', `${n(payroll?.total_hours).toFixed(2)} h`) + '\n';
-    out += row2('Valor por hora:', fmt(payroll?.hourly_rate)) + '\n';
+    out += row('Horas trabajadas:', `${n(payroll?.total_hours).toFixed(2)} h`, true) + '\n';
+    out += row('Valor por hora:', fmt(payroll?.hourly_rate)) + '\n';
     if (n(payroll?.extra_hours) > 0) {
-      out += row2('Horas extras (150%):', `${n(payroll?.extra_hours).toFixed(2)} h`) + '\n';
+      out += row('Horas extras (150%):', `${n(payroll?.extra_hours).toFixed(2)} h`, true) + '\n';
     }
   } else {
-    out += row2('Días trabajados:', `${n(payroll?.days_worked || 1).toFixed(0)} días`) + '\n';
-    out += row2('Sueldo diario:', fmt(payroll?.daily_rate)) + '\n';
+    out += row('Días trabajados:', `${n(payroll?.days_worked || 1).toFixed(0)} días`, true) + '\n';
+    out += row('Sueldo diario:', fmt(payroll?.daily_rate)) + '\n';
   }
 
   out += SEP + '\n';
-  out += row2('TOTAL A PAGAR:', fmt(payroll?.total_pay)) + '\n';
+  out += row('TOTAL A PAGAR:', fmt(payroll?.total_pay)) + '\n';
   out += LINE + '\n';
 
   // Firma
-  out += '\n';
-  out += center('Firma del empleado:') + '\n\n';
+  out += '\n' + center('Firma del empleado:') + '\n\n';
   out += center('_'.repeat(Math.floor(width * 0.6))) + '\n';
   out += center(payroll?.full_name?.split(' ')[0] || '') + '\n';
 
   // Footer
   out += '\n' + SEP + '\n';
   out += center(`Impreso: ${nowStr}`) + '\n';
-  if (footer) wrap(footer).forEach(l => (out += center(l) + '\n'));
+  if (footer) wrap(footer).forEach(l => out += center(l) + '\n');
   out += center('Gracias por su trabajo') + '\n';
   out += LINE + '\n\n\n';
 
