@@ -24,7 +24,7 @@ import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';
 import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
 import { useCashDrawer } from '../../hooks/useCashDrawer';
 import { useAutoPrint } from '../../hooks/useAutoPrint';
-import { useQzTray } from '../../components/useQzTray'; // 👈 NUEVA IMPORTACIÓN
+import { useQzTray } from '../../components/useQzTray';
 
 const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
 
@@ -137,7 +137,7 @@ function getOperatorUser() {
 }
 
 /* ══════════════════════════════════════════════════════════
-   MODAL DE ALERTA DE APERTURA - CON ESTILOS MODERNOS
+   MODAL DE ALERTA DE APERTURA
 ══════════════════════════════════════════════════════════ */
 function AlertaAperturaModal({ onAceptar, abriendo }) {
   return (
@@ -172,7 +172,7 @@ function AlertaAperturaModal({ onAceptar, abriendo }) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   MODAL DE CONFIRMACIÓN PARA CIERRE DE CAJA - CON ESTILOS MODERNOS
+   MODAL DE CONFIRMACIÓN PARA CIERRE DE CAJA
 ══════════════════════════════════════════════════════════ */
 function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
   return (
@@ -231,8 +231,9 @@ function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
 export default function BusinessLayout({ user, onLogout }) {
   const navigate = useNavigate();
 
-  // 🔥 HOOKS DE QZ TRAY para abrir cajón
-  const { openDrawer, printerError, isQzReady } = useQzTray();
+  // 🔥 AMBOS HOOKS - QZ Tray (local) + HTTP API (fallback)
+  const { openDrawer: openDrawerQz, printerError, isQzReady } = useQzTray();
+  const { openDrawer: openDrawerHttp } = useCashDrawer();
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
@@ -259,9 +260,6 @@ export default function BusinessLayout({ user, onLogout }) {
     };
   }, []);
 
-  // HOOKS
-  const { openDrawer: openDrawerFromHook } = useCashDrawer();
-  
   const [navData,      setNavData]      = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
@@ -286,6 +284,41 @@ export default function BusinessLayout({ user, onLogout }) {
   const [cargandoCierre, setCargandoCierre] = useState(false);
   const [abriendoCajonCierre, setAbriendoCajonCierre] = useState(false);
 
+  // ═══════════════════════════════════════════════════════
+  // 🔥 FUNCIÓN UNIFICADA PARA ABRIR CAJÓN
+  // Intenta: QZ Tray → HTTP API → Error (permite continuar)
+  // ═══════════════════════════════════════════════════════
+  const abrirCajon = useCallback(async () => {
+    console.log('🔓 [abrirCajon] Iniciando apertura de cajón...');
+    
+    // Intento 1: QZ Tray (método local, más rápido)
+    if (isQzReady) {
+      try {
+        console.log('📡 [abrirCajon] Intentando con QZ Tray...');
+        await openDrawerQz();
+        console.log('✅ [abrirCajon] Cajón abierto con QZ Tray');
+        return true;
+      } catch (err) {
+        console.warn('⚠️ [abrirCajon] QZ Tray falló:', err.message);
+      }
+    } else {
+      console.warn('⚠️ [abrirCajon] QZ Tray no está listo');
+    }
+    
+    // Intento 2: HTTP API (comando al backend)
+    try {
+      console.log('📡 [abrirCajon] Intentando con HTTP API...');
+      await openDrawerHttp();
+      console.log('✅ [abrirCajon] Cajón abierto mediante HTTP API');
+      return true;
+    } catch (err) {
+      console.warn('⚠️ [abrirCajon] HTTP API falló:', err.message);
+    }
+    
+    // Si todo falla
+    throw new Error('No se pudo abrir el cajón por ningún método');
+  }, [isQzReady, openDrawerQz, openDrawerHttp]);
+
   // Verificar si hay apertura activa
   const checkApertura = useCallback(async () => {
     if (!isCashierRole(user)) { 
@@ -296,7 +329,7 @@ export default function BusinessLayout({ user, onLogout }) {
     
     try {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
-      const res   = await fetchWithAuth(`/api/pos/cash-register/opening?date=${today}`);
+      const res = await fetchWithAuth(`/api/pos/cash-register/opening?date=${today}`);
       
       if (res.status === 200) {
         setAperturaHecha(true);
@@ -317,7 +350,7 @@ export default function BusinessLayout({ user, onLogout }) {
 
   useEffect(() => { checkApertura(); }, [checkApertura]);
 
-  // Cargar datos reales para el cierre
+  // Cargar datos para el cierre
   const cargarDatosCierre = async () => {
     try {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
@@ -365,7 +398,10 @@ export default function BusinessLayout({ user, onLogout }) {
     }
   };
 
-  // FUNCION PRINCIPAL: Al hacer clic en "Cerrar Caja"
+  // ═══════════════════════════════════════════════════════
+  // CIERRE DE CAJA
+  // ═══════════════════════════════════════════════════════
+
   const handleClickCerrarCaja = async () => {
     if (!aperturaHecha) {
       setError('No hay una apertura de caja activa. Debes abrir caja primero.');
@@ -394,11 +430,11 @@ export default function BusinessLayout({ user, onLogout }) {
     setAbriendoCajonCierre(true);
     
     try {
-      // 🔥 USAR openDrawer de useQzTray en lugar de useCashDrawer
-      await openDrawer();
-      console.log('✅ Cajón abierto exitosamente para el cierre');
+      await abrirCajon();
+      console.log('✅ Cajón abierto para el cierre');
     } catch (err) {
-      console.warn('⚠️ No se pudo abrir la caja físicamente:', err);
+      console.warn('⚠️ No se pudo abrir el cajón para el cierre:', err);
+      alert('⚠️ No se pudo abrir el cajón automáticamente.\n\nÁbrelo manualmente con la llave para contar el dinero.');
     } finally {
       setAbriendoCajonCierre(false);
       setMostrarCierreForm(true);
@@ -432,65 +468,55 @@ export default function BusinessLayout({ user, onLogout }) {
     await checkApertura();
   };
 
-  /**
-   * 🔥 FUNCIÓN CORREGIDA: Maneja la aceptación de la alerta de apertura
-   * Ahora usa openDrawer de useQzTray en lugar de useCashDrawer
-   */
+  // ═══════════════════════════════════════════════════════
+  // APERTURA DE CAJA
+  // ═══════════════════════════════════════════════════════
+
   const handleAceptarAlerta = async () => {
-    // Evitar múltiples ejecuciones
     if (aperturaIniciada || abriendoCaja) return;
     
     setAperturaIniciada(true);
     setAbriendoCaja(true);
 
     try {
-      // 1. Primero abrir el cajón físico con QZ Tray
-      console.log('🔓 Abriendo cajón para apertura...');
-      await openDrawer();
-      console.log('✅ Cajón abierto exitosamente');
-      
-      // 2. Cerrar la alerta y mostrar el formulario de apertura
+      await abrirCajon();
       setMostrarAlerta(false);
       setMostrarFormulario(true);
-      
     } catch (err) {
-      console.error('❌ Error al abrir el cajón:', err);
-      // Si hay error al abrir el cajón, igual mostramos el formulario
-      // El usuario puede ingresar los datos manualmente
+      console.error('❌ Error al abrir cajón:', err);
+      alert(
+        '⚠️ No se pudo abrir el cajón automáticamente.\n\n' +
+        'Posibles soluciones:\n' +
+        '1. Verifica que QZ Tray esté instalado y ejecutándose\n' +
+        '2. Verifica que la impresora esté encendida y conectada\n' +
+        '3. Abre el cajón manualmente y continúa con la apertura'
+      );
       setMostrarAlerta(false);
       setMostrarFormulario(true);
-      
-      // Mostrar advertencia al usuario
-      alert('⚠️ No se pudo abrir el cajón automáticamente. Por favor, verifica que QZ Tray esté conectado o abre el cajón manualmente.');
-      
     } finally {
       setAbriendoCaja(false);
       setAperturaIniciada(false);
     }
   };
 
-  // 🔥 FUNCIÓN CORREGIDA: Abrir caja manualmente desde el sidebar
   const handleClickAbrirCaja = async () => {
     if (aperturaHecha) {
       alert('Ya hay una apertura de caja activa para hoy');
       return;
     }
     
-    // Abrir el cajón primero
     setAbriendoCaja(true);
     try {
-      console.log('🔓 Abriendo cajón desde botón "Abrir Caja"...');
-      await openDrawer();
-      console.log('✅ Cajón abierto exitosamente');
-      
-      // Mostrar el formulario de apertura
+      await abrirCajon();
       setMostrarAlerta(false);
       setMostrarFormulario(true);
-      
     } catch (err) {
-      console.error('❌ Error al abrir el cajón:', err);
-      alert('⚠️ No se pudo abrir el cajón automáticamente. Por favor, verifica que QZ Tray esté conectado.');
-      // Aún mostramos el formulario para que pueda registrar la apertura manualmente
+      console.error('❌ Error al abrir cajón:', err);
+      alert(
+        '⚠️ No se pudo abrir el cajón automáticamente.\n\n' +
+        'Puedes continuar con la apertura manualmente.\n' +
+        'Abre el cajón con la llave y luego presiona Aceptar.'
+      );
       setMostrarAlerta(false);
       setMostrarFormulario(true);
     } finally {
@@ -524,7 +550,7 @@ export default function BusinessLayout({ user, onLogout }) {
       await fetchWithAuth('/api/audit-log', {
         method: 'POST',
         body: JSON.stringify(auditPayload)
-      }).catch(err => console.warn('Error guardando auditoría final:', err));
+      }).catch(err => console.warn('Error guardando auditoría:', err));
     }
 
     setAperturaHecha(true);
@@ -532,7 +558,10 @@ export default function BusinessLayout({ user, onLogout }) {
     setMostrarAlerta(false);
   };
 
-  // 🔥 Cargar navegación
+  // ═══════════════════════════════════════════════════════
+  // CARGA INICIAL
+  // ═══════════════════════════════════════════════════════
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -568,7 +597,6 @@ export default function BusinessLayout({ user, onLogout }) {
     );
   }
 
-  // Mostrar error de impresora/QZ Tray si existe
   if (printerError && !loading) {
     console.warn('⚠️ Error de impresora/QZ Tray:', printerError);
   }
@@ -660,11 +688,10 @@ export default function BusinessLayout({ user, onLogout }) {
                 {error}
               </div>
             )}
-            {/* Mostrar estado de QZ Tray si no está conectado */}
             {!isQzReady && !loading && (
               <div className="business-warning" style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '8px', borderRadius: '4px', marginBottom: '10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <FiAlertCircle size={14} />
-                QZ Tray no está conectado. El cajón no se abrirá automáticamente.
+                QZ Tray no está conectado. El cajón se abrirá mediante el método alternativo (HTTP API).
               </div>
             )}
             <Outlet />
