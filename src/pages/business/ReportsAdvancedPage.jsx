@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ExcelJS from 'exceljs';
 import PageTemplate from '../../components/PageTemplate';
 import ReportPdfButton from '../../components/ReportPdfButton';
@@ -22,13 +22,14 @@ export default function ReportsAdvanced() {
   const [groupBy, setGroupBy] = useState('day');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const chartLineRef = useRef(null);
   const chartBarRef  = useRef(null);
 
-  const loadReport = async () => {
+  const loadReport = useCallback(async () => {
     if (!dateRange.from || !dateRange.to) return;
     setLoading(true);
     setError('');
@@ -38,15 +39,16 @@ export default function ReportsAdvanced() {
       const result = await res.json();
       setData(result);
     } catch (err) {
+      console.error('Load report error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange, groupBy]);
 
   useEffect(() => {
     loadReport();
-  }, [dateRange, groupBy]);
+  }, [loadReport]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Helper para calcular totales reales a partir de los datos detallados
@@ -110,7 +112,9 @@ export default function ReportsAdvanced() {
   // Exportación a Excel usando totales reales
   // ─────────────────────────────────────────────────────────────────────────
   const handleExportXLSX = async () => {
-    if (!data) return;
+    if (loadingData || !data) return; // ← Validación: evitar doble-click
+    setLoadingData(true);
+    try {
 
     const fmtDate = (val) => {
       if (!val) return '';
@@ -363,6 +367,11 @@ export default function ReportsAdvanced() {
 
     setSuccess('Exportado a Excel');
     setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Error al exportar a Excel: ' + err.message);
+    } finally {
+      setLoadingData(false);
+    }
   };
 
   const CHART_COLORS = ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6'];
