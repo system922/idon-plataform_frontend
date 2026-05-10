@@ -106,6 +106,8 @@ export default function ReportsProductsPage() {
   const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [applyingFilters, setApplyingFilters] = useState(false);
   const [filters, setFilters] = useState({
     category: null,
     orderBy: 'quantity',
@@ -128,12 +130,16 @@ export default function ReportsProductsPage() {
   }, [selectedBusiness]);
 
   const loadCategories = async () => {
+    if (loadingCategories) return; // ← Validación: evitar doble-carga
     try {
+      setLoadingCategories(true);
       const res = await fetchWithAuth('/api/reports/products/categories');
       const data = await res.json();
       setCategories(Array.isArray(data.data) ? data.data : data.categories || []);
     } catch (err) {
       console.error('Error loading categories:', err);
+    } finally {
+      setLoadingCategories(false);
     }
   };
 
@@ -159,7 +165,7 @@ export default function ReportsProductsPage() {
         : data.productos || data.products || [];
       const formatted = productsList.map(item => ({
         id: item.id || item.producto_id,
-        name: item.nombre || item.producto_nombre || item.name,
+        name: item.nombre_producto || item.nombre || item.producto_nombre || item.name,
         sku: item.sku || item.codigo,
         qty: item.cantidad_vendida || item.total_qty || item.cantidad || 0,
         total: item.total_vendido || item.total_venta || item.monto || 0,
@@ -189,15 +195,25 @@ export default function ReportsProductsPage() {
   }, [search, products]);
 
   const handleRefresh = async () => {
+    if (refreshing) return; // ← Validación: evitar doble-click
     setRefreshing(true);
-    await loadReport();
-    setRefreshing(false);
+    try {
+      await loadReport();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // Aplicar filtros desde el modal
   const handleApplyFilters = (newFilters) => {
-    setFilters(newFilters);
-    setShowFiltersModal(false);
+    if (applyingFilters) return; // ← Validación: evitar doble-submit
+    setApplyingFilters(true);
+    try {
+      setFilters(newFilters);
+      setShowFiltersModal(false);
+    } finally {
+      setApplyingFilters(false);
+    }
   };
 
   // ─────────────────────────────────────────────────────────────────────────

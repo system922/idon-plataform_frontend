@@ -125,6 +125,7 @@ export default function CrmAnalytics() {
     ? Math.max(...monthlyTrend.map(m => Number(m.total_sales) || 0), 0) 
     : 0;
 
+  // Formato de moneda para Ecuador (USD)
   const formatCurrency = (value) => {
     const num = Number(value) || 0;
     return new Intl.NumberFormat('es-EC', { 
@@ -135,9 +136,21 @@ export default function CrmAnalytics() {
     }).format(num);
   };
   
+  // Formato de números para Ecuador
   const formatNumber = (value) => {
     const num = Number(value) || 0;
     return num.toLocaleString('es-EC');
+  };
+
+  // Formato de fecha para Ecuador
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-EC', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   const segmentColors = {
@@ -152,6 +165,17 @@ export default function CrmAnalytics() {
     frecuente: 'Frecuente',
     ocasional: 'Ocasional',
     nuevo: 'Nuevo'
+  };
+
+  // Nombres de días en español (Ecuador)
+  const dayNames = {
+    Monday: 'Lun',
+    Tuesday: 'Mar',
+    Wednesday: 'Mié',
+    Thursday: 'Jue',
+    Friday: 'Vie',
+    Saturday: 'Sáb',
+    Sunday: 'Dom'
   };
 
   // Orden de segmentos para mostrar
@@ -313,6 +337,9 @@ export default function CrmAnalytics() {
                     <div className="customer-name">{customer.name || 'Cliente'}</div>
                     <div className="customer-email">{customer.email || 'Sin email'}</div>
                     <div className="customer-document">{customer.document_number || 'Sin documento'}</div>
+                    {customer.last_order && (
+                      <div className="customer-last-order">Última compra: {formatDate(customer.last_order)}</div>
+                    )}
                   </div>
                   <div className="customer-stats">
                     <div className="stat">
@@ -369,7 +396,7 @@ export default function CrmAnalytics() {
         <div className="analytics-section half">
           <div className="section-header">
             <h3><Clock size={18} /> Ventas por Hora</h3>
-            <p>Horario de mayor actividad</p>
+            <p>Horario de mayor actividad (hora local Ecuador)</p>
           </div>
           <div className="chart-bars hour-bars">
             {salesByHour.length === 0 ? (
@@ -404,21 +431,36 @@ export default function CrmAnalytics() {
             {salesByDay.length === 0 ? (
               <div className="empty-chart">No hay datos de ventas por día</div>
             ) : (
-              salesByDay.map((day, idx) => (
-                <div key={`day-${day.day_of_week}-${idx}`} className="bar-item">
-                  <div className="bar-label">{day.day_name?.substring(0, 3) || '-'}</div>
-                  <div className="bar-container">
-                    <div 
-                      className="bar-fill" 
-                      style={{ 
-                        width: maxDaySales > 0 ? `${(Number(day.total_sales) / maxDaySales) * 100}%` : '0%',
-                        background: 'linear-gradient(90deg, #10b981, #34d399)'
-                      }}
-                    />
+              salesByDay.map((day, idx) => {
+                // Convertir nombre del día a español
+                let dayName = day.day_name || '';
+                const spanishDay = {
+                  'Monday': 'Lun',
+                  'Tuesday': 'Mar', 
+                  'Wednesday': 'Mié',
+                  'Thursday': 'Jue',
+                  'Friday': 'Vie',
+                  'Saturday': 'Sáb',
+                  'Sunday': 'Dom'
+                };
+                const shortName = spanishDay[dayName] || dayName?.substring(0, 3) || '-';
+                
+                return (
+                  <div key={`day-${day.day_of_week}-${idx}`} className="bar-item">
+                    <div className="bar-label">{shortName}</div>
+                    <div className="bar-container">
+                      <div 
+                        className="bar-fill" 
+                        style={{ 
+                          width: maxDaySales > 0 ? `${(Number(day.total_sales) / maxDaySales) * 100}%` : '0%',
+                          background: 'linear-gradient(90deg, #10b981, #34d399)'
+                        }}
+                      />
+                    </div>
+                    <div className="bar-value">{formatCurrency(day.total_sales)}</div>
                   </div>
-                  <div className="bar-value">{formatCurrency(day.total_sales)}</div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -433,33 +475,40 @@ export default function CrmAnalytics() {
           </div>
           <div className="monthly-trend">
             <div className="trend-chart">
-              {monthlyTrend.map((month, idx) => (
-                <div key={month.month_key || `month-${idx}`} className="trend-bar-item">
-                  <div className="trend-label">
-                    {month.month_key ? month.month_key.substring(5, 7) : '-'}/{month.year || '-'}
+              {monthlyTrend.map((month, idx) => {
+                // Convertir número de mes a nombre en español
+                const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                const monthNum = parseInt(month.month) - 1;
+                const monthName = monthNames[monthNum] || month.month;
+                
+                return (
+                  <div key={month.month_key || `month-${idx}`} className="trend-bar-item">
+                    <div className="trend-label">
+                      {monthName}/{month.year}
+                    </div>
+                    <div className="trend-bars">
+                      <div 
+                        className="trend-bar sales-bar" 
+                        style={{ 
+                          height: maxMonthSales > 0 ? `${(Number(month.total_sales) / maxMonthSales) * 100}%` : '0%',
+                        }}
+                        title={`Ventas: ${formatCurrency(month.total_sales)}`}
+                      />
+                      <div 
+                        className="trend-bar customers-bar" 
+                        style={{ 
+                          height: maxMonthSales > 0 ? `${(Number(month.unique_customers) / maxMonthSales) * 100}%` : '0%',
+                        }}
+                        title={`Clientes: ${formatNumber(month.unique_customers)}`}
+                      />
+                    </div>
+                    <div className="trend-values">
+                      <span className="sales">{formatCurrency(month.total_sales)}</span>
+                      <span className="customers">{formatNumber(month.unique_customers)} clientes</span>
+                    </div>
                   </div>
-                  <div className="trend-bars">
-                    <div 
-                      className="trend-bar sales-bar" 
-                      style={{ 
-                        height: maxMonthSales > 0 ? `${(Number(month.total_sales) / maxMonthSales) * 100}%` : '0%',
-                      }}
-                      title={`Ventas: ${formatCurrency(month.total_sales)}`}
-                    />
-                    <div 
-                      className="trend-bar customers-bar" 
-                      style={{ 
-                        height: maxMonthSales > 0 ? `${(Number(month.unique_customers) / maxMonthSales) * 100}%` : '0%',
-                      }}
-                      title={`Clientes: ${formatNumber(month.unique_customers)}`}
-                    />
-                  </div>
-                  <div className="trend-values">
-                    <span className="sales">{formatCurrency(month.total_sales)}</span>
-                    <span className="customers">{formatNumber(month.unique_customers)} clientes</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="trend-legend">
               <span><div className="legend-color sales"></div> Ventas</span>
