@@ -89,8 +89,22 @@ function buildModificationComanda({
   return out;
 }
 
-// --- Función para imprimir comanda ---
-const printTicket = async (order, removedItems, addedItems, remainingItems, printerConnected) => {
+// --- Función para obtener precio actual de un producto ---
+const getProductPrice = async (productId) => {
+  try {
+    const res = await fetchWithAuth(`/api/products/${productId}`);
+    if (res.ok) {
+      const product = await res.json();
+      return Number(product.selling_price) || Number(product.price) || 0;
+    }
+    return 0;
+  } catch {
+    return 0;
+  }
+};
+
+// --- Función para imprimir comanda modificada ---
+const printModificationTicket = async (order, removedItems, addedItems, remainingItems, printerConnected) => {
   const horaStr = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
   const texto = buildModificationComanda({
     mesaNum: order.mesa_numero,
@@ -127,20 +141,6 @@ const printTicket = async (order, removedItems, addedItems, remainingItems, prin
   } catch (e) {
     console.error('Error de impresión:', e);
     return false;
-  }
-};
-
-// --- Función para obtener precio actual de un producto ---
-const getProductPrice = async (productId) => {
-  try {
-    const res = await fetchWithAuth(`/api/products/${productId}`);
-    if (res.ok) {
-      const product = await res.json();
-      return Number(product.selling_price) || Number(product.price) || 0;
-    }
-    return 0;
-  } catch {
-    return 0;
   }
 };
 
@@ -355,6 +355,11 @@ export default function OrdersHistoryPage() {
     setTimeout(() => setSuccess(''), 3000);
   };
 
+  const handlePrintOriginalOrder = async (order) => {
+    const enrichedOrder = await enrichOrderItemsWithPrices(order);
+    await printModificationTicket(enrichedOrder, [], [], enrichedOrder.items, printerConnected);
+  };
+
   const handleDeleteOrder = async (orderId) => {
     if (!window.confirm('¿Seguro que deseas eliminar la orden?')) return;
     try {
@@ -371,7 +376,7 @@ export default function OrdersHistoryPage() {
   };
 
   // ============================================
-  // FUNCIONES PARA SEPARAR PRODUCTOS (SOLO GUARDAR, SIN IMPRESIÓN)
+  // FUNCIONES DE EDICIÓN
   // ============================================
   
   const separarProductosPorUnidad = () => {
@@ -473,10 +478,6 @@ export default function OrdersHistoryPage() {
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  // ============================================
-  // FUNCIONES DE EDICIÓN (AGREGAR/MODIFICAR/ELIMINAR)
-  // ============================================
-  
   const abrirEditarItem = (item) => {
     setItemEditando(item);
     setProductoSeleccionado({
@@ -577,18 +578,19 @@ export default function OrdersHistoryPage() {
     setTimeout(() => setSuccess(''), 2000);
   };
 
+  // 🔥 FUNCIÓN CORREGIDA - Pregunta si quiere imprimir antes de guardar
   const handleSaveEdit = async () => {
     if (isSaving) return;
     
     // Detectar qué cambios hubo
     const originalItems = selectedOrder.items || [];
-    const currentItems = editItems.filter(i => !i._remove);
+    const remainingItems = editItems.filter(i => !i._remove);
     
     const removedItems = originalItems.filter(orig => 
-      !currentItems.some(curr => curr.id === orig.id)
+      !remainingItems.some(curr => curr.id === orig.id)
     );
-    const addedItems = currentItems.filter(curr => curr._added);
-    const modifiedItems = currentItems.filter(curr => curr._modified);
+    const addedItems = remainingItems.filter(curr => curr._added);
+    const modifiedItems = remainingItems.filter(curr => curr._modified);
     
     const hasChanges = removedItems.length > 0 || addedItems.length > 0 || modifiedItems.length > 0;
     
@@ -598,18 +600,22 @@ export default function OrdersHistoryPage() {
       return;
     }
     
-    const confirmar = window.confirm(
-      `¿Guardar los cambios en la orden?\n\n` +
-      (addedItems.length > 0 ? `➕ Agregados: ${addedItems.length}\n` : '') +
-      (removedItems.length > 0 ? `❌ Eliminados: ${removedItems.length}\n` : '') +
-      (modifiedItems.length > 0 ? `✏️ Modificados: ${modifiedItems.length}\n` : '') +
-      `\n⚠️ Se imprimirá una comanda con los cambios.`
+    // Mostrar resumen de cambios
+    let cambiosMsg = '';
+    if (addedItems.length > 0) cambiosMsg += `➕ Agregados: ${addedItems.length}\n`;
+    if (removedItems.length > 0) cambiosMsg += `❌ Eliminados: ${removedItems.length}\n`;
+    if (modifiedItems.length > 0) cambiosMsg += `✏️ Modificados: ${modifiedItems.length}\n`;
+    
+    // 🔥 PREGUNTAR SI QUIERE IMPRIMIR LA COMANDA
+    const imprimir = window.confirm(
+      `¿Guardar los cambios en la orden?\n\n${cambiosMsg}\n` +
+      `¿Deseas imprimir la comanda modificada?\n\n` +
+      `✅ "Aceptar" → Guarda y ENVÍA a cocina\n` +
+      `❌ "Cancelar" → Solo GUARDA, no imprime`
     );
-    if (!confirmar) return;
     
     try {
       setIsSaving(true);
-      const remainingItems = editItems.filter(i => !i._remove);
       
       const subtotal = remainingItems.reduce((s, i) => s + (Number(i.line_total) || Number(i.subtotal) || 0), 0);
       const itemsToSend = remainingItems.map(item => ({
@@ -636,23 +642,28 @@ export default function OrdersHistoryPage() {
       
       setSelectedOrder(updatedOrder);
       
-      // IMPRIMIR solo si hubo cambios (agregar/eliminar/modificar)
-      const successPrint = await printTicket(
-        selectedOrder, 
-        removedItems, 
-        addedItems, 
-        remainingItems,
-        printerConnected
-      );
+      // 🔥 IMPRIMIR SOLO SI EL USUARIO LO SOLICITÓ
+      if (imprimir) {
+        const successPrint = await printModificationTicket(
+          selectedOrder, 
+          removedItems, 
+          addedItems, 
+          remainingItems,
+          printerConnected
+        );
+        
+        if (successPrint) {
+          setSuccess('✅ Orden guardada y comanda enviada a cocina');
+        } else {
+          setSuccess('✅ Orden guardada (error al imprimir, pero datos guardados)');
+        }
+      } else {
+        setSuccess('✅ Orden guardada (sin impresión)');
+      }
       
       setEditMode(false);
       setEditItems([]);
       
-      if (successPrint) {
-        setSuccess('✅ Orden guardada y comanda enviada a cocina');
-      } else {
-        setSuccess('✅ Orden guardada (error al imprimir, pero datos guardados)');
-      }
       setTimeout(() => setSuccess(''), 5000);
       loadOrders();
     } catch (err) {
@@ -802,6 +813,9 @@ export default function OrdersHistoryPage() {
                             <button className="btn-action btn-delete" onClick={() => handleDeleteOrder(order.id)}>
                               <Trash2 size={13} /><span>Eliminar</span>
                             </button>
+                            <button className="btn-action btn-print" onClick={() => handlePrintOriginalOrder(order)}>
+                              <Printer size={13} /><span>Reimprimir</span>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -839,7 +853,7 @@ export default function OrdersHistoryPage() {
                     <button 
                       className="btn-separar-productos" 
                       onClick={separarProductosPorUnidad}
-                      title="Convertir productos con cantidad > 1 en items individuales (solo guarda, no imprime)"
+                      title="Convertir productos con cantidad > 1 en items individuales"
                     >
                       🔄 Separar productos por unidad
                     </button>
@@ -878,7 +892,7 @@ export default function OrdersHistoryPage() {
                               <button 
                                 className="icon-btn separar-btn" 
                                 onClick={() => separarProductoIndividual(item)}
-                                title="Separar en unidades individuales (solo guarda, no imprime)"
+                                title="Separar en unidades individuales"
                               >
                                 🔄
                               </button>
@@ -945,7 +959,7 @@ export default function OrdersHistoryPage() {
               </>
             ) : (
               <div className="empty-panel">
-                <p>Selecciona una orden para ver o editar</p>
+                <p>Selecciona una orden para ver, editar o imprimir</p>
               </div>
             )}
           </div>

@@ -3,7 +3,7 @@ import PageTemplate from '../../components/PageTemplate';
 import { 
   Plus, Edit2, Trash2, X, Search, RefreshCw, 
   Mail, Phone, CreditCard, ChevronLeft, ChevronRight,
-  Users, UserCheck, UserPlus, ShoppingBag
+  Users, UserCheck, UserPlus, ShoppingBag, FileText, Zap
 } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/CRMCustomersPage.css';
@@ -166,6 +166,7 @@ export default function CrmCustomers() {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [error, setError] = useState('');
   const [notification, setNotification] = useState(null);
+  const [invoiceSource, setInvoiceSource] = useState(null); // Para saber la fuente de datos
   const limit = 20;
 
   // Mostrar notificación
@@ -204,6 +205,10 @@ export default function CrmCustomers() {
         setCustomers(data.data);
         setTotalPages(data.pagination.totalPages);
         setTotalCustomers(data.pagination.total);
+        // Guardar la fuente de datos (metadata del backend)
+        if (data.metadata) {
+          setInvoiceSource(data.metadata.invoiceSource);
+        }
       } else if (Array.isArray(data)) {
         setCustomers(data);
         setTotalCustomers(data.length);
@@ -319,6 +324,22 @@ export default function CrmCustomers() {
       onRetry={loadCustomers}
       headerAction={
         <div className="header-actions">
+          {/* Badge indicador de fuente de datos */}
+          {invoiceSource && (
+            <div className="invoice-source-badge" title={`Los datos de consumo provienen de: ${invoiceSource === 'einvoicing' ? 'Facturación Electrónica' : 'Ventas POS'}`}>
+              {invoiceSource === 'einvoicing' ? (
+                <>
+                  <FileText size={14} />
+                  <span>Fact. Electrónica</span>
+                </>
+              ) : (
+                <>
+                  <Zap size={14} />
+                  <span>Ventas POS</span>
+                </>
+              )}
+            </div>
+          )}
           <button className="btn-refresh" onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw size={16} className={refreshing ? 'spin' : ''} />
             Actualizar
@@ -437,7 +458,14 @@ export default function CrmCustomers() {
                   {customer.total_orders || 0}
                 </td>
                 <td className="total-spent center">
-                  ${parseFloat(customer.total_spent || 0).toFixed(2)}
+                  <div className="total-spent-container">
+                    ${parseFloat(customer.total_spent || 0).toFixed(2)}
+                    {invoiceSource === 'einvoicing' && customer.total_spent > 0 && (
+                      <span className="source-tooltip" title="Basado en facturas electrónicas">
+                        <FileText size={10} />
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="center">
                   <span className={`status-badge ${customer.is_active !== false ? 'status-active' : 'status-inactive'}`}>
@@ -494,6 +522,11 @@ export default function CrmCustomers() {
         {displayCustomers.length > 0 && (
           <div className="crm-table-info">
             Mostrando {displayCustomers.length} de {totalCustomers} clientes
+            {invoiceSource && (
+              <span className="source-info">
+                (Datos de consumo desde: {invoiceSource === 'einvoicing' ? 'Facturación Electrónica' : 'Ventas POS'})
+              </span>
+            )}
           </div>
         )}
       </div>
