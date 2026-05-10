@@ -166,7 +166,7 @@ export default function CrmCustomers() {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [error, setError] = useState('');
   const [notification, setNotification] = useState(null);
-  const [invoiceSource, setInvoiceSource] = useState(null); // Para saber la fuente de datos
+  const [invoiceSource, setInvoiceSource] = useState(null);
   const limit = 20;
 
   // Mostrar notificación
@@ -201,25 +201,38 @@ export default function CrmCustomers() {
       const response = await fetchWithAuth(url);
       const data = await response.json();
       
-      if (data.success) {
-        setCustomers(data.data);
-        setTotalPages(data.pagination.totalPages);
-        setTotalCustomers(data.pagination.total);
-        // Guardar la fuente de datos (metadata del backend)
+      // Extraer datos correctamente
+      let customersArray = [];
+      let total = 0;
+      let pages = 1;
+      
+      if (data && data.success) {
+        customersArray = Array.isArray(data.data) ? data.data : [];
+        total = data.pagination?.total || customersArray.length;
+        pages = data.pagination?.totalPages || 1;
         if (data.metadata) {
           setInvoiceSource(data.metadata.invoiceSource);
         }
       } else if (Array.isArray(data)) {
-        setCustomers(data);
-        setTotalCustomers(data.length);
-        setTotalPages(1);
+        customersArray = data;
+        total = data.length;
+        pages = 1;
       } else {
-        setCustomers(data);
-        setTotalCustomers(data.length);
-        setTotalPages(1);
+        customersArray = [];
+        total = 0;
+        pages = 1;
       }
+      
+      setCustomers(customersArray);
+      setTotalCustomers(total);
+      setTotalPages(pages);
+      
     } catch (err) {
+      console.error('Error loading customers:', err);
       setError(err.message);
+      setCustomers([]);
+      setTotalCustomers(0);
+      setTotalPages(1);
       showNotification('Error al cargar clientes', 'error');
     } finally {
       setLoading(false);
@@ -298,20 +311,25 @@ export default function CrmCustomers() {
     }
   };
 
+  // Asegurar que customers es un array
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+  
   // Datos para estadísticas
   const statsData = [
     { label: 'Total clientes', value: stats?.total_customers || totalCustomers || 0, icon: <Users size={24} />, color: 'total' },
-    { label: 'Activos', value: stats?.active_customers || customers.filter(c => c.is_active !== false).length, icon: <UserCheck size={24} />, color: 'active' },
+    { label: 'Activos', value: stats?.active_customers || safeCustomers.filter(c => c.is_active !== false).length, icon: <UserCheck size={24} />, color: 'active' },
     { label: 'Nuevos (30 días)', value: stats?.new_last_30_days || 0, icon: <UserPlus size={24} />, color: 'new' },
-    { label: 'Con compras', value: stats?.customers_with_orders || customers.filter(c => c.total_orders > 0).length, icon: <ShoppingBag size={24} />, color: 'orders' },
+    { label: 'Con compras', value: stats?.customers_with_orders || safeCustomers.filter(c => (c.total_orders || 0) > 0).length, icon: <ShoppingBag size={24} />, color: 'orders' },
   ];
 
-  // Filtrar clientes localmente si no hay paginación en el backend
-  const filteredCustomers = search && !totalPages ? customers.filter(c =>
-    (c.name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (c.email || '').toLowerCase().includes(search.toLowerCase()) ||
-    (c.document_number || '').includes(search)
-  ) : customers;
+  // Filtrar clientes localmente
+  const filteredCustomers = search 
+    ? safeCustomers.filter(c =>
+        (c.name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.email || '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.document_number || '').includes(search)
+      )
+    : safeCustomers;
 
   const displayCustomers = filteredCustomers;
 
@@ -411,14 +429,14 @@ export default function CrmCustomers() {
             </tr>
           </thead>
           <tbody>
-            {displayCustomers.length === 0 && (
+            {displayCustomers.length === 0 && !loading && (
               <tr>
                 <td colSpan="7" className="crm-empty-state">
                   {search ? 'No se encontraron clientes' : 'No hay clientes registrados'}
                 </td>
               </tr>
             )}
-            {displayCustomers.map((customer, idx) => (
+            {displayCustomers.map((customer) => (
               <tr key={customer.id}>
                 <td>
                   <div className="customer-info-cell">
@@ -426,7 +444,7 @@ export default function CrmCustomers() {
                       {customer.name?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                     <div>
-                      <div className="customer-name">{customer.name}</div>
+                      <div className="customer-name">{customer.name || '—'}</div>
                       <div className="customer-date">
                         Registrado: {customer.created_at ? new Date(customer.created_at).toLocaleDateString('es-EC') : '—'}
                       </div>
@@ -459,8 +477,8 @@ export default function CrmCustomers() {
                 </td>
                 <td className="total-spent center">
                   <div className="total-spent-container">
-                    ${parseFloat(customer.total_spent || 0).toFixed(2)}
-                    {invoiceSource === 'einvoicing' && customer.total_spent > 0 && (
+                    ${(parseFloat(customer.total_spent) || 0).toFixed(2)}
+                    {invoiceSource === 'einvoicing' && (customer.total_spent || 0) > 0 && (
                       <span className="source-tooltip" title="Basado en facturas electrónicas">
                         <FileText size={10} />
                       </span>

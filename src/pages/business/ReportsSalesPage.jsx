@@ -27,6 +27,8 @@ export default function ReportsSalesPage() {
   const [exporting, setExporting] = useState(false);
   const [useEinvoicing, setUseEinvoicing] = useState(false);
   const [statsMetadata, setStatsMetadata] = useState(null);
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [summary, setSummary] = useState(null);
 
   const toNumber = (val) => Number(val) || 0;
   const formatCurrency = (value) => `$${toNumber(value).toFixed(2)}`;
@@ -36,114 +38,111 @@ export default function ReportsSalesPage() {
     return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('es-EC');
   };
 
-  // Función para verificar si hay facturación electrónica configurada
-  const checkEinvoicingConfig = useCallback(async () => {
+  // Cargar resumen de ventas
+  const loadSummary = useCallback(async () => {
     try {
-      const res = await fetchWithAuth('/api/einvoicing/config/check');
+      let url = `/api/customers/sales-report/summary`;
+      const params = [];
+      if (dateFrom) params.push(`startDate=${dateFrom}`);
+      if (dateTo) params.push(`endDate=${dateTo}`);
+      if (params.length) url += `?${params.join('&')}`;
+      
+      const res = await fetchWithAuth(url);
       if (res.ok) {
-        const data = await res.json();
-        return data.hasConfig || false;
+        const result = await res.json();
+        if (result.success) {
+          setSummary(result.data);
+          setUseEinvoicing(result.metadata?.invoiceSource === 'einvoicing');
+          setStatsMetadata({
+            source: result.metadata?.invoiceSource || 'pos',
+            sourceLabel: result.metadata?.invoiceSource === 'einvoicing' ? 'Facturación Electrónica' : 'Ventas POS',
+            sourceIcon: result.metadata?.invoiceSource === 'einvoicing' ? <FileText size={14} /> : <Zap size={14} />,
+            title: result.metadata?.invoiceSource === 'einvoicing' ? 'Reporte de Ventas (Facturas Autorizadas)' : 'Reporte de Ventas (Órdenes POS)',
+            docLabel: result.metadata?.invoiceSource === 'einvoicing' ? 'N° Factura' : 'N° Orden',
+            taxLabel: result.metadata?.invoiceSource === 'einvoicing' ? 'IVA' : 'Impuesto'
+          });
+        }
       }
-      return false;
     } catch (err) {
-      console.error('Error verificando configuración:', err);
-      return false;
+      console.error('Error cargando resumen:', err);
     }
-  }, []);
+  }, [dateFrom, dateTo]);
 
-  // Cargar ventas según la fuente disponible
-  const loadSales = useCallback(async () => {
+  // Cargar ventas con paginación y filtros
+  const loadSales = useCallback(async (page = 1) => {
     try {
       setLoading(true);
       setError('');
       
-      // Verificar si tiene facturación electrónica completa
-      const hasEinvoicing = await checkEinvoicingConfig();
-      setUseEinvoicing(hasEinvoicing);
+      let url = `/api/customers/sales-report?page=${page}&limit=20`;
+      const params = [];
+      if (dateFrom) params.push(`startDate=${dateFrom}`);
+      if (dateTo) params.push(`endDate=${dateTo}`);
+      if (params.length) url += `&${params.join('&')}`;
       
-      let data = [];
+      const res = await fetchWithAuth(url);
       
-      if (hasEinvoicing) {
-        // Usar facturación electrónica
-        const res = await fetchWithAuth('/api/einvoicing/invoices?status=autorizada');
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || 'Error al cargar facturas');
-        }
-        const responseData = await res.json();
-        data = Array.isArray(responseData) ? responseData : [];
-        data = data.filter(inv => inv.status === 'autorizada');
-        
-        setStatsMetadata({
-          source: 'einvoicing',
-          sourceLabel: 'Facturación Electrónica',
-          sourceIcon: <FileText size={14} />,
-          title: 'Reporte de Ventas (Facturas Autorizadas)',
-          docLabel: 'N° Factura',
-          taxLabel: 'IVA'
-        });
-      } else {
-        // Usar POS (ventas de mostrador)
-        const res = await fetchWithAuth('/api/reports/pos-orders?status=paid');
-        if (!res.ok) {
-          throw new Error('Error al cargar órdenes');
-        }
-        const responseData = await res.json();
-        data = Array.isArray(responseData) ? responseData : [];
-        
-        setStatsMetadata({
-          source: 'pos',
-          sourceLabel: 'Ventas POS',
-          sourceIcon: <Zap size={14} />,
-          title: 'Reporte de Ventas (Órdenes POS)',
-          docLabel: 'N° Orden',
-          taxLabel: 'Impuesto'
-        });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al cargar ventas');
       }
       
-      setSales(data);
+      const result = await res.json();
+      
+      if (result.success) {
+        setSales(result.data);
+        setFilteredSales(result.data);
+        setPagination({
+          page: result.pagination.page,
+          totalPages: result.pagination.totalPages,
+          total: result.pagination.total
+        });
+        setUseEinvoicing(result.metadata?.invoiceSource === 'einvoicing');
+        setStatsMetadata({
+          source: result.metadata?.invoiceSource || 'pos',
+          sourceLabel: result.metadata?.invoiceSource === 'einvoicing' ? 'Facturación Electrónica' : 'Ventas POS',
+          sourceIcon: result.metadata?.invoiceSource === 'einvoicing' ? <FileText size={14} /> : <Zap size={14} />,
+          title: result.metadata?.invoiceSource === 'einvoicing' ? 'Reporte de Ventas (Facturas Autorizadas)' : 'Reporte de Ventas (Órdenes POS)',
+          docLabel: result.metadata?.invoiceSource === 'einvoicing' ? 'N° Factura' : 'N° Orden',
+          taxLabel: result.metadata?.invoiceSource === 'einvoicing' ? 'IVA' : 'Impuesto'
+        });
+      } else {
+        throw new Error(result.error || 'Error al cargar ventas');
+      }
       
     } catch (err) {
       console.error('Error cargando ventas:', err);
       setError(err.message);
       setSales([]);
+      setFilteredSales([]);
       showNotification('Error al cargar las ventas', 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [checkEinvoicingConfig]);
+  }, [dateFrom, dateTo]);
 
+  // Cargar resumen y ventas cuando cambian los filtros
   useEffect(() => {
-    loadSales();
-  }, [loadSales]);
+    loadSales(1);
+    loadSummary();
+  }, [dateFrom, dateTo]);
 
-  // Filtrado local (por fechas, búsqueda)
+  // Filtrado local por búsqueda
   useEffect(() => {
-    let filtered = [...sales];
-    
-    if (search) {
-      const lowerSearch = search.toLowerCase();
-      filtered = filtered.filter(sale =>
-        (sale.invoice_number || sale.order_number || '').toLowerCase().includes(lowerSearch) ||
-        (sale.customer_name || '').toLowerCase().includes(lowerSearch)
-      );
+    if (!search.trim()) {
+      setFilteredSales(sales);
+      return;
     }
     
-    const dateField = useEinvoicing ? 'emission_date' : 'created_at';
-    
-    if (dateFrom) {
-      filtered = filtered.filter(sale => sale[dateField]?.split('T')[0] >= dateFrom);
-    }
-    
-    if (dateTo) {
-      filtered = filtered.filter(sale => sale[dateField]?.split('T')[0] <= dateTo);
-    }
-    
-    filtered.sort((a, b) => new Date(b[dateField]) - new Date(a[dateField]));
-    
+    const lowerSearch = search.toLowerCase();
+    const filtered = sales.filter(sale =>
+      (sale.numero_factura || '').toLowerCase().includes(lowerSearch) ||
+      (sale.cliente_nombre || '').toLowerCase().includes(lowerSearch) ||
+      (sale.cliente_cedula || '').includes(lowerSearch)
+    );
     setFilteredSales(filtered);
-  }, [sales, search, dateFrom, dateTo, useEinvoicing]);
+  }, [search, sales]);
 
   const showNotification = (msg, type = 'info') => {
     setNotification({ msg, type });
@@ -152,7 +151,8 @@ export default function ReportsSalesPage() {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    loadSales();
+    loadSales(pagination.page);
+    loadSummary();
     showNotification('Actualizando ventas...', 'info');
   };
 
@@ -166,21 +166,24 @@ export default function ReportsSalesPage() {
     showNotification('Filtros restablecidos', 'success');
   };
 
-  // Estadísticas
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      loadSales(newPage);
+    }
+  };
+
+  // Estadísticas desde el resumen del backend
   const filteredStats = {
-    total: filteredSales.length,
-    revenue: filteredSales.reduce((sum, sale) => sum + toNumber(sale.total), 0),
-    avgTicket: filteredSales.length > 0 ? filteredSales.reduce((sum, sale) => sum + toNumber(sale.total), 0) / filteredSales.length : 0,
-    uniqueCustomers: new Set(filteredSales.map(sale => sale.customer_id || sale.customer_name)).size
+    total: summary?.total_ventas || filteredSales.length,
+    revenue: summary?.total_ingresos || filteredSales.reduce((sum, sale) => sum + toNumber(sale.total), 0),
+    avgTicket: summary?.total_ventas > 0 ? (summary?.total_ingresos / summary?.total_ventas) : 
+               (filteredSales.length > 0 ? filteredSales.reduce((sum, sale) => sum + toNumber(sale.total), 0) / filteredSales.length : 0),
+    uniqueCustomers: summary?.clientes_unicos || new Set(filteredSales.map(sale => sale.customer_id || sale.cliente_nombre)).size
   };
 
   // Obtener el valor del impuesto según la fuente
   const getTaxAmount = (sale) => {
-    if (useEinvoicing) {
-      return toNumber(sale.iva_amount);
-    } else {
-      return toNumber(sale.tax_amount || 0);
-    }
+    return toNumber(sale.iva || 0);
   };
 
   // Configuración para PDF
@@ -204,9 +207,9 @@ export default function ReportsSalesPage() {
         { label: 'Total',      key: 'total',    width: 13, formatter: (v) => `$${Number(v).toFixed(2)}` },
       ],
       rows: filteredSales.map(sale => ({
-        fecha:    formatDate(useEinvoicing ? sale.emission_date : sale.created_at),
-        numero:   sale.invoice_number || sale.order_number || '-',
-        cliente:  sale.customer_name || 'CONSUMIDOR FINAL',
+        fecha:    formatDate(sale.fecha),
+        numero:   sale.numero_factura || '-',
+        cliente:  sale.cliente_nombre || 'CONSUMIDOR FINAL',
         subtotal: toNumber(sale.subtotal),
         tax:      getTaxAmount(sale),
         total:    toNumber(sale.total),
@@ -379,10 +382,9 @@ export default function ReportsSalesPage() {
         sumTotal += tot;
 
         ws.getRow(r).height = 15;
-        const dateField = useEinvoicing ? sale.emission_date : sale.created_at;
-        styleData(ws.getCell(r, 1), formatDate(dateField), 'left', alt);
-        styleData(ws.getCell(r, 2), sale.invoice_number || sale.order_number || '-', 'center', alt);
-        styleData(ws.getCell(r, 3), sale.customer_name || 'CONSUMIDOR FINAL', 'left', alt);
+        styleData(ws.getCell(r, 1), formatDate(sale.fecha), 'left', alt);
+        styleData(ws.getCell(r, 2), sale.numero_factura || '-', 'center', alt);
+        styleData(ws.getCell(r, 3), sale.cliente_nombre || 'CONSUMIDOR FINAL', 'left', alt);
         styleData(ws.getCell(r, 4), sub, 'right', alt, '"$"#,##0.00');
         styleData(ws.getCell(r, 5), tax, 'right', alt, '"$"#,##0.00');
         styleData(ws.getCell(r, 6), tot, 'right', alt, '"$"#,##0.00');
@@ -444,7 +446,7 @@ export default function ReportsSalesPage() {
       subtitle={`${filteredStats.total} ${useEinvoicing ? 'facturas' : 'órdenes'} • ${formatCurrency(filteredStats.revenue)} en total`}
       loading={loading}
       error={error}
-      onRetry={loadSales}
+      onRetry={() => loadSales(pagination.page)}
       headerAction={headerAction}
     >
       {notification && <div className={`reports-notification ${notification.type}`}>{notification.msg}</div>}
@@ -459,8 +461,21 @@ export default function ReportsSalesPage() {
       </div>
 
       <div className="reports-filters">
-        <div className="filter-search"><Search size={16} /><input type="text" placeholder={`Buscar por #${useEinvoicing ? 'factura' : 'orden'} o cliente...`} value={search} onChange={e => setSearch(e.target.value)} /></div>
-        <div className="filter-date"><Calendar size={16} /><input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /><span>a</span><input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
+        <div className="filter-search">
+          <Search size={16} />
+          <input 
+            type="text" 
+            placeholder={`Buscar por #${useEinvoicing ? 'factura' : 'orden'} o cliente...`} 
+            value={search} 
+            onChange={e => setSearch(e.target.value)} 
+          />
+        </div>
+        <div className="filter-date">
+          <Calendar size={16} />
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+          <span>a</span>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+        </div>
         <button className="btn-reset" onClick={handleResetFilters}>Limpiar filtros</button>
       </div>
 
@@ -479,13 +494,19 @@ export default function ReportsSalesPage() {
           </thead>
           <tbody>
             {filteredSales.length === 0 && !loading && (
-              <tr><td colSpan={7} className="empty-state"><FileText size={32} /><p>No hay {useEinvoicing ? 'facturas autorizadas' : 'órdenes registradas'}</p><span>Prueba cambiando los filtros de búsqueda</span></td></tr>
+              <tr>
+                <td colSpan={7} className="empty-state">
+                  <FileText size={32} />
+                  <p>No hay {useEinvoicing ? 'facturas autorizadas' : 'órdenes registradas'}</p>
+                  <span>Prueba cambiando los filtros de búsqueda</span>
+                </td>
+              </tr>
             )}
             {filteredSales.map(sale => (
               <tr key={sale.id}>
-                <td>{formatDate(useEinvoicing ? sale.emission_date : sale.created_at)}</td>
-                <td className="order-number">{sale.invoice_number || sale.order_number}</td>
-                <td><div className="customer-cell"><User size={12} />{sale.customer_name || 'CONSUMIDOR FINAL'}</div></td>
+                <td>{formatDate(sale.fecha)}</td>
+                <td className="order-number">{sale.numero_factura}</td>
+                <td><div className="customer-cell"><User size={12} />{sale.cliente_nombre || 'CONSUMIDOR FINAL'}</div></td>
                 <td className="center amount">{formatCurrency(sale.subtotal)}</td>
                 <td className="center amount">{formatCurrency(getTaxAmount(sale))}</td>
                 <td className="center total">{formatCurrency(sale.total)}</td>
@@ -498,14 +519,24 @@ export default function ReportsSalesPage() {
             ))}
           </tbody>
         </table>
+
+        {pagination.totalPages > 1 && (
+          <div className="reports-pagination">
+            <button className="btn-pagination" onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1}>
+              Anterior
+            </button>
+            <span className="pagination-info">Página {pagination.page} de {pagination.totalPages}</span>
+            <button className="btn-pagination" onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages}>
+              Siguiente
+            </button>
+          </div>
+        )}
       </div>
 
       {filteredSales.length > 0 && (
         <div className="reports-table-info">
-          Mostrando {filteredSales.length} {useEinvoicing ? 'facturas' : 'órdenes'}
-          {statsMetadata && (
-            <span className="source-info"> (Datos desde: {statsMetadata.sourceLabel})</span>
-          )}
+          Mostrando {filteredSales.length} de {pagination.total || filteredStats.total} {useEinvoicing ? 'facturas' : 'órdenes'}
+          {statsMetadata && <span className="source-info"> (Datos desde: {statsMetadata.sourceLabel})</span>}
         </div>
       )}
 
@@ -515,21 +546,18 @@ export default function ReportsSalesPage() {
             <div className="reports-modal-header">
               <div>
                 <h3>Detalle de {useEinvoicing ? 'Factura' : 'Orden'}</h3>
-                <p>#{selectedSale.invoice_number || selectedSale.order_number}</p>
+                <p>#{selectedSale.numero_factura}</p>
               </div>
               <button className="btn-modal-close" onClick={() => setSelectedSale(null)}>✕</button>
             </div>
             <div className="reports-modal-body">
               <div className="detail-grid">
-                <div className="detail-item"><label>Fecha</label><span>{formatDate(useEinvoicing ? selectedSale.emission_date : selectedSale.created_at)}</span></div>
-                <div className="detail-item"><label>Cliente</label><span>{selectedSale.customer_name || 'CONSUMIDOR FINAL'}</span></div>
-                <div className="detail-item"><label>RUC/CI</label><span>{selectedSale.customer_ruc || selectedSale.customer_document || '-'}</span></div>
+                <div className="detail-item"><label>Fecha</label><span>{formatDate(selectedSale.fecha)}</span></div>
+                <div className="detail-item"><label>Cliente</label><span>{selectedSale.cliente_nombre || 'CONSUMIDOR FINAL'}</span></div>
+                <div className="detail-item"><label>RUC/CI</label><span>{selectedSale.cliente_cedula || '-'}</span></div>
                 <div className="detail-item"><label>Subtotal</label><span>{formatCurrency(selectedSale.subtotal)}</span></div>
                 <div className="detail-item"><label>{useEinvoicing ? 'IVA' : 'Impuesto'}</label><span>{formatCurrency(getTaxAmount(selectedSale))}</span></div>
                 <div className="detail-item"><label>Total</label><span className="total-amount">{formatCurrency(selectedSale.total)}</span></div>
-                {useEinvoicing && selectedSale.access_key && (
-                  <div className="detail-item"><label>Clave Acceso</label><span style={{fontSize:11}}>{selectedSale.access_key}</span></div>
-                )}
               </div>
             </div>
             <div className="reports-modal-footer">

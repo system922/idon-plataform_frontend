@@ -29,14 +29,22 @@ function calcHours(emp) {
   const lunchIn  = emp.entrada_almuerzo ? new Date(emp.entrada_almuerzo) : null;
   const checkOut = emp.salida           ? new Date(emp.salida)           : null;
 
-  if (!checkIn || !checkOut) return null;
+  // Escenario A: solo entrada y salida
+  if (checkIn && checkOut && (!lunchOut || !lunchIn)) {
+    const totalMs = checkOut - checkIn;
+    const hours = Math.round((totalMs / 3_600_000) * 100) / 100;
+    return hours > 0 ? hours : 0;
+  }
 
-  const totalMs = (lunchOut && lunchIn)
-    ? (lunchIn - checkIn) + (checkOut - lunchOut)
-    : (checkOut - checkIn);
+  // Escenario B: las 4 marcaciones
+  if (checkIn && lunchOut && lunchIn && checkOut) {
+    const totalMs = (lunchOut - checkIn) + (checkOut - lunchIn);
+    const hours = Math.round((totalMs / 3_600_000) * 100) / 100;
+    return hours > 0 ? hours : 0;
+  }
 
-  const hours = Math.round((totalMs / 3_600_000) * 100) / 100;
-  return hours > 0 ? hours : 0;
+  // Faltan marcaciones (ej: empezó pero no salió)
+  return null;
 }
 
 function toArray(data) {

@@ -6,15 +6,15 @@ export default function GraphsRowSection({ purchasesData, hoursData, graphLoadin
 
   return (
     <div className="dashboard-graphs-row">
-      {/* Gráfico de Compras */}
+      {/* Gráfico de Gastos */}
       <div className="dashboard-graph-card"
         style={{ flex: 1, minWidth: 0, background: '#17192b', borderRadius: 14, padding: 22 }}
       >
-        <div style={{ fontSize: 15, color: '#fff', fontWeight: 700, marginBottom: 5 }}>Compras por día</div>
+        <div style={{ fontSize: 15, color: '#fff', fontWeight: 700, marginBottom: 5 }}>Gastos por día</div>
         {noPurchases ? (
           <div style={{ height: 150, display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#ffffff44', fontSize: 13 }}>
-            Sin compras en los últimos 30 días
+            Sin gastos en los últimos 30 días
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={150}>

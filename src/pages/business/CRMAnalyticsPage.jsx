@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { 
   RefreshCw, TrendingUp, Users, ShoppingBag, DollarSign, 
-  Clock, Calendar, Award, Target, Activity, BarChart2,
-  UserCheck, UserX, UserPlus, PieChart
+  Clock, Calendar, Award, Target, PieChart
 } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/CrmAnalytics.css';
@@ -21,13 +20,13 @@ export default function CrmAnalytics() {
   const [periodFilter, setPeriodFilter] = useState('all');
   const [error, setError] = useState('');
   const [notification, setNotification] = useState(null);
+  const [invoiceSource, setInvoiceSource] = useState(null);
 
   const showNotification = (msg, type = 'info') => {
     setNotification({ msg, type });
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // Cargar todos los datos
   const loadAllData = useCallback(async () => {
     try {
       setLoading(true);
@@ -59,13 +58,41 @@ export default function CrmAnalytics() {
       const monthlyTrendData = await monthlyTrendRes.json();
       const clvData = await clvRes.json();
 
-      if (summaryData.success) setSummary(summaryData.data);
-      if (segmentsData.success) setSegments(segmentsData.data);
-      if (topCustomersData.success) setTopCustomers(topCustomersData.data);
-      if (salesByHourData.success) setSalesByHour(salesByHourData.data);
-      if (salesByDayData.success) setSalesByDay(salesByDayData.data);
-      if (monthlyTrendData.success) setMonthlyTrend(monthlyTrendData.data);
-      if (clvData.success) setClv(clvData.data);
+      if (summaryData.success) {
+        setSummary(summaryData.data);
+      }
+      if (segmentsData.success && Array.isArray(segmentsData.data)) {
+        setSegments(segmentsData.data);
+      } else {
+        setSegments([]);
+      }
+      if (topCustomersData.success && Array.isArray(topCustomersData.data)) {
+        setTopCustomers(topCustomersData.data);
+      } else {
+        setTopCustomers([]);
+      }
+      if (salesByHourData.success && Array.isArray(salesByHourData.data)) {
+        setSalesByHour(salesByHourData.data);
+      } else {
+        setSalesByHour([]);
+      }
+      if (salesByDayData.success && Array.isArray(salesByDayData.data)) {
+        setSalesByDay(salesByDayData.data);
+      } else {
+        setSalesByDay([]);
+      }
+      if (monthlyTrendData.success && Array.isArray(monthlyTrendData.data)) {
+        setMonthlyTrend(monthlyTrendData.data);
+      } else {
+        setMonthlyTrend([]);
+      }
+      if (clvData.success) {
+        setClv(clvData.data);
+      }
+
+      if (summaryData.metadata) {
+        setInvoiceSource(summaryData.metadata.invoiceSource);
+      }
 
     } catch (err) {
       console.error('Error cargando datos:', err);
@@ -87,23 +114,37 @@ export default function CrmAnalytics() {
     showNotification('Actualizando datos...', 'info');
   };
 
-  // Encontrar valor máximo para las barras
-  const maxHourSales = Math.max(...(salesByHour.map(h => h.total_sales || 0)));
-  const maxDaySales = Math.max(...(salesByDay.map(d => d.total_sales || 0)));
-  const maxMonthSales = Math.max(...(monthlyTrend.map(m => m.total_sales || 0)));
+  // Calcular máximos para las barras (con validación)
+  const maxHourSales = salesByHour.length > 0 
+    ? Math.max(...salesByHour.map(h => Number(h.total_sales) || 0), 0) 
+    : 0;
+  const maxDaySales = salesByDay.length > 0 
+    ? Math.max(...salesByDay.map(d => Number(d.total_sales) || 0), 0) 
+    : 0;
+  const maxMonthSales = monthlyTrend.length > 0 
+    ? Math.max(...monthlyTrend.map(m => Number(m.total_sales) || 0), 0) 
+    : 0;
 
-  // Formatear moneda
-  const formatCurrency = (value) => `$${parseFloat(value || 0).toFixed(2)}`;
+  const formatCurrency = (value) => {
+    const num = Number(value) || 0;
+    return new Intl.NumberFormat('es-EC', { 
+      style: 'currency', 
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(num);
+  };
+  
+  const formatNumber = (value) => {
+    const num = Number(value) || 0;
+    return num.toLocaleString('es-EC');
+  };
 
-  // Formatear número
-  const formatNumber = (value) => parseInt(value || 0).toLocaleString();
-
-  // Configuración de segmentos
   const segmentColors = {
     vip: { bg: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', icon: '👑' },
     frecuente: { bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', icon: '⭐' },
     ocasional: { bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', icon: '🔄' },
-    nuevo: { bg: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', icon: '🆕' }
+    nuevo: { bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', icon: '🆕' }
   };
 
   const segmentNames = {
@@ -112,6 +153,14 @@ export default function CrmAnalytics() {
     ocasional: 'Ocasional',
     nuevo: 'Nuevo'
   };
+
+  // Orden de segmentos para mostrar
+  const segmentOrder = ['vip', 'frecuente', 'ocasional', 'nuevo'];
+  
+  // Ordenar segmentos según el orden deseado
+  const sortedSegments = [...segments].sort((a, b) => {
+    return segmentOrder.indexOf(a.segment) - segmentOrder.indexOf(b.segment);
+  });
 
   return (
     <PageTemplate
@@ -122,6 +171,11 @@ export default function CrmAnalytics() {
       onRetry={loadAllData}
       headerAction={
         <div className="header-actions">
+          {invoiceSource && (
+            <div className="invoice-source-badge-analytics">
+              {invoiceSource === 'einvoicing' ? '📄 Fact. Electrónica' : '🛒 Ventas POS'}
+            </div>
+          )}
           <button className="btn-refresh-analytics" onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw size={16} className={refreshing ? 'spin' : ''} />
             Actualizar
@@ -149,12 +203,12 @@ export default function CrmAnalytics() {
           </div>
           <div className="summary-card">
             <div className="summary-icon active">
-              <UserCheck size={24} />
+              <Users size={24} />
             </div>
             <div className="summary-info">
               <span className="summary-value">{formatNumber(summary.active_customers)}</span>
               <span className="summary-label">Clientes Activos</span>
-              <span className="summary-sub">{summary.customers_last_30d} últimos 30 días</span>
+              <span className="summary-sub">{formatNumber(summary.customers_last_30d)} últimos 30 días</span>
             </div>
           </div>
           <div className="summary-card">
@@ -180,22 +234,27 @@ export default function CrmAnalytics() {
       )}
 
       {/* Segmentación de clientes */}
-      {segments.length > 0 && (
+      {sortedSegments.length > 0 && (
         <div className="analytics-section">
           <div className="section-header">
             <h3><PieChart size={18} /> Segmentación de Clientes</h3>
             <p>Distribución por comportamiento de compra</p>
           </div>
           <div className="segments-grid">
-            {segments.map(segment => {
+            {sortedSegments.map((segment, index) => {
               const config = segmentColors[segment.segment] || segmentColors.ocasional;
-              const total = segments.reduce((sum, s) => sum + s.count, 0);
-              const percentage = total > 0 ? ((segment.count / total) * 100).toFixed(1) : 0;
+              const total = sortedSegments.reduce((sum, s) => sum + (Number(s.count) || 0), 0);
+              const percentage = total > 0 ? ((Number(segment.count) / total) * 100).toFixed(1) : 0;
+              const avgSpent = Number(segment.avg_spent) || 0;
+              const avgOrders = Number(segment.avg_orders) || 0;
+              
               return (
-                <div key={segment.segment} className="segment-card">
+                <div key={`segment-${segment.segment}-${index}`} className="segment-card">
                   <div className="segment-header" style={{ background: config.bg }}>
                     <span className="segment-icon">{config.icon}</span>
-                    <span className="segment-name" style={{ color: config.color }}>{segmentNames[segment.segment]}</span>
+                    <span className="segment-name" style={{ color: config.color }}>
+                      {segmentNames[segment.segment] || segment.segment}
+                    </span>
                   </div>
                   <div className="segment-body">
                     <div className="segment-stat">
@@ -203,11 +262,11 @@ export default function CrmAnalytics() {
                       <span className="stat-label">clientes</span>
                     </div>
                     <div className="segment-stat">
-                      <span className="stat-value">{formatCurrency(segment.avg_spent)}</span>
+                      <span className="stat-value">{formatCurrency(avgSpent)}</span>
                       <span className="stat-label">gasto promedio</span>
                     </div>
                     <div className="segment-stat">
-                      <span className="stat-value">{segment.avg_orders}</span>
+                      <span className="stat-value">{Math.round(avgOrders)}</span>
                       <span className="stat-label">órdenes promedio</span>
                     </div>
                     <div className="segment-progress">
@@ -238,17 +297,22 @@ export default function CrmAnalytics() {
           </div>
           <div className="top-customers-list">
             {topCustomers.length === 0 ? (
-              <div className="empty-state">No hay datos de clientes</div>
+              <div className="empty-state">
+                <ShoppingBag size={32} />
+                <p>No hay datos de clientes</p>
+                <span>Realiza ventas para ver el top de clientes</span>
+              </div>
             ) : (
               topCustomers.map((customer, idx) => (
-                <div key={customer.id} className="top-customer-item">
+                <div key={customer.id || `customer-${idx}`} className="top-customer-item">
                   <div className="customer-rank">#{idx + 1}</div>
                   <div className="customer-avatar">
                     {customer.name?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                   <div className="customer-info">
-                    <div className="customer-name">{customer.name}</div>
+                    <div className="customer-name">{customer.name || 'Cliente'}</div>
                     <div className="customer-email">{customer.email || 'Sin email'}</div>
+                    <div className="customer-document">{customer.document_number || 'Sin documento'}</div>
                   </div>
                   <div className="customer-stats">
                     <div className="stat">
@@ -308,21 +372,25 @@ export default function CrmAnalytics() {
             <p>Horario de mayor actividad</p>
           </div>
           <div className="chart-bars hour-bars">
-            {salesByHour.map(hour => (
-              <div key={hour.hour} className="bar-item">
-                <div className="bar-label">{String(hour.hour).padStart(2, '0')}:00</div>
-                <div className="bar-container">
-                  <div 
-                    className="bar-fill" 
-                    style={{ 
-                      width: maxHourSales > 0 ? `${(hour.total_sales / maxHourSales) * 100}%` : '0%',
-                      background: 'linear-gradient(90deg, #6842fe, #8b5cf6)'
-                    }}
-                  />
+            {salesByHour.length === 0 ? (
+              <div className="empty-chart">No hay datos de ventas por hora</div>
+            ) : (
+              salesByHour.map((hour, idx) => (
+                <div key={`hour-${hour.hour}-${idx}`} className="bar-item">
+                  <div className="bar-label">{String(hour.hour).padStart(2, '0')}:00</div>
+                  <div className="bar-container">
+                    <div 
+                      className="bar-fill" 
+                      style={{ 
+                        width: maxHourSales > 0 ? `${(Number(hour.total_sales) / maxHourSales) * 100}%` : '0%',
+                        background: 'linear-gradient(90deg, #6842fe, #8b5cf6)'
+                      }}
+                    />
+                  </div>
+                  <div className="bar-value">{formatCurrency(hour.total_sales)}</div>
                 </div>
-                <div className="bar-value">{formatCurrency(hour.total_sales)}</div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -333,21 +401,25 @@ export default function CrmAnalytics() {
             <p>Días de mayor facturación</p>
           </div>
           <div className="chart-bars day-bars">
-            {salesByDay.map(day => (
-              <div key={day.day_of_week} className="bar-item">
-                <div className="bar-label">{day.day_name?.substring(0, 3)}</div>
-                <div className="bar-container">
-                  <div 
-                    className="bar-fill" 
-                    style={{ 
-                      width: maxDaySales > 0 ? `${(day.total_sales / maxDaySales) * 100}%` : '0%',
-                      background: 'linear-gradient(90deg, #10b981, #34d399)'
-                    }}
-                  />
+            {salesByDay.length === 0 ? (
+              <div className="empty-chart">No hay datos de ventas por día</div>
+            ) : (
+              salesByDay.map((day, idx) => (
+                <div key={`day-${day.day_of_week}-${idx}`} className="bar-item">
+                  <div className="bar-label">{day.day_name?.substring(0, 3) || '-'}</div>
+                  <div className="bar-container">
+                    <div 
+                      className="bar-fill" 
+                      style={{ 
+                        width: maxDaySales > 0 ? `${(Number(day.total_sales) / maxDaySales) * 100}%` : '0%',
+                        background: 'linear-gradient(90deg, #10b981, #34d399)'
+                      }}
+                    />
+                  </div>
+                  <div className="bar-value">{formatCurrency(day.total_sales)}</div>
                 </div>
-                <div className="bar-value">{formatCurrency(day.total_sales)}</div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -361,28 +433,30 @@ export default function CrmAnalytics() {
           </div>
           <div className="monthly-trend">
             <div className="trend-chart">
-              {monthlyTrend.map(month => (
-                <div key={month.month} className="trend-bar-item">
-                  <div className="trend-label">{month.month?.substring(5, 7)}/{month.year}</div>
+              {monthlyTrend.map((month, idx) => (
+                <div key={month.month_key || `month-${idx}`} className="trend-bar-item">
+                  <div className="trend-label">
+                    {month.month_key ? month.month_key.substring(5, 7) : '-'}/{month.year || '-'}
+                  </div>
                   <div className="trend-bars">
                     <div 
                       className="trend-bar sales-bar" 
                       style={{ 
-                        height: maxMonthSales > 0 ? `${(month.total_sales / maxMonthSales) * 100}%` : '0%',
+                        height: maxMonthSales > 0 ? `${(Number(month.total_sales) / maxMonthSales) * 100}%` : '0%',
                       }}
                       title={`Ventas: ${formatCurrency(month.total_sales)}`}
                     />
                     <div 
                       className="trend-bar customers-bar" 
                       style={{ 
-                        height: maxMonthSales > 0 ? `${(month.unique_customers / maxMonthSales) * 100}%` : '0%',
+                        height: maxMonthSales > 0 ? `${(Number(month.unique_customers) / maxMonthSales) * 100}%` : '0%',
                       }}
-                      title={`Clientes: ${month.unique_customers}`}
+                      title={`Clientes: ${formatNumber(month.unique_customers)}`}
                     />
                   </div>
                   <div className="trend-values">
                     <span className="sales">{formatCurrency(month.total_sales)}</span>
-                    <span className="customers">{month.unique_customers} clientes</span>
+                    <span className="customers">{formatNumber(month.unique_customers)} clientes</span>
                   </div>
                 </div>
               ))}
