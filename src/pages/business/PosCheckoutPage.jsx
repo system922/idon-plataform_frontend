@@ -791,138 +791,82 @@ export default function PosCheckoutPage() {
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
   // ─── Función emitirFactura ─────────────────────────────────────────────────
-  // En PosCheckoutPage.jsx
-async function emitirFactura(order, custCedula, custNombre, method, discountData = null, customerEmail = null) {
-  const cedula = custCedula?.trim() || '9999999999';
-  const isCF = cedula === '9999999999' || cedula === '9999999999999';
-  const tipoId = isCF ? '07' : (cedula.length === 13 ? '04' : '05');
-  const email = customerEmail || foundCliente?.email || clienteEmail.trim() || null;
+  async function emitirFactura(order, custCedula, custNombre, method, discountData = null, customerEmail = null) {
+    const cedula = custCedula?.trim() || '9999999999';
+    const isCF = cedula === '9999999999' || cedula === '9999999999999';
+    const tipoId = isCF ? '07' : (cedula.length === 13 ? '04' : '05');
+    const email = customerEmail || foundCliente?.email || clienteEmail.trim() || null;
 
-  // 1. Calcular subtotal SIN IVA y total IVA
-  let subtotalSinIVA = 0;
-  let totalIVA = 0;
-  let totalConIVA = 0;
-  
-  const itemsBase = (order.items || []).map(item => {
-    const quantity = Number(item.quantity) || 1;
-    const precioConIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
-    const ivaUnitario = Number(item.tax_rate) || 0;
-    const precioSinIVA = precioConIVA - ivaUnitario;
+    let subtotalOriginal = 0;
+    let ivaSumado = 0;
     
-    const subtotalItemSinIVA = precioSinIVA * quantity;
-    const ivaItem = ivaUnitario * quantity;
-    const totalItemConIVA = precioConIVA * quantity;
-    
-    subtotalSinIVA += subtotalItemSinIVA;
-    totalIVA += ivaItem;
-    totalConIVA += totalItemConIVA;
-    
-    return {
-      code: item.code || 'PROD',
-      description: item.product_name || 'Producto',
-      quantity: quantity,
-      unit_price: precioSinIVA,        // Precio unitario SIN IVA
-      subtotal: subtotalItemSinIVA,    // Subtotal SIN IVA
-      iva_amount: ivaItem,              // Monto total de IVA para este item
-      total: totalItemConIVA            // Total CON IVA
-    };
-  });
-  
-  // 2. Aplicar descuento si existe
-  let totalFactura = totalConIVA;
-  let descuentoTotal = discountAmount || 0;
-  
-  if (descuentoTotal > 0) {
-    // El descuento se aplica al total CON IVA
-    totalFactura = Math.max(0, totalConIVA - descuentoTotal);
-    
-    // Recalcular proporcionalmente subtotal e IVA
-    const factor = totalConIVA > 0 ? totalFactura / totalConIVA : 1;
-    subtotalSinIVA = subtotalSinIVA * factor;
-    totalIVA = totalIVA * factor;
-    
-    console.log('💰 DESCUENTO APLICADO:', {
-      totalOriginal: totalConIVA,
-      descuento: descuentoTotal,
-      totalFinal: totalFactura,
-      factor
+    const itemsPayload = (order.items || []).map(item => {
+      const qty = Number(item.quantity) || 1;
+      const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
+      const ivaUnitario = Number(item.tax_rate) || 0;
+      const itemSubtotal = precioSinIVA * qty;
+      const ivaItem = ivaUnitario * qty;
+      
+      subtotalOriginal += itemSubtotal;
+      ivaSumado += ivaItem;
+      
+      return {
+        code: item.code || 'PROD',
+        description: item.product_name || 'Producto',
+        qty,
+        unit_price: precioSinIVA,
+        subtotal: itemSubtotal,
+        iva_amount: ivaItem
+      };
     });
-  }
-  
-  // 3. Calcular la tasa de IVA porcentual para el SRI
-  // Necesitamos derivar el porcentaje a partir del monto
-  const tasaIVAPorcentual = subtotalSinIVA > 0 ? (totalIVA / subtotalSinIVA) * 100 : 0;
-  
-  // Mapear al código SRI
-  const getSriTaxCode = (tasaPorcentual) => {
-    if (tasaPorcentual === 0) return 0;
-    if (tasaPorcentual === 5) return 5;
-    if (tasaPorcentual === 8) return 8;
-    if (tasaPorcentual === 12) return 2;
-    if (tasaPorcentual === 15) return 4;
-    return 4; // default 15%
-  };
-  
-  // 4. Construir items para el payload (para el SRI)
-  const itemsPayload = itemsBase.map(item => {
-    // Proporción del descuento para este item
-    const proporcion = totalConIVA > 0 ? (item.total / totalConIVA) : (1 / itemsBase.length);
-    const descuentoItem = descuentoTotal * proporcion;
-    const subtotalItemConDescuento = item.subtotal - (descuentoItem * (item.subtotal / totalConIVA));
-    const ivaItemConDescuento = item.iva_amount - (descuentoItem * (item.iva_amount / totalConIVA));
     
-    return {
-      code: item.code,
-      description: item.description,
-      qty: item.quantity,
-      unit_price: Number(item.unit_price).toFixed(6),
-      subtotal: Number(subtotalItemConDescuento).toFixed(2),
-      tax_rate: tasaIVAPorcentual,
-      iva_amount: Number(ivaItemConDescuento).toFixed(2)
+    if (itemsPayload.length === 0) return null;
+
+    let descuentoTotal = discountAmount || 0;
+    const nuevaBaseImponibleFact = Math.max(0, subtotalOriginal - descuentoTotal);
+    const ratioFact = subtotalOriginal > 0 ? nuevaBaseImponibleFact / subtotalOriginal : 1;
+    const ivaConDescuento = Math.round(ivaSumado * ratioFact * 100) / 100;
+    const totalFactura = nuevaBaseImponibleFact + ivaConDescuento;
+
+    const payload = {
+      order_id: order.id,
+      customer: {
+        name: isCF ? 'CONSUMIDOR FINAL' : (custNombre || ''),
+        ruc: isCF ? '9999999999' : cedula,
+        email: email || null,
+        tipo_identificacion: tipoId,
+        phone: null
+      },
+      items: itemsPayload.map(item => ({
+        code: item.code,
+        description: item.description,
+        qty: item.qty,
+        unit_price: item.unit_price,
+        subtotal: (item.subtotal * ratioFact).toFixed(2),
+        iva_amount: (item.iva_amount * ratioFact).toFixed(2)
+      })),
+      subtotal: nuevaBaseImponibleFact.toFixed(2),
+      iva_amount: ivaConDescuento.toFixed(2),
+      total: totalFactura.toFixed(2),
+      forma_pago: FORMA_PAGO_MAP[method] || '01',
+      descuento: descuentoTotal.toFixed(2),
+      iva_rate: ivaRateGlobal
     };
-  });
-  
-  // 5. Payload FINAL para el backend
-  const payload = {
-    order_id: order.id,
-    customer: {
-      name: isCF ? 'CONSUMIDOR FINAL' : (custNombre || ''),
-      ruc: isCF ? '9999999999' : cedula,
-      email: email || null,
-      tipo_identificacion: tipoId,
-      phone: null
-    },
-    items: itemsPayload,
-    subtotal: Number(subtotalSinIVA).toFixed(2),      // Subtotal SIN IVA
-    iva_amount: Number(totalIVA).toFixed(2),          // Monto total de IVA
-    total: Number(totalFactura).toFixed(2),           // Total CON IVA - descuento
-    descuento: Number(descuentoTotal).toFixed(2),     // Monto del descuento
-    iva_rate: Number(tasaIVAPorcentual).toFixed(2),   // Tasa porcentual para SRI
-    forma_pago: FORMA_PAGO_MAP[method] || '01'
-  };
-  
-  console.log('📤 Enviando factura:', payload);
-  
-  try {
-    const response = await fetchWithAuth('/api/einvoicing/invoices/emit', { 
-      method: 'POST', 
-      body: JSON.stringify(payload) 
-    });
-    const result = await response.json();
-    
-    if (!response.ok) {
-      console.error('Error respuesta:', result);
-      setError(`Error factura: ${result.error || result.message || response.status}`);
+
+    try {
+      const response = await fetchWithAuth('/api/einvoicing/invoices/emit', { method: 'POST', body: JSON.stringify(payload) });
+      const result = await response.json();
+      if (!response.ok) {
+        setError(`Error factura: ${result.error || response.status}`);
+        return null;
+      }
+      return { id: result.id, invoice_number: result.invoice_number };
+    } catch (e) {
+      setError(`Error emitir factura: ${e.message}`);
+      console.error(e);
       return null;
     }
-    
-    return { id: result.id, invoice_number: result.invoice_number };
-  } catch (e) {
-    console.error('Error emitir factura:', e);
-    setError(`Error emitir factura: ${e.message}`);
-    return null;
   }
-}
 
   // ─── Función para guardar cuenta por cobrar ────────────────────────────────
   const guardarCuentaPorCobrar = async () => {
@@ -1138,9 +1082,6 @@ async function emitirFactura(order, custCedula, custNombre, method, discountData
             status: 'paid',
             payment_method: 'split',
             amount_paid: totalOrdenConDescuento,
-            id_customer: clienteCedula || '9999999999',
-            customer_name: clienteNombre || 'CONSUMIDOR FINAL',
-            customer_document_number: clienteCedula || '9999999999',
             notes: orderNotes,
             discount_id: appliedDiscount?.id || null,
             discount_amount: discountAmount
