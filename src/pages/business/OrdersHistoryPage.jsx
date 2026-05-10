@@ -21,6 +21,14 @@ const center = (txt) => {
 
 const fmt = (n) => `$${parseFloat(n || 0).toFixed(2)}`;
 
+// --- Función para obtener fecha actual de Ecuador ---
+const getEcuadorDate = () => {
+  // Ecuador está en UTC-5 (todo el año, sin horario de verano)
+  const now = new Date();
+  const ecuadorDate = new Date(now.getTime() - (5 * 60 * 60 * 1000));
+  return ecuadorDate.toISOString().split('T')[0];
+};
+
 // --- Construir comanda modificada ---
 function buildModificationComanda({
   mesaNum,
@@ -156,10 +164,10 @@ export default function OrdersHistoryPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [printerConnected, setPrinterConnected] = useState(false);
-  const [filterDate, setFilterDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  });
+  
+  // 🔥 FECHA INICIAL EN ECUADOR
+  const [filterDate, setFilterDate] = useState(() => getEcuadorDate());
+  
   const [statusFilter, setStatusFilter] = useState('pending');
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showEditItemModal, setShowEditItemModal] = useState(false);
@@ -277,6 +285,7 @@ export default function OrdersHistoryPage() {
     };
   };
 
+  // 🔥 FUNCIÓN CORREGIDA - Filtra por fecha usando comparación directa
   const loadOrders = async () => {
     setLoadingOrders(true);
     try {
@@ -291,14 +300,15 @@ export default function OrdersHistoryPage() {
         throw new Error('La respuesta no contiene un array de órdenes');
       }
 
+      // 🔥 Filtrar por fecha usando comparación directa de strings YYYY-MM-DD
       const filtered = ordersArray.filter(order => {
         const fecha = order.sale_date || order.created_at;
         if (!fecha) return false;
         
-        const orderDateObj = new Date(fecha);
-        if (isNaN(orderDateObj.getTime())) return false;
+        // Obtener solo la parte YYYY-MM-DD de la fecha de la orden
+        const orderDate = fecha.split('T')[0];
         
-        const orderDate = orderDateObj.toISOString().split('T')[0];
+        // Comparar con filterDate (que ya está en formato YYYY-MM-DD de Ecuador)
         return orderDate === filterDate;
       });
       
@@ -578,11 +588,9 @@ export default function OrdersHistoryPage() {
     setTimeout(() => setSuccess(''), 2000);
   };
 
-  // 🔥 FUNCIÓN CORREGIDA - Pregunta si quiere imprimir antes de guardar
   const handleSaveEdit = async () => {
     if (isSaving) return;
     
-    // Detectar qué cambios hubo
     const originalItems = selectedOrder.items || [];
     const remainingItems = editItems.filter(i => !i._remove);
     
@@ -600,13 +608,11 @@ export default function OrdersHistoryPage() {
       return;
     }
     
-    // Mostrar resumen de cambios
     let cambiosMsg = '';
     if (addedItems.length > 0) cambiosMsg += `➕ Agregados: ${addedItems.length}\n`;
     if (removedItems.length > 0) cambiosMsg += `❌ Eliminados: ${removedItems.length}\n`;
     if (modifiedItems.length > 0) cambiosMsg += `✏️ Modificados: ${modifiedItems.length}\n`;
     
-    // 🔥 PREGUNTAR SI QUIERE IMPRIMIR LA COMANDA
     const imprimir = window.confirm(
       `¿Guardar los cambios en la orden?\n\n${cambiosMsg}\n` +
       `¿Deseas imprimir la comanda modificada?\n\n` +
@@ -642,7 +648,6 @@ export default function OrdersHistoryPage() {
       
       setSelectedOrder(updatedOrder);
       
-      // 🔥 IMPRIMIR SOLO SI EL USUARIO LO SOLICITÓ
       if (imprimir) {
         const successPrint = await printModificationTicket(
           selectedOrder, 

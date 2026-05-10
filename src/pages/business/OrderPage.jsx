@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { FiPlus, FiSave, FiEdit2, FiTrash2, FiShoppingCart, FiX } from 'react-icons/fi';
 import PageTemplate from '../../components/PageTemplate';
 import OrderHeader from '../../components/OrderHeader';
@@ -6,11 +6,14 @@ import ItemsSection from '../../components/ItemsSection';
 import AddItemModal from '../../components/AddItemModal';
 import EditItemModal from '../../components/EditItemModal';
 import { fetchWithAuth } from '../../config/apiBase';
-import { usePrinterService } from '../../services/usePrinterService'; // ← AGREGAR
+import { usePrinterService } from '../../services/usePrinterService';
 import '../../styles/CreateOrder.css';
 
 export default function TakeOrderPageNew() {
-  const { print, getPrinterConfig } = usePrinterService(); // ← AGREGAR
+  const { print, getPrinterConfig } = usePrinterService();
+  
+  // 🔥 REF para prevenir doble envío por clics rápidos
+  const isSendingRef = useRef(false);
   
   const [vatRate, setVatRate] = useState(0.15);
   const [categorias, setCategorias] = useState([]);
@@ -30,8 +33,6 @@ export default function TakeOrderPageNew() {
   const [notasItem, setNotasItem] = useState('');
   const [itemEditando, setItemEditando] = useState(null);
   const [extrasItem, setExtrasItem] = useState([]);
-  
-  // Estado para info del negocio (para la comanda)
   const [bizInfo, setBizInfo] = useState(null);
 
   // ── Carga inicial ─────────────────────────────────────────────────────────
@@ -39,10 +40,9 @@ export default function TakeOrderPageNew() {
     cargarDatos();
     cargarIva();
     cargarCategorias();
-    cargarInfoNegocio(); // ← AGREGAR
+    cargarInfoNegocio();
   }, []);
 
-  // ← AGREGAR: Cargar información del negocio para la comanda
   async function cargarInfoNegocio() {
     try {
       const res = await fetchWithAuth('/api/settings/receipt-info');
@@ -235,10 +235,9 @@ export default function TakeOrderPageNew() {
   const totalConIva = useMemo(() => subtotalBase + ivaTotal, [subtotalBase, ivaTotal]);
   const ivaLabel = useMemo(() => `${Math.round((vatRate || 0) * 100)}%`, [vatRate]);
 
-  // 🔥 FUNCIÓN PARA IMPRIMIR COMANDA (AGREGAR)
+  // 🔥 FUNCIÓN PARA IMPRIMIR COMANDA
   async function imprimirComanda(orderNumber, orderId) {
     try {
-      // Obtener configuración de la impresora de comanda
       const printerConfig = await getPrinterConfig('printer_comanda');
       
       if (!printerConfig?.name) {
@@ -246,7 +245,6 @@ export default function TakeOrderPageNew() {
         return;
       }
 
-      // Formatear items para la comanda
       const itemsParaComanda = items.map(item => ({
         producto: item.product_name,
         cantidad: item.quantity,
@@ -254,7 +252,6 @@ export default function TakeOrderPageNew() {
         extras: item.extras || []
       }));
 
-      // Datos para la comanda
       const comandaData = {
         comanda: { number: orderNumber },
         table: orderType === 'dine_in' ? (numeroMesa || 'MESA') : 'PARA LLEVAR',
@@ -265,22 +262,21 @@ export default function TakeOrderPageNew() {
       };
 
       console.log('🖨️ Imprimiendo comanda para orden #', orderNumber);
-      
-      // Imprimir usando el template 'comanda'
       await print('printer_comanda', 'comanda', comandaData, false);
-      
       console.log('✅ Comanda impresa correctamente');
       
     } catch (err) {
       console.error('❌ Error imprimiendo comanda:', err);
-      // No interrumpir el flujo si falla la impresión
     }
   }
 
-  // ── Guardar orden ─────────────────────────────────────────────────────────
-
+  // ── FUNCIÓN CORREGIDA PARA GUARDAR ORDEN ─────────────────────────────────
   async function guardarOrden() {
-    if (guardando) return;
+    // 🔥 Prevenir múltiples envíos simultáneos
+    if (guardando || isSendingRef.current) {
+      console.log('⚠️ Ya hay una orden en proceso, ignorando clic');
+      return;
+    }
 
     if (orderType === 'dine_in' && !numeroMesa) {
       setError('Debe ingresar un número de mesa');
@@ -292,9 +288,12 @@ export default function TakeOrderPageNew() {
       return;
     }
 
-    try {
-      setGuardando(true);
+    // 🔥 Marcar que estamos enviando
+    isSendingRef.current = true;
+    setGuardando(true);
+    setError('');
 
+    try {
       const clienteId = null;
 
       const itemsFormateados = items.flatMap(item => {
@@ -340,6 +339,15 @@ export default function TakeOrderPageNew() {
         }),
       });
 
+      // 🔥 MANEJAR ERROR 409 (Conflicto de número de orden)
+      if (res.status === 409) {
+        const errData = await res.json();
+        setError(`⚠️ ${errData.error || 'Conflicto al generar número de orden'}`);
+        // No limpiar el formulario, permitir reintentar
+        setTimeout(() => setError(''), 5000);
+        return;
+      }
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Error al guardar orden');
@@ -350,9 +358,10 @@ export default function TakeOrderPageNew() {
       
       setSuccess(`✅ Orden ${orderNumber} enviada a cocina`);
 
-      // 🔥 IMPRIMIR COMANDA AUTOMÁTICAMENTE
+      // Imprimir comanda automáticamente
       await imprimirComanda(orderNumber, data?.pedido?.id);
 
+      // Limpiar el formulario después de éxito
       setTimeout(() => {
         setNumeroMesa('');
         setMesaId('');
@@ -364,9 +373,12 @@ export default function TakeOrderPageNew() {
       }, 2500);
 
     } catch (err) {
+      console.error('Error al guardar orden:', err);
       setError(err?.message || 'Error al guardar orden');
+      setTimeout(() => setError(''), 5000);
     } finally {
       setGuardando(false);
+      isSendingRef.current = false;
     }
   }
 
