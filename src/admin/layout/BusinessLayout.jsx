@@ -24,6 +24,7 @@ import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';
 import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
 import { useCashDrawer } from '../../hooks/useCashDrawer';
 import { useAutoPrint } from '../../hooks/useAutoPrint';
+import { useQzTray } from '../../components/useQzTray'; // 👈 NUEVA IMPORTACIÓN
 
 const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
 
@@ -230,6 +231,9 @@ function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
 export default function BusinessLayout({ user, onLogout }) {
   const navigate = useNavigate();
 
+  // 🔥 HOOKS DE QZ TRAY para abrir cajón
+  const { openDrawer, printerError, isQzReady } = useQzTray();
+
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
 
@@ -256,7 +260,7 @@ export default function BusinessLayout({ user, onLogout }) {
   }, []);
 
   // HOOKS
-  const { openDrawer } = useCashDrawer();
+  const { openDrawer: openDrawerFromHook } = useCashDrawer();
   
   const [navData,      setNavData]      = useState(null);
   const [loading,      setLoading]      = useState(true);
@@ -390,10 +394,11 @@ export default function BusinessLayout({ user, onLogout }) {
     setAbriendoCajonCierre(true);
     
     try {
+      // 🔥 USAR openDrawer de useQzTray en lugar de useCashDrawer
       await openDrawer();
-      console.log('Cajón abierto exitosamente para el cierre');
+      console.log('✅ Cajón abierto exitosamente para el cierre');
     } catch (err) {
-      console.warn('No se pudo abrir la caja física:', err);
+      console.warn('⚠️ No se pudo abrir la caja físicamente:', err);
     } finally {
       setAbriendoCajonCierre(false);
       setMostrarCierreForm(true);
@@ -429,7 +434,7 @@ export default function BusinessLayout({ user, onLogout }) {
 
   /**
    * 🔥 FUNCIÓN CORREGIDA: Maneja la aceptación de la alerta de apertura
-   * Ahora abre el cajón correctamente y luego muestra el formulario
+   * Ahora usa openDrawer de useQzTray en lugar de useCashDrawer
    */
   const handleAceptarAlerta = async () => {
     // Evitar múltiples ejecuciones
@@ -439,7 +444,7 @@ export default function BusinessLayout({ user, onLogout }) {
     setAbriendoCaja(true);
 
     try {
-      // 1. Primero abrir el cajón físico
+      // 1. Primero abrir el cajón físico con QZ Tray
       console.log('🔓 Abriendo cajón para apertura...');
       await openDrawer();
       console.log('✅ Cajón abierto exitosamente');
@@ -464,15 +469,33 @@ export default function BusinessLayout({ user, onLogout }) {
     }
   };
 
-  // Función para abrir caja manualmente desde el sidebar
-  const handleClickAbrirCaja = () => {
+  // 🔥 FUNCIÓN CORREGIDA: Abrir caja manualmente desde el sidebar
+  const handleClickAbrirCaja = async () => {
     if (aperturaHecha) {
       alert('Ya hay una apertura de caja activa para hoy');
       return;
     }
-    setMostrarAlerta(true);
-    setMostrarFormulario(false);
-    setAperturaIniciada(false);
+    
+    // Abrir el cajón primero
+    setAbriendoCaja(true);
+    try {
+      console.log('🔓 Abriendo cajón desde botón "Abrir Caja"...');
+      await openDrawer();
+      console.log('✅ Cajón abierto exitosamente');
+      
+      // Mostrar el formulario de apertura
+      setMostrarAlerta(false);
+      setMostrarFormulario(true);
+      
+    } catch (err) {
+      console.error('❌ Error al abrir el cajón:', err);
+      alert('⚠️ No se pudo abrir el cajón automáticamente. Por favor, verifica que QZ Tray esté conectado.');
+      // Aún mostramos el formulario para que pueda registrar la apertura manualmente
+      setMostrarAlerta(false);
+      setMostrarFormulario(true);
+    } finally {
+      setAbriendoCaja(false);
+    }
   };
 
   const handleAperturaCompleta = async (data) => {
@@ -543,6 +566,11 @@ export default function BusinessLayout({ user, onLogout }) {
         <p>Cargando tu panel...</p>
       </div>
     );
+  }
+
+  // Mostrar error de impresora/QZ Tray si existe
+  if (printerError && !loading) {
+    console.warn('⚠️ Error de impresora/QZ Tray:', printerError);
   }
 
   return (
@@ -630,6 +658,13 @@ export default function BusinessLayout({ user, onLogout }) {
               <div className="business-error">
                 <FiAlertCircle size={18}/>
                 {error}
+              </div>
+            )}
+            {/* Mostrar estado de QZ Tray si no está conectado */}
+            {!isQzReady && !loading && (
+              <div className="business-warning" style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '8px', borderRadius: '4px', marginBottom: '10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FiAlertCircle size={14} />
+                QZ Tray no está conectado. El cajón no se abrirá automáticamente.
               </div>
             )}
             <Outlet />
