@@ -516,10 +516,19 @@ function formatInvoiceTicket(data, width = 42) {
     t += `Notas: ${invoice.notes}\n`;
   }
 
+  // ─── Firma adquirente ────────────────────────────────────────────────────
+  t += '\n' + '_'.repeat(Math.floor(width / 2)) + '\n';
+  t += 'Firma adquirente\n';
+  t += 'Recibi Conforme\n';
+  t += sep + '\n';
+
   // ─── Footer ──────────────────────────────────────────────────────────────
   if (printerFooter) {
     t += padCenter(printerFooter, width) + '\n';
   }
+
+  t += padCenter('Original: Adquirente / Copia: Emisor', width) + '\n';
+  t += line + '\n\n';
 
   return t;
 }
