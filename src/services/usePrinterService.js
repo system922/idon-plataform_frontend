@@ -268,7 +268,8 @@ function formatDate(str, format = 'short') {
 // ─── Templates ────────────────────────────────────────────────────────────────
 
 /**
- * COMANDA - Formato exacto del original
+ * COMANDA - Formato corregido (sin duplicados)
+ * Los extras van DEBAJO del producto principal con formato "  + EXTRA"
  */
 function formatComandaTicket(data, width = 32) {
   const { comanda, table, items = [], notes = '', timestamp, bizInfo } = data;
@@ -287,32 +288,12 @@ function formatComandaTicket(data, width = 32) {
     item?.nombre ||
     item?.product_name ||
     item?.name ||
-    item?.title ||
-    item?.descripcion ||
-    item?.description ||
-    item?.producto_nombre ||
     'ITEM';
 
   const getItemQty = (item) => {
     const q = item?.cantidad ?? item?.quantity ?? item?.qty ?? 1;
     const n = parseInt(q, 10);
     return Number.isFinite(n) && n > 0 ? n : 1;
-  };
-
-  const getItemNotes = (item) => {
-    const raw =
-      item?.notas ??
-      item?.notes ??
-      item?.nota ??
-      item?.note ??
-      item?.observaciones ??
-      item?.observacion ??
-      item?.comments ??
-      item?.comment;
-
-    if (raw == null) return '';
-    if (Array.isArray(raw)) return raw.filter(Boolean).join(' ');
-    return String(raw).trim();
   };
 
   const mesaRaw = String(table ?? '').trim();
@@ -334,42 +315,55 @@ function formatComandaTicket(data, width = 32) {
   if (!itemsArr || itemsArr.length === 0) {
     out += center('SIN ITEMS') + '\n\n';
   } else {
-    // Agrupar extras (notas con prefijo \x00) con su ítem principal
-    const groups = [];
-    let cur = null;
-    itemsArr.forEach(item => {
-      const rawNotes = String(getItemNotes(item));
-      if (rawNotes.startsWith('__EXT__:')) {
-        if (cur) cur.extras.push(item);
-      } else {
-        cur = { main: item, extras: [] };
-        groups.push(cur);
-      }
+    // 🔥 FILTRAR: Solo items principales (los marcados con __EXT__ NO son items)
+    const mainItems = itemsArr.filter(item => {
+      const name = String(getItemName(item)).trim();
+      const itemNotes = String(item.notas || item.notes || '').trim();
+      // Si el nombre o las notas empiezan con __EXT__, es un extra, se excluye
+      return !name.startsWith('__EXT__') && !itemNotes.startsWith('__EXT__:');
     });
 
-    groups.forEach(({ main, extras }) => {
-      const qty  = getItemQty(main);
-      const name = String(getItemName(main)).trim().toUpperCase();
+    mainItems.forEach(item => {
+      const qty = getItemQty(item);
+      const name = String(getItemName(item)).trim().toUpperCase();
       const prefix = `${qty}x `;
       const nameLines = wrap(name, width - prefix.length);
 
+      // Nombre del producto principal
       out += prefix + (nameLines[0] || '') + '\n';
       for (let i = 1; i < nameLines.length; i++) {
         out += '   ' + nameLines[i] + '\n';
       }
 
-      // Extras como notas (debajo del producto, antes de las notas normales)
+      // 🔥 EXTRAS: Van DEBAJO del producto principal
+      // Vienen en item.extras (array de objetos con name/product_name/producto)
+      const extras = item.extras || [];
       extras.forEach(extra => {
-        const display = String(getItemNotes(extra)).replace('__EXT__:', '').trim().toUpperCase();
-        wrap(display, width - 3).forEach(ln => { out += ` - ${ln}\n`; });
+        const extraName = String(
+          extra.name || 
+          extra.product_name || 
+          extra.producto || 
+          ''
+        ).trim().toUpperCase();
+        
+        if (extraName) {
+          // Formato: "   + NOMBRE_EXTRA"
+          const extraLines = wrap(`+ ${extraName}`, width - 3);
+          extraLines.forEach(ln => {
+            out += `   ${ln}\n`;
+          });
+        }
       });
 
-      // Notas normales del ítem principal
-      const itemNotes = getItemNotes(main);
-      if (itemNotes) {
-        itemNotes.split('\n').flatMap(l => wrap(l.trim(), width - 3) || ['']).forEach(ln => {
-          if (ln) out += ` - ${ln}\n`;
-        });
+      // 🔥 NOTAS del item (texto libre, no extras)
+      const itemNotes = String(item.notas || item.notes || '').trim();
+      if (itemNotes && !itemNotes.startsWith('__EXT__:')) {
+        const cleanNotes = itemNotes.replace(/^__EXT__:\s*/i, '').trim();
+        if (cleanNotes) {
+          wrap(cleanNotes, width - 3).forEach(ln => {
+            if (ln) out += ` - ${ln}\n`;
+          });
+        }
       }
 
       out += sep() + '\n';
@@ -378,6 +372,7 @@ function formatComandaTicket(data, width = 32) {
     out += '\n';
   }
 
+  // Notas generales del pedido
   if (notasPedido) {
     out += center('NOTA') + '\n';
     wrap(notasPedido, width).forEach((ln) => (out += ln + '\n'));
@@ -389,6 +384,7 @@ function formatComandaTicket(data, width = 32) {
 
   return out;
 }
+
 
 /**
  * FACTURA — formato SRI Ecuador
