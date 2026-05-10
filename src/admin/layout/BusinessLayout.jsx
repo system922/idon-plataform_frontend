@@ -22,7 +22,6 @@ import Footer from '../../components/common/Footer';
 import { BusinessContextProvider } from '../../admin/config/BusinessContext';
 import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';
 import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
-import { useCashDrawer } from '../../hooks/useCashDrawer';
 import { useAutoPrint } from '../../hooks/useAutoPrint';
 import { useQzTray } from '../../components/useQzTray';
 
@@ -231,13 +230,11 @@ function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
 export default function BusinessLayout({ user, onLogout }) {
   const navigate = useNavigate();
 
-  // 🔥 AMBOS HOOKS - QZ Tray (local) + HTTP API (fallback)
+  // 🔥 SOLO UN HOOK para abrir cajón - el mismo que usa PosCheckoutPage
   const { openDrawer: openDrawerQz, printerError, isQzReady } = useQzTray();
-  const { openDrawer: openDrawerHttp } = useCashDrawer();
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
-
     const applyOverflow = (isMobile) => {
       if (isMobile) {
         document.documentElement.style.overflow = '';
@@ -247,12 +244,9 @@ export default function BusinessLayout({ user, onLogout }) {
         document.body.style.overflow = 'hidden';
       }
     };
-
     const handleChange = (e) => applyOverflow(e.matches);
-
     applyOverflow(mq.matches);
     mq.addEventListener('change', handleChange);
-
     return () => {
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
@@ -260,22 +254,22 @@ export default function BusinessLayout({ user, onLogout }) {
     };
   }, []);
 
-  const [navData,      setNavData]      = useState(null);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState(null);
-  const [collapsed,    setCollapsed]    = useState(false);
-  const [mobileOpen,   setMobileOpen]   = useState(false);
-  const [selectedBiz,  setSelectedBiz]  = useState(getStoredBiz);
+  const [navData, setNavData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [selectedBiz, setSelectedBiz] = useState(getStoredBiz);
 
   useAutoPrint({ businessId: selectedBiz?.id, enabled: !!selectedBiz?.id });
 
   // Apertura de caja
-  const [aperturaChecked,     setAperturaChecked]     = useState(false);
-  const [aperturaHecha,       setAperturaHecha]       = useState(true);
-  const [mostrarAlerta,       setMostrarAlerta]       = useState(false);
-  const [mostrarFormulario,   setMostrarFormulario]   = useState(false);
-  const [abriendoCaja,        setAbriendoCaja]        = useState(false);
-  const [aperturaIniciada,    setAperturaIniciada]    = useState(false);
+  const [aperturaChecked, setAperturaChecked] = useState(false);
+  const [aperturaHecha, setAperturaHecha] = useState(true);
+  const [mostrarAlerta, setMostrarAlerta] = useState(false);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [abriendoCaja, setAbriendoCaja] = useState(false);
+  const [aperturaIniciada, setAperturaIniciada] = useState(false);
   
   // Cierre de caja
   const [mostrarConfirmacionCierre, setMostrarConfirmacionCierre] = useState(false);
@@ -285,41 +279,40 @@ export default function BusinessLayout({ user, onLogout }) {
   const [abriendoCajonCierre, setAbriendoCajonCierre] = useState(false);
 
   // ═══════════════════════════════════════════════════════
-  // 🔥 FUNCIÓN UNIFICADA PARA ABRIR CAJÓN
-  // Intenta: QZ Tray → HTTP API → Error (permite continuar)
+  // 🔥 FUNCIÓN SIMPLE PARA ABRIR CAJÓN
+  // Funciona igual que en PosCheckoutPage
   // ═══════════════════════════════════════════════════════
   const abrirCajon = useCallback(async () => {
-    console.log('🔓 [abrirCajon] Iniciando apertura de cajón...');
+    console.log('🔓 [Layout] Abriendo cajón...');
     
-    // Intento 1: QZ Tray (método local, más rápido)
+    // Intento 1: QZ Tray
     if (isQzReady) {
       try {
-        console.log('📡 [abrirCajon] Intentando con QZ Tray...');
         await openDrawerQz();
-        console.log('✅ [abrirCajon] Cajón abierto con QZ Tray');
+        console.log('✅ [Layout] Cajón abierto con QZ Tray');
         return true;
       } catch (err) {
-        console.warn('⚠️ [abrirCajon] QZ Tray falló:', err.message);
+        console.warn('⚠️ [Layout] QZ Tray falló:', err.message);
       }
-    } else {
-      console.warn('⚠️ [abrirCajon] QZ Tray no está listo');
     }
     
-    // Intento 2: HTTP API (comando al backend)
+    // Intento 2: HTTP API
     try {
-      console.log('📡 [abrirCajon] Intentando con HTTP API...');
-      await openDrawerHttp();
-      console.log('✅ [abrirCajon] Cajón abierto mediante HTTP API');
-      return true;
+      const res = await fetchWithAuth('/api/pos/open-drawer', { method: 'POST' });
+      if (res.ok) {
+        console.log('✅ [Layout] Cajón abierto por HTTP');
+        return true;
+      }
     } catch (err) {
-      console.warn('⚠️ [abrirCajon] HTTP API falló:', err.message);
+      console.warn('⚠️ [Layout] HTTP falló:', err.message);
     }
     
-    // Si todo falla
-    throw new Error('No se pudo abrir el cajón por ningún método');
-  }, [isQzReady, openDrawerQz, openDrawerHttp]);
+    throw new Error('No se pudo abrir el cajón');
+  }, [isQzReady, openDrawerQz]);
 
-  // Verificar si hay apertura activa
+  // ═══════════════════════════════════════════════════════
+  // VERIFICAR APERTURA
+  // ═══════════════════════════════════════════════════════
   const checkApertura = useCallback(async () => {
     if (!isCashierRole(user)) { 
       setAperturaChecked(true); 
@@ -350,7 +343,9 @@ export default function BusinessLayout({ user, onLogout }) {
 
   useEffect(() => { checkApertura(); }, [checkApertura]);
 
-  // Cargar datos para el cierre
+  // ═══════════════════════════════════════════════════════
+  // CARGAR DATOS PARA CIERRE
+  // ═══════════════════════════════════════════════════════
   const cargarDatosCierre = async () => {
     try {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
@@ -401,7 +396,6 @@ export default function BusinessLayout({ user, onLogout }) {
   // ═══════════════════════════════════════════════════════
   // CIERRE DE CAJA
   // ═══════════════════════════════════════════════════════
-
   const handleClickCerrarCaja = async () => {
     if (!aperturaHecha) {
       setError('No hay una apertura de caja activa. Debes abrir caja primero.');
@@ -410,7 +404,6 @@ export default function BusinessLayout({ user, onLogout }) {
     }
 
     setCargandoCierre(true);
-    
     const datos = await cargarDatosCierre();
     
     if (!datos) {
@@ -433,8 +426,7 @@ export default function BusinessLayout({ user, onLogout }) {
       await abrirCajon();
       console.log('✅ Cajón abierto para el cierre');
     } catch (err) {
-      console.warn('⚠️ No se pudo abrir el cajón para el cierre:', err);
-      alert('⚠️ No se pudo abrir el cajón automáticamente.\n\nÁbrelo manualmente con la llave para contar el dinero.');
+      console.warn('⚠️ No se pudo abrir el cajón para el cierre');
     } finally {
       setAbriendoCajonCierre(false);
       setMostrarCierreForm(true);
@@ -448,18 +440,16 @@ export default function BusinessLayout({ user, onLogout }) {
   const handleCierreCompleto = async (data) => {
     const operador = getOperatorUser();
     if (operador?.id && data) {
-      const auditPayload = {
-        user_id: operador.id,
-        table_name: "cash_drawer",
-        action: "cierre_caja_completado",
-        description: `Cierre de caja completado por ${operador?.nombre || 'Usuario'}`,
-        new_values: data,
-        reason: "Cierre de caja"
-      };
-      
       await fetchWithAuth('/api/audit-log', {
         method: 'POST',
-        body: JSON.stringify(auditPayload)
+        body: JSON.stringify({
+          user_id: operador.id,
+          table_name: "cash_drawer",
+          action: "cierre_caja_completado",
+          description: `Cierre de caja completado por ${operador?.nombre || 'Usuario'}`,
+          new_values: data,
+          reason: "Cierre de caja"
+        })
       }).catch(err => console.warn('Error guardando auditoría:', err));
     }
     
@@ -471,7 +461,6 @@ export default function BusinessLayout({ user, onLogout }) {
   // ═══════════════════════════════════════════════════════
   // APERTURA DE CAJA
   // ═══════════════════════════════════════════════════════
-
   const handleAceptarAlerta = async () => {
     if (aperturaIniciada || abriendoCaja) return;
     
@@ -480,22 +469,13 @@ export default function BusinessLayout({ user, onLogout }) {
 
     try {
       await abrirCajon();
-      setMostrarAlerta(false);
-      setMostrarFormulario(true);
     } catch (err) {
-      console.error('❌ Error al abrir cajón:', err);
-      alert(
-        '⚠️ No se pudo abrir el cajón automáticamente.\n\n' +
-        'Posibles soluciones:\n' +
-        '1. Verifica que QZ Tray esté instalado y ejecutándose\n' +
-        '2. Verifica que la impresora esté encendida y conectada\n' +
-        '3. Abre el cajón manualmente y continúa con la apertura'
-      );
-      setMostrarAlerta(false);
-      setMostrarFormulario(true);
+      console.warn('⚠️ No se pudo abrir el cajón');
     } finally {
       setAbriendoCaja(false);
       setAperturaIniciada(false);
+      setMostrarAlerta(false);
+      setMostrarFormulario(true);
     }
   };
 
@@ -508,19 +488,12 @@ export default function BusinessLayout({ user, onLogout }) {
     setAbriendoCaja(true);
     try {
       await abrirCajon();
-      setMostrarAlerta(false);
-      setMostrarFormulario(true);
     } catch (err) {
-      console.error('❌ Error al abrir cajón:', err);
-      alert(
-        '⚠️ No se pudo abrir el cajón automáticamente.\n\n' +
-        'Puedes continuar con la apertura manualmente.\n' +
-        'Abre el cajón con la llave y luego presiona Aceptar.'
-      );
-      setMostrarAlerta(false);
-      setMostrarFormulario(true);
+      console.warn('⚠️ No se pudo abrir el cajón');
     } finally {
       setAbriendoCaja(false);
+      setMostrarAlerta(false);
+      setMostrarFormulario(true);
     }
   };
 
@@ -533,23 +506,21 @@ export default function BusinessLayout({ user, onLogout }) {
       const montoBanca = data.monto_banca || 0;
       const totalInicial = totalEfectivo + montoBanca;
 
-      const auditPayload = {
-        user_id: operador.id,
-        table_name: "cash_drawer",
-        action: "apertura_caja_completada",
-        description: `Apertura de caja completada por ${userName}. Efectivo: $${totalEfectivo.toFixed(2)}, Banca: $${montoBanca.toFixed(2)}, Total: $${totalInicial.toFixed(2)}${data.observaciones ? `. Observaciones: ${data.observaciones}` : ''}`,
-        new_values: {
-          total_efectivo: totalEfectivo,
-          monto_banca: montoBanca,
-          total_inicial: totalInicial,
-          observaciones: data.observaciones || null
-        },
-        reason: "Registro de Apertura"
-      };
-
       await fetchWithAuth('/api/audit-log', {
         method: 'POST',
-        body: JSON.stringify(auditPayload)
+        body: JSON.stringify({
+          user_id: operador.id,
+          table_name: "cash_drawer",
+          action: "apertura_caja_completada",
+          description: `Apertura de caja completada por ${userName}. Efectivo: $${totalEfectivo.toFixed(2)}, Banca: $${montoBanca.toFixed(2)}, Total: $${totalInicial.toFixed(2)}`,
+          new_values: {
+            total_efectivo: totalEfectivo,
+            monto_banca: montoBanca,
+            total_inicial: totalInicial,
+            observaciones: data.observaciones || null
+          },
+          reason: "Registro de Apertura"
+        })
       }).catch(err => console.warn('Error guardando auditoría:', err));
     }
 
@@ -561,7 +532,6 @@ export default function BusinessLayout({ user, onLogout }) {
   // ═══════════════════════════════════════════════════════
   // CARGA INICIAL
   // ═══════════════════════════════════════════════════════
-
   useEffect(() => {
     const load = async () => {
       try {
@@ -595,10 +565,6 @@ export default function BusinessLayout({ user, onLogout }) {
         <p>Cargando tu panel...</p>
       </div>
     );
-  }
-
-  if (printerError && !loading) {
-    console.warn('⚠️ Error de impresora/QZ Tray:', printerError);
   }
 
   return (
@@ -691,7 +657,13 @@ export default function BusinessLayout({ user, onLogout }) {
             {!isQzReady && !loading && (
               <div className="business-warning" style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '8px', borderRadius: '4px', marginBottom: '10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <FiAlertCircle size={14} />
-                QZ Tray no está conectado. El cajón se abrirá mediante el método alternativo (HTTP API).
+                QZ Tray no está conectado. El cajón se abrirá mediante método alternativo.
+              </div>
+            )}
+            {printerError && !loading && (
+              <div className="business-warning" style={{ backgroundColor: '#fce4e4', color: '#991b1b', padding: '8px', borderRadius: '4px', marginBottom: '10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FiAlertCircle size={14} />
+                Error de impresora: {printerError}
               </div>
             )}
             <Outlet />
