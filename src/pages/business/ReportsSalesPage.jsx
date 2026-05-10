@@ -41,7 +41,7 @@ export default function ReportsSalesPage() {
   // Cargar resumen de ventas
   const loadSummary = useCallback(async () => {
     try {
-      let url = `/api/customers/sales-report/summary`;
+      let url = `/api/reports/sales/summary`;
       const params = [];
       if (dateFrom) params.push(`startDate=${dateFrom}`);
       if (dateTo) params.push(`endDate=${dateTo}`);
@@ -74,7 +74,7 @@ export default function ReportsSalesPage() {
       setLoading(true);
       setError('');
       
-      let url = `/api/customers/sales-report?page=${page}&limit=20`;
+      let url = `/api/reports/sales?page=${page}&limit=20`;
       const params = [];
       if (dateFrom) params.push(`startDate=${dateFrom}`);
       if (dateTo) params.push(`endDate=${dateTo}`);
@@ -97,7 +97,7 @@ export default function ReportsSalesPage() {
           totalPages: result.pagination.totalPages,
           total: result.pagination.total
         });
-        setUseEinvoicing(result.metadata?.invoiceSource === 'einvoicing');
+        setUseEinvoicing(result.metadata?.invoiceSource === 'einvoices');
         setStatsMetadata({
           source: result.metadata?.invoiceSource || 'pos',
           sourceLabel: result.metadata?.invoiceSource === 'einvoicing' ? 'Facturación Electrónica' : 'Ventas POS',
