@@ -35,12 +35,14 @@ export default function ReportsAdvanced() {
     setError('');
     try {
       const res = await fetchWithAuth(`/api/reports/advanced?from=${dateRange.from}&to=${dateRange.to}&groupBy=${groupBy}`);
-      if (!res.ok) throw new Error('Error al cargar reporte');
       const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || `HTTP ${res.status}: Error al cargar reporte`);
+      }
       setData(result);
     } catch (err) {
       console.error('Load report error:', err);
-      setError(err.message);
+      setError(err.message || 'Error desconocido al cargar reporte');
     } finally {
       setLoading(false);
     }
