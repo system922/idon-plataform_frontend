@@ -19,7 +19,8 @@ import { BusinessContextProvider } from '../../admin/config/BusinessContext';
 import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';
 import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
 import { useAutoPrint } from '../../hooks/useAutoPrint';
-import { usePrinterService } from '../../services/usePrinterService'; // 👈 CAMBIAR: usar usePrinterService en lugar de useQzTray
+import { usePrinterService } from '../../services/usePrinterService';
+import { useAppVersion } from '../../hooks/useAppVersion';
 
 const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
 
@@ -258,6 +259,7 @@ export default function BusinessLayout({ user, onLogout }) {
   const [selectedBiz, setSelectedBiz] = useState(getStoredBiz);
 
   useAutoPrint({ businessId: selectedBiz?.id, enabled: !!selectedBiz?.id });
+  const { updateReady, countdown } = useAppVersion();
 
   // Apertura de caja
   const [aperturaChecked, setAperturaChecked] = useState(false);
@@ -540,6 +542,19 @@ export default function BusinessLayout({ user, onLogout }) {
 
   return (
     <BusinessContextProvider>
+      {/* Banner de actualización automática */}
+      {updateReady && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999,
+          background: '#1a1a2e', color: '#fff',
+          padding: '10px 20px', textAlign: 'center',
+          fontSize: 14, fontWeight: 600,
+          boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+        }}>
+          🚀 Nueva versión disponible — actualizando en {countdown}s...
+        </div>
+      )}
+
       {/* Alerta de apertura requerida */}
       {aperturaChecked && mostrarAlerta && !mostrarFormulario && !mostrarCierreForm && (
         <AlertaAperturaModal 

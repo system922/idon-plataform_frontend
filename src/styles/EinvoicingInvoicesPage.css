@@ -190,3 +190,28 @@
     gap: 6px !important;
   }
 }
+
+@media (max-width: 480px) {
+  .einv-filter-bar {
+    gap: 6px;
+  }
+  .einv-table th:nth-child(3),
+  .einv-table td:nth-child(3),
+  .einv-table th:nth-child(5),
+  .einv-table td:nth-child(5) {
+    display: none;
+  }
+  .einv-header-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .einv-header-actions button {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+  .einv-summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

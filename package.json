@@ -30,6 +30,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "prebuild": "node -e \"require('fs').writeFileSync('public/meta.json', JSON.stringify({v: Date.now()}))\"",
     "build": "cross-env DISABLE_ESLINT_PLUGIN=true react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

@@ -243,3 +243,24 @@ tfoot td {
     border-bottom: none;
   }
 }
+
+@media (max-width: 480px) {
+  .accounting-balance-container {
+    padding: 8px;
+  }
+  .balance-summary-grid,
+  .balance-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .balance-card {
+    padding: 12px;
+  }
+  .balance-filter-bar {
+    flex-direction: column;
+  }
+  .balance-filter-bar input,
+  .balance-filter-bar select,
+  .balance-filter-bar button {
+    width: 100%;
+  }
+}

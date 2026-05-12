@@ -198,3 +198,21 @@
     flex-shrink: 0;
   }
 }
+
+@media (max-width: 480px) {
+  .reports-advanced-container {
+    padding: 8px;
+  }
+  .kpi-value {
+    font-size: 20px;
+  }
+  .chart-card,
+  .table-card {
+    padding: 10px;
+    border-radius: 12px;
+  }
+  .report-table td {
+    font-size: 12px;
+    padding: 8px 10px !important;
+  }
+}

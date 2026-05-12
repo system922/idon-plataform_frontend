@@ -599,3 +599,24 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 480px) {
+  .reports-filters {
+    gap: 8px;
+  }
+  .reports-summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .reports-table {
+    min-width: 600px;
+  }
+  .report-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .report-header button {
+    width: 100%;
+    justify-content: center;
+  }
+}

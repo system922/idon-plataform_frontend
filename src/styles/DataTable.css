@@ -300,3 +300,32 @@
     flex: 1;
   }
 }
+
+@media (max-width: 480px) {
+  .datatable-header {
+    padding: 12px;
+    gap: 8px;
+  }
+  .datatable-search {
+    min-width: unset;
+  }
+  .datatable-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .datatable-header-actions button {
+    flex: 1;
+    justify-content: center;
+  }
+  .datatable-table tbody td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .datatable-footer {
+    padding: 10px 12px;
+  }
+  .datatable-pagination-btn {
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+}

@@ -181,15 +181,31 @@ export default function OrdersHistoryPage() {
 
   const handleSelectOrder = async (order) => {
     if (editMode && selectedOrder?.id === order.id) return;
-    
-    const enrichedOrder = await enrichOrderItemsWithPrices(order);
-    setSelectedOrder(enrichedOrder);
+
+    try {
+      const res = await fetchWithAuth(`/api/ordenes/${order.id}`);
+      const fresh = res.ok ? await res.json() : order;
+      const merged = { ...order, ...fresh, items: fresh.items || order.items || [] };
+      const enrichedOrder = await enrichOrderItemsWithPrices(merged);
+      setSelectedOrder(enrichedOrder);
+    } catch {
+      const enrichedOrder = await enrichOrderItemsWithPrices(order);
+      setSelectedOrder(enrichedOrder);
+    }
     setEditMode(false);
     setEditItems([]);
   };
 
   const handleEditOrder = async (order) => {
-    const enrichedOrder = await enrichOrderItemsWithPrices(order);
+    let fresh = order;
+    try {
+      const res = await fetchWithAuth(`/api/ordenes/${order.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        fresh = { ...order, ...data, items: data.items || order.items || [] };
+      }
+    } catch {}
+    const enrichedOrder = await enrichOrderItemsWithPrices(fresh);
     setSelectedOrder(enrichedOrder);
     setEditMode(true);
 

@@ -536,3 +536,24 @@
     align-items: flex-start;
   }
 }
+
+@media (max-width: 480px) {
+  .report-summary-grid {
+    grid-template-columns: 1fr;
+  }
+  .report-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .report-header-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+  .report-search-input {
+    width: 100%;
+  }
+  .report-product-table th:nth-child(n+4),
+  .report-product-table td:nth-child(n+4) {
+    display: none;
+  }
+}

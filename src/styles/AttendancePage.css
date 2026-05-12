@@ -123,3 +123,32 @@
   text-align: center;
   opacity: 0.6;
 }
+
+@media (max-width: 600px) {
+  .att-toolbar {
+    flex-wrap: wrap;
+  }
+  .att-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .att-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .att-modal {
+    width: calc(100vw - 32px);
+    padding: 16px;
+  }
+  .att-modal-footer {
+    flex-direction: column;
+  }
+  .att-modal-footer button {
+    width: 100%;
+  }
+  .att-times {
+    grid-template-columns: 1fr;
+  }
+}

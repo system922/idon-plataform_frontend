@@ -107,3 +107,29 @@
   to { transform: rotate(360deg); }
 }
 /* Modal reutiliza los estilos anteriores */
+
+@media (max-width: 600px) {
+  .scheduled-container {
+    padding: 12px;
+  }
+  .scheduled-list {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .card-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .scheduled-container {
+    padding: 8px;
+  }
+  .scheduled-card {
+    padding: 14px;
+  }
+  .card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}

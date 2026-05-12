@@ -38,3 +38,27 @@
   margin-top: 20px;
   text-align: right;
 }
+
+@media (max-width: 768px) {
+  .credit-notes-container {
+    padding: 12px;
+  }
+  .notes-table th, .notes-table td {
+    padding: 8px 6px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .credit-notes-container {
+    padding: 8px;
+  }
+  .credit-item {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .notes-table th:nth-child(3),
+  .notes-table td:nth-child(3) {
+    display: none;
+  }
+}

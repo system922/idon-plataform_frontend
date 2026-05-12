@@ -304,12 +304,30 @@
     grid-template-columns: 1fr auto;
     grid-template-rows: auto auto;
   }
-
   .settings-field-label {
     grid-column: 1 / -1;
   }
-
   .settings-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-field-row {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+  .settings-field-label,
+  .settings-value,
+  .settings-field-row > :last-child {
+    grid-column: 1 / -1;
+  }
+  .settings-card-header {
+    padding: 12px 14px;
+  }
+  .settings-input {
+    font-size: 16px;
   }
 }
