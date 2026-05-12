@@ -118,18 +118,6 @@ export function usePrinterService() {
       console.log(`✅ Impreso en: ${printerName}`);
       return { success: true };
     } catch (err) {
-      // Reintenta con el nombre por defecto si el configurado no existe
-      const DEFAULT = 'POS-58';
-      if (printerName !== DEFAULT) {
-        try {
-          await sendTo(DEFAULT);
-          console.log(`✅ Impreso en fallback: ${DEFAULT}`);
-          return { success: true };
-        } catch (err2) {
-          console.error('❌ Error en printTicket (fallback):', err2);
-          return { success: false, error: err2.message };
-        }
-      }
       console.error('❌ Error en printTicket:', err);
       return { success: false, error: err.message };
     }
@@ -150,10 +138,14 @@ export function usePrinterService() {
         return { success: false, error: 'Impresora no configurada' };
       }
 
+      const dataWithFooter = printerConfig.footer && !data.printerFooter
+        ? { ...data, printerFooter: printerConfig.footer }
+        : data;
+
       const ticket = formatTicket({
         printerName: printerConfig.name,
         paperWidth: printerConfig.width || 42,
-        data,
+        data: dataWithFooter,
         template,
       });
 
@@ -188,21 +180,12 @@ export function usePrinterService() {
       await qz.print(config, DRAWER_CMD);
     };
 
-    const configuredName = printerConfig?.name || '';
-    const DEFAULT = 'POS-58';
+    const configuredName = printerConfig?.name || 'POS-58';
 
     try {
-      await tryOpen(configuredName || DEFAULT);
+      await tryOpen(configuredName);
       return { success: true };
     } catch (err) {
-      if (configuredName && configuredName !== DEFAULT) {
-        try {
-          await tryOpen(DEFAULT);
-          return { success: true };
-        } catch (err2) {
-          return { success: false, error: err2.message };
-        }
-      }
       return { success: false, error: err.message };
     }
   }, [getPrinterConfig]);

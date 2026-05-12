@@ -29,7 +29,7 @@ import '../../styles/CheckoutModern.css';
 export default function PosCheckoutPage() {
   const { selectedBusiness } = useBusinessContext();
   const { printerError } = useQzTray();
-  const { print, getPrinterConfig } = usePrinterService();
+  const { print } = usePrinterService();
   const location = useLocation();
   const autoSelectRef = useRef(location.state?.orderNumber || null);
   const customerCedulaRef = useRef(location.state?.customerCedula || null);
@@ -941,7 +941,6 @@ export default function PosCheckoutPage() {
   // ─── IMPRESIÓN ─────────────────────────────────────────────────────────────
   const imprimirTicket = async (order, paid, cambio, invoiceNumber = null, splitMode = null, customerName = null, openDrawer = false, paymentMethod = null) => {
     try {
-      const printerConfig = await getPrinterConfig('printer_main');
       const itemsToPrint = (order.items || []).map(item => ({
         description: item.product_name || 'Producto',
         quantity:    item.quantity,
@@ -977,7 +976,6 @@ export default function PosCheckoutPage() {
             recibido:     recibidoCliente,
             cambio:       esCash || esMixto ? Math.max(0, cambio) : 0,
             metodoPago:   paymentMethod,
-            printerFooter: printerConfig.footer,
           }
         : {
             bizInfo,
@@ -987,7 +985,6 @@ export default function PosCheckoutPage() {
             total:        printTotalFinal,
             recibido:     esCash || esMixto ? paid + Math.max(0, cambio) : 0,
             cambio:       esCash || esMixto ? Math.max(0, cambio) : 0,
-            printerFooter: printerConfig.footer,
           };
 
       await print('printer_main', template, printData, openDrawer);

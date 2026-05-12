@@ -273,7 +273,7 @@ export default function OrdersHistoryPage() {
     const enrichedOrder = await enrichOrderItemsWithPrices(order);
     const grouped = groupItemsForPrint(enrichedOrder.items);
     const tipoOrden = order.order_type === 'dine_in' ? 'LOCAL' : order.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY';
-    await print('printer_comanda', 'comanda-mod', {
+    await print('printer_ticket', 'comanda-mod', {
       mesa:      order.mesa_numero,
       orden:     order.order_number || order.id.slice(0, 8),
       tipoOrden,
@@ -545,7 +545,7 @@ export default function OrdersHistoryPage() {
 
       // Siempre intentar imprimir la comanda modificada
       const tipoOrden = selectedOrder.order_type === 'dine_in' ? 'LOCAL' : selectedOrder.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY';
-      const printResult = await print('printer_comanda', 'comanda-mod', {
+      const printResult = await print('printer_ticket', 'comanda-mod', {
         mesa:      selectedOrder.mesa_numero,
         orden:     selectedOrder.order_number || selectedOrder.id.slice(0, 8),
         tipoOrden,
