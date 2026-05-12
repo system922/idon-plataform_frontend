@@ -569,6 +569,9 @@ function formatInvoiceTicket(data, width = 42) {
     taxRate,
     total       = 0,
     payment     = null,
+    recibido    = 0,
+    cambio      = 0,
+    metodoPago  = null,
     printerFooter,
   } = data;
 
@@ -667,6 +670,13 @@ function formatInvoiceTicket(data, width = 42) {
     if (payment.cash  !== undefined) t += row('  Efectivo:',        payment.cash  || 0);
     if (payment.card  !== undefined) t += row('  Tarjeta Créd/Déb:', payment.card || 0);
     if (payment.other !== undefined) t += row('  Otros:',           payment.other || 0);
+    t += line + '\n';
+  }
+
+  // ─── Recibido / Cambio (solo pagos en efectivo o mixto) ──────────────────
+  if ((metodoPago === 'cash' || metodoPago === 'mixto') && recibido > 0) {
+    t += row('RECIBIDO:', recibido);
+    t += row('CAMBIO:',   Math.max(0, cambio));
     t += line + '\n';
   }
 

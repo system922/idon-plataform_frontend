@@ -939,7 +939,7 @@ export default function PosCheckoutPage() {
   };
 
   // ─── IMPRESIÓN ─────────────────────────────────────────────────────────────
-  const imprimirTicket = async (order, paid, cambio, invoiceNumber = null, splitMode = null, customerName = null, openDrawer = false) => {
+  const imprimirTicket = async (order, paid, cambio, invoiceNumber = null, splitMode = null, customerName = null, openDrawer = false, paymentMethod = null) => {
     try {
       const printerConfig = await getPrinterConfig('printer_main');
       const itemsToPrint = (order.items || []).map(item => ({
@@ -958,6 +958,9 @@ export default function PosCheckoutPage() {
       const printTotalFinal = printBaseConDesc + nuevoIVAImpresion;
       const tieneFactura = !!invoiceNumber;
       const template     = tieneFactura ? 'invoice' : 'ticket-simple';
+      const esCash = paymentMethod === 'cash';
+      const esMixto = paymentMethod === 'mixto';
+      const recibidoCliente = esCash || esMixto ? paid + Math.max(0, cambio) : 0;
 
       const printData = tieneFactura
         ? {
@@ -971,6 +974,9 @@ export default function PosCheckoutPage() {
             taxRate:      ivaRateGlobal,
             total:        printTotalFinal,
             payment:      { cash: paid, card: 0, other: 0 },
+            recibido:     recibidoCliente,
+            cambio:       esCash || esMixto ? Math.max(0, cambio) : 0,
+            metodoPago:   paymentMethod,
             printerFooter: printerConfig.footer,
           }
         : {
@@ -979,8 +985,8 @@ export default function PosCheckoutPage() {
             customer:     { id: clienteCedula || '9999999999', name: customerName || clienteNombre || 'CONSUMIDOR FINAL' },
             items:        itemsToPrint,
             total:        printTotalFinal,
-            recibido:     paid,
-            cambio:       Math.max(0, paid - printTotalFinal),
+            recibido:     esCash || esMixto ? paid + Math.max(0, cambio) : 0,
+            cambio:       esCash || esMixto ? Math.max(0, cambio) : 0,
             printerFooter: printerConfig.footer,
           };
 
@@ -1060,7 +1066,7 @@ export default function PosCheckoutPage() {
       if (facturaIndividual) {
         const partialOrder = { ...selectedOrder, items: selectedOrder.items.filter(i => comensal.items.includes(i.id)) };
         const invoiceData = await emitirFactura(partialOrder, cedula, nombre, 'split', null, comensal.email);
-        await imprimirTicket(partialOrder, totalComensal, comensal.montoRecibido - totalComensal, invoiceData?.invoice_number, 'split', nombre, debeAbrirCajon);
+        await imprimirTicket(partialOrder, totalComensal, comensal.montoRecibido - totalComensal, invoiceData?.invoice_number, 'split', nombre, debeAbrirCajon, comensal.metodoPago);
         setSuccess(`Factura generada para ${nombre}`);
       } else {
         const itemsCompletos = comensal.items.map(itemId => selectedOrder?.items?.find(i => i.id === itemId)).filter(i => i);
@@ -1179,7 +1185,7 @@ export default function PosCheckoutPage() {
         });
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'cash', discountInfo, clienteEmail);
         debeAbrirCajon = true;
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, paid - totalOrdenConDescuento, invoiceData?.invoice_number, null, null, debeAbrirCajon);
+        await imprimirTicket(selectedOrder, totalOrdenConDescuento, paid - totalOrdenConDescuento, invoiceData?.invoice_number, null, null, debeAbrirCajon, 'cash');
       } else if (metodoPagoNormal === 'card') {
         if (!refCard) throw new Error('Ingrese la referencia de la tarjeta');
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
@@ -1199,7 +1205,7 @@ export default function PosCheckoutPage() {
         });
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'card', discountInfo, clienteEmail);
         debeAbrirCajon = false;
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceData?.invoice_number, null, null, debeAbrirCajon);
+        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceData?.invoice_number, null, null, debeAbrirCajon, 'card');
       } else if (metodoPagoNormal === 'transfer') {
         if (!refTransfer) throw new Error('Ingrese la referencia de la transferencia');
         await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
@@ -1219,7 +1225,7 @@ export default function PosCheckoutPage() {
         });
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'transfer', discountInfo, clienteEmail);
         debeAbrirCajon = false;
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceData?.invoice_number, null, null, debeAbrirCajon);
+        await imprimirTicket(selectedOrder, totalOrdenConDescuento, 0, invoiceData?.invoice_number, null, null, debeAbrirCajon, 'transfer');
       } else if (metodoPagoNormal === 'mixto') {
         const cashAmt = parseFloat(amountPaid) || 0;
         const cardAmt = parseFloat(cardPaid) || 0;
@@ -1247,7 +1253,7 @@ export default function PosCheckoutPage() {
         });
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'mixto', discountInfo, clienteEmail);
         debeAbrirCajon = (cashNeeded > 0);
-        await imprimirTicket(selectedOrder, totalOrdenConDescuento, cashAmt - cashNeeded, invoiceData?.invoice_number, null, null, debeAbrirCajon);
+        await imprimirTicket(selectedOrder, totalOrdenConDescuento, cashAmt - cashNeeded, invoiceData?.invoice_number, null, null, debeAbrirCajon, 'mixto');
       }
 
       if (selectedOrder.status === 'draft') {

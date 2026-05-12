@@ -32,6 +32,9 @@ export function useAutoPrint({ businessId, enabled = true }) {
     if (printedIdsRef.current.has(order.id)) return false; // ya impreso
     if (!qz.websocket.isActive()) return false;
 
+    // Marcar ANTES de cualquier await para bloquear llamadas concurrentes del socket y del poll
+    printedIdsRef.current.add(order.id);
+
     // Si los ítems llegaron sin product_name (payload antiguo), buscar orden completa
     let orderToprint = order;
     const sinNombre = !Array.isArray(order.items) || order.items.length === 0 ||
@@ -49,8 +52,6 @@ export function useAutoPrint({ businessId, enabled = true }) {
       }
     }
 
-    // Marcar inmediatamente para bloquear cualquier otra llamada concurrente
-    printedIdsRef.current.add(order.id);
     try {
       await printOrder(orderToprint);
       await fetchWithAuth('/api/ordenes/mark-printed', {
