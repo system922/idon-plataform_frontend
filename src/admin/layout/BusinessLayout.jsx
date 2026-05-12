@@ -20,6 +20,7 @@ import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';
 import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
 import { usePrinterService } from '../../services/usePrinterService';
 import { useQzTray } from '../../components/useQzTray';
+import { useAutoPrint } from '../../hooks/useAutoPrint';
 import { useAppVersion } from '../../hooks/useAppVersion';
 
 const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
@@ -259,6 +260,7 @@ export default function BusinessLayout({ user, onLogout }) {
   const [selectedBiz, setSelectedBiz] = useState(getStoredBiz);
 
   useQzTray();
+  useAutoPrint({ businessId: selectedBiz?.id, enabled: !!selectedBiz?.id });
   const { updateReady, countdown } = useAppVersion();
 
   // Apertura de caja
