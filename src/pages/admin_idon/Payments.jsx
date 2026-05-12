@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useConfirm } from '../../context/ConfirmContext';
 import {
   FiCreditCard, FiRefreshCw, FiCheck, FiAlertCircle,
   FiClock, FiXCircle, FiCheckCircle, FiCalendar, FiMail,
@@ -24,6 +25,7 @@ function payInfo(nextBillingAt, status) {
 }
 
 export default function Payments() {
+  const { showConfirm } = useConfirm();
   const [data,     setData]     = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState(null);
@@ -61,7 +63,7 @@ export default function Payments() {
   };
 
   const handleSuspend = async (subId) => {
-    if (!window.confirm('¿Suspender este negocio? El dueño no podrá iniciar sesión.')) return;
+    if (!await showConfirm('¿Suspender este negocio? El dueño no podrá iniciar sesión.')) return;
     setActing(subId);
     try {
       await adminApiService.post(`/admin/subscriptions/${subId}/suspend`, {});

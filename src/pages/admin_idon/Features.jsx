@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useConfirm } from '../../context/ConfirmContext';
 import { FiStar, FiPlus, FiEdit2, FiTrash2, FiCheck, FiFilter, FiRefreshCw } from 'react-icons/fi';
 import { adminApiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
@@ -7,6 +8,7 @@ const inp = { width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize:
 const Lbl = ({ children }) => <label style={{ display: 'block', marginBottom: 5, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: '#8CB79B' }}>{children}</label>;
 
 export default function Features() {
+  const { showConfirm } = useConfirm();
   const [features,  setFeatures]  = useState([]);
   const [modules,   setModules]   = useState([]);
   const [loading,   setLoading]   = useState(true);
@@ -34,7 +36,7 @@ export default function Features() {
   useEffect(() => { load(); }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar esta funcionalidad?')) return;
+    if (!await showConfirm('¿Eliminar esta funcionalidad?')) return;
     try {
       await adminApiService.delete(`/admin/features/${id}`);
       load();

@@ -365,7 +365,7 @@ export default function ReportsInventory() {
       setSuccess('Reporte exportado a Excel');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      console.error(err);
+
       setError('Error al exportar a Excel');
     } finally {
       setExporting(false);

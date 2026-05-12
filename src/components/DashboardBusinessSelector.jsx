@@ -46,7 +46,7 @@ export default function DashboardBusinessSelector({ onBusinessChange }) {
           localStorage.setItem('selectedBusiness', JSON.stringify(list[0]));
         }
       } catch (e) {
-        console.error('[DashboardBusinessSelector] Error cargando negocios:', e);
+
         // Fallback a localStorage si falla la API
         const local = localStorage.getItem('userBusinesses');
         if (local) {
@@ -63,7 +63,7 @@ export default function DashboardBusinessSelector({ onBusinessChange }) {
   // Cargar módulos y features del negocio seleccionado
   async function loadModulesAndFeatures(businessId) {
     try {
-      console.log(`[BusinessSelector] Cargando módulos para negocio ${businessId}...`);
+
       const data = await apiFetch(`/api/business/${businessId}/modules-and-features`);
 
       if (!data) {
@@ -79,9 +79,9 @@ export default function DashboardBusinessSelector({ onBusinessChange }) {
       localStorage.setItem('activeFeatures',   JSON.stringify(features));
       localStorage.setItem('businessTemplate', JSON.stringify(data.template || {}));
 
-      console.log(`[BusinessSelector] ✅ ${modules.length} módulos, ${features.length} features guardados`);
+
     } catch (e) {
-      console.error('[BusinessSelector] Error cargando módulos:', e);
+
       localStorage.setItem('activeModules',  JSON.stringify([]));
       localStorage.setItem('activeFeatures', JSON.stringify([]));
     }

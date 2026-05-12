@@ -169,7 +169,7 @@ export default function OrdersHistoryPage() {
         });
         setPrinterConnected(true);
       } catch (e) {
-        console.warn('⚠️ QZ Tray no disponible:', e?.message);
+
         setPrinterConnected(false);
       }
     })();
@@ -187,7 +187,7 @@ export default function OrdersHistoryPage() {
       const data = await res.json();
       setProductos(Array.isArray(data) ? data : data?.productos ?? data?.data ?? []);
     } catch (err) {
-      console.error('Error al cargar productos:', err);
+
       setError('Error al cargar productos');
       setTimeout(() => setError(''), 3000);
     }
@@ -199,7 +199,7 @@ export default function OrdersHistoryPage() {
       const data = await res.json();
       setCategorias(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error al cargar categorías:', err);
+
       setError('Error al cargar categorías');
       setTimeout(() => setError(''), 3000);
     }
@@ -277,7 +277,7 @@ export default function OrdersHistoryPage() {
       
       setOrders(filtered);
     } catch (err) {
-      console.error(err);
+
       setError(`Error al cargar órdenes: ${err.message}`);
       setTimeout(() => setError(''), 3000);
       setOrders([]);
@@ -538,7 +538,7 @@ export default function OrdersHistoryPage() {
       setTimeout(() => setSuccess(''), 3000);
       loadOrders();
     } catch (err) {
-      console.error(err);
+
       setError('Error al guardar cambios');
       setTimeout(() => setError(''), 3000);
     } finally {

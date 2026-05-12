@@ -275,7 +275,7 @@ export default function ReportPdfButton({ customConfig, dateRange, groupBy, titl
       setSuccess('PDF generado correctamente');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      console.error(err);
+
       setError(err.message || 'Error al generar el PDF');
     } finally {
       setGenerating(false);

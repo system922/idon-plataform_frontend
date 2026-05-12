@@ -107,7 +107,7 @@ export default function SubscriptionModal({ business, existingSubscription, onCl
             }
           }
         } catch (e) {
-          console.log('No tiene suscripción existente');
+
         } finally {
           setLoading(false);
         }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
+import { useConfirm } from '../../context/ConfirmContext';
 import { Plus, Edit2, Trash2, X, Search, RefreshCw, BookOpen, ChevronRight, ChevronDown, Minus } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 
@@ -93,6 +94,7 @@ function RecipeModal({ recipe, categories, onClose, onSave, saving }) {
 }
 
 function IngredientsPanel({ recipe, onClose }) {
+  const { showConfirm } = useConfirm();
   const [ingredients, setIngredients] = useState([]);
   const [loading, setLoading]         = useState(true);
   const [showAdd, setShowAdd]         = useState(false);
@@ -131,7 +133,7 @@ function IngredientsPanel({ recipe, onClose }) {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar ingrediente?')) return;
+    if (!await showConfirm('¿Eliminar ingrediente?')) return;
     await fetchWithAuth(`/api/recipes/${recipe.id}/ingredients/${id}`, { method: 'DELETE' });
     load();
   };
@@ -215,6 +217,7 @@ function IngredientsPanel({ recipe, onClose }) {
 }
 
 export default function InventoryRecipesPage() {
+  const { showConfirm } = useConfirm();
   const [recipes, setRecipes]         = useState([]);
   const [categories, setCategories]   = useState([]);
   const [loading, setLoading]         = useState(true);
@@ -263,7 +266,7 @@ export default function InventoryRecipesPage() {
   };
 
   const handleDelete = async (r) => {
-    if (!window.confirm(`¿Desactivar "${r.name}"?`)) return;
+    if (!await showConfirm(`¿Desactivar "${r.name}"?`)) return;
     try {
       await fetchWithAuth(`/api/recipes/${r.id}`, { method: 'DELETE' });
       await load();

@@ -87,7 +87,7 @@ export default function EmployeesPayRollPage() {
           });
         }
       } catch (error) {
-        console.error('Error cargando impresora:', error);
+
       }
     };
     loadPrinterConfig();
@@ -165,7 +165,7 @@ export default function EmployeesPayRollPage() {
       const json = await res.json();
       setAvailableEmployees(Array.isArray(json) ? json : []);
     } catch (error) {
-      console.error('Error cargando empleados:', error);
+
       setAvailableEmployees([]);
       alert('Error al cargar empleados: ' + error.message);
     } finally {
@@ -239,7 +239,7 @@ export default function EmployeesPayRollPage() {
         alert('⚠️ No se encontraron datos para los empleados seleccionados');
       }
     } catch (error) {
-      console.error('Error:', error);
+
       setData([]);
       alert('Error al generar nómina: ' + error.message);
     } finally {
@@ -300,7 +300,7 @@ export default function EmployeesPayRollPage() {
         alert('⚠️ ' + (result.message || 'Error al guardar la nómina'));
       }
     } catch (error) {
-      console.error('Error guardando:', error);
+
       alert('Error al guardar la nómina: ' + error.message);
     } finally {
       setLoading(false);
@@ -336,7 +336,7 @@ export default function EmployeesPayRollPage() {
         setSavedPayrolls([]);
       }
     } catch (error) {
-      console.error('Error consultando:', error);
+
       setSavedPayrolls([]);
       alert("Error consultando nómina guardada");
     } finally {
@@ -367,7 +367,7 @@ export default function EmployeesPayRollPage() {
       });
       setShowDetails(true);
     } catch (error) {
-      console.error('Error:', error);
+
       alert('Error cargando detalle de nómina');
     } finally {
       setLoading(false);
@@ -399,7 +399,7 @@ export default function EmployeesPayRollPage() {
       setToPrintDetails(Array.isArray(details) ? details : []);
       setShowPrint(true);
     } catch (error) {
-      console.error('Error:', error);
+
       alert('Error cargando detalle de nómina');
     }
   }
@@ -489,7 +489,7 @@ export default function EmployeesPayRollPage() {
     }
     
   } catch (error) {
-    console.error('Error registrando pago:', error);
+
     alert('Error registrando pago: ' + error.message);
   } finally {
     setLoading(false);

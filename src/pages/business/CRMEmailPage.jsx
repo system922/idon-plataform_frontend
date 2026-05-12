@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PageTemplate from '../../components/PageTemplate';
+import { useConfirm } from '../../context/ConfirmContext';
 import {
   Plus, Edit2, Trash2, Send, Eye, X, Check, AlertCircle,
   Mail, Users, Calendar, Loader, CheckCircle, XCircle
@@ -116,6 +117,7 @@ function CampaignSendModal({ campaign, clientCount, onClose, onSent }) {
 }
 
 export default function CrmEmail() {
+  const { showConfirm } = useConfirm();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -225,7 +227,7 @@ export default function CrmEmail() {
   };
 
   const handleDelete = async (campaign) => {
-    if (!window.confirm(`¿Eliminar la campaña "${campaign.title}"?`)) return;
+    if (!await showConfirm(`¿Eliminar la campaña "${campaign.title}"?`)) return;
     try {
       const res = await fetchWithAuth(`/api/crm/email-campaigns/${campaign.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Error al eliminar');
@@ -243,7 +245,6 @@ export default function CrmEmail() {
     let msg = `¡Campaña enviada! ✅ Enviados: ${data.sent_count || 0} de ${data.total || 0}`;
     if (data.failed > 0) {
       msg += ` ❌ Fallidos: ${data.failed}`;
-      if (data.errors?.length) console.warn('Errores de envío:', data.errors);
     }
     setSuccess(msg);
     loadCampaigns();

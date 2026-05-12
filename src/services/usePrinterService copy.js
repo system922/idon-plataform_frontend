@@ -34,7 +34,7 @@ export function usePrinterService() {
 
       return getDefaultPrinter(printerKey);
     } catch (error) {
-      console.warn(`Error obteniendo configuración ${printerKey}:`, error);
+
       return getDefaultPrinter(printerKey);
     }
   }, []);
@@ -95,7 +95,6 @@ export function usePrinterService() {
         throw new Error('QZ Tray no está conectado');
       }
 
-      console.log(`🖨️ Imprimiendo en: ${printerName}`);
 
       const config = qz.configs.create(printerName);
 
@@ -106,7 +105,7 @@ export function usePrinterService() {
 
       // Abre cajón si es necesario
       if (openDrawer) {
-        console.log('🔔 Abriendo cajón...');
+
         commands.push(String.fromCharCode(27) + 'p' + String.fromCharCode(0) + String.fromCharCode(25) + String.fromCharCode(250));
       }
 
@@ -117,13 +116,13 @@ export function usePrinterService() {
       commands.push('\n\n\n');
       commands.push(String.fromCharCode(27) + 'i');
 
-      console.log(`📤 Enviando ${commands.length} comandos a QZ Tray...`);
+
       await qz.print(config, commands);
 
-      console.log('✅ Impresión completada');
+
       return { success: true, message: 'Ticket impreso correctamente' };
     } catch (error) {
-      console.error('❌ Error en printTicket:', error);
+
       return { success: false, error: error.message };
     }
   }, []);
@@ -133,11 +132,9 @@ export function usePrinterService() {
    */
   const print = useCallback(async (printerKey, template, data, openDrawer = false) => {
     try {
-      console.log(`🔍 Obteniendo config de ${printerKey}...`);
 
       const printerConfig = await getPrinterConfig(printerKey);
 
-      console.log(`📋 Config obtenida:`, printerConfig);
 
       if (!printerConfig?.name) {
         return { success: false, error: 'Impresora no configurada' };
@@ -150,7 +147,6 @@ export function usePrinterService() {
         template,
       });
 
-      console.log(`📝 Ticket formateado. Tamaño: ${ticket.content.length} caracteres`);
 
       return await printTicket(
         ticket.printerName,
@@ -158,7 +154,7 @@ export function usePrinterService() {
         openDrawer && printerKey === 'printer_main'
       );
     } catch (error) {
-      console.error('❌ Error en print:', error);
+
       return { success: false, error: error.message };
     }
   }, [getPrinterConfig, formatTicket, printTicket]);

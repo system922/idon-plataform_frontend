@@ -24,7 +24,7 @@ export const ticketService = {
       await this.printWithQZTray(htmlContent, options);
       
     } catch (error) {
-      console.error('Error en ticketService.print:', error);
+
       // Fallback a impresión del navegador
       await this.printWithBrowser(htmlContent, options);
     }
@@ -33,7 +33,7 @@ export const ticketService = {
   async printWithBrowser(htmlContent, options) {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      console.error('No se pudo abrir ventana de impresión');
+
       return;
     }
     
@@ -88,13 +88,13 @@ export const ticketService = {
         await qz.print(config, plainText);
         
         await qz.websocket.disconnect();
-        console.log('✅ Ticket impreso con QZ Tray');
+
       } catch (qzError) {
-        console.error('Error con QZ Tray:', qzError);
+
         throw qzError;
       }
     } else {
-      console.log('⚠️ QZ Tray no disponible, usando impresión de navegador');
+
       // Fallback a impresión de navegador
       await this.printWithBrowser(htmlContent, options);
     }

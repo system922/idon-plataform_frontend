@@ -223,7 +223,7 @@ export default function TakeOrderPageNew() {
   async function guardarOrden() {
     // 🔥 Prevenir múltiples envíos simultáneos
     if (guardando || isSendingRef.current) {
-      console.log('⚠️ Ya hay una orden en proceso, ignorando clic');
+
       return;
     }
 
@@ -319,7 +319,7 @@ export default function TakeOrderPageNew() {
       }, 2500);
 
     } catch (err) {
-      console.error('Error al guardar orden:', err);
+
       setError(err?.message || 'Error al guardar orden');
       setTimeout(() => setError(''), 5000);
     } finally {

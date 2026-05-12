@@ -30,7 +30,7 @@ export function BusinessContextProvider({ children }) {
         }
       }
     } catch (e) {
-      console.warn('Error detectando negocio asignado del usuario:', e);
+
     }
 
     // Si no hay usuario con businessId, cargar desde localStorage
@@ -39,7 +39,7 @@ export function BusinessContextProvider({ children }) {
       try {
         setSelectedBusinessState(JSON.parse(saved));
       } catch (e) {
-        console.warn('Error cargando negocio guardado:', e);
+
       }
     }
   }, []);
@@ -80,13 +80,13 @@ export function BusinessContextProvider({ children }) {
             try { localStorage.setItem('business_logo', b.logoUrl || ''); } catch {}
           }
         } catch (e) {
-          console.warn('Subdomain business detection failed', e);
+
         } finally {
           setBusinessLoading(false);
         }
       })();
     } catch (err) {
-      console.warn('Error detecting subdomain business:', err);
+
     }
   }, [selectedBusiness]);
 

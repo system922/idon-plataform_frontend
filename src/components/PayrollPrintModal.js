@@ -13,49 +13,47 @@ function getOperatorUser() {
 }
 
 async function getBusinessData() {
-  console.log('🔍 [getBusinessData] Iniciando obtención de datos del negocio...');
-  
+
   try {
     // 1. Obtener datos de einvoicing config (tiene los datos reales)
-    console.log('📡 [getBusinessData] Consultando /api/einvoicing/config...');
+
     const einvRes = await fetchWithAuth('/api/einvoicing/config');
     let einvData = null;
     if (einvRes.ok) {
       einvData = await einvRes.json();
-      console.log('✅ [getBusinessData] Datos de einvoicing:', einvData);
+
     } else {
-      console.warn('⚠️ [getBusinessData] No se pudo obtener /api/einvoicing/config');
+
     }
     
     // 2. Obtener datos del negocio desde localStorage
     const selectedBusiness = JSON.parse(localStorage.getItem('selectedBusiness') || 'null');
-    console.log('🏢 [getBusinessData] Negocio seleccionado localStorage:', selectedBusiness);
-    
+
     // 3. Obtener settings adicionales
     let settingsData = {};
     try {
-      console.log('📡 [getBusinessData] Consultando /api/settings...');
+
       const settingsRes = await fetchWithAuth('/api/settings');
       const settings = await settingsRes.json();
       settingsData = settings?.data ?? settings ?? {};
-      console.log('✅ [getBusinessData] Settings obtenidos:', settingsData);
+
     } catch (e) {
-      console.warn('⚠️ [getBusinessData] Error obteniendo settings:', e);
+
     }
     
     // 4. Obtener receipt-info (datos comerciales para tickets)
     let receiptData = {};
     try {
-      console.log('📡 [getBusinessData] Consultando /api/settings/receipt-info...');
+
       const receiptRes = await fetchWithAuth('/api/settings/receipt-info');
       if (receiptRes.ok) {
         receiptData = await receiptRes.json();
-        console.log('✅ [getBusinessData] Datos receipt-info:', receiptData);
+
       } else {
-        console.warn('⚠️ [getBusinessData] No se pudo obtener /api/settings/receipt-info');
+
       }
     } catch (e) {
-      console.warn('⚠️ [getBusinessData] Error obteniendo receipt-info:', e);
+
     }
     
     // PRIORIDAD: einvData > receiptData > selectedBusiness > settingsData
@@ -93,11 +91,11 @@ async function getBusinessData() {
              ""
     };
     
-    console.log('🎉 [getBusinessData] Resultado final:', result);
+
     return result;
     
   } catch (error) {
-    console.error('❌ [getBusinessData] Error obteniendo datos del negocio:', error);
+
     return {
       trade_name: "Mi Negocio",
       company_name: "Mi Negocio",
@@ -132,11 +130,9 @@ export default function PayrollPrintModal({
 
   useEffect(() => {
     if (open) {
-      console.log('📂 [PayrollPrintModal] Modal abierto');
-      console.log('📦 propBusiness recibido:', propBusiness);
-      
+
       if (propBusiness && (propBusiness.name || propBusiness.trade_name || propBusiness.company_name)) {
-        console.log('✅ Usando propBusiness para datos del negocio');
+
         setBusinessData({
           trade_name: propBusiness.trade_name || propBusiness.name || propBusiness.company_name || 'MI NEGOCIO',
           company_name: propBusiness.company_name || propBusiness.name || propBusiness.trade_name || 'MI NEGOCIO',
@@ -146,9 +142,9 @@ export default function PayrollPrintModal({
           email: propBusiness.email || ""
         });
       } else {
-        console.log('🔄 Obteniendo datos del negocio desde API...');
+
         getBusinessData().then(data => {
-          console.log('📊 businessData obtenido:', data);
+
           setBusinessData(data);
         });
       }
@@ -238,39 +234,22 @@ export default function PayrollPrintModal({
     setGeneratingPDF(true);
     setError('');
     
-    console.log('========== 🚀 INICIO GENERACIÓN PDF ==========');
-    console.log('📄 Datos de payroll:', payroll);
-    console.log('📋 Datos de details:', details);
-    console.log('🏢 businessData:', businessData);
-    console.log('👤 usuario:', userName);
-    console.log('💰 paymentType:', paymentType);
-    console.log('🖨️ printerTicket:', printerTicket);
-    
+
     try {
       // Validar que businessData tenga datos
       if (!businessData) {
-        console.error('❌ businessData es null o undefined');
+
         throw new Error('No se pudieron obtener los datos del negocio');
       }
-      
-      console.log('✅ businessData cargado correctamente:', {
-        trade_name: businessData.trade_name,
-        company_name: businessData.company_name,
-        ruc: businessData.ruc,
-        address: businessData.address,
-        phone: businessData.phone,
-        email: businessData.email
-      });
       
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.height;
       let y = 20;
 
-      console.log('📐 Dimensiones PDF:', { pageWidth, pageHeight });
 
       // ============ ENCABEZADO ============
-      console.log('🎨 Generando encabezado...');
+
       doc.setFillColor(41, 128, 185);
       doc.rect(0, 0, pageWidth, 40, 'F');
       
@@ -278,19 +257,19 @@ export default function PayrollPrintModal({
       doc.setFontSize(18);
       doc.setFont(undefined, 'bold');
       const tituloNegocio = businessData?.trade_name?.toUpperCase() || businessData?.company_name?.toUpperCase() || "MI NEGOCIO";
-      console.log('🏷️ Título negocio:', tituloNegocio);
+
       doc.text(tituloNegocio, pageWidth / 2, y, { align: 'center' });
       
       y += 6;
       doc.setFontSize(8);
       doc.setFont(undefined, 'normal');
       if (businessData?.address) {
-        console.log('📍 Dirección:', businessData.address);
+
         doc.text(businessData.address, pageWidth / 2, y, { align: 'center' });
         y += 4;
       }
       const telefonoRuc = `Tel: ${businessData?.phone || "N/A"} | RUC: ${businessData?.ruc || "N/A"}`;
-      console.log('📞 Teléfono/RUC:', telefonoRuc);
+
       doc.text(telefonoRuc, pageWidth / 2, y, { align: 'center' });
 
       // ============ TÍTULO ============
@@ -306,7 +285,7 @@ export default function PayrollPrintModal({
       doc.setFont(undefined, 'normal');
       
       const fechaActual = formatDateTime();
-      console.log('📅 Fecha actual:', fechaActual);
+
       doc.text(`Fecha y Hora: ${fechaActual}`, 15, y);
       y += 4;
       doc.text(`Usuario: ${userName}`, 15, y);
@@ -329,7 +308,7 @@ export default function PayrollPrintModal({
       doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
       
-      console.log('👨‍💼 Nombre empleado:', payroll?.full_name);
+
       doc.text(`Nombre:`, 18, y);
       doc.text(payroll?.full_name || "N/A", pageWidth - 18, y, { align: 'right' });
       y += 5;
@@ -360,7 +339,7 @@ export default function PayrollPrintModal({
         doc.setFontSize(9);
         doc.setFont(undefined, 'normal');
 
-        console.log('💰 Items de ingreso:', itemsList);
+
         itemsList.forEach(item => {
           doc.text(`${item.concept}:`, 18, y);
           doc.text(`$${item.amount.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
@@ -387,7 +366,7 @@ export default function PayrollPrintModal({
         doc.setFontSize(9);
         doc.setFont(undefined, 'normal');
 
-        console.log('📉 Deducciones:', deductionsList);
+
         deductionsList.forEach(deduct => {
           doc.text(`${deduct.concept}:`, 18, y);
           doc.text(`$${deduct.amount.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
@@ -408,7 +387,7 @@ export default function PayrollPrintModal({
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
       doc.setTextColor(46, 204, 113);
-      console.log('💵 Neto a pagar:', netSalary);
+
       doc.text(`NETO A PAGAR:`, 18, y);
       doc.text(`$${netSalary.toFixed(2)}`, pageWidth - 18, y, { align: 'right' });
 
@@ -446,20 +425,19 @@ export default function PayrollPrintModal({
       const safeName = payroll?.full_name?.replace(/[^a-z0-9]/gi, '-') || 'recibo';
       const fechaDoc = new Date().toISOString().split('T')[0];
       const nombreArchivo = `recibo-nomina-${safeName}-${fechaDoc}.pdf`;
-      console.log('💾 Guardando PDF como:', nombreArchivo);
+
       doc.save(nombreArchivo);
       
-      console.log('✅ PDF generado exitosamente');
+
       setSuccess('✅ PDF generado correctamente');
       setTimeout(() => setSuccess(''), 3000);
       
     } catch (err) {
-      console.error('❌ Error generando PDF:', err);
-      console.error('Stack trace:', err.stack);
+
       setError(err.message || 'Error al generar PDF');
     } finally {
       setGeneratingPDF(false);
-      console.log('========== 🏁 FIN GENERACIÓN PDF ==========');
+
     }
   };
 

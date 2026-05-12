@@ -83,10 +83,10 @@ export default function ReportsAdvanced() {
         throw new Error(result.error || `HTTP ${res.status}: Error al cargar reporte`);
       }
       
-      console.log('[Advanced] Data loaded:', result);
+
       setData(result);
     } catch (err) {
-      console.error('[Advanced] Load error:', err);
+
       setError(err.message || 'Error desconocido al cargar reporte');
     } finally {
       setLoading(false);

@@ -114,7 +114,7 @@ export default function AperturaCajaPage({ onAperturaCompleta, onClose }) {
       await fetchWithAuth('/api/audit-log', {
         method: 'POST',
         body: JSON.stringify(auditPayload)
-      }).catch(console.warn);
+      }).catch(() => {});
 
       onAperturaCompleta(data);
 

@@ -10,7 +10,7 @@ export const auditLogService = {
       });
       
       if (!response.ok) {
-        console.warn('Error registrando en auditoría');
+
         // No lanzamos error para no interrumpir el flujo principal
         return { success: false, error: 'Error al registrar' };
       }
@@ -18,9 +18,9 @@ export const auditLogService = {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('Error en auditLogService.register:', error);
+
       // En desarrollo, registrar en consola
-      console.log('📝 Auditoría (mock):', data);
+
       return { success: true, mock: true };
     }
   }

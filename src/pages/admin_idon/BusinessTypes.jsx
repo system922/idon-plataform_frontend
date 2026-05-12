@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useConfirm } from '../../context/ConfirmContext';
 import {
   FiBriefcase, FiPlus, FiEdit2, FiTrash2, FiCheck,
   FiRefreshCw, FiX,
@@ -18,6 +19,7 @@ const Lbl = ({ children }) => (
 );
 
 export default function BusinessTypes() {
+  const { showConfirm } = useConfirm();
   const [types,   setTypes]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
@@ -39,7 +41,7 @@ export default function BusinessTypes() {
   useEffect(() => { load(); }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar este tipo de negocio? Los negocios asociados quedarán sin tipo.')) return;
+    if (!await showConfirm('¿Eliminar este tipo de negocio? Los negocios asociados quedarán sin tipo.')) return;
     try {
       await adminApiService.delete(`/admin/business-types/${id}`);
       load();

@@ -41,7 +41,7 @@ export default function AdminDashboard() {
       setRecentActivity(data.recentActivity || []);
       setLoading(false);
     } catch (err) {
-      console.error('Error fetching dashboard:', err);
+
       setError(err.message);
       setLoading(false);
     }

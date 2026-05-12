@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useConfirm } from '../../context/ConfirmContext';
 import {
   FiPlus, FiEdit, FiTrash2, FiX, FiCheck, FiLoader,
   FiBox, FiStar, FiAlertCircle
@@ -7,6 +8,7 @@ import { adminApiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
 
 export default function AdminTemplatesPage() {
+  const { showConfirm } = useConfirm();
   const [templates, setTemplates] = useState([]);
   const [businessTypes, setBusinessTypes] = useState([]);
   const [allModules, setAllModules] = useState([]);
@@ -41,7 +43,7 @@ export default function AdminTemplatesPage() {
       setBusinessTypes(businessTypesRes.data?.data || businessTypesRes.data || []);
       setAllModules(modulesRes.data?.data || modulesRes.data || []);
     } catch (error) {
-      console.error('Error loading data:', error);
+
       setErrorMsg('Error al cargar los datos: ' + (error.message || 'Desconocido'));
     } finally {
       setLoading(false);
@@ -158,7 +160,7 @@ export default function AdminTemplatesPage() {
       setShowModal(false);
       loadData();
     } catch (error) {
-      console.error('Error saving template:', error);
+
       setErrorMsg(error.response?.data?.message || error.message || 'Error al guardar la plantilla');
     } finally {
       setSaving(false);
@@ -166,14 +168,13 @@ export default function AdminTemplatesPage() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de eliminar esta plantilla? Esta acción no se puede deshacer.')) {
-      try {
-        await adminApiService.delete(`/admin/templates/${id}`);
-        loadData();
-      } catch (error) {
-        console.error('Error deleting template:', error);
-        alert('Error al eliminar la plantilla');
-      }
+    if (!await showConfirm('¿Estás seguro de eliminar esta plantilla? Esta acción no se puede deshacer.')) return;
+    try {
+      await adminApiService.delete(`/admin/templates/${id}`);
+      loadData();
+    } catch (error) {
+
+      alert('Error al eliminar la plantilla');
     }
   };
 

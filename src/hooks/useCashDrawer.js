@@ -9,9 +9,9 @@ export function useCashDrawer(printerName = 'POS-58') {
     const checkQZTray = () => {
       if (typeof window !== 'undefined' && window.qz) {
         setQzReady(true);
-        console.log('✅ QZ Tray detectado');
+
       } else {
-        console.log('⚠️ QZ Tray no disponible, usando modo simulación');
+
         setQzReady(false);
       }
     };
@@ -42,17 +42,17 @@ export function useCashDrawer(printerName = 'POS-58') {
         
         try {
           await window.qz.print(config, commands[0]);
-          console.log('✅ Cajón abierto correctamente');
+
         } catch (printError) {
-          console.warn('Error con comando principal, intentando alternativo:', printError);
+
           // Intentar comandos alternativos
           for (const cmd of commands.slice(1)) {
             try {
               await window.qz.print(config, typeof cmd === 'string' ? cmd : [cmd]);
-              console.log('✅ Cajón abierto con comando alternativo');
+
               break;
             } catch (altError) {
-              console.warn('Comando alternativo falló:', altError);
+
             }
           }
         }
@@ -60,15 +60,15 @@ export function useCashDrawer(printerName = 'POS-58') {
         await window.qz.websocket.disconnect();
       } else {
         // Modo simulación cuando no hay QZ Tray
-        console.log('🔔 [SIMULACIÓN] Abriendo cajón de dinero');
+
         // Puedes mostrar una notificación al usuario
         if (typeof window !== 'undefined' && window.alert) {
           // No mostrar alerta para no molestar, solo log
-          console.log('Cajón físico no disponible - modo demostración');
+
         }
       }
     } catch (error) {
-      console.error('❌ Error abriendo cajón:', error);
+
       // No propagamos el error para no interrumpir el flujo
     } finally {
       setLoading(false);
@@ -86,7 +86,7 @@ export function useCashDrawer(printerName = 'POS-58') {
       await window.qz.websocket.disconnect();
       return { success: true, message: 'Conexión exitosa con QZ Tray' };
     } catch (error) {
-      console.error('Error probando conexión:', error);
+
       return { success: false, message: error.message };
     }
   }

@@ -283,16 +283,15 @@ export default function BusinessLayout({ user, onLogout }) {
   // Funciona igual que en PosCheckoutPage
   // ═══════════════════════════════════════════════════════
   const abrirCajon = useCallback(async () => {
-    console.log('🔓 [Layout] Abriendo cajón...');
-    
+
     // Intento 1: QZ Tray
     if (isQzReady) {
       try {
         await openDrawerQz();
-        console.log('✅ [Layout] Cajón abierto con QZ Tray');
+
         return true;
       } catch (err) {
-        console.warn('⚠️ [Layout] QZ Tray falló:', err.message);
+
       }
     }
     
@@ -300,11 +299,11 @@ export default function BusinessLayout({ user, onLogout }) {
     try {
       const res = await fetchWithAuth('/api/pos/open-drawer', { method: 'POST' });
       if (res.ok) {
-        console.log('✅ [Layout] Cajón abierto por HTTP');
+
         return true;
       }
     } catch (err) {
-      console.warn('⚠️ [Layout] HTTP falló:', err.message);
+
     }
     
     throw new Error('No se pudo abrir el cajón');
@@ -334,7 +333,7 @@ export default function BusinessLayout({ user, onLogout }) {
         setAperturaHecha(true);
       }
     } catch (err) {
-      console.error('Error checking aperture:', err);
+
       setAperturaHecha(true);
     } finally {
       setAperturaChecked(true);
@@ -388,7 +387,7 @@ export default function BusinessLayout({ user, onLogout }) {
         cajero: opening?.user_name || user?.nombre || 'N/A'
       };
     } catch (err) {
-      console.error('Error cargando datos cierre:', err);
+
       return null;
     }
   };
@@ -424,9 +423,9 @@ export default function BusinessLayout({ user, onLogout }) {
     
     try {
       await abrirCajon();
-      console.log('✅ Cajón abierto para el cierre');
+
     } catch (err) {
-      console.warn('⚠️ No se pudo abrir el cajón para el cierre');
+
     } finally {
       setAbriendoCajonCierre(false);
       setMostrarCierreForm(true);
@@ -470,7 +469,7 @@ export default function BusinessLayout({ user, onLogout }) {
     try {
       await abrirCajon();
     } catch (err) {
-      console.warn('⚠️ No se pudo abrir el cajón');
+
     } finally {
       setAbriendoCaja(false);
       setAperturaIniciada(false);
@@ -489,7 +488,7 @@ export default function BusinessLayout({ user, onLogout }) {
     try {
       await abrirCajon();
     } catch (err) {
-      console.warn('⚠️ No se pudo abrir el cajón');
+
     } finally {
       setAbriendoCaja(false);
       setMostrarAlerta(false);
@@ -543,7 +542,7 @@ export default function BusinessLayout({ user, onLogout }) {
           if (navData.ok) setNavData(navData.data);
         }
       } catch (e) {
-        console.error('Error cargando layout:', e);
+
         setError(e.message);
       } finally {
         setLoading(false);

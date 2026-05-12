@@ -42,11 +42,11 @@ export const BusinessProvider = ({ children }) => {
       if (schema) {
         // Nivel 3: usa menú filtrado y log de depuración
         nav = await navigationService.getNavigationMenuLevel3({ schema, businessId });
-        console.log('[BusinessProvider] Nivel 3 → schema:', schema, 'businessId:', businessId, 'nav:', nav);
+
       } else {
         // Nivel 2: normal
         nav = await navigationService.getNavigationMenu();
-        console.log('[BusinessProvider] Nivel 2 → nav:', nav);
+
       }
 
       const [info, mods] = await Promise.all([
@@ -57,7 +57,7 @@ export const BusinessProvider = ({ children }) => {
       setNavigation(nav);
       setModules(mods);
     } catch (error) {
-      console.error('Error loading business context:', error);
+
     } finally {
       setLoading(false);
     }

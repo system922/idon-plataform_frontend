@@ -86,11 +86,11 @@ export function useAutoPrint({ businessId, enabled = true }) {
           try {
             await tryPrint(order);
           } catch (err) {
-            console.error('[AutoPrint] Error imprimiendo orden', order.order_number, err);
+
           }
         }
       } catch (err) {
-        console.error('[AutoPrint] Error en poll:', err);
+
       } finally {
         printingRef.current = false;
       }
@@ -113,9 +113,7 @@ export function useAutoPrint({ businessId, enabled = true }) {
       reconnectionDelay: 3000,
     });
 
-    socket.on('connect', () =>
-      console.log('[AutoPrint] Socket conectado — business:', businessId)
-    );
+    socket.on('connect', () => {});
 
     socket.on('new_order', async (data) => {
       try {
@@ -124,7 +122,7 @@ export function useAutoPrint({ businessId, enabled = true }) {
         const order  = { ...pedido, items };
         await tryPrint(order);
       } catch (err) {
-        console.error('[AutoPrint] Error socket print:', err);
+
       }
     });
 

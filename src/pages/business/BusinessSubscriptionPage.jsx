@@ -107,7 +107,7 @@ export default function BusinessSubscriptionPage({ onLogout }) {
       }
       
     } catch (err) {
-      console.error('Error loading data:', err);
+
       setError(err.message);
     } finally {
       setLoading(false);
@@ -177,7 +177,7 @@ export default function BusinessSubscriptionPage({ onLogout }) {
       }, 3000);
       
     } catch (err) {
-      console.error('Error saving subscription:', err);
+
       setError(err.message);
     } finally {
       setSaving(false);

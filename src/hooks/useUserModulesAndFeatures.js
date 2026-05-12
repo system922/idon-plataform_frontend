@@ -36,8 +36,7 @@ export function useUserModulesAndFeatures(businessId) {
         })();
 
       if (!actualBusinessId) {
-        console.warn('⚠️ useUserModulesAndFeatures: No businessId disponible');
-        
+
         // Fallback a localStorage
         const savedModules = JSON.parse(localStorage.getItem('activeModules') || '[]');
         const savedFeatures = JSON.parse(localStorage.getItem('activeFeatures') || '[]');
@@ -53,7 +52,7 @@ export function useUserModulesAndFeatures(businessId) {
                   localStorage.getItem('idonToken');
 
       if (!token) {
-        console.warn('⚠️ useUserModulesAndFeatures: No hay token - usando localStorage');
+
         const savedModules = JSON.parse(localStorage.getItem('activeModules') || '[]');
         const savedFeatures = JSON.parse(localStorage.getItem('activeFeatures') || '[]');
         setModules(savedModules);
@@ -66,7 +65,6 @@ export function useUserModulesAndFeatures(businessId) {
       const API_BASE = process.env.REACT_APP_API_BASE || 'https://idon-plataform-backend.onrender.com';
       const url = `${API_BASE}/api/business/${actualBusinessId}/modules-and-features`;
 
-      console.log(`🔄 Fetching: ${url}`);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -103,11 +101,9 @@ export function useUserModulesAndFeatures(businessId) {
       setModules(moduleCodes || []);
       setFeatures(featureCodes || []);
 
-      console.log('✅ Módulos:', moduleCodes);
-      console.log('✅ Features:', featureCodes);
 
     } catch (err) {
-      console.error('❌ useUserModulesAndFeatures error:', err.message);
+
       setError(err.message);
       
       // Fallback a localStorage

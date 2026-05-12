@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
+import { useConfirm } from '../../context/ConfirmContext';
 import { Plus, Edit2, Trash2, Tag, X, Search, RefreshCw } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 import { useRealtimeSync } from '../../hooks/useRealtimeSync';
@@ -94,6 +95,7 @@ const btnSecondary = {
 };
 
 export default function InventoryCategoriesPage() {
+  const { showConfirm } = useConfirm();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -121,7 +123,7 @@ export default function InventoryCategoriesPage() {
   const openCreate = () => { setEditingCat(null); setShowModal(true); };
   const openEdit = (cat) => { setEditingCat(cat); setShowModal(true); };
   const handleDelete = async (cat) => {
-    if (!window.confirm(`¿Eliminar categoría "${cat.name}"?`)) return;
+    if (!await showConfirm(`¿Eliminar categoría "${cat.name}"?`)) return;
     try {
       const res = await fetchWithAuth(`/api/categories/${cat.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).error || 'Error al eliminar');

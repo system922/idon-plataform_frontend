@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
+import { useConfirm } from '../../context/ConfirmContext';
 import { Plus, Edit2, Trash2, X, Search, RefreshCw, Truck } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 
@@ -109,6 +110,7 @@ function SupplierModal({ supplier, onClose, onSave, saving }) {
 }
 
 export default function InventorySuppliersPage() {
+  const { showConfirm } = useConfirm();
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [saving, setSaving]       = useState(false);
@@ -150,7 +152,7 @@ export default function InventorySuppliersPage() {
   };
 
   const handleDelete = async (s) => {
-    if (!window.confirm(`¿Desactivar "${s.name}"?`)) return;
+    if (!await showConfirm(`¿Desactivar "${s.name}"?`)) return;
     try {
       const res = await fetchWithAuth(`/api/suppliers/${s.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Error al eliminar');

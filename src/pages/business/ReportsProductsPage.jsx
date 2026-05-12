@@ -191,7 +191,7 @@ export default function ReportsProductsPage() {
     if (loadingCategories) return;
     try {
       setLoadingCategories(true);
-      console.log('[Categories] Fetching...');
+
       const res = await fetchWithAuth('/api/reports/products/categories');
       
       if (!res.ok) {
@@ -199,16 +199,15 @@ export default function ReportsProductsPage() {
       }
       
       const data = await res.json();
-      console.log('[Categories] Response:', data);
-      
+
       if (data.success) {
         setCategories(Array.isArray(data.data) ? data.data : []);
       } else {
-        console.warn('[Categories] Error:', data.error);
+
         setCategories([]);
       }
     } catch (err) {
-      console.error('[Categories] Error:', err);
+
       setCategories([]);
     } finally {
       setLoadingCategories(false);
@@ -227,8 +226,7 @@ export default function ReportsProductsPage() {
         url = `/api/reports/products-stats?startDate=${customStartDate}&endDate=${customEndDate}`;
       }
       
-      console.log('[Stats] Fetching:', url);
-      
+
       const res = await fetchWithAuth(url);
       
       if (!res.ok) {
@@ -236,8 +234,7 @@ export default function ReportsProductsPage() {
       }
       
       const data = await res.json();
-      console.log('[Stats] Response:', data);
-      
+
       if (data.success && data.data) {
         setStats({
           total_productos_vendidos: data.data.total_productos_vendidos ?? 0,
@@ -247,10 +244,10 @@ export default function ReportsProductsPage() {
         });
         setDataSource(data.metadata?.invoiceSource ?? null);
       } else {
-        console.warn('[Stats] Response not successful:', data);
+
       }
     } catch (err) {
-      console.error('[Stats] Error:', err);
+
     } finally {
       setLoadingStats(false);
     }
@@ -282,8 +279,7 @@ export default function ReportsProductsPage() {
       params.append('limit', String(filterLimit));
       
       const url = `/api/reports/products-sold?${params.toString()}`;
-      console.log('[Products] Fetching:', url);
-      
+
       const res = await fetchWithAuth(url);
       
       if (!res.ok) {
@@ -291,8 +287,7 @@ export default function ReportsProductsPage() {
       }
       
       const data = await res.json();
-      console.log('[Products] Response:', data);
-      
+
       let productsList = [];
       if (data.success && data.data && Array.isArray(data.data)) {
         productsList = data.data;
@@ -304,8 +299,7 @@ export default function ReportsProductsPage() {
         productsList = data;
       }
       
-      console.log('[Products] Count:', productsList.length);
-      
+
       if (productsList.length === 0) {
         const sourceInfo = data.metadata?.invoiceSource || 'unknown';
         if (sourceInfo === 'none') {
@@ -328,7 +322,7 @@ export default function ReportsProductsPage() {
       setProducts(formatted);
       setDataSource(data.metadata?.invoiceSource ?? null);
     } catch (err) {
-      console.error('[Products] Error:', err);
+
       setError('Error al cargar el reporte: ' + (err.message || 'Error desconocido'));
       setProducts([]);
     } finally {
@@ -373,7 +367,7 @@ export default function ReportsProductsPage() {
   const handleApplyFilters = (newFilters) => {
     if (applyingFilters) return;
     setApplyingFilters(true);
-    console.log('[Filters] Applying:', newFilters);
+
     setFilterCategory(newFilters.category);
     setFilterOrderBy(newFilters.orderBy || 'quantity');
     setFilterLimit(newFilters.limit || 50);
@@ -383,7 +377,7 @@ export default function ReportsProductsPage() {
 
   // Manejar cambio de período
   const handleDateRangeChange = (value) => {
-    console.log('[DateRange] Changed to:', value);
+
     setDateRange(value);
     setShowDateDropdown(false);
     if (value === 'custom') {
@@ -397,7 +391,7 @@ export default function ReportsProductsPage() {
 
   // Aplicar fechas personalizadas
   const handleApplyCustomDate = (start, end) => {
-    console.log('[CustomDate] Applied:', start, end);
+
     setCustomStartDate(start);
     setCustomEndDate(end);
     setShowCustomDate(false);

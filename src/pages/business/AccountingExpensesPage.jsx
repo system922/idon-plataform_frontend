@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useConfirm } from '../../context/ConfirmContext';
 import {
-  FiDollarSign, FiPlus, FiEdit2, FiTrash2, FiRefreshCw, 
+  FiDollarSign, FiPlus, FiEdit2, FiTrash2, FiRefreshCw,
   FiAlertCircle, FiSearch, FiCalendar, FiChevronDown,
   FiDownload, FiX, FiTag, FiTrendingUp
 } from "react-icons/fi";
@@ -215,6 +216,7 @@ function CategoryModal({ category, onClose, onSave, saving }) {
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function AccountingExpensesPage() {
   const { selectedBusiness } = useBusinessContext();
+  const { showConfirm } = useConfirm();
   const [expenses, setExpenses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -241,7 +243,7 @@ export default function AccountingExpensesPage() {
       const data = await res.json();
       setCategories(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error loading categories:', err);
+
     }
   }, [selectedBusiness]);
 
@@ -287,7 +289,7 @@ export default function AccountingExpensesPage() {
       setTotalExpenses(total);
       
     } catch (err) {
-      console.error('Error loading expenses:', err);
+
       setError('Error al cargar los gastos');
       setExpenses([]);
     } finally {
@@ -360,7 +362,7 @@ export default function AccountingExpensesPage() {
   };
 
   const handleDeleteExpense = async (expense) => {
-    if (!window.confirm(`¿Eliminar el gasto "${expense.description}"?`)) return;
+    if (!await showConfirm(`¿Eliminar el gasto "${expense.description}"?`)) return;
     setSaving(true);
     try {
       const res = await fetchWithAuth(`/api/expenses/${expense.id}`, { method: 'DELETE' });
@@ -394,7 +396,7 @@ export default function AccountingExpensesPage() {
   };
 
   const handleDeleteCategory = async (category) => {
-    if (!window.confirm(`¿Eliminar la categoría "${category.name}"? Los gastos quedarán sin categoría.`)) return;
+    if (!await showConfirm(`¿Eliminar la categoría "${category.name}"? Los gastos quedarán sin categoría.`)) return;
     try {
       const res = await fetchWithAuth(`/api/expense-categories/${category.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Error al eliminar categoría');

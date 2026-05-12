@@ -18,8 +18,8 @@ import Footer from '../../components/common/Footer';
 import { BusinessContextProvider } from '../../admin/config/BusinessContext';
 import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';
 import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
-import { useAutoPrint } from '../../hooks/useAutoPrint';
 import { usePrinterService } from '../../services/usePrinterService';
+import { useQzTray } from '../../components/useQzTray';
 import { useAppVersion } from '../../hooks/useAppVersion';
 
 const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
@@ -258,7 +258,7 @@ export default function BusinessLayout({ user, onLogout }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedBiz, setSelectedBiz] = useState(getStoredBiz);
 
-  useAutoPrint({ businessId: selectedBiz?.id, enabled: !!selectedBiz?.id });
+  useQzTray();
   const { updateReady, countdown } = useAppVersion();
 
   // Apertura de caja
@@ -280,13 +280,13 @@ export default function BusinessLayout({ user, onLogout }) {
   // 🔥 FUNCIÓN PARA ABRIR CAJÓN - IGUAL QUE EN GlobalExpenseBubble
   // ═══════════════════════════════════════════════════════
   const abrirCajon = useCallback(async () => {
-    console.log('🔓 [Layout] Abriendo cajón con openCashDrawer...');
+
     try {
       await openCashDrawer();
-      console.log('✅ [Layout] Cajón abierto exitosamente');
+
       return true;
     } catch (err) {
-      console.error('❌ [Layout] Error abriendo cajón:', err);
+
       // No lanzamos error para no bloquear el flujo
       return false;
     }
@@ -316,7 +316,7 @@ export default function BusinessLayout({ user, onLogout }) {
         setAperturaHecha(true);
       }
     } catch (err) {
-      console.error('Error checking aperture:', err);
+
       setAperturaHecha(true);
     } finally {
       setAperturaChecked(true);
@@ -370,7 +370,7 @@ export default function BusinessLayout({ user, onLogout }) {
         cajero: opening?.user_name || user?.nombre || 'N/A'
       };
     } catch (err) {
-      console.error('Error cargando datos cierre:', err);
+
       return null;
     }
   };
@@ -428,9 +428,9 @@ export default function BusinessLayout({ user, onLogout }) {
           new_values: data,
           reason: "Cierre de caja"
         })
-      }).catch(err => console.warn('Error guardando auditoría:', err));
+      }).catch(() => {});
     }
-    
+
     setMostrarCierreForm(false);
     setAperturaHecha(false);
     await checkApertura();
@@ -494,7 +494,7 @@ export default function BusinessLayout({ user, onLogout }) {
           },
           reason: "Registro de Apertura"
         })
-      }).catch(err => console.warn('Error guardando auditoría:', err));
+      }).catch(() => {});
     }
 
     setAperturaHecha(true);
@@ -516,7 +516,7 @@ export default function BusinessLayout({ user, onLogout }) {
           if (navData.ok) setNavData(navData.data);
         }
       } catch (e) {
-        console.error('Error cargando layout:', e);
+
         setError(e.message);
       } finally {
         setLoading(false);

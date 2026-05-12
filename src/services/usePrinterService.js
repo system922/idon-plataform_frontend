@@ -34,7 +34,7 @@ export function usePrinterService() {
 
       return getDefaultPrinter(printerKey);
     } catch (error) {
-      console.warn(`Error obteniendo configuración ${printerKey}:`, error);
+
       return getDefaultPrinter(printerKey);
     }
   }, []);
@@ -97,7 +97,7 @@ export function usePrinterService() {
    */
   const printTicket = useCallback(async (printerName, content, openDrawer = false) => {
     if (!qz.websocket.isActive()) {
-      console.error('❌ QZ Tray no está conectado');
+
       return { success: false, error: 'QZ Tray no está conectado' };
     }
 
@@ -115,10 +115,10 @@ export function usePrinterService() {
 
     try {
       await sendTo(printerName);
-      console.log(`✅ Impreso en: ${printerName}`);
+
       return { success: true };
     } catch (err) {
-      console.error('❌ Error en printTicket:', err);
+
       return { success: false, error: err.message };
     }
   }, []);
@@ -128,11 +128,9 @@ export function usePrinterService() {
    */
   const print = useCallback(async (printerKey, template, data, openDrawer = false) => {
     try {
-      console.log(`🔍 Obteniendo config de ${printerKey}...`);
 
       const printerConfig = await getPrinterConfig(printerKey);
 
-      console.log(`📋 Config obtenida:`, printerConfig);
 
       if (!printerConfig?.name) {
         return { success: false, error: 'Impresora no configurada' };
@@ -149,7 +147,6 @@ export function usePrinterService() {
         template,
       });
 
-      console.log(`📝 Ticket formateado. Tamaño: ${ticket.content.length} caracteres`);
 
       return await printTicket(
         ticket.printerName,
@@ -157,7 +154,7 @@ export function usePrinterService() {
         openDrawer && printerKey === 'printer_main'
       );
     } catch (error) {
-      console.error('❌ Error en print:', error);
+
       return { success: false, error: error.message };
     }
   }, [getPrinterConfig, formatTicket, printTicket]);
@@ -353,10 +350,11 @@ function formatComandaTicket(data, width = 32) {
       const name = String(getItemName(main)).trim().toUpperCase();
       const prefix = `${qty}x `;
       const nameLines = wrap(name, width - prefix.length);
+      const indent = ' '.repeat(prefix.length);
 
       out += prefix + (nameLines[0] || '') + '\n';
       for (let i = 1; i < nameLines.length; i++) {
-        out += '   ' + nameLines[i] + '\n';
+        out += indent + nameLines[i] + '\n';
       }
 
       const itemNotes = getItemNotes(main);
@@ -435,11 +433,12 @@ function formatComandaModTicket(data, width = 32) {
     const extras = item.extras || [];
     const notas  = item.notas || item.notes || '';
     const prefix = `${qty}x `;
+    const indent = ' '.repeat(prefix.length);
     const subW   = width - 6;
 
     const nameLines = wrap(nombre, width - prefix.length);
     out += prefix + (nameLines[0] || '') + '\n';
-    for (let i = 1; i < nameLines.length; i++) out += '   ' + nameLines[i] + '\n';
+    for (let i = 1; i < nameLines.length; i++) out += indent + nameLines[i] + '\n';
 
     extras.forEach(e => {
       wrap(String(e.name || '').toUpperCase(), subW).forEach(ln => { out += '      + ' + ln + '\n'; });
@@ -495,11 +494,11 @@ function formatSimpleTicket(data, width = 42) {
   t += `FECHA: ${fecha}   HORA: ${hora}\n`;
   t += sep + '\n';
 
-  // ── Tabla: CANT | DESC | P.UNIT | TOTAL ─────────────────────────────────────
-  const cW = 4, pW = 7, tW = 8;
-  const dW = Math.max(6, width - cW - 1 - pW - 1 - tW - 2);
+  // ── Tabla: CANT(cW) + ' ' + DESC(dW) + ' ' + P.UNT(pW) + ' ' + TOTAL(tW) = width ─
+  const cW = 4, pW = 8, tW = 9;
+  const dW = Math.max(6, width - cW - pW - tW - 3); // 3 espacios entre 4 columnas
 
-  t += padLeft('CANT', cW) + ' ' + padRight('DESC', dW) + ' ' + padLeft('P.UNIT', pW) + ' ' + padLeft('TOTAL', tW) + '\n';
+  t += padLeft('CANT', cW) + ' ' + padRight('DESC', dW) + ' ' + padLeft('P.UNT', pW) + ' ' + padLeft('TOTAL', tW) + '\n';
   t += sep + '\n';
 
   items.forEach(item => {
@@ -510,7 +509,7 @@ function formatSimpleTicket(data, width = 42) {
 
     const descLines = wrap(desc, dW);
     t += padLeft(String(qty), cW) + ' ' + padRight(descLines[0] || '', dW) + ' ' + padLeft(formatMoney(price), pW) + ' ' + padLeft(formatMoney(tot), tW) + '\n';
-    for (let i = 1; i < descLines.length; i++) t += ' '.repeat(cW + 1) + descLines[i] + '\n';
+    for (let i = 1; i < descLines.length; i++) t += ' '.repeat(cW + 1) + padRight(descLines[i], dW) + '\n';
   });
 
   t += line + '\n';
@@ -604,11 +603,11 @@ function formatInvoiceTicket(data, width = 42) {
   if (invoice?.remission_guide) t += `Guía Rem.: ${invoice.remission_guide}\n`;
   t += sep + '\n';
 
-  // ─── Tabla de ítems: QTY(4) sp DESCRIPCIÓN(dW) sp P.UNIT(8) sp TOTAL(9) ─
+  // ─── Tabla: CANT(qW) + ' ' + DESC(dW) + ' ' + P.UNT(pW) + ' ' + TOTAL(tW) = width ─
   const qW = 4, pW = 8, tW = 9;
-  const dW = width - qW - 1 - pW - 1 - tW - 2;
+  const dW = Math.max(6, width - qW - pW - tW - 3); // 3 espacios entre 4 columnas
 
-  t += padLeft('CANT.', qW) + ' ' + padRight('DESC.', dW) + ' ' + padLeft('P.UNIT', pW) + ' ' + padLeft('TOTAL', tW) + '\n';
+  t += padLeft('CANT', qW) + ' ' + padRight('DESC', dW) + ' ' + padLeft('P.UNT', pW) + ' ' + padLeft('TOTAL', tW) + '\n';
   t += sep + '\n';
 
   items.forEach(item => {
@@ -620,7 +619,7 @@ function formatInvoiceTicket(data, width = 42) {
     const descLines = wrap(desc.toUpperCase(), dW);
     t += padLeft(String(qty), qW) + ' ' + padRight(descLines[0] || '', dW) + ' ' + padLeft(formatMoney(price), pW) + ' ' + padLeft(formatMoney(tot), tW) + '\n';
     for (let i = 1; i < descLines.length; i++) {
-      t += ' '.repeat(qW + 1) + descLines[i] + '\n';
+      t += ' '.repeat(qW + 1) + padRight(descLines[i], dW) + '\n';
     }
   });
 

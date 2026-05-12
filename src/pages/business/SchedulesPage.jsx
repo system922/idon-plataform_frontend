@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useConfirm } from '../../context/ConfirmContext';
 import PageTemplate from '../../components/PageTemplate';
 import {
   User as FiUser,
@@ -11,6 +12,7 @@ import {
 } from 'react-feather';
 
 export default function ShiftsPage() {
+  const { showConfirm } = useConfirm();
   const [shifts, setShifts] = useState([
     {
       id: 1,
@@ -35,10 +37,9 @@ export default function ShiftsPage() {
   ]);
   const [loading, setLoading] = useState(false);
 
-  const handleDelete = (id) => {
-    if (window.confirm('¿Eliminar este turno?')) {
-      setShifts(shifts.filter(e => e.id !== id));
-    }
+  const handleDelete = async (id) => {
+    if (!await showConfirm('¿Eliminar este turno?')) return;
+    setShifts(shifts.filter(e => e.id !== id));
   };
 
   const handleLoadAll = () => {

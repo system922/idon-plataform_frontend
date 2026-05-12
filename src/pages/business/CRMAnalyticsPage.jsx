@@ -95,7 +95,7 @@ export default function CrmAnalytics() {
       }
 
     } catch (err) {
-      console.error('Error cargando datos:', err);
+
       setError(err.message);
       showNotification('Error al cargar datos', 'error');
     } finally {

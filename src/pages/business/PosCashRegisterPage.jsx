@@ -1,5 +1,6 @@
 // PosCashRegisterPage.jsx - Conteo físico SOLO para EFECTIVO
 import React, { useState, useEffect, useRef } from 'react';
+import { useConfirm } from '../../context/ConfirmContext';
 import {
   FiX,
   FiDollarSign,
@@ -58,6 +59,7 @@ const DENOMINACIONES = {
 const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
   const { openDrawer } = useCashDrawer();
   const { print } = usePrinterService();
+  const { showConfirm } = useConfirm();
   const [loading, setLoading] = useState(false);
   const [cerrando, setCerrando] = useState(false);
   const [conteoEfectivo, setConteoEfectivo] = useState({});
@@ -127,7 +129,7 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
       }
 
     } catch (err) {
-      console.error('Error cargando datos:', err);
+
       setError('Error cargando datos del cierre');
     } finally {
       setLoading(false);
@@ -234,7 +236,7 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
   // GUARDAR CIERRE
   // ===============================
   const handleGuardarCierre = async () => {
-    if (!window.confirm('¿Estás seguro de cerrar la caja? Esta acción no se puede deshacer.')) {
+    if (!await showConfirm('¿Estás seguro de cerrar la caja? Esta acción no se puede deshacer.')) {
       return;
     }
 
@@ -284,7 +286,7 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
             diferencia: diferenciaGeneral,
           }),
         }))
-        .catch(err => console.warn('[CloseEmail] No se pudo enviar:', err.message));
+        .catch(() => {});
 
       // Auditoria
       if (operador?.id) {
@@ -321,7 +323,7 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
         await fetchWithAuth('/api/audit-log', {
           method: 'POST',
           body: JSON.stringify(auditPayload)
-        }).catch(err => console.warn('Error guardando auditoria:', err));
+        }).catch(() => {});
       }
 
       setResultadoCierre({
@@ -354,16 +356,14 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
           total_diff: closeDataConPropina.diff_total,
         },
       };
-      print('printer_main', 'cash-close', printData).catch(err =>
-        console.warn('[CierrePrint]', err.message)
-      );
+      print('printer_main', 'cash-close', printData).catch(() => {});
 
       setTimeout(() => {
         onClose?.(true);
       }, 4000);
 
     } catch (err) {
-      console.error('Error guardando cierre:', err);
+
       setError(err.message || 'Error al guardar cierre');
       setResultadoCierre({
         success: false,
@@ -421,7 +421,7 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                         expenses: summary?.gastos || [],
                         cashFlow: { opening_float: aperturaEfectivo + aperturaBanca, extra_income: totalExtras, expected_cash: totalGeneralEsperado, counted_cash: totalContadoGeneral },
                         totals: { system_total: (closingConPropina || closing)?.total_system, counted_total: (closingConPropina || closing)?.total_counted, total_diff: (closingConPropina || closing)?.diff_total },
-                      }).catch(e => console.warn(e));
+                      }).catch(() => {});
                     }}
                   >
                     <FiPrinter size={15} /> Reimprimir ticket
@@ -461,7 +461,7 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                       expenses: summary?.gastos || [],
                       cashFlow: { opening_float: aperturaEfectivo + aperturaBanca, extra_income: totalExtras, expected_cash: totalGeneralEsperado, counted_cash: totalContadoGeneral },
                       totals: { system_total: (closingConPropina || closing)?.total_system, counted_total: (closingConPropina || closing)?.total_counted, total_diff: (closingConPropina || closing)?.diff_total },
-                    }).catch(e => console.warn(e));
+                    }).catch(() => {});
                   }}
                 >
                   <FiPrinter size={13} /> Imprimir

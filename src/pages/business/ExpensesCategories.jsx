@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import PageTemplate from '../../components/PageTemplate';
+import { useConfirm } from '../../context/ConfirmContext';
 import { Plus, Edit2, Trash2, X, Check, AlertCircle } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/PurchasesCategories.css';
 
 export default function PurchasesCategories() {
+  const { showConfirm } = useConfirm();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -86,7 +88,7 @@ export default function PurchasesCategories() {
 
   // Eliminar categoría
   const handleDelete = async (category) => {
-    if (!window.confirm(`¿Eliminar la categoría "${category.name}"? Los gastos que la usen quedarán sin categoría.`)) return;
+    if (!await showConfirm(`¿Eliminar la categoría "${category.name}"? Los gastos que la usen quedarán sin categoría.`)) return;
     try {
       const res = await fetchWithAuth(`/api/purchases/expense-categories/${category.id}`, { method: 'DELETE' });
       if (!res.ok) {

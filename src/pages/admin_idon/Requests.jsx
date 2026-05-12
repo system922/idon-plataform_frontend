@@ -132,13 +132,13 @@ const AdminSolicitudes = () => {
       await apiService.post(`/admin/${requestId}/approve`, {});
       await fetchRequests();
     } catch (err) {
-      console.error('Error al aprobar solicitud:', err);
+
     }
   };
 
   const handleReject = async (requestId) => {
     try { await apiService.post(`/admin/${requestId}/reject`, {}); await fetchRequests(); }
-    catch (err) { console.error(err); }
+    catch { }
   };
 
   return (
@@ -288,7 +288,7 @@ const DetailModal = ({ request, onClose, onApprove, onReject }) => {
             preModIds  = bizMods.data?.moduleIds  || [];
             preFeatIds = bizMods.data?.featureIds || [];
           } catch (e) {
-            console.warn('No se pudieron cargar módulos del negocio:', e);
+
           }
         } else {
           // Solicitud pendiente → cargar desde business_registration_request_modules/features
@@ -303,7 +303,7 @@ const DetailModal = ({ request, onClose, onApprove, onReject }) => {
         setSelectedFeats(preFeatIds);
         setExpandedMods(preModIds);
       } catch (e) {
-        console.error('Error cargando módulos:', e);
+
       } finally {
         setLoadingMods(false);
       }
@@ -379,7 +379,7 @@ const DetailModal = ({ request, onClose, onApprove, onReject }) => {
         featureIds: selectedFeats,
       });
     } catch (e) {
-      console.warn('No se pudieron guardar módulos antes de aprobar:', e);
+
     } finally {
       setSaving(false);
     }

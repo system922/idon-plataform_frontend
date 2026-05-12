@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import PageTemplate from '../../components/PageTemplate';
+import { useConfirm } from '../../context/ConfirmContext';
 import { Calendar, Clock, Bell, Mail, Plus, Edit2, Trash2, X, Check, AlertCircle, Loader } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/NotificationsScheduled.css';
 
 export default function NotificationsScheduled() {
+  const { showConfirm } = useConfirm();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -79,7 +81,7 @@ export default function NotificationsScheduled() {
   };
 
   const handleDelete = async (id, title) => {
-    if (!window.confirm(`¿Eliminar la notificación "${title}"?`)) return;
+    if (!await showConfirm(`¿Eliminar la notificación "${title}"?`)) return;
     try {
       const res = await fetchWithAuth(`/api/scheduled/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Error al eliminar');

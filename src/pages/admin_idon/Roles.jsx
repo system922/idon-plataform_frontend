@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useConfirm } from '../../context/ConfirmContext';
 import {
   FiLock, FiPlus, FiEdit2, FiTrash2, FiCheck, FiRefreshCw,
   FiChevronDown, FiChevronRight, FiPackage, FiBriefcase, FiUsers
@@ -57,6 +58,7 @@ function PermsSummary({ permissions, modules }) {
    PÁGINA PRINCIPAL
 ════════════════════════════════════════════════════════════ */
 export default function Roles() {
+  const { showConfirm } = useConfirm();
   const [businesses,       setBusinesses]      = useState([]);
   const [selectedBiz,      setSelectedBiz]     = useState(null);  // { id, name, slug, type }
   const [roles,            setRoles]           = useState([]);
@@ -92,7 +94,7 @@ export default function Roles() {
   useEffect(() => { loadRoles(); }, [loadRoles]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar este rol?')) return;
+    if (!await showConfirm('¿Eliminar este rol?')) return;
     try {
       await apiService.delete(`/admin/tenant-roles/${id}?businessId=${selectedBiz.id}`);
       loadRoles();

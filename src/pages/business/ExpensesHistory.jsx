@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { fetchWithAuth } from '../../config/apiBase';
+import { useConfirm } from '../../context/ConfirmContext';
 import '../../styles/PurchasesHistory.css';
 
 // ─── Helper para obtener fecha actual en Ecuador ────────────────────────────
@@ -11,6 +12,7 @@ function getTodayDateInEcuador() {
 }
 
 export default function PurchasesHistory() {
+  const { showConfirm } = useConfirm();
   const [gastos, setGastos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -154,7 +156,7 @@ export default function PurchasesHistory() {
   }
 
   async function eliminarGasto(id, descripcion) {
-    if (!window.confirm(`¿Eliminar gasto "${descripcion}"?`)) return;
+    if (!await showConfirm(`¿Eliminar gasto "${descripcion}"?`)) return;
 
     try {
       setGuardando(true);

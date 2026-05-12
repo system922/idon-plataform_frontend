@@ -44,7 +44,7 @@ export const useAsyncOperation = () => {
       
       // Ignorar errores de abort
       if (err.name === 'AbortError') {
-        console.log('Operación cancelada');
+
         return null;
       }
       

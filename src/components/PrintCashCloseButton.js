@@ -72,7 +72,7 @@ export default function PrintCashCloseButtonAdvanced({
       setTimeout(() => setSuccess(''), 3000);
 
     } catch (err) {
-      console.error('Error imprimiendo cierre de caja:', err);
+
       setError(err.message || 'Error al imprimir');
 
       // Intentar fallback HTML

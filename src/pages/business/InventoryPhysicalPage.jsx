@@ -183,7 +183,7 @@ export default function InventoryPhysicalPage() {
       setCategories(Array.isArray(cat) ? cat : []);
     } catch (err) {
       setError('Error cargando inventarios');
-      console.error(err);
+
     } finally {
       setLoading(false);
     }

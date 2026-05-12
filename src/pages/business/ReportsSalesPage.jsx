@@ -64,7 +64,7 @@ export default function ReportsSalesPage() {
         }
       }
     } catch (err) {
-      console.error('Error cargando resumen:', err);
+
     }
   }, [dateFrom, dateTo]);
 
@@ -111,7 +111,7 @@ export default function ReportsSalesPage() {
       }
       
     } catch (err) {
-      console.error('Error cargando ventas:', err);
+
       setError(err.message);
       setSales([]);
       setFilteredSales([]);
@@ -408,7 +408,7 @@ export default function ReportsSalesPage() {
       URL.revokeObjectURL(url);
       showNotification('Exportado a Excel', 'success');
     } catch (err) {
-      console.error(err);
+
       showNotification('Error al exportar a Excel', 'error');
     } finally {
       setExporting(false);

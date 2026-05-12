@@ -196,7 +196,7 @@ function SegmentCustomersModal({ segment, onClose }) {
         setTotalPages(data.pagination.totalPages);
       }
     } catch (err) {
-      console.error('Error cargando clientes:', err);
+
     } finally {
       setLoading(false);
     }

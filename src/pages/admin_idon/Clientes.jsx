@@ -81,7 +81,7 @@ const BusinessModulesModal = ({ business, onClose, onSaved }) => {
         setSelectedFeats(preFeatIds);
         setExpandedMods(preModIds);
       } catch (e) {
-        console.error('Error cargando módulos:', e);
+
       } finally {
         setLoading(false);
       }

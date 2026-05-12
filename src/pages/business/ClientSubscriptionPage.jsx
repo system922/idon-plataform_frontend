@@ -62,7 +62,7 @@ export default function ClientModuleSelection({ onLogout }) {
       }
       
     } catch (err) {
-      console.error('Error loading data:', err);
+
       setError(err.message);
     } finally {
       setLoading(false);

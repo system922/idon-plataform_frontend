@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
+import { useConfirm } from '../../context/ConfirmContext';
 import { FiRefreshCw, FiPlus, FiEdit2, FiTrash2, FiSearch, FiEye } from 'react-icons/fi';
 import apiService from '../../services/apiService';
 
 export default function OrdersList() {
+  const { showConfirm } = useConfirm();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,7 +23,7 @@ export default function OrdersList() {
       const response = await apiService.get('/api/orders');
       setOrders(Array.isArray(response) ? response : response.data || []);
     } catch (err) {
-      console.error('Error cargando órdenes:', err);
+
       setError('No se pudo cargar las órdenes. Intenta nuevamente.');
     } finally {
       setLoading(false);
@@ -43,7 +45,7 @@ export default function OrdersList() {
 
   const handleDelete = async (id) => {
     if (loading) return; // ✅ Prevención de doble envío
-    if (!window.confirm('¿Estás seguro de eliminar esta orden?')) return;
+    if (!await showConfirm('¿Estás seguro de eliminar esta orden?')) return;
     try {
       setLoading(true);
       await apiService.delete(`/api/orders/${id}`);

@@ -310,7 +310,7 @@ export default function BusinessHome() {
           }
         }
       } catch (e) {
-        console.error('[BusinessHome] Error cargando negocios:', e);
+
       } finally {
         setBizLoading(false);
       }

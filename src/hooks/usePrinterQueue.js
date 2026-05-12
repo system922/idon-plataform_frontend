@@ -29,11 +29,11 @@ export function usePrinterQueue() {
       if (stored) {
         const parsed = JSON.parse(stored);
         const items = Array.isArray(parsed) ? parsed : [];
-        console.log(`📋 Cola cargada: ${items.length} trabajos`);
+
         setQueue(items);
       }
     } catch (err) {
-      console.error('Error cargando cola de impresión:', err);
+
     }
   }, []);
 
@@ -43,7 +43,7 @@ export function usePrinterQueue() {
     try {
       localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(items));
     } catch (err) {
-      console.error('Error guardando cola de impresión:', err);
+
     }
   }, []);
 
@@ -65,7 +65,7 @@ export function usePrinterQueue() {
 
     setQueue(prev => {
       const updated = [...prev, newJob];
-      console.log(`➕ Trabajo agregado a cola: ${jobId}. Total: ${updated.length}`);
+
       return updated;
     });
     return jobId;
@@ -75,12 +75,12 @@ export function usePrinterQueue() {
 
   const processQueue = useCallback(async (printerConnected) => {
     if (!printerConnected) {
-      console.log('🔴 Impresora desconectada, esperando...');
+
       return;
     }
 
     if (processingRef.current) {
-      console.log('⏳ Ya procesando cola...');
+
       return;
     }
 
@@ -92,19 +92,17 @@ export function usePrinterQueue() {
         const pendingJobs = prevQueue.filter(j => j.status === 'pending');
         
         if (pendingJobs.length === 0) {
-          console.log('✨ No hay trabajos pendientes');
+
           setPrinting(false);
           processingRef.current = false;
           return prevQueue;
         }
 
-        console.log(`🖨️ Procesando ${pendingJobs.length} trabajos pendientes...`);
 
         // Procesar cada trabajo
         (async () => {
           for (const job of pendingJobs) {
             try {
-              console.log(`⏳ Imprimiendo trabajo ${job.id}...`);
 
               const result = await print(
                 job.printerKey,
@@ -114,7 +112,7 @@ export function usePrinterQueue() {
               );
 
               if (result.success) {
-                console.log(`✅ Trabajo ${job.id} impreso correctamente`);
+
                 setQueue(prev =>
                   prev.map(j =>
                     j.id === job.id
@@ -126,17 +124,16 @@ export function usePrinterQueue() {
                 throw new Error(result.error || 'Error desconocido');
               }
             } catch (err) {
-              console.error(`❌ Error imprimiendo ${job.id}:`, err.message);
 
               setQueue(prev => {
                 const updated = prev.map(j => {
                   if (j.id === job.id) {
                     const newRetries = j.retries + 1;
                     if (newRetries >= j.maxRetries) {
-                      console.log(`⚠️ Trabajo ${job.id} falló después de ${j.maxRetries} intentos`);
+
                       return { ...j, status: 'failed', error: err.message, retries: newRetries };
                     } else {
-                      console.log(`🔄 Reintentando trabajo ${job.id} (intento ${newRetries}/${j.maxRetries})`);
+
                       return { ...j, retries: newRetries };
                     }
                   }
@@ -157,7 +154,7 @@ export function usePrinterQueue() {
         return prevQueue;
       });
     } catch (err) {
-      console.error('Error procesando cola:', err);
+
       setPrinting(false);
       processingRef.current = false;
     }
@@ -168,7 +165,7 @@ export function usePrinterQueue() {
   const clearCompleted = useCallback(() => {
     setQueue(prev => {
       const filtered = prev.filter(job => job.status !== 'completed');
-      console.log(`🗑️ Limpiados trabajos completados. Restantes: ${filtered.length}`);
+
       return filtered;
     });
   }, []);
@@ -183,7 +180,7 @@ export function usePrinterQueue() {
           : job
       );
       const retryCount = updated.filter(j => j.status === 'pending').length;
-      console.log(`🔄 Reintentos marcados. Trabajos pendientes: ${retryCount}`);
+
       return updated;
     });
   }, []);
@@ -193,7 +190,7 @@ export function usePrinterQueue() {
   const removeJob = useCallback((jobId) => {
     setQueue(prev => {
       const filtered = prev.filter(job => job.id !== jobId);
-      console.log(`❌ Trabajo ${jobId} eliminado. Restantes: ${filtered.length}`);
+
       return filtered;
     });
   }, []);
@@ -201,7 +198,7 @@ export function usePrinterQueue() {
   // ── Vaciar toda la cola ───────────────────────────────────────────────────
 
   const clearQueue = useCallback(() => {
-    console.log('🗑️ Cola limpiada');
+
     setQueue([]);
   }, []);
 

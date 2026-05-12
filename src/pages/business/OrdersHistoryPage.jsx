@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Printer, Edit2, Trash2, Save, Calendar, RefreshCw } from 'react-feather';
+import { useConfirm } from '../../context/ConfirmContext';
 import PageTemplate from '../../components/PageTemplate';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
 import { usePrinterService } from '../../services/usePrinterService';
@@ -39,6 +40,7 @@ const getProductPrice = async (productId) => {
 export default function OrdersHistoryPage() {
   const { selectedBusiness } = useBusinessContext();
   const { print } = usePrinterService();
+  const { showConfirm } = useConfirm();
   const [orders, setOrders] = useState([]);
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -76,7 +78,7 @@ export default function OrdersHistoryPage() {
       const data = await res.json();
       setProductos(Array.isArray(data) ? data : data?.productos ?? data?.data ?? []);
     } catch (err) {
-      console.error('Error al cargar productos:', err);
+
       setError('Error al cargar productos');
       setTimeout(() => setError(''), 3000);
     }
@@ -88,7 +90,7 @@ export default function OrdersHistoryPage() {
       const data = await res.json();
       setCategorias(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error al cargar categorías:', err);
+
       setError('Error al cargar categorías');
       setTimeout(() => setError(''), 3000);
     }
@@ -168,7 +170,7 @@ export default function OrdersHistoryPage() {
       
       setOrders(filtered);
     } catch (err) {
-      console.error(err);
+
       setError(`Error al cargar órdenes: ${err.message}`);
       setTimeout(() => setError(''), 3000);
       setOrders([]);
@@ -270,19 +272,38 @@ export default function OrdersHistoryPage() {
   };
 
   const handlePrintOriginalOrder = async (order) => {
-    const enrichedOrder = await enrichOrderItemsWithPrices(order);
-    const grouped = groupItemsForPrint(enrichedOrder.items);
-    const tipoOrden = order.order_type === 'dine_in' ? 'LOCAL' : order.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY';
-    await print('printer_ticket', 'comanda-mod', {
-      mesa:      order.mesa_numero,
-      orden:     order.order_number || order.id.slice(0, 8),
-      tipoOrden,
-      items:     grouped,
+    let items = Array.isArray(order.items) ? order.items : [];
+
+    // Buscar orden completa con items si el listado no los trae
+    if (items.length === 0) {
+      try {
+        const res = await fetchWithAuth(`/api/ordenes/${order.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          // el backend puede devolver la orden anidada o plana
+          const fetched = data.order || data.pedido || data;
+          items = fetched.items || fetched.pedido?.items || data.items || [];
+        }
+      } catch (e) {
+
+      }
+    }
+
+    const result = await print('printer_ticket', 'comanda', {
+      comanda: { number: order.order_number || order.id },
+      table:   order.mesa_numero ?? order.numero_mesa,
+      items,
+      notes:   order.notas || order.notes || '',
     });
+
+    if (result?.success === false) {
+      setError(result.error || 'Error al reimprimir — verifica que QZ Tray esté activo');
+      setTimeout(() => setError(''), 4000);
+    }
   };
 
   const handleDeleteOrder = async (orderId) => {
-    if (!window.confirm('¿Seguro que deseas eliminar la orden?')) return;
+    if (!await showConfirm('¿Seguro que deseas eliminar la orden?')) return;
     try {
       const res = await fetchWithAuth(`/api/ordenes/${orderId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Error al eliminar');
@@ -300,7 +321,7 @@ export default function OrdersHistoryPage() {
   // FUNCIONES DE EDICIÓN
   // ============================================
   
-  const separarProductosPorUnidad = () => {
+  const separarProductosPorUnidad = async () => {
     if (!editMode) {
       setError('Primero debes entrar en modo edición');
       setTimeout(() => setError(''), 3000);
@@ -317,12 +338,8 @@ export default function OrdersHistoryPage() {
       return;
     }
 
-    const confirmar = window.confirm(
-      `¿Separar ${itemsConMultiplesUnidades.length} producto(s) en unidades individuales?\n\n` +
-      itemsConMultiplesUnidades.map(i => 
-        `• ${i.nombre}: ${i.cantidad || i.quantity} unidades → se convertirá en ${i.cantidad || i.quantity} items`
-      ).join('\n') +
-      '\n\n⚠️ Esta operación solo guardará los cambios, NO imprimirá comanda.'
+    const confirmar = await showConfirm(
+      `¿Separar ${itemsConMultiplesUnidades.length} producto(s) en unidades individuales? Esta operación solo guardará los cambios, NO imprimirá comanda.`
     );
 
     if (!confirmar) return;
@@ -359,7 +376,7 @@ export default function OrdersHistoryPage() {
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  const separarProductoIndividual = (item) => {
+  const separarProductoIndividual = async (item) => {
     if (!editMode) return;
     
     const cantidad = item.cantidad || item.quantity || 1;
@@ -369,10 +386,10 @@ export default function OrdersHistoryPage() {
       return;
     }
     
-    const confirmar = window.confirm(
-      `¿Separar "${item.nombre}" (${cantidad} unidades) en ${cantidad} items individuales?\n\n⚠️ Esta operación solo guardará los cambios, NO imprimirá comanda.`
+    const confirmar = await showConfirm(
+      `¿Separar "${item.nombre}" (${cantidad} unidades) en ${cantidad} items individuales? Esta operación solo guardará los cambios, NO imprimirá comanda.`
     );
-    
+
     if (!confirmar) return;
     
     const nuevosItems = [];
@@ -541,31 +558,42 @@ export default function OrdersHistoryPage() {
         items:      remainingItems,
       };
 
-      setSelectedOrder(updatedOrder);
+      // Guardar datos de la orden antes de limpiar el estado
+      const orderSnapshot = { ...selectedOrder };
 
-      // Siempre intentar imprimir la comanda modificada
-      const tipoOrden = selectedOrder.order_type === 'dine_in' ? 'LOCAL' : selectedOrder.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY';
-      const printResult = await print('printer_ticket', 'comanda-mod', {
-        mesa:      selectedOrder.mesa_numero,
-        orden:     selectedOrder.order_number || selectedOrder.id.slice(0, 8),
-        tipoOrden,
-        items:     remainingItems,
-      });
-
-      if (printResult?.success === false) {
-        setSuccess('✅ Orden guardada — ⚠️ No se pudo imprimir (QZ Tray no conectado)');
-      } else {
-        setSuccess('✅ Orden guardada y comanda enviada a cocina');
-      }
-      
       setEditMode(false);
       setEditItems([]);
       setSelectedOrder(null);
+      setSuccess('✅ Orden guardada correctamente');
+      setTimeout(() => setSuccess(''), 4000);
 
-      setTimeout(() => setSuccess(''), 5000);
-      loadOrders();
+      // Recargar el listado y esperar a que termine
+      await loadOrders();
+
+      // Preguntar si desea imprimir la comanda modificada
+      const imprimirMod = await showConfirm('¿Deseas imprimir la comanda modificada?', {
+        title:       'Imprimir comanda',
+        danger:      false,
+        confirmText: 'Imprimir',
+        cancelText:  'No imprimir',
+      });
+
+      if (imprimirMod) {
+        const tipoOrden = orderSnapshot.order_type === 'dine_in' ? 'LOCAL'
+          : orderSnapshot.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY';
+        const printResult = await print('printer_ticket', 'comanda-mod', {
+          mesa:      orderSnapshot.mesa_numero,
+          orden:     orderSnapshot.order_number || orderSnapshot.id.slice(0, 8),
+          tipoOrden,
+          items:     remainingItems,
+        });
+        if (printResult?.success === false) {
+          setError('⚠️ No se pudo imprimir — verifica que QZ Tray esté activo');
+          setTimeout(() => setError(''), 4000);
+        }
+      }
     } catch (err) {
-      console.error(err);
+
       setError('Error al guardar cambios');
       setTimeout(() => setError(''), 3000);
     } finally {
@@ -613,12 +641,10 @@ export default function OrdersHistoryPage() {
       title="Historial de Órdenes"
       subtitle={`${filteredOrders.length} orden${filteredOrders.length !== 1 ? 'es' : ''} encontradas • Fecha: ${filterDate}`}
       headerAction={
-        <div className="header-actions">
-          <button className="btn-refresh" onClick={handleRefresh} disabled={loadingOrders}>
-            <RefreshCw size={16} className={loadingOrders ? 'spin' : ''} />
-            Actualizar
-          </button>
-        </div>
+        <button className="btn-refresh" onClick={handleRefresh} disabled={loadingOrders}>
+          <RefreshCw size={16} className={loadingOrders ? 'spin' : ''} />
+          Actualizar
+        </button>
       }
     >
       <div className="checkout-shell">

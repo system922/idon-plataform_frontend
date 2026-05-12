@@ -317,7 +317,7 @@ export default function PosCheckoutPage() {
         if (data && data.currency_symbol) setCurrencySymbol(data.currency_symbol);
       }
     } catch (err) {
-      console.error('Error cargando configuración fiscal:', err);
+
     }
   };
 
@@ -335,7 +335,7 @@ export default function PosCheckoutPage() {
         setAvailableDiscounts([]);
       }
     } catch (err) {
-      console.error('Error cargando descuentos:', err);
+
       setAvailableDiscounts([]);
     }
   };
@@ -361,11 +361,11 @@ export default function PosCheckoutPage() {
     try {
       const res = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}`);
       const ordenActualizada = await res.json();
-      console.log('🔄 Orden recargada. Items:', ordenActualizada.items.map(i => ({ id: i.id, product_name: i.product_name, paid: i.paid })));
+
       setSelectedOrder(ordenActualizada);
       return ordenActualizada;
     } catch (err) {
-      console.error('Error recargando orden:', err);
+
       return null;
     }
   };
@@ -446,7 +446,7 @@ export default function PosCheckoutPage() {
       const bizData = await bizRes.json();
       setBizInfo(bizData);
     } catch (err) {
-      console.error('Error cargando órdenes:', err);
+
     }
   };
 
@@ -492,7 +492,7 @@ export default function PosCheckoutPage() {
         }
       }
     } catch (err) {
-      console.error('Error:', err);
+
     } finally {
       setClientApiLoading(false);
     }
@@ -538,7 +538,7 @@ export default function PosCheckoutPage() {
       }
       return null;
     } catch (err) {
-      console.error('Error guardando cliente:', err);
+
       return null;
     } finally {
       setProcessingCliente(false);
@@ -548,7 +548,7 @@ export default function PosCheckoutPage() {
   const handleSelectOrder = (oid) => {
     const o = orders.find(x => String(x.id) === oid);
     setSelectedOrder(o || null);
-    console.log('📋 Orden seleccionada. Items:', o?.items?.map(i => ({ id: i.id, nombre: i.product_name, paid: i.paid })));
+
     setClienteCedula(o?.customer_document_number || '9999999999');
     setClienteNombre(o?.customer_name || '');
     setClienteEmail('');
@@ -706,13 +706,12 @@ export default function PosCheckoutPage() {
       setError('No hay productos seleccionados');
       return;
     }
-    console.log('📦 Asignando items a comensal:', idComensal);
-    console.log('IDs de items seleccionados (antes de filtrar pagados):', selectedItems);
+
     const itemsNoPagados = selectedItems.filter(itemId => {
       const item = selectedOrder?.items.find(i => i.id === itemId);
       return item && !item.paid;
     });
-    console.log('Items no pagados (los que se asignarán):', itemsNoPagados.map(id => ({ id, nombre: selectedOrder?.items.find(i => i.id === id)?.product_name })));
+
     if (itemsNoPagados.length === 0) {
       setError('Los productos seleccionados ya fueron pagados');
       return;
@@ -742,7 +741,7 @@ export default function PosCheckoutPage() {
       setError('Este producto ya fue pagado');
       return;
     }
-    console.log('🔍 handleSelectItem - itemId:', itemId, '| tipo:', typeof itemId, '| nombre:', item?.product_name);
+
     setSelectedItems(prev =>
       prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
     );
@@ -863,7 +862,7 @@ export default function PosCheckoutPage() {
       return { id: result.id, invoice_number: result.invoice_number };
     } catch (e) {
       setError(`Error emitir factura: ${e.message}`);
-      console.error(e);
+
       return null;
     }
   }
@@ -898,7 +897,7 @@ export default function PosCheckoutPage() {
       if (!response.ok) throw new Error(data.error || 'Error al guardar cuenta por cobrar');
       return data.data;
     } catch (err) {
-      console.error('Error guardando cuenta por cobrar:', err);
+
       setError(`Error al guardar cuenta por cobrar: ${err.message}`);
       return null;
     } finally {
@@ -973,7 +972,7 @@ export default function PosCheckoutPage() {
         } : null
       }, openDrawer);
     } catch (err) {
-      console.error('Error imprimiendo:', err);
+
       setError('Error al imprimir');
     }
   };
@@ -1103,7 +1102,7 @@ export default function PosCheckoutPage() {
         setSuccess(`Pago completado. Quedan ${itemsPendientes} productos por pagar.`);
       }
     } catch (err) {
-      console.error(err);
+
       setError(err.message);
     } finally {
       setPrintLoading(false);
@@ -1126,7 +1125,7 @@ export default function PosCheckoutPage() {
         body: JSON.stringify({ amount: total, payment_method: metodoPago })
       });
     } catch (err) {
-      console.error('Error actualizando cuenta por cobrar:', err);
+
     }
   };
 

@@ -77,7 +77,7 @@ export default function PosReceiptPrint() {
         });
         setPrinterConnected(true);
       } catch (e) {
-        console.warn('⚠️ QZ Tray no disponible:', e?.message);
+
         setPrinterConnected(false);
       }
     })();
@@ -100,7 +100,7 @@ export default function PosReceiptPrint() {
     fetchWithAuth('/api/settings/receipt-info')
       .then(r => r.json())
       .then(data => setBizInfo(data))
-      .catch(err => console.warn('No se pudo cargar info del negocio:', err));
+      .catch(() => {});
   }, [selectedBusiness]);
 
   // Load only paid orders

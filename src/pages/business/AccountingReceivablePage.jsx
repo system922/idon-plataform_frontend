@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useConfirm } from '../../context/ConfirmContext';
 import ExcelJS from 'exceljs';
 import {
   FiDollarSign, FiPlus, FiEdit2, FiTrash2, FiRefreshCw,
@@ -455,6 +456,7 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
 export default function AccountingReceivablePage() {
   const { selectedBusiness } = useBusinessContext();
   const navigate = useNavigate();
+  const { showConfirm } = useConfirm();
   const [receivables, setReceivables] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -486,7 +488,7 @@ export default function AccountingReceivablePage() {
       const data = await res.json();
       setCustomers(Array.isArray(data.data) ? data.data : data.customers || []);
     } catch (err) {
-      console.error('Error loading customers:', err);
+
     }
   }, [selectedBusiness]);
 
@@ -532,7 +534,7 @@ export default function AccountingReceivablePage() {
       
       setStats({ total_receivable: total, total_paid: paid, total_pending: pending, total_overdue: overdue });
     } catch (err) {
-      console.error('Error loading receivables:', err);
+
       setError('Error al cargar las cuentas por cobrar');
       setReceivables([]);
     } finally {
@@ -692,7 +694,7 @@ export default function AccountingReceivablePage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error(err);
+
       setError('Error al exportar a Excel');
     } finally {
       setExporting(false);
@@ -758,7 +760,7 @@ export default function AccountingReceivablePage() {
   };
 
   const handleDeleteReceivable = async (receivable) => {
-    if (!window.confirm(`¿Eliminar la cuenta por cobrar "${receivable.description}"?`)) return;
+    if (!await showConfirm(`¿Eliminar la cuenta por cobrar "${receivable.description}"?`)) return;
     setSaving(true);
     try {
       await fetchWithAuth(`/api/accounting-receivable/receivables/${receivable.id}`, { method: 'DELETE' });

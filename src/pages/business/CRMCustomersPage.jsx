@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
+import { useConfirm } from '../../context/ConfirmContext';
 import { 
   Plus, Edit2, Trash2, X, Search, RefreshCw, 
   Mail, Phone, CreditCard, ChevronLeft, ChevronRight,
@@ -153,6 +154,7 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
 
 // Componente principal
 export default function CrmCustomers() {
+  const { showConfirm } = useConfirm();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -185,7 +187,7 @@ export default function CrmCustomers() {
         setStats(data);
       }
     } catch (err) {
-      console.error('Error al cargar estadísticas:', err);
+
     }
   }, []);
 
@@ -229,7 +231,7 @@ export default function CrmCustomers() {
       setTotalPages(pages);
       
     } catch (err) {
-      console.error('Error loading customers:', err);
+
       setError(err.message);
       setCustomers([]);
       setTotalCustomers(0);
@@ -298,7 +300,7 @@ export default function CrmCustomers() {
 
   // Eliminar cliente
   const handleDeleteCustomer = async (customer) => {
-    if (!window.confirm(`¿Seguro que deseas eliminar a ${customer.name}?`)) return;
+    if (!await showConfirm(`¿Seguro que deseas eliminar a ${customer.name}?`)) return;
     try {
       const response = await fetchWithAuth(`/api/customers/${customer.id}`, {
         method: 'DELETE',

@@ -227,7 +227,7 @@ export default function PrintCashClosePdfButton({ close, opening, summary, incom
       setTimeout(() => setSuccess(''), 3000);
 
     } catch (error) {
-      console.error('Error al generar el PDF:', error);
+
       setError(error.message || 'Error al generar el PDF');
     } finally {
       setGenerating(false);

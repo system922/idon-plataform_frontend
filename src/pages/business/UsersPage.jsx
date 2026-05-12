@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
+import { useConfirm } from '../../context/ConfirmContext';
 import { Plus, Edit2, Trash2, Users, X, Search, RefreshCw, Unlock, CheckCircle, AlertCircle } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/UsersPage.css';
@@ -129,6 +130,7 @@ function UserModal({ user, onClose, onSave, saving, roles }) {
 // ─── Página principal ─────────────────────────────────────────────────────────────────────────
 
 export default function CoreUsersPage() {
+  const { showConfirm } = useConfirm();
   const [users,       setUsers      ] = useState([]);
   const [roles,       setRoles      ] = useState([]);
   const [loading,     setLoading    ] = useState(true);
@@ -208,7 +210,7 @@ export default function CoreUsersPage() {
   };
 
   const handleDelete = async (user) => {
-    if (!window.confirm(`¿Desactivar a "${user.first_name} ${user.last_name}"?`)) return;
+    if (!await showConfirm(`¿Desactivar a "${user.first_name} ${user.last_name}"?`)) return;
     setSaving(true);
     try {
       const res  = await fetchWithAuth(`/api/core/users/${user.id}`, { method: 'DELETE' });

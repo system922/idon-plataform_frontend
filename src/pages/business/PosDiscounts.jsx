@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PageTemplate from '../../components/PageTemplate';
+import { useConfirm } from '../../context/ConfirmContext';
 import {
   FiRefreshCw, FiPercent, FiDollarSign, FiPlus, FiX,
   FiCalendar, FiRepeat, FiClock, FiTag, FiEdit2, FiTrash2,
@@ -239,7 +240,7 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
           setProducts(Array.isArray(data) ? data : []);
         }
       } catch (e) {
-        console.error('Error cargando datos:', e);
+
       }
     };
     loadData();
@@ -740,6 +741,7 @@ function DiscountCard({ d, onEdit, onDelete, onDuplicate }) {
 
 // ─── MAIN ─────────────────────────
 export default function PosDiscounts() {
+  const { showConfirm } = useConfirm();
   const [discounts, setDiscounts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false); // ✅ Para delete/duplicate
@@ -762,7 +764,7 @@ export default function PosDiscounts() {
       const data = await res.json();
       setDiscounts(Array.isArray(data) ? data : []);
     } catch (e) {
-      console.error('Error cargando descuentos:', e);
+
       setErr(e.message || 'Error al cargar descuentos');
       setDiscounts([]);
     } finally {
@@ -781,7 +783,7 @@ export default function PosDiscounts() {
 
   const handleDelete = async (discount) => {
     if (isProcessing) return; // ✅ Prevención de doble envío
-    if (!window.confirm(`¿Eliminar el descuento "${discount.name}"? Esta acción no se puede deshacer.`)) return;
+    if (!await showConfirm(`¿Eliminar el descuento "${discount.name}"? Esta acción no se puede deshacer.`)) return;
 
     try {
       setIsProcessing(true);
@@ -803,7 +805,7 @@ export default function PosDiscounts() {
   const handleDuplicate = async (discount) => {
     if (isProcessing) return; // ✅ Prevención de doble envío
     const newName = `${discount.name} (Copia)`;
-    if (!window.confirm(`¿Duplicar el descuento "${discount.name}"?`)) return;
+    if (!await showConfirm(`¿Duplicar el descuento "${discount.name}"?`, { danger: false, confirmText: 'Duplicar' })) return;
 
     try {
       setIsProcessing(true);

@@ -33,6 +33,7 @@ import TermsAndConditions from './pages/TermsAndConditions';
 // ========== NUEVO: Contexto global para gastos pendientes ==========
 import { DrawerProvider } from './context/DrawerContext';
 import GlobalExpenseBubble from './components/GlobalExpenseBubble';
+import { ConfirmProvider } from './context/ConfirmContext';
 
 function RegisterPageWrapper({ setUser }) {
   const navigate = useNavigate();
@@ -228,10 +229,12 @@ function AppContent() {
   );
 
   return (
-    <DrawerProvider>
-      <AppRoutes user={user} setUser={setUser} handleLogout={handleLogout} />
-      <GlobalExpenseBubble />
-    </DrawerProvider>
+    <ConfirmProvider>
+      <DrawerProvider>
+        <AppRoutes user={user} setUser={setUser} handleLogout={handleLogout} />
+        <GlobalExpenseBubble />
+      </DrawerProvider>
+    </ConfirmProvider>
   );
 }
 

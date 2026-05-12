@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   FiSearch, FiPlusSquare, FiTrash2, FiRefreshCw, FiChevronDown, FiEdit,
 } from 'react-icons/fi';
+import { useConfirm } from '../../context/ConfirmContext';
 import { useBusinessContext } from '../../config/BusinessContext';
 import PageTemplate from '../../components/PageTemplate';
 import InventoryTable from '../../components/InventoryTable';
@@ -286,6 +287,7 @@ function ProductoModal({ open, initial = null, onSave, onClose }) {
 /* ------ Componente principal --------- */
 export default function ProductoPage() {
   const { selectedBusiness, setSelectedBusiness, businesses } = useBusinessContext();
+  const { showConfirm } = useConfirm();
   const [showBusinessDropdown, setShowBusinessDropdown] = useState(false);
   const [items, setItems] = useState([]); // merged view (api + local-ext)
   const [filter, setFilter] = useState('');
@@ -425,7 +427,7 @@ export default function ProductoPage() {
       setLocalExt(newLocal);
       saveLocalExtended(newLocal);
     } catch (err) {
-      console.warn('Failed to fetch products API — falling back to local storage', err);
+
       setError('No se pudo obtener productos desde el servidor, usando datos locales.');
       const stored = readLocalExtended();
       
@@ -529,7 +531,7 @@ export default function ProductoPage() {
         // refresh to keep canonical API data
         try { await fetchList(); } catch {}
       } catch (err) {
-        console.warn('Update API failed — kept local changes', err);
+
       }
     } else {
       // Create new: prefer API
@@ -561,7 +563,7 @@ export default function ProductoPage() {
           return out;
         });
       } catch (err) {
-        console.warn('Create API failed — saving locally', err);
+
         const id = Date.now();
         const local = {
           id,
@@ -609,7 +611,7 @@ export default function ProductoPage() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('¿Eliminar producto?')) return;
+    if (!await showConfirm('¿Eliminar producto?')) return;
 
     // optimistic remove locally
     setItems(prev => prev.filter(it => String(it.id) !== String(id)));
@@ -622,7 +624,7 @@ export default function ProductoPage() {
     try {
       await deleteProductApi(id);
     } catch (err) {
-      console.warn('API delete failed (kept local deletion).', err);
+
     }
   }
 
@@ -831,7 +833,7 @@ export default function ProductoPage() {
           try {
             await handleSaveFromModal(payload);
           } catch (e) {
-            console.error(e);
+
           }
         }}
         onClose={() => { setModalOpen(false); setEditingItem(null); }}

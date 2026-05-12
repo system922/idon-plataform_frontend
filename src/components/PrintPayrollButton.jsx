@@ -23,23 +23,16 @@ export default function PrintPayrollButton({
     setError('');
     setSuccess('');
     
-    console.log('\n========== 🚀 INICIO IMPRESIÓN TÉRMICA NÓMINA ==========');
-    console.log('📄 payroll recibido:', payroll);
-    console.log('📋 details recibido:', details);
-    console.log('🏢 businessInfo recibido:', businessInfo);
-    console.log('🖨️ printerTicket recibido:', printerTicket);
-    console.log('👤 userName:', userName);
-    console.log('📅 periodInfo:', periodInfo);
 
     // Validaciones
     if (!printerTicket || !printerTicket.name) {
-      console.error('❌ Error: Impresora no detectada');
+
       setError('⚠️ IMPRESORA NO DETECTADA, PRIMERO AGREGUE UNA IMPRESORA');
       return;
     }
 
     if (!payroll) {
-      console.error('❌ Error: No hay datos de nómina');
+
       setError('No hay datos de nómina para imprimir');
       return;
     }
@@ -51,8 +44,7 @@ export default function PrintPayrollButton({
       const itemsList = [];
       const deductionsList = [];
       
-      console.log('📊 Procesando details:', details);
-      
+
       if (details && Array.isArray(details)) {
         details.forEach(detail => {
           if (detail.type === 'hourly_wage' || detail.type === 'daily_wage') {
@@ -74,12 +66,10 @@ export default function PrintPayrollButton({
         });
       }
 
-      console.log('💰 itemsList construido:', itemsList);
-      console.log('📉 deductionsList construido:', deductionsList);
 
       // Si no hay detalles, agregar el pago base
       if (itemsList.length === 0) {
-        console.log('⚠️ No hay details, usando pago base');
+
         if (periodInfo?.payment_type === 'hourly') {
           itemsList.push({
             concept: `Horas trabajadas (${payroll?.total_hours || 0} h x $${Number(payroll?.hourly_rate || 0).toFixed(2)})`,
@@ -91,7 +81,7 @@ export default function PrintPayrollButton({
             amount: Number(payroll?.total_pay || 0)
           });
         }
-        console.log('✅ itemsList después de fallback:', itemsList);
+
       }
 
       const data = {
@@ -123,44 +113,38 @@ export default function PrintPayrollButton({
         printerFooter: printerTicket?.footer || "Gracias por su trabajo"
       };
 
-      console.log('📦 Data construida para impresión:', JSON.stringify(data, null, 2));
-      console.log('📡 Llamando a print() con template "payroll"...');
 
       // Usar el servicio de impresión con template 'payroll'
       const result = await print('printer_main', 'payroll', data, false);
 
-      console.log('📨 Respuesta de print():', result);
 
       if (result.success) {
-        console.log('✅ Impresión térmica exitosa');
+
         setSuccess('✅ Recibo impreso correctamente');
         setTimeout(() => setSuccess(''), 3000);
         if (onPrintComplete) onPrintComplete();
       } else {
-        console.error('❌ Error en print():', result.error);
+
         throw new Error(result.error || 'Error al imprimir');
       }
 
     } catch (err) {
-      console.error('❌ Error en handlePrint:', err);
-      console.error('Stack trace:', err.stack);
+
       setError(err.message || 'Error al imprimir');
       
       // Fallback: imprimir en navegador
-      console.log('🔄 Ejecutando fallback: impresión en navegador');
+
       imprimirHTMLFallback();
     } finally {
       setPrinting(false);
-      console.log('========== 🏁 FIN IMPRESIÓN TÉRMICA NÓMINA ==========\n');
+
     }
   };
 
   const imprimirHTMLFallback = () => {
-    console.log('🖨️ Iniciando fallback de impresión en navegador...');
-    
+
     const width = printerTicket?.width || 32;
-    console.log('📏 Ancho de papel:', width);
-    
+
     // Construir texto simple para fallback
     let text = '';
     const line = '='.repeat(width);
@@ -180,7 +164,6 @@ export default function PrintPayrollButton({
     text += `Impreso: ${new Date().toLocaleString()}\n`;
     text += line + '\n\n';
     
-    console.log('📝 Texto a imprimir (fallback):\n', text);
 
     const html = `
       <!DOCTYPE html>
@@ -200,7 +183,7 @@ export default function PrintPayrollButton({
 
     const printWindow = window.open('', '_blank', 'width=450,height=650,toolbar=0,menubar=0');
     if (printWindow) {
-      console.log('✅ Ventana de impresión abierta');
+
       printWindow.document.write(html);
       printWindow.document.close();
       printWindow.focus();
@@ -208,7 +191,7 @@ export default function PrintPayrollButton({
       if (onPrintComplete) onPrintComplete();
       setSuccess('✅ Enviado a impresión (ventana del navegador)');
     } else {
-      console.error('❌ No se pudo abrir ventana de impresión - posiblemente bloqueada');
+
       setError('Permite ventanas emergentes para imprimir');
     }
   };

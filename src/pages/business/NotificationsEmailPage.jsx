@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useConfirm } from '../../context/ConfirmContext';
 import {
   FiMail, FiPlus, FiEdit2, FiTrash2, FiRefreshCw,
   FiAlertCircle, FiSearch, FiSend, FiClock, FiCheckCircle,
@@ -476,6 +477,7 @@ function EmailLogItem({ log }) {
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function NotificationsEmailPage() {
   const { selectedBusiness } = useBusinessContext();
+  const { showConfirm } = useConfirm();
   const [templates, setTemplates] = useState([]);
   const [emailLogs, setEmailLogs] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -507,7 +509,7 @@ export default function NotificationsEmailPage() {
       setTemplates(templatesList);
       setStats(prev => ({ ...prev, total_templates: templatesList.length }));
     } catch (err) {
-      console.error('Error loading templates:', err);
+
     }
   }, [selectedBusiness]);
 
@@ -522,7 +524,7 @@ export default function NotificationsEmailPage() {
       const failed = logsList.filter(l => l.status === 'failed').length;
       setStats(prev => ({ ...prev, total_sent: sent, total_failed: failed }));
     } catch (err) {
-      console.error('Error loading email logs:', err);
+
     }
   }, [selectedBusiness]);
 
@@ -533,7 +535,7 @@ export default function NotificationsEmailPage() {
       const data = await res.json();
       setCustomers(Array.isArray(data.data) ? data.data : data.customers || []);
     } catch (err) {
-      console.error('Error loading customers:', err);
+
     }
   }, [selectedBusiness]);
 
@@ -544,7 +546,7 @@ export default function NotificationsEmailPage() {
       const data = await res.json();
       setInvoices(Array.isArray(data.data) ? data.data : data.invoices || []);
     } catch (err) {
-      console.error('Error loading invoices:', err);
+
     }
   }, [selectedBusiness]);
 
@@ -606,7 +608,7 @@ export default function NotificationsEmailPage() {
   };
 
   const handleDeleteTemplate = async (template) => {
-    if (!window.confirm(`¿Eliminar la plantilla "${template.name}"?`)) return;
+    if (!await showConfirm(`¿Eliminar la plantilla "${template.name}"?`)) return;
     
     setSaving(true);
     try {

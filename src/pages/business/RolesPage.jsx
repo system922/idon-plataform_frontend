@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useConfirm } from '../../context/ConfirmContext';
 import {
   FiSettings, FiShoppingCart, FiBox, FiBarChart2, FiCreditCard,
   FiDollarSign, FiClipboard, FiThermometer, FiTruck, FiGrid, FiCalendar,
@@ -213,6 +214,7 @@ function RoleModal({ role, onClose, onSave, saving, modules }) {
 
 export default function RolesPage() {
   const { selectedBusiness } = useBusinessContext();
+  const { showConfirm } = useConfirm();
   const [roles,       setRoles      ] = useState([]);
   const [modules,     setModules    ] = useState([]);
   const [loading,     setLoading    ] = useState(true);
@@ -277,7 +279,7 @@ export default function RolesPage() {
   };
 
   const handleDelete = async (role) => {
-    if (!window.confirm(`¿Eliminar el rol "${role.name}"? Esta acción no se puede deshacer.`)) return;
+    if (!await showConfirm(`¿Eliminar el rol "${role.name}"? Esta acción no se puede deshacer.`)) return;
     setSaving(true);
     try {
       await fetchWithAuth(`/api/core/roles/${role.id}`, { method: 'DELETE' });

@@ -17,8 +17,7 @@ window.fetch = function(...args) {
     .then(async (response) => {
       // Si es 401 (No autorizado), significa que el token expiró
       if (response.status === 401) {
-        console.warn('[Auth] Token expirado (401), limpiando sesión...');
-        
+
         // Limpiar todo el localStorage relacionado con la sesión
         localStorage.removeItem('idonUser');
         localStorage.removeItem('idonToken');

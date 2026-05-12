@@ -185,7 +185,7 @@ export default function AccountingPayablePage() {
         setSummary(null);
       }
     } catch (err) {
-      console.error(err);
+
       setError(err.message);
       showNotification('Error al cargar cuentas por pagar', 'error');
     } finally {
@@ -324,7 +324,7 @@ export default function AccountingPayablePage() {
       URL.revokeObjectURL(url);
       showNotification('Exportado a Excel', 'success');
     } catch (err) {
-      console.error(err);
+
       setError('Error al exportar a Excel');
     } finally {
       setExporting(false);

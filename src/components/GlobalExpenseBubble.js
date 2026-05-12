@@ -42,10 +42,10 @@ function GlobalExpenseBubble() {
           setCategoryId(data[0].id);
         }
       } else {
-        console.error('Error cargando categorías:', res.status);
+
       }
     } catch (err) {
-      console.error(err);
+
     } finally {
       setLoadingCategories(false);
     }
@@ -72,15 +72,15 @@ function GlobalExpenseBubble() {
         created_by: pendingExpense?.userId || null,
         date: getTodayDateInEcuador()
       };
-      console.log('📦 Enviando gasto:', payload);
+
       const resp = await fetchWithAuth('/api/expenses', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      console.log('📡 Respuesta status:', resp.status);
+
       if (!resp.ok) {
         const errorText = await resp.text();
-        console.error('❌ Error respuesta:', errorText);
+
         let errorMsg;
         try {
           const data = JSON.parse(errorText);
@@ -92,13 +92,13 @@ function GlobalExpenseBubble() {
         return;
       }
       const data = await resp.json();
-      console.log('✅ Gasto guardado:', data);
+
       await openCashDrawer().catch(() => {});
       clearExpense();
       setExpanded(false);
       if (pendingExpense?.onDoneCallback) pendingExpense.onDoneCallback();
     } catch (err) {
-      console.error('❌ Excepción:', err);
+
       setError(err.message);
     } finally {
       setSaving(false);

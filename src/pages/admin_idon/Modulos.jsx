@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useConfirm } from '../../context/ConfirmContext';
 import {
   FiBox, FiPlus, FiEdit2, FiTrash2, FiCheck, FiX,
   FiRefreshCw, FiSettings, FiDollarSign,
@@ -10,6 +11,7 @@ const inp = { width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize:
 const Lbl = ({ children }) => <label style={{ display: 'block', marginBottom: 5, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: '#8CB79B' }}>{children}</label>;
 
 export default function AdminModulos() {
+  const { showConfirm } = useConfirm();
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
@@ -31,7 +33,7 @@ export default function AdminModulos() {
   useEffect(() => { load(); }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar este módulo?')) return;
+    if (!await showConfirm('¿Eliminar este módulo?')) return;
     try {
       await adminApiService.delete(`/admin/modules/${id}`);
       load();
