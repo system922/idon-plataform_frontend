@@ -79,6 +79,12 @@ export function usePrinterService() {
       case 'purchase':
         content = formatPurchaseTicket(data, paperWidth);
         break;
+      case 'comanda-mod':
+        content = formatComandaModTicket(data, paperWidth);
+        break;
+      case 'ticket-simple':
+        content = formatSimpleTicket(data, paperWidth);
+        break;
       default:
         throw new Error(`Template '${template}' no reconocido`);
     }
@@ -90,41 +96,42 @@ export function usePrinterService() {
    * Envía el ticket a imprimir
    */
   const printTicket = useCallback(async (printerName, content, openDrawer = false) => {
-    try {
-      if (!qz.websocket.isActive()) {
-        throw new Error('QZ Tray no está conectado');
-      }
+    if (!qz.websocket.isActive()) {
+      console.error('❌ QZ Tray no está conectado');
+      return { success: false, error: 'QZ Tray no está conectado' };
+    }
 
-      console.log(`🖨️ Imprimiendo en: ${printerName}`);
-
-      const config = qz.configs.create(printerName);
-
-      const commands = [];
-
-      // Reset
-      commands.push(String.fromCharCode(27) + '@');
-
-      // Abre cajón si es necesario
-      if (openDrawer) {
-        console.log('🔔 Abriendo cajón...');
-        commands.push(String.fromCharCode(27) + 'p' + String.fromCharCode(0) + String.fromCharCode(25) + String.fromCharCode(250));
-      }
-
-      // Contenido
-      commands.push(content);
-
-      // Feed y corte
-      commands.push('\n\n\n');
-      commands.push(String.fromCharCode(27) + 'i');
-
-      console.log(`📤 Enviando ${commands.length} comandos a QZ Tray...`);
+    const sendTo = async (name) => {
+      const config = qz.configs.create(name);
+      const commands = [
+        String.fromCharCode(27) + '@',
+        ...(openDrawer ? [String.fromCharCode(27) + 'p' + String.fromCharCode(0) + String.fromCharCode(25) + String.fromCharCode(250)] : []),
+        content,
+        '\n\n\n',
+        String.fromCharCode(27) + 'i',
+      ];
       await qz.print(config, commands);
+    };
 
-      console.log('✅ Impresión completada');
-      return { success: true, message: 'Ticket impreso correctamente' };
-    } catch (error) {
-      console.error('❌ Error en printTicket:', error);
-      return { success: false, error: error.message };
+    try {
+      await sendTo(printerName);
+      console.log(`✅ Impreso en: ${printerName}`);
+      return { success: true };
+    } catch (err) {
+      // Reintenta con el nombre por defecto si el configurado no existe
+      const DEFAULT = 'POS-58';
+      if (printerName !== DEFAULT) {
+        try {
+          await sendTo(DEFAULT);
+          console.log(`✅ Impreso en fallback: ${DEFAULT}`);
+          return { success: true };
+        } catch (err2) {
+          console.error('❌ Error en printTicket (fallback):', err2);
+          return { success: false, error: err2.message };
+        }
+      }
+      console.error('❌ Error en printTicket:', err);
+      return { success: false, error: err.message };
     }
   }, []);
 
@@ -167,25 +174,36 @@ export function usePrinterService() {
    * Abre el cajón
    */
   const openCashDrawer = useCallback(async () => {
+    if (!qz.websocket.isActive()) {
+      return { success: false, error: 'QZ Tray no está conectado' };
+    }
+
+    const printerConfig = await getPrinterConfig('printer_main');
+    const DRAWER_CMD = [
+      String.fromCharCode(27) + 'p' + String.fromCharCode(0) + String.fromCharCode(25) + String.fromCharCode(250),
+    ];
+
+    const tryOpen = async (name) => {
+      const config = qz.configs.create(name);
+      await qz.print(config, DRAWER_CMD);
+    };
+
+    const configuredName = printerConfig?.name || '';
+    const DEFAULT = 'POS-58';
+
     try {
-      const printerConfig = await getPrinterConfig('printer_main');
-
-      if (!printerConfig?.name) {
-        return { success: false, error: 'Impresora principal no configurada' };
-      }
-
-      if (!qz.websocket.isActive()) {
-        throw new Error('QZ Tray no está conectado');
-      }
-
-      const config = qz.configs.create(printerConfig.name);
-      await qz.print(config, [
-        String.fromCharCode(27) + 'p' + String.fromCharCode(0) + String.fromCharCode(25) + String.fromCharCode(250),
-      ]);
-
+      await tryOpen(configuredName || DEFAULT);
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (err) {
+      if (configuredName && configuredName !== DEFAULT) {
+        try {
+          await tryOpen(DEFAULT);
+          return { success: true };
+        } catch (err2) {
+          return { success: false, error: err2.message };
+        }
+      }
+      return { success: false, error: err.message };
     }
   }, [getPrinterConfig]);
 
@@ -268,7 +286,7 @@ function formatDate(str, format = 'short') {
 // ─── Templates ────────────────────────────────────────────────────────────────
 
 /**
- * COMANDA - Formato exacto del original
+ * COMANDA
  */
 function formatComandaTicket(data, width = 32) {
   const { comanda, table, items = [], notes = '', timestamp, bizInfo } = data;
@@ -328,7 +346,7 @@ function formatComandaTicket(data, width = 32) {
   out += sep() + '\n';
   out += center(`ORDEN ${ordenNum}`) + '\n';
   out += sep() + '\n';
-  out += center(`LOCAL • ${hora}`) + '\n';
+  out += center(`LOCAL - ${hora}`) + '\n';
   out += line() + '\n';
 
   if (!itemsArr || itemsArr.length === 0) {
@@ -358,19 +376,27 @@ function formatComandaTicket(data, width = 32) {
         out += '   ' + nameLines[i] + '\n';
       }
 
-      // Extras como notas (debajo del producto, antes de las notas normales)
+      const itemNotes = getItemNotes(main);
+      const subLines = [];
+
       extras.forEach(extra => {
         const display = String(getItemNotes(extra)).replace('__EXT__:', '').trim().toUpperCase();
-        wrap(display, width - 3).forEach(ln => { out += ` - ${ln}\n`; });
+        wrap(display, width - 4).forEach(ln => { if (ln) subLines.push({ text: ln, type: 'extra' }); });
       });
 
-      // Notas normales del ítem principal
-      const itemNotes = getItemNotes(main);
       if (itemNotes) {
-        itemNotes.split('\n').flatMap(l => wrap(l.trim(), width - 3) || ['']).forEach(ln => {
-          if (ln) out += ` - ${ln}\n`;
+        itemNotes.split('\n').flatMap(l => wrap(l.trim(), width - 4) || ['']).forEach(ln => {
+          if (ln) subLines.push({ text: ln, type: 'nota' });
         });
       }
+
+      subLines.forEach(({ text, type }) => {
+        if (type === 'nota') {
+          out += '      * ' + text + ' *\n';
+        } else {
+          out += '      + ' + text + '\n';
+        }
+      });
 
       out += sep() + '\n';
     });
@@ -388,6 +414,139 @@ function formatComandaTicket(data, width = 32) {
   out += '\n\n'; // feed/corte
 
   return out;
+}
+
+/**
+ * COMANDA MODIFICADA
+ * data: { mesa, orden, tipoOrden, items: [{ nombre, cantidad, extras: [{name}], notas }] }
+ */
+function formatComandaModTicket(data, width = 32) {
+  const { mesa, orden, tipoOrden = 'LOCAL', items = [] } = data;
+
+  const line   = () => '='.repeat(width);
+  const sep    = () => '-'.repeat(width);
+  const center = (txt) => {
+    const s = String(txt ?? '').trim();
+    const pad = Math.max(0, Math.floor((width - s.length) / 2));
+    return ' '.repeat(pad) + s;
+  };
+
+  const hora = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+
+  let out = '';
+  out += line() + '\n';
+  out += center('**** COMANDA MODIFICADA ****') + '\n';
+  out += line() + '\n';
+  if (mesa) {
+    out += center(`MESA ${mesa}`) + '\n';
+    out += sep() + '\n';
+  }
+  out += center(`ORDEN ${orden || 'N/A'}`) + '\n';
+  out += sep() + '\n';
+  out += center(`${tipoOrden} - ${hora}`) + '\n';
+  out += line() + '\n';
+
+  items.forEach(item => {
+    const qty    = item.cantidad || item.quantity || 1;
+    const nombre = String(item.nombre || item.product_name || 'Producto').toUpperCase();
+    const extras = item.extras || [];
+    const notas  = item.notas || item.notes || '';
+    const prefix = `${qty}x `;
+    const subW   = width - 6;
+
+    const nameLines = wrap(nombre, width - prefix.length);
+    out += prefix + (nameLines[0] || '') + '\n';
+    for (let i = 1; i < nameLines.length; i++) out += '   ' + nameLines[i] + '\n';
+
+    extras.forEach(e => {
+      wrap(String(e.name || '').toUpperCase(), subW).forEach(ln => { out += '      + ' + ln + '\n'; });
+    });
+    if (notas) {
+      wrap(notas, subW).forEach(ln => { out += '      * ' + ln + ' *\n'; });
+    }
+    out += sep() + '\n';
+  });
+
+  out += line() + '\n';
+  out += '\n\n\n\n\n';
+  return out;
+}
+
+/**
+ * TICKET SIMPLE (sin facturación electrónica)
+ * data: { bizInfo, orden, customer, items, total, recibido, cambio, printerFooter }
+ * items: [{ description, quantity, price (con IVA), total }]
+ */
+function formatSimpleTicket(data, width = 42) {
+  const {
+    bizInfo,
+    orden       = 'N/A',
+    customer    = {},
+    items       = [],
+    total       = 0,
+    recibido    = 0,
+    cambio      = 0,
+    printerFooter,
+  } = data;
+
+  const line = '='.repeat(width);
+  const sep  = '-'.repeat(width);
+  let t = '';
+
+  // ── Encabezado ──────────────────────────────────────────────────────────────
+  if (bizInfo?.trade_name) wrap(bizInfo.trade_name.toUpperCase(), width).forEach(l => (t += padCenter(l, width) + '\n'));
+  if (bizInfo?.company_name && bizInfo.company_name !== bizInfo.trade_name)
+    wrap(bizInfo.company_name, width).forEach(l => (t += padCenter(l, width) + '\n'));
+  if (bizInfo?.ruc)     t += padCenter(`RUC: ${bizInfo.ruc}`, width) + '\n';
+  if (bizInfo?.address) wrap(bizInfo.address, width).forEach(l => (t += padCenter(l, width) + '\n'));
+  t += line + '\n';
+
+  // ── Datos de la orden ────────────────────────────────────────────────────────
+  const now   = new Date();
+  const fecha = now.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Guayaquil' });
+  const hora  = now.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Guayaquil' });
+
+  t += `No. ORDEN: ${orden}\n`;
+  if (customer.name) t += `CLIENTE: ${customer.name}\n`;
+  t += `CI: ${customer.id || '9999999999'}\n`;
+  t += `FECHA: ${fecha}   HORA: ${hora}\n`;
+  t += sep + '\n';
+
+  // ── Tabla: CANT | DESC | P.UNIT | TOTAL ─────────────────────────────────────
+  const cW = 4, pW = 7, tW = 8;
+  const dW = Math.max(6, width - cW - 1 - pW - 1 - tW - 2);
+
+  t += padLeft('CANT', cW) + ' ' + padRight('DESC', dW) + ' ' + padLeft('P.UNIT', pW) + ' ' + padLeft('TOTAL', tW) + '\n';
+  t += sep + '\n';
+
+  items.forEach(item => {
+    const qty   = Number(item.quantity || 1);
+    const desc  = String(item.description || 'Producto').toUpperCase();
+    const price = Number(item.price || 0);
+    const tot   = Number(item.total ?? (qty * price));
+
+    const descLines = wrap(desc, dW);
+    t += padLeft(String(qty), cW) + ' ' + padRight(descLines[0] || '', dW) + ' ' + padLeft(formatMoney(price), pW) + ' ' + padLeft(formatMoney(tot), tW) + '\n';
+    for (let i = 1; i < descLines.length; i++) t += ' '.repeat(cW + 1) + descLines[i] + '\n';
+  });
+
+  t += line + '\n';
+
+  // ── Totales ──────────────────────────────────────────────────────────────────
+  const mW   = 10;
+  const labW = width - mW;
+  const row  = (label, val) => padRight(label, labW) + padLeft(formatMoney(val), mW) + '\n';
+
+  t += row('TOTAL:', total);
+  if (recibido > 0) t += row('RECIBIDO:', recibido);
+  if (recibido > 0) t += row('CAMBIO:', Math.max(0, cambio));
+  t += line + '\n';
+
+  // ── Pie ─────────────────────────────────────────────────────────────────────
+  if (printerFooter) t += padCenter(printerFooter, width) + '\n';
+  t += '\n\n';
+
+  return t;
 }
 
 /**

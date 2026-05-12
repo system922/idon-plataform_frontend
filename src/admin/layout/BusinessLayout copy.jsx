@@ -1,4 +1,8 @@
-// BusinessLayout.jsx - Modificado
+/**
+ * BusinessLayout.jsx
+ * Ubicación: src/layouts/BusinessLayout.jsx
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
@@ -19,7 +23,7 @@ import { BusinessContextProvider } from '../../admin/config/BusinessContext';
 import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';
 import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
 import { useAutoPrint } from '../../hooks/useAutoPrint';
-import { usePrinterService } from '../../services/usePrinterService'; // 👈 CAMBIAR: usar usePrinterService en lugar de useQzTray
+import { useQzTray } from '../../components/useQzTray';
 
 const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
 
@@ -226,8 +230,8 @@ function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
 export default function BusinessLayout({ user, onLogout }) {
   const navigate = useNavigate();
 
-  // 🔥 USAR EL MISMO SERVICIO QUE USA GlobalExpenseBubble
-  const { openCashDrawer, printerError } = usePrinterService();
+  // 🔥 SOLO UN HOOK para abrir cajón - el mismo que usa PosCheckoutPage
+  const { openDrawer: openDrawerQz, printerError, isQzReady } = useQzTray();
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
@@ -275,20 +279,36 @@ export default function BusinessLayout({ user, onLogout }) {
   const [abriendoCajonCierre, setAbriendoCajonCierre] = useState(false);
 
   // ═══════════════════════════════════════════════════════
-  // 🔥 FUNCIÓN PARA ABRIR CAJÓN - IGUAL QUE EN GlobalExpenseBubble
+  // 🔥 FUNCIÓN SIMPLE PARA ABRIR CAJÓN
+  // Funciona igual que en PosCheckoutPage
   // ═══════════════════════════════════════════════════════
   const abrirCajon = useCallback(async () => {
-    console.log('🔓 [Layout] Abriendo cajón con openCashDrawer...');
-    try {
-      await openCashDrawer();
-      console.log('✅ [Layout] Cajón abierto exitosamente');
-      return true;
-    } catch (err) {
-      console.error('❌ [Layout] Error abriendo cajón:', err);
-      // No lanzamos error para no bloquear el flujo
-      return false;
+    console.log('🔓 [Layout] Abriendo cajón...');
+    
+    // Intento 1: QZ Tray
+    if (isQzReady) {
+      try {
+        await openDrawerQz();
+        console.log('✅ [Layout] Cajón abierto con QZ Tray');
+        return true;
+      } catch (err) {
+        console.warn('⚠️ [Layout] QZ Tray falló:', err.message);
+      }
     }
-  }, [openCashDrawer]);
+    
+    // Intento 2: HTTP API
+    try {
+      const res = await fetchWithAuth('/api/pos/open-drawer', { method: 'POST' });
+      if (res.ok) {
+        console.log('✅ [Layout] Cajón abierto por HTTP');
+        return true;
+      }
+    } catch (err) {
+      console.warn('⚠️ [Layout] HTTP falló:', err.message);
+    }
+    
+    throw new Error('No se pudo abrir el cajón');
+  }, [isQzReady, openDrawerQz]);
 
   // ═══════════════════════════════════════════════════════
   // VERIFICAR APERTURA
@@ -402,11 +422,15 @@ export default function BusinessLayout({ user, onLogout }) {
     setMostrarConfirmacionCierre(false);
     setAbriendoCajonCierre(true);
     
-    // 🔥 ABRIR CAJÓN IGUAL QUE EN GASTOS
-    await abrirCajon();
-    
-    setAbriendoCajonCierre(false);
-    setMostrarCierreForm(true);
+    try {
+      await abrirCajon();
+      console.log('✅ Cajón abierto para el cierre');
+    } catch (err) {
+      console.warn('⚠️ No se pudo abrir el cajón para el cierre');
+    } finally {
+      setAbriendoCajonCierre(false);
+      setMostrarCierreForm(true);
+    }
   };
 
   const handleCancelarCierre = () => {
@@ -443,13 +467,16 @@ export default function BusinessLayout({ user, onLogout }) {
     setAperturaIniciada(true);
     setAbriendoCaja(true);
 
-    // 🔥 ABRIR CAJÓN IGUAL QUE EN GASTOS
-    await abrirCajon();
-
-    setAbriendoCaja(false);
-    setAperturaIniciada(false);
-    setMostrarAlerta(false);
-    setMostrarFormulario(true);
+    try {
+      await abrirCajon();
+    } catch (err) {
+      console.warn('⚠️ No se pudo abrir el cajón');
+    } finally {
+      setAbriendoCaja(false);
+      setAperturaIniciada(false);
+      setMostrarAlerta(false);
+      setMostrarFormulario(true);
+    }
   };
 
   const handleClickAbrirCaja = async () => {
@@ -459,13 +486,15 @@ export default function BusinessLayout({ user, onLogout }) {
     }
     
     setAbriendoCaja(true);
-    
-    // 🔥 ABRIR CAJÓN IGUAL QUE EN GASTOS
-    await abrirCajon();
-    
-    setAbriendoCaja(false);
-    setMostrarAlerta(false);
-    setMostrarFormulario(true);
+    try {
+      await abrirCajon();
+    } catch (err) {
+      console.warn('⚠️ No se pudo abrir el cajón');
+    } finally {
+      setAbriendoCaja(false);
+      setMostrarAlerta(false);
+      setMostrarFormulario(true);
+    }
   };
 
   const handleAperturaCompleta = async (data) => {
@@ -473,8 +502,8 @@ export default function BusinessLayout({ user, onLogout }) {
     const userName = operador?.nombre || operador?.name || operador?.username || operador?.email || 'Usuario';
 
     if (operador?.id && data) {
-      const totalEfectivo = Number(data.total_efectivo) || 0;
-      const montoBanca = Number(data.monto_banca) || 0;
+      const totalEfectivo = data.total_efectivo || 0;
+      const montoBanca = data.monto_banca || 0;
       const totalInicial = totalEfectivo + montoBanca;
 
       await fetchWithAuth('/api/audit-log', {
@@ -623,6 +652,12 @@ export default function BusinessLayout({ user, onLogout }) {
               <div className="business-error">
                 <FiAlertCircle size={18}/>
                 {error}
+              </div>
+            )}
+            {!isQzReady && !loading && (
+              <div className="business-warning" style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '8px', borderRadius: '4px', marginBottom: '10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FiAlertCircle size={14} />
+                QZ Tray no está conectado. El cajón se abrirá mediante método alternativo.
               </div>
             )}
             {printerError && !loading && (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   FiCreditCard, FiRefreshCw, FiCheck, FiAlertCircle,
-  FiClock, FiXCircle, FiCheckCircle, FiCalendar,
+  FiClock, FiXCircle, FiCheckCircle, FiCalendar, FiMail,
 } from 'react-icons/fi';
 import { adminApiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
@@ -29,7 +29,8 @@ export default function Payments() {
   const [error,    setError]    = useState(null);
   const [filter,   setFilter]   = useState('all');
   const [acting,   setActing]   = useState(null);
-  const [payModal, setPayModal] = useState(null);
+  const [payModal,   setPayModal]   = useState(null);
+  const [emailModal, setEmailModal] = useState(null);
 
   const load = async () => {
     try {
@@ -207,6 +208,11 @@ export default function Payments() {
                                 <FiCheckCircle size={12} /> Reactivar
                               </button>
                             )}
+                            {r.owner_email && (
+                              <button className="admin-table-btn" onClick={() => setEmailModal(r)} disabled={busy} style={{ fontSize: 11, background: 'rgba(99,102,241,.1)', color: '#6366f1', border: '1px solid rgba(99,102,241,.3)' }}>
+                                <FiMail size={12} /> Enviar email
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -219,7 +225,150 @@ export default function Payments() {
         </div>
       </div>
 
-      {payModal && <PayModal row={payModal} onClose={() => setPayModal(null)} onConfirm={handleMarkPaid} />}
+      {payModal   && <PayModal   row={payModal}   onClose={() => setPayModal(null)}   onConfirm={handleMarkPaid} />}
+      {emailModal && <EmailModal row={emailModal} onClose={() => setEmailModal(null)} />}
+    </div>
+  );
+}
+
+const EMAIL_TEMPLATES = [
+  {
+    key: 'bienvenida',
+    label: 'Bienvenida',
+    desc: 'Correo de bienvenida a la plataforma.',
+    color: '#22c55e',
+    bg: 'rgba(34,197,94,.08)',
+    border: 'rgba(34,197,94,.3)',
+  },
+  {
+    key: 'recordatorio_pago',
+    label: 'Recordatorio de pago',
+    desc: 'Aviso de pago próximo o vencido.',
+    color: '#f59e0b',
+    bg: 'rgba(245,158,11,.08)',
+    border: 'rgba(245,158,11,.3)',
+  },
+  {
+    key: 'suspension',
+    label: 'Suscripción suspendida',
+    desc: 'Notifica que el acceso fue suspendido.',
+    color: '#ef4444',
+    bg: 'rgba(239,68,68,.08)',
+    border: 'rgba(239,68,68,.3)',
+  },
+  {
+    key: 'activacion',
+    label: 'Suscripción activada',
+    desc: 'Confirma la reactivación de la cuenta.',
+    color: '#6366f1',
+    bg: 'rgba(99,102,241,.08)',
+    border: 'rgba(99,102,241,.3)',
+  },
+];
+
+function EmailModal({ row, onClose }) {
+  const [selected, setSelected] = useState(null);
+  const [sending,  setSending]  = useState(false);
+  const [result,   setResult]   = useState(null);
+
+  const handleSend = async () => {
+    if (!selected) return;
+    setSending(true);
+    setResult(null);
+    try {
+      await adminApiService.post('/admin/email/send-template', {
+        to:           row.owner_email,
+        templateKey:  selected,
+        businessName: row.business_name,
+        ownerName:    row.owner_name,
+        amount:       row.total_amount,
+        dueDate:      row.next_billing_at,
+      });
+      setResult({ ok: true, msg: 'Correo enviado correctamente.' });
+    } catch (e) {
+      setResult({ ok: false, msg: e.message || 'Error al enviar.' });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="admin-modal-overlay" onClick={onClose}>
+      <div className="admin-modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+        <div className="admin-modal-header">
+          <h2><FiMail size={17} style={{ marginRight: 8, color: '#6366f1' }} /> Enviar Email</h2>
+          <button className="admin-modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="admin-modal-body">
+          <p style={{ margin: '0 0 4px', fontSize: 13 }}>
+            Para: <strong>{row.owner_name || '—'}</strong>
+          </p>
+          <p style={{ margin: '0 0 18px', fontSize: 12, color: 'var(--admin-text-muted)' }}>
+            {row.owner_email}
+          </p>
+
+          <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#8CB79B', letterSpacing: '.5px' }}>
+            Selecciona una plantilla
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {EMAIL_TEMPLATES.map(t => (
+              <div
+                key={t.key}
+                onClick={() => setSelected(t.key)}
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  background: selected === t.key ? t.bg : 'var(--admin-bg-primary)',
+                  border: `1.5px solid ${selected === t.key ? t.color : 'var(--admin-border-light)'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  transition: 'all .15s',
+                }}
+              >
+                <div style={{
+                  width: 14, height: 14, borderRadius: '50%', flexShrink: 0,
+                  background: selected === t.key ? t.color : 'transparent',
+                  border: `2px solid ${t.color}`,
+                  transition: 'background .15s',
+                }} />
+                <div>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: selected === t.key ? t.color : 'var(--admin-text-primary)' }}>{t.label}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--admin-text-muted)' }}>{t.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {result && (
+            <div style={{
+              marginTop: 14, padding: '10px 14px', borderRadius: 8, fontSize: 13,
+              background: result.ok ? 'rgba(34,197,94,.08)' : 'rgba(239,68,68,.08)',
+              border: `1px solid ${result.ok ? 'rgba(34,197,94,.3)' : 'rgba(239,68,68,.3)'}`,
+              color: result.ok ? '#16a34a' : '#dc2626',
+            }}>
+              {result.msg}
+            </div>
+          )}
+        </div>
+        <div className="admin-modal-footer">
+          <button className="admin-btn admin-btn-secondary" onClick={onClose}>
+            {result?.ok ? 'Cerrar' : 'Cancelar'}
+          </button>
+          {!result?.ok && (
+            <button
+              className="admin-btn admin-btn-primary"
+              disabled={!selected || sending}
+              onClick={handleSend}
+              style={{ background: 'linear-gradient(135deg,#818cf8,#6366f1)', color: '#fff', border: 'none' }}
+            >
+              <FiMail size={14} /> {sending ? 'Enviando...' : 'Enviar correo'}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

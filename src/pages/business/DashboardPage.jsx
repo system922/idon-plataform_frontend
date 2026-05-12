@@ -18,33 +18,63 @@ const fmt = n =>
     : n.toLocaleString('es-EC', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
 
 /**
- * Calcula horas trabajadas:
- *   Escenario A (2 marcaciones): check_out - check_in
- *   Escenario B (4 marcaciones): (entrada_almuerzo - entrada) + (salida - salida_almuerzo)
- *   Retorna null si el empleado aún no ha salido.
+ * Calcula horas trabajadas acumuladas hasta el momento actual:
+ *   - Si solo tiene entrada → horas desde entrada hasta ahora.
+ *   - Si tiene entrada y salida de almuerzo (sin regreso) → horas hasta almuerzo.
+ *   - Si tiene entrada, salida y regreso de almuerzo (sin salida final) → horas antes del almuerzo + desde regreso hasta ahora.
+ *   - Si tiene todas las marcaciones → total fijo.
+ *   - Si no hay entrada → 0.
  */
 function calcHours(emp) {
+  const ahora = new Date(); // hora actual del navegador
+
   const checkIn  = emp.entrada          ? new Date(emp.entrada)          : null;
   const lunchOut = emp.salida_almuerzo  ? new Date(emp.salida_almuerzo)  : null;
   const lunchIn  = emp.entrada_almuerzo ? new Date(emp.entrada_almuerzo) : null;
   const checkOut = emp.salida           ? new Date(emp.salida)           : null;
 
-  // Escenario A: solo entrada y salida
-  if (checkIn && checkOut && (!lunchOut || !lunchIn)) {
-    const totalMs = checkOut - checkIn;
+  let totalMs = 0;
+
+  // Sin entrada → 0 horas
+  if (!checkIn) return 0;
+
+  // Caso 1: Solo entrada (aún no ha salido a almorzar ni terminado)
+  if (checkIn && !lunchOut && !checkOut) {
+    totalMs = ahora - checkIn;
     const hours = Math.round((totalMs / 3_600_000) * 100) / 100;
     return hours > 0 ? hours : 0;
   }
 
-  // Escenario B: las 4 marcaciones
+  // Caso 2: Entrada y salida de almuerzo (no ha regresado ni terminado)
+  if (checkIn && lunchOut && !lunchIn && !checkOut) {
+    totalMs = lunchOut - checkIn; // solo tiempo antes del almuerzo
+    const hours = Math.round((totalMs / 3_600_000) * 100) / 100;
+    return hours > 0 ? hours : 0;
+  }
+
+  // Caso 3: Entrada, salida almuerzo y entrada almuerzo (pero no ha salido definitivamente)
+  if (checkIn && lunchOut && lunchIn && !checkOut) {
+    totalMs = (lunchOut - checkIn) + (ahora - lunchIn);
+    const hours = Math.round((totalMs / 3_600_000) * 100) / 100;
+    return hours > 0 ? hours : 0;
+  }
+
+  // Caso 4: Las 4 marcaciones completas (tiempo fijo)
   if (checkIn && lunchOut && lunchIn && checkOut) {
-    const totalMs = (lunchOut - checkIn) + (checkOut - lunchIn);
+    totalMs = (lunchOut - checkIn) + (checkOut - lunchIn);
     const hours = Math.round((totalMs / 3_600_000) * 100) / 100;
     return hours > 0 ? hours : 0;
   }
 
-  // Faltan marcaciones (ej: empezó pero no salió)
-  return null;
+  // Caso 5: Solo entrada y salida final (sin almuerzo registrado)
+  if (checkIn && checkOut && !lunchOut && !lunchIn) {
+    totalMs = checkOut - checkIn;
+    const hours = Math.round((totalMs / 3_600_000) * 100) / 100;
+    return hours > 0 ? hours : 0;
+  }
+
+  // Cualquier otra combinación no contemplada → 0
+  return 0;
 }
 
 function toArray(data) {
@@ -115,13 +145,28 @@ export default function ManagerDashboard() {
         attendanceRes.ok ? attendanceRes.json() : [],
       ]);
 
+      // 🔍 LOG PARA DEBUG - Mira la consola del navegador
+      console.log('Datos de asistencia COMPLETOS:', attendanceData);
+      console.log('Cantidad de empleados:', attendanceData.length);
+      
+      attendanceData.forEach(emp => {
+        console.log(`Empleado: ${emp.full_name}`, {
+          entrada: emp.entrada,
+          salida_almuerzo: emp.salida_almuerzo,
+          entrada_almuerzo: emp.entrada_almuerzo,
+          salida: emp.salida
+        });
+      });
+
+      // ✅ AHORA se incluyen TODOS los empleados (sin filtrar por null)
       const hours = toArray(attendanceData)
         .map(emp => {
           const h = calcHours(emp);
-          if (h === null) return null;
+          console.log(`Horas calculadas para ${emp.full_name}:`, h);
           return { day: emp.full_name?.split(' ')[0] ?? `Emp ${emp.employee_id}`, hours: h };
-        })
-        .filter(Boolean);
+        });
+
+      console.log('Horas procesadas final (todos los empleados):', hours);
 
       setGraphData({ sales: toArray(salesData), purchases: toArray(purchasesData), hours });
     } catch {
@@ -186,6 +231,19 @@ export default function ManagerDashboard() {
       <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
     </button>
   );
+
+  // ── LOGS PARA DEPURAR EL GRÁFICO DE HORAS (ANTES DEL RENDER) ─────────────────
+  console.log('📊 [DEBUG] Datos que recibe el gráfico de horas:', graphData.hours);
+  console.log('📊 [DEBUG] Cantidad de colaboradores a mostrar:', graphData.hours.length);
+  if (graphData.hours.length > 0) {
+    console.log('📊 [DEBUG] Primer colaborador:', graphData.hours[0]);
+    console.log('📊 [DEBUG] Último colaborador:', graphData.hours[graphData.hours.length - 1]);
+  }
+
+  // ── EFECTO PARA LOGUEAR CAMBIOS EN graphData.hours ────────────────────────
+  useEffect(() => {
+    console.log('🔄 [useEffect] graphData.hours actualizado:', graphData.hours);
+  }, [graphData.hours]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 

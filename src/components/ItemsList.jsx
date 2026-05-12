@@ -16,54 +16,50 @@ export default function ItemsList({ items, eliminarItem, abrirEditarItem }) {
   return (
     <div className="items-list-modern">
       {items.map((item, idx) => {
-        // ✅ Calcular PVP unitario = selling_price + tax_rate (precio con IVA para mostrar)
-        const unitPVP = (item.selling_price || 0) + (item.tax_rate || 0);
-        // ✅ subtotal base (sin IVA) = selling_price × cantidad
-        const subtotalBase = item.subtotal_base || item.line_total_base || (item.selling_price || 0) * (item.cantidad || 1);
-        // ✅ IVA del item = tax_rate × cantidad
-        const ivaItem = item.iva || item.line_iva || (item.tax_rate || 0) * (item.cantidad || 1);
-        // ✅ Total del item = subtotalBase + ivaItem
-        const totalItem = item.total || item.line_total || item.subtotal || (unitPVP * (item.cantidad || 1));
+        const unitPVP   = (item.selling_price || 0) + (item.tax_rate || 0);
+        const totalItem = item.total || item.line_total || (unitPVP * (item.cantidad || item.quantity || 1));
+        const cantidad  = item.cantidad || item.quantity || 1;
+        const nombre    = (item.nombre || item.product_name || '').toUpperCase();
+        const extras    = item.extras || [];
+        const notas     = item.notas || '';
 
         return (
-          <div key={item.id || idx} className="item-row">
-            <div className="item-info">
-              <div className="item-name">
-                {item.cantidad || item.quantity || 1}x {item.nombre || item.product_name}
+          <div key={item.id || idx} className="item-row comanda-style">
+
+            {/* ── Línea 1: qty · nombre · precio c/u · total · acciones ── */}
+            <div className="comanda-line-1">
+              <div className="comanda-left">
+                <span className="comanda-qty">{cantidad}x</span>
+                <span className="comanda-nombre">{nombre}</span>
               </div>
-              <div className="item-meta">
-                <div className="item-price">${unitPVP.toFixed(2)} c/u</div>
-                {/* ✅ Mostrar PVP unitario (con IVA incluido) */}
-                {item.extras && item.extras.length > 0 && (
-                  <div className="item-extras">
-                    {item.extras.map((extra, i) => (
-                      <span key={i} className="item-extra-tag">+ {extra.name}</span>
-                    ))}
-                  </div>
-                )}
-                {item.notas && <span className="item-note">📝 {item.notas}</span>}
-              </div>
-            </div>
-            <div className="item-right">
-              {/* ✅ Mostrar total del item (con IVA incluido) */}
-              <div className="item-price">${totalItem.toFixed(2)}</div>
-              <div className="item-actions">
-                <button
-                  className="icon-btn edit-btn"
-                  onClick={() => abrirEditarItem(item)}
-                  title="Editar item"
-                >
-                  <FiEdit2 size={16} />
-                </button>
-                <button
-                  className="icon-btn delete-btn"
-                  onClick={() => eliminarItem(item.id)}
-                  title="Eliminar item"
-                >
-                  <FiTrash2 size={16} />
-                </button>
+              <div className="comanda-right">
+                <span className="comanda-unitprice">${unitPVP.toFixed(2)} c/u</span>
+                <span className="item-price">${totalItem.toFixed(2)}</span>
+                <div className="item-actions">
+                  <button className="icon-btn edit-btn" onClick={() => abrirEditarItem(item)} title="Editar">
+                    <FiEdit2 size={15} />
+                  </button>
+                  <button className="icon-btn delete-btn" onClick={() => eliminarItem(item.id)} title="Eliminar">
+                    <FiTrash2 size={15} />
+                  </button>
+                </div>
               </div>
             </div>
+
+            {/* ── Extras ── */}
+            {extras.map((extra, i) => (
+              <div key={i} className="comanda-sub-line comanda-extra">
+                <span>+ {extra.name?.toUpperCase()}</span>
+              </div>
+            ))}
+
+            {/* ── Nota ── */}
+            {notas && (
+              <div className="comanda-sub-line comanda-nota">
+                <span>* {notas} *</span>
+              </div>
+            )}
+
           </div>
         );
       })}

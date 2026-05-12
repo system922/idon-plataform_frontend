@@ -20,7 +20,7 @@ import { fetchWithAuth } from '../../config/apiBase';
 import { useCashDrawer } from '../../hooks/useCashDrawer';
 // IMPORTAR LOS COMPONENTES EXISTENTES
 import PrintCashCloseButton from '../../components/PrintCashCloseButton';
-import PrintCashClosePdfButton from '../../components/PrintCashClosePdfButton';
+import PrintCashClosePdfButton, { generateCashClosePdfBase64 } from '../../components/PrintCashClosePdfButton';
 import '../../styles/CierreDeCajaPage.css';
 
 // ===============================
@@ -278,6 +278,20 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
         propina: propinaFisico
       };
       setClosing(closeDataConPropina);
+
+      // Enviar PDF por email automáticamente (silencioso)
+      generateCashClosePdfBase64(closeDataConPropina, opening, summary, incomeExtras)
+        .then(pdfBase64 => fetchWithAuth('/api/pos/cash-register/send-close-email', {
+          method: 'POST',
+          body: JSON.stringify({
+            pdfBase64,
+            closingDate: today,
+            totalVentas,
+            totalContado: totalContadoGeneral,
+            diferencia: diferenciaGeneral,
+          }),
+        }))
+        .catch(err => console.warn('[CloseEmail] No se pudo enviar:', err.message));
 
       // Auditoria
       if (operador?.id) {

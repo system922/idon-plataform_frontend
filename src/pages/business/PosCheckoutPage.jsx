@@ -445,6 +445,7 @@ export default function PosCheckoutPage() {
       const bizRes = await fetchWithAuth('/api/settings/receipt-info');
       const bizData = await bizRes.json();
       setBizInfo(bizData);
+
     } catch (err) {
       console.error('Error cargando órdenes:', err);
     }
@@ -857,12 +858,15 @@ export default function PosCheckoutPage() {
       const response = await fetchWithAuth('/api/einvoicing/invoices/emit', { method: 'POST', body: JSON.stringify(payload) });
       const result = await response.json();
       if (!response.ok) {
-        setError(`Error factura: ${result.error || response.status}`);
+        const errMsg = String(result.error || response.status);
+        const esFirmaError = /firma|signature|p12|certificado|electr/i.test(errMsg);
+        if (!esFirmaError) setError(`Error factura: ${errMsg}`);
         return null;
       }
       return { id: result.id, invoice_number: result.invoice_number };
     } catch (e) {
-      setError(`Error emitir factura: ${e.message}`);
+      const esFirmaError = /firma|signature|p12|certificado|electr/i.test(e.message);
+      if (!esFirmaError) setError(`Error emitir factura: ${e.message}`);
       console.error(e);
       return null;
     }
@@ -940,10 +944,11 @@ export default function PosCheckoutPage() {
       const printerConfig = await getPrinterConfig('printer_main');
       const itemsToPrint = (order.items || []).map(item => ({
         description: item.product_name || 'Producto',
-        quantity: item.quantity,
-        price: Number(item.selling_price) || Number(item.unit_price) || 0,
-        total: (Number(item.selling_price) || Number(item.unit_price) || 0) * item.quantity
+        quantity:    item.quantity,
+        price:       Number(item.selling_price) || Number(item.unit_price) || 0,
+        total:       (Number(item.selling_price) || Number(item.unit_price) || 0) * item.quantity,
       }));
+
       const printSubtotal = itemsToPrint.reduce((s, i) => s + i.total, 0);
       const printIvaBase = (order.items || []).reduce((s, item) =>
         s + (Number(item.tax_rate) || 0) * (Number(item.quantity) || 1), 0);
@@ -951,27 +956,35 @@ export default function PosCheckoutPage() {
       const printRatio = printSubtotal > 0 ? printBaseConDesc / printSubtotal : 1;
       const nuevoIVAImpresion = Math.round(printIvaBase * printRatio * 100) / 100;
       const printTotalFinal = printBaseConDesc + nuevoIVAImpresion;
-      await print('printer_main', 'invoice', {
-        bizInfo,
-        invoice: { number: invoiceNumber || order.order_number || order.id, date: new Date().toISOString() },
-        customer: { name: customerName || clienteNombre || 'CONSUMIDOR FINAL', id: clienteCedula || '9999999999' },
-        items: itemsToPrint,
-        subtotal: printSubtotal,
-        discount: discountAmount,
-        tax: nuevoIVAImpresion,
-        taxRate: ivaRateGlobal,
-        total: printTotalFinal,
-        payment: { cash: paid, card: 0, other: 0 },
-        printerFooter: printerConfig.footer,
-        discount: appliedDiscount ? { 
-          name: appliedDiscount.name, 
-          type: appliedDiscount.type, 
-          value: appliedDiscount.value, 
-          amount: discountAmount,
-          applies_to: appliedDiscount.applies_to,
-          details: discountDetails
-        } : null
-      }, openDrawer);
+      const tieneFactura = !!invoiceNumber;
+      const template     = tieneFactura ? 'invoice' : 'ticket-simple';
+
+      const printData = tieneFactura
+        ? {
+            bizInfo,
+            invoice:      { number: invoiceNumber, date: new Date().toISOString() },
+            customer:     { name: customerName || clienteNombre || 'CONSUMIDOR FINAL', id: clienteCedula || '9999999999' },
+            items:        itemsToPrint,
+            subtotal:     printBaseConDesc,
+            discount:     discountAmount,
+            tax:          nuevoIVAImpresion,
+            taxRate:      ivaRateGlobal,
+            total:        printTotalFinal,
+            payment:      { cash: paid, card: 0, other: 0 },
+            printerFooter: printerConfig.footer,
+          }
+        : {
+            bizInfo,
+            orden:        order.order_number || order.id,
+            customer:     { id: clienteCedula || '9999999999', name: customerName || clienteNombre || 'CONSUMIDOR FINAL' },
+            items:        itemsToPrint,
+            total:        printTotalFinal,
+            recibido:     paid,
+            cambio:       Math.max(0, paid - printTotalFinal),
+            printerFooter: printerConfig.footer,
+          };
+
+      await print('printer_main', template, printData, openDrawer);
     } catch (err) {
       console.error('Error imprimiendo:', err);
       setError('Error al imprimir');

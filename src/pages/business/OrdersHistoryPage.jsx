@@ -1,23 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Printer, Edit2, Trash2, Save, Calendar, RefreshCw } from 'react-feather';
-import qz from 'qz-tray';
 import PageTemplate from '../../components/PageTemplate';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
+import { usePrinterService } from '../../services/usePrinterService';
 import AddItemModal from '../../components/AddItemModal';
 import EditItemModal from '../../components/EditItemModal';
+import ItemsList from '../../components/ItemsList';
 import { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/OrdersHistoryPage.css';
-
-// --- Helpers de impresión ---
-const PRINTER_NAME = 'POS-58';
-const WIDTH = 32;
-const line = () => '='.repeat(WIDTH);
-const sep = () => '-'.repeat(WIDTH);
-const center = (txt) => {
-  const t = String(txt || '').trim();
-  const pad = Math.max(0, Math.floor((WIDTH - t.length) / 2));
-  return ' '.repeat(pad) + t;
-};
+import '../../styles/CreateOrder.css';
 
 const fmt = (n) => `$${parseFloat(n || 0).toFixed(2)}`;
 
@@ -28,74 +19,6 @@ const getEcuadorDate = () => {
   const ecuadorDate = new Date(now.getTime() - (5 * 60 * 60 * 1000));
   return ecuadorDate.toISOString().split('T')[0];
 };
-
-// --- Construir comanda modificada ---
-function buildModificationComanda({
-  mesaNum,
-  ordenNum,
-  tipoOrden = 'LOCAL',
-  hora,
-  removed = [],
-  added = [],
-  remaining = [],
-}) {
-  let out = '';
-  out += line() + '\n';
-  out += center('***** COMANDA MODIFICADA *****') + '\n';
-  out += line() + '\n';
-  if (mesaNum) {
-    out += center(`MESA ${mesaNum}`) + '\n';
-    out += sep() + '\n';
-  }
-  out += center(`ORDEN ${ordenNum || 'N/A'}`) + '\n';
-  out += sep() + '\n';
-  out += center(`${tipoOrden} • ${hora}`) + '\n';
-  out += line() + '\n';
-
-  if (remaining.length) {
-    out += center('PRODUCTOS ACTUALES') + '\n';
-    out += sep() + '\n';
-    remaining.forEach((item) => {
-      const qty = item.cantidad || item.quantity || 1;
-      const name = String(item.nombre || item.product_name || 'Producto').toUpperCase();
-      out += `${qty}x ${name}\n`;
-      if (item.notas || item.notes) {
-        out += ` - ${item.notas || item.notes}\n`;
-      }
-      out += sep() + '\n';
-    });
-  }
-
-  if (removed.length) {
-    out += center('PRODUCTOS REMOVIDOS') + '\n';
-    out += sep() + '\n';
-    removed.forEach((item) => {
-      const qty = item.cantidad || item.quantity || 1;
-      const name = String(item.nombre || item.product_name || 'Producto').toUpperCase();
-      out += `${qty}x ~~${name}~~\n`;
-      out += sep() + '\n';
-    });
-  }
-
-  if (added.length) {
-    out += center('PRODUCTOS AGREGADOS') + '\n';
-    out += sep() + '\n';
-    added.forEach((item) => {
-      const qty = item.cantidad || item.quantity || 1;
-      const name = String(item.nombre || item.product_name || 'Producto').toUpperCase();
-      out += `${qty}x ${name} [NUEVO]\n`;
-      if (item.notas || item.notes) {
-        out += ` - ${item.notas || item.notes}\n`;
-      }
-      out += sep() + '\n';
-    });
-  }
-
-  out += center('(Fin de modificación)') + '\n';
-  out += line() + '\n';
-  out += '\n\n\n\n\n';
-  return out;
-}
 
 // --- Función para obtener precio actual de un producto ---
 const getProductPrice = async (productId) => {
@@ -111,49 +34,10 @@ const getProductPrice = async (productId) => {
   }
 };
 
-// --- Función para imprimir comanda modificada ---
-const printModificationTicket = async (order, removedItems, addedItems, remainingItems, printerConnected) => {
-  const horaStr = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
-  const texto = buildModificationComanda({
-    mesaNum: order.mesa_numero,
-    ordenNum: order.order_number || order.id.slice(0, 8),
-    tipoOrden: order.order_type === 'dine_in' ? 'LOCAL' : order.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY',
-    hora: horaStr,
-    removed: removedItems,
-    added: addedItems,
-    remaining: remainingItems,
-  });
-
-  try {
-    if (printerConnected) {
-      const config = qz.configs.create(PRINTER_NAME);
-      await qz.print(config, [texto]);
-      return true;
-    } else {
-      const escaped = texto.split('\n').map(l => l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')).join('\n');
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Comanda Modificada</title>
-<style>@page { margin:3mm; size:58mm auto; } body { font-family:'Courier New',monospace; font-size:9pt; white-space:pre; width:50mm; margin:0 auto; color:#000; line-height:1.3; }</style></head><body>${escaped}</body></html>`;
-      const w = window.open('', '_blank', 'width=300,height=700,toolbar=0,menubar=0');
-      if (w) {
-        w.document.write(html);
-        w.document.close();
-        setTimeout(() => {
-          w.focus();
-          w.print();
-        }, 300);
-        return true;
-      } else {
-        throw new Error('No se pudo abrir ventana de impresión');
-      }
-    }
-  } catch (e) {
-    console.error('Error de impresión:', e);
-    return false;
-  }
-};
 
 export default function OrdersHistoryPage() {
   const { selectedBusiness } = useBusinessContext();
+  const { print } = usePrinterService();
   const [orders, setOrders] = useState([]);
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -163,7 +47,6 @@ export default function OrdersHistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [printerConnected, setPrinterConnected] = useState(false);
   
   // 🔥 FECHA INICIAL EN ECUADOR
   const [filterDate, setFilterDate] = useState(() => getEcuadorDate());
@@ -179,36 +62,6 @@ export default function OrdersHistoryPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [extrasItem, setExtrasItem] = useState([]);
 
-  // Conexión QZ Tray
-  useEffect(() => {
-    (async () => {
-      try {
-        if (qz.websocket.isActive()) {
-          setPrinterConnected(true);
-          return;
-        }
-        const certData = await fetchWithAuth('/api/print/cert').then(r => r.text());
-        qz.security.setCertificatePromise(async () => certData);
-        qz.security.setSignaturePromise(async (toSign) => {
-          const r = await fetchWithAuth('/api/print/sign', {
-            method: 'POST',
-            body: JSON.stringify({ data: toSign }),
-          });
-          const { signature } = await r.json();
-          return signature;
-        });
-        await qz.websocket.connect({
-          host: 'localhost',
-          port: { secure: [8183, 8184], insecure: [8182] },
-          usingSecure: window.location.protocol === 'https:',
-        });
-        setPrinterConnected(true);
-      } catch (e) {
-        console.warn('⚠️ QZ Tray no disponible:', e?.message);
-        setPrinterConnected(false);
-      }
-    })();
-  }, []);
 
   useEffect(() => {
     loadOrders();
@@ -336,24 +189,40 @@ export default function OrdersHistoryPage() {
     const enrichedOrder = await enrichOrderItemsWithPrices(order);
     setSelectedOrder(enrichedOrder);
     setEditMode(true);
-    
-    const itemsParaEditar = enrichedOrder.items.map(i => ({ 
-      id: i.id || Date.now() + Math.random(),
-      nombre: i.nombre || i.product_name,
-      product_name: i.product_name || i.nombre,
-      product_id: i.product_id,
-      cantidad: i.quantity || i.cantidad || 1,
-      quantity: i.quantity || i.cantidad || 1,
-      precio: i.unit_price || i.price || i.selling_price || 0,
-      unit_price: i.unit_price || i.price || i.selling_price || 0,
-      subtotal: (i.unit_price || i.price || i.selling_price || 0) * (i.quantity || i.cantidad || 1),
-      line_total: (i.unit_price || i.price || i.selling_price || 0) * (i.quantity || i.cantidad || 1),
-      notas: i.notas || i.notes || '',
-      extras: i.extras || [],
-      tax_rate: i.tax_rate || 0,
-    }));
-    
-    setEditItems(itemsParaEditar);
+
+    // Agrupar items: los __EXT__: se adjuntan como extras del item anterior
+    const rawItems = enrichedOrder.items || [];
+    const grouped = [];
+    rawItems.forEach(dbItem => {
+      const notes = dbItem.notes || dbItem.notas || '';
+      if (notes.startsWith('__EXT__:')) {
+        if (grouped.length > 0) {
+          grouped[grouped.length - 1].extras.push({
+            id: dbItem.product_id,
+            product_id: dbItem.product_id,
+            name: dbItem.product_name,
+            selling_price: Number(dbItem.selling_price) || 0,
+            tax_rate: Number(dbItem.tax_rate) || 0,
+            price: Number(dbItem.selling_price) || 0,
+          });
+        }
+      } else {
+        grouped.push({
+          id: dbItem.id || (Date.now() + Math.random()),
+          nombre: dbItem.product_name,
+          product_name: dbItem.product_name,
+          product_id: dbItem.product_id,
+          cantidad: dbItem.quantity || 1,
+          quantity: dbItem.quantity || 1,
+          selling_price: Number(dbItem.selling_price) || 0,
+          tax_rate: Number(dbItem.tax_rate) || 0,
+          notas: notes,
+          extras: [],
+        });
+      }
+    });
+
+    setEditItems(grouped);
   };
 
   const handleRefresh = () => {
@@ -365,9 +234,32 @@ export default function OrdersHistoryPage() {
     setTimeout(() => setSuccess(''), 3000);
   };
 
+  const groupItemsForPrint = (rawItems = []) => {
+    const grouped = [];
+    rawItems.forEach(dbItem => {
+      const notes = dbItem.notes || dbItem.notas || '';
+      if (notes.startsWith('__EXT__:')) {
+        if (grouped.length > 0) grouped[grouped.length - 1].extras.push({ name: dbItem.product_name });
+      } else {
+        grouped.push({
+          nombre: dbItem.product_name, cantidad: dbItem.quantity || 1,
+          notas: notes, extras: [],
+        });
+      }
+    });
+    return grouped;
+  };
+
   const handlePrintOriginalOrder = async (order) => {
     const enrichedOrder = await enrichOrderItemsWithPrices(order);
-    await printModificationTicket(enrichedOrder, [], [], enrichedOrder.items, printerConnected);
+    const grouped = groupItemsForPrint(enrichedOrder.items);
+    const tipoOrden = order.order_type === 'dine_in' ? 'LOCAL' : order.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY';
+    await print('printer_comanda', 'comanda-mod', {
+      mesa:      order.mesa_numero,
+      orden:     order.order_number || order.id.slice(0, 8),
+      tipoOrden,
+      items:     grouped,
+    });
   };
 
   const handleDeleteOrder = async (orderId) => {
@@ -493,7 +385,8 @@ export default function OrdersHistoryPage() {
     setProductoSeleccionado({
       id: item.product_id,
       name: item.nombre || item.product_name,
-      price: item.precio || item.unit_price || 0,
+      selling_price: item.selling_price || 0,
+      price: item.selling_price || 0,
       tax_rate: item.tax_rate || 0,
     });
     setCantidadItem(item.cantidad || item.quantity || 1);
@@ -504,40 +397,29 @@ export default function OrdersHistoryPage() {
 
   const guardarEdicionItem = () => {
     if (isSaving) return;
-    
     if (!productoSeleccionado || cantidadItem <= 0) {
       setError('Selecciona un producto y cantidad válida');
       setTimeout(() => setError(''), 3000);
       return;
     }
-    
-    const precio = Number(productoSeleccionado.price) || 0;
-    const taxRate = Number(productoSeleccionado.tax_rate) || 0;
-    const cantidad = parseInt(cantidadItem, 10);
-    const extrasUnitCost = extrasItem.reduce((s, e) => s + (Number(e.price) || 0), 0);
-    const totalUnit = precio + extrasUnitCost;
-    
-    const itemActualizado = {
+    const sellingPrice = Number(productoSeleccionado.selling_price || productoSeleccionado.price) || 0;
+    const taxRate      = Number(productoSeleccionado.tax_rate) || 0;
+    const cantidad     = parseInt(cantidadItem, 10);
+
+    setEditItems(prev => prev.map(item => item.id === itemEditando.id ? {
       ...itemEditando,
-      nombre: productoSeleccionado.name,
-      precio: precio,
-      tax_rate: taxRate,
-      cantidad: cantidad,
-      subtotal: totalUnit * cantidad,
-      notas: notasItem,
-      extras: extrasItem,
-      product_id: productoSeleccionado.id,
-      product_name: productoSeleccionado.name,
-      quantity: cantidad,
-      unit_price: precio,
-      line_total: totalUnit * cantidad,
-      _modified: true,
-    };
-    
-    setEditItems(prev => prev.map(item =>
-      item.id === itemEditando.id ? itemActualizado : item
-    ));
-    
+      nombre:        productoSeleccionado.name,
+      product_name:  productoSeleccionado.name,
+      product_id:    productoSeleccionado.id,
+      cantidad,
+      quantity:      cantidad,
+      selling_price: sellingPrice,
+      tax_rate:      taxRate,
+      notas:         notasItem,
+      extras:        extrasItem,
+      _modified:     true,
+    } : item));
+
     setShowEditItemModal(false);
     setItemEditando(null);
     setProductoSeleccionado(null);
@@ -554,31 +436,24 @@ export default function OrdersHistoryPage() {
       setTimeout(() => setError(''), 3000);
       return;
     }
-    
-    const precio = Number(productoSeleccionado.price) || 0;
-    const taxRate = Number(productoSeleccionado.tax_rate) || 0;
-    const cantidad = parseInt(cantidadItem, 10);
-    const extrasUnitCost = extrasItem.reduce((s, e) => s + (Number(e.price) || 0), 0);
-    const totalUnit = precio + extrasUnitCost;
-    
-    const nuevoItem = {
-      id: Date.now(),
-      nombre: productoSeleccionado.name,
-      precio: precio,
-      tax_rate: taxRate,
-      cantidad: cantidad,
-      subtotal: totalUnit * cantidad,
-      notas: notasItem,
-      extras: extrasItem,
-      product_id: productoSeleccionado.id,
-      product_name: productoSeleccionado.name,
-      quantity: cantidad,
-      unit_price: precio,
-      line_total: totalUnit * cantidad,
-      _added: true,
-    };
-    
-    setEditItems(prev => [...prev, nuevoItem]);
+    const sellingPrice = Number(productoSeleccionado.selling_price || productoSeleccionado.price) || 0;
+    const taxRate      = Number(productoSeleccionado.tax_rate) || 0;
+    const cantidad     = parseInt(cantidadItem, 10);
+
+    setEditItems(prev => [...prev, {
+      id:            Date.now(),
+      nombre:        productoSeleccionado.name,
+      product_name:  productoSeleccionado.name,
+      product_id:    productoSeleccionado.id,
+      cantidad,
+      quantity:      cantidad,
+      selling_price: sellingPrice,
+      tax_rate:      taxRate,
+      notas:         notasItem,
+      extras:        extrasItem,
+      _added:        true,
+    }]);
+
     setShowAddItemModal(false);
     setProductoSeleccionado(null);
     setCantidadItem(1);
@@ -608,67 +483,70 @@ export default function OrdersHistoryPage() {
       return;
     }
     
-    let cambiosMsg = '';
-    if (addedItems.length > 0) cambiosMsg += `➕ Agregados: ${addedItems.length}\n`;
-    if (removedItems.length > 0) cambiosMsg += `❌ Eliminados: ${removedItems.length}\n`;
-    if (modifiedItems.length > 0) cambiosMsg += `✏️ Modificados: ${modifiedItems.length}\n`;
-    
     const imprimir = window.confirm(
-      `¿Guardar los cambios en la orden?\n\n${cambiosMsg}\n` +
-      `¿Deseas imprimir la comanda modificada?\n\n` +
-      `✅ "Aceptar" → Guarda y ENVÍA a cocina\n` +
-      `❌ "Cancelar" → Solo GUARDA, no imprime`
+      `¿Guardar cambios y enviar comanda a cocina?\n\n` +
+      `✅ Aceptar → Guarda e imprime\n` +
+      `❌ Cancelar → Solo guarda`
     );
     
     try {
       setIsSaving(true);
-      
-      const subtotal = remainingItems.reduce((s, i) => s + (Number(i.line_total) || Number(i.subtotal) || 0), 0);
-      const itemsToSend = remainingItems.map(item => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-        notes: item.notas || null
-      }));
-      
+
+      // Aplanar extras como items independientes (igual que al crear orden)
+      const itemsToSend = remainingItems.flatMap(item => {
+        const base = {
+          product_id: item.product_id,
+          quantity:   item.quantity || item.cantidad,
+          notes:      item.notas || null,
+        };
+        const extras = (item.extras || []).map(e => ({
+          product_id: e.id || e.product_id,
+          quantity:   item.quantity || item.cantidad,
+          notes:      `__EXT__: + ${e.name}${e.nota ? ': ' + e.nota : ''}`,
+        }));
+        return [base, ...extras];
+      });
+
       const res = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ 
-          items: itemsToSend,
-          subtotal: subtotal
+        body: JSON.stringify({
+          items:      itemsToSend,
+          subtotal:   editSubtotal,
+          tax_amount: editIva,
+          total:      editTotal,
         }),
       });
 
       if (!res.ok) throw new Error('Error al actualizar orden');
 
+      const resData = await res.json();
       const updatedOrder = {
         ...selectedOrder,
-        items: remainingItems,
-        subtotal: subtotal
+        subtotal:   resData.subtotal   ?? selectedOrder.subtotal,
+        tax_amount: resData.tax_amount ?? selectedOrder.tax_amount,
+        total:      resData.total      ?? selectedOrder.total,
+        items:      remainingItems,
       };
       
       setSelectedOrder(updatedOrder);
       
       if (imprimir) {
-        const successPrint = await printModificationTicket(
-          selectedOrder, 
-          removedItems, 
-          addedItems, 
-          remainingItems,
-          printerConnected
-        );
-        
-        if (successPrint) {
-          setSuccess('✅ Orden guardada y comanda enviada a cocina');
-        } else {
-          setSuccess('✅ Orden guardada (error al imprimir, pero datos guardados)');
-        }
+        const tipoOrden = selectedOrder.order_type === 'dine_in' ? 'LOCAL' : selectedOrder.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY';
+        await print('printer_comanda', 'comanda-mod', {
+          mesa:      selectedOrder.mesa_numero,
+          orden:     selectedOrder.order_number || selectedOrder.id.slice(0, 8),
+          tipoOrden,
+          items:     remainingItems,
+        });
+        setSuccess('✅ Orden guardada y comanda enviada a cocina');
       } else {
         setSuccess('✅ Orden guardada (sin impresión)');
       }
       
       setEditMode(false);
       setEditItems([]);
-      
+      setSelectedOrder(null);
+
       setTimeout(() => setSuccess(''), 5000);
       loadOrders();
     } catch (err) {
@@ -680,7 +558,23 @@ export default function OrdersHistoryPage() {
     }
   };
 
-  const editSubtotal = editItems.filter(i => !i._remove).reduce((s, i) => s + (Number(i.line_total) || Number(i.subtotal) || 0), 0);
+  const activeEditItems = editItems.filter(i => !i._remove);
+
+  const editSubtotal = activeEditItems.reduce((s, item) => {
+    const qty        = item.cantidad || item.quantity || 1;
+    const base       = (Number(item.selling_price) || 0) * qty;
+    const extrasBase = (item.extras || []).reduce((es, e) => es + (Number(e.selling_price) || Number(e.price) || 0), 0) * qty;
+    return s + base + extrasBase;
+  }, 0);
+
+  const editIva = activeEditItems.reduce((s, item) => {
+    const qty       = item.cantidad || item.quantity || 1;
+    const iva       = (Number(item.tax_rate) || 0) * qty;
+    const extrasIva = (item.extras || []).reduce((es, e) => es + (Number(e.tax_rate) || 0), 0) * qty;
+    return s + iva + extrasIva;
+  }, 0);
+
+  const editTotal = editSubtotal + editIva;
 
   const filteredOrders = orders.filter(order =>
     (order.mesa_numero?.toString() || '').includes(searchTerm) ||
@@ -781,10 +675,10 @@ export default function OrdersHistoryPage() {
                 <table>
                   <thead>
                     <tr>
-                      <th>MESA / ORDEN</th>
+                      <th>MESA</th>
+                      <th>ORDEN</th>
                       <th>ESTADO</th>
                       <th>ITEMS</th>
-                      <th>TOTAL</th>
                       <th>ACCIONES</th>
                     </tr>
                   </thead>
@@ -795,17 +689,18 @@ export default function OrdersHistoryPage() {
                         className={selectedOrder?.id === order.id ? 'selected' : ''}
                         onClick={() => handleSelectOrder(order)}
                       >
-                        <td className="mesa-num" data-label="Mesa / Orden">
+                        <td className="mesa-num" data-label="Mesa">
                           {order.mesa_numero != null ? `Mesa ${order.mesa_numero}` : 'S/Mesa'}
-                          <br /><small>#{order.order_number || order.id.slice(0,8)}</small>
+                        </td>
+                        <td data-label="Orden">
+                          <small>#{order.order_number || order.id.slice(0,8)}</small>
                         </td>
                         <td data-label="Estado">
                           <span className={`badge badge-${order.status === 'paid' ? 'success' : order.status === 'pending' ? 'warning' : 'danger'}`}>
                             {order.status === 'paid' ? 'Pagada' : order.status === 'pending' ? 'Pendiente' : order.status}
                           </span>
                         </td>
-                        <td data-label="Items">{order.items?.length || 0}</td>
-                        <td className="amount" data-label="Total">{fmt(order.total)}</td>
+                        <td data-label="Items">{order.items?.filter(i => !(i.notes||'').startsWith('__EXT__:')).length || 0}</td>
                         <td data-label="Acciones" onClick={e => e.stopPropagation()}>
                           <div className="action-buttons">
                             <button
@@ -865,89 +760,51 @@ export default function OrdersHistoryPage() {
                   </div>
                 )}
 
-                <div className="items-list-modern">
-                  {editMode ? (
-                    editItems.filter(i => !i._remove).length > 0 ? (
-                      editItems.filter(i => !i._remove).map((item, idx) => (
-                        <div key={idx} className={`item-row ${item._added ? 'added' : ''} ${item._modified ? 'modified' : ''} ${item._separado ? 'separado' : ''}`}>
-                          <div className="item-info">
-                            <div className="item-qty-name">
-                              <span className="item-qty">{item.cantidad}x</span>
-                              <span className="item-name">{item.nombre}</span>
-                            </div>
-                            <div className="item-price">{fmt(getItemTotal(item))}</div>
-                          </div>
-                          {item.extras && item.extras.length > 0 && (
-                            <div className="item-extras">
-                              {item.extras.map((extra, i) => (
-                                <span key={i} className="item-extra-tag">+ {extra.name} ${Number(extra.price || 0).toFixed(2)}</span>
-                              ))}
-                            </div>
-                          )}
-                          {item.notas && <div className="item-notes">📝 {item.notas}</div>}
-                          <div className="item-actions">
-                            <button 
-                              className="icon-btn edit-btn" 
-                              onClick={() => abrirEditarItem(item)}
-                              title="Editar"
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                            {(item.cantidad || item.quantity || 1) > 1 && (
-                              <button 
-                                className="icon-btn separar-btn" 
-                                onClick={() => separarProductoIndividual(item)}
-                                title="Separar en unidades individuales"
-                              >
-                                🔄
-                              </button>
-                            )}
-                            <button 
-                              className="icon-btn delete-btn" 
-                              onClick={() => setEditItems(editItems.map((it, i) => i === idx ? { ...it, _remove: true } : it))}
-                              title="Eliminar"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="empty-state">
-                        <p>No hay productos en esta orden</p>
-                      </div>
-                    )
-                  ) : (
-                    (selectedOrder.items || []).map((item, idx) => (
-                      <div key={idx} className="item-row">
-                        <div className="item-info">
-                          <div className="item-qty-name">
-                            <span className="item-qty">{item.cantidad || 1}x</span>
-                            <span className="item-name">{item.nombre || item.product_name}</span>
-                          </div>
-                          <div className="item-price">{fmt((item.unit_price || item.price || 0) * (item.cantidad || 1))}</div>
-                        </div>
-                        {item.extras && item.extras.length > 0 && (
-                          <div className="item-extras">
-                            {item.extras.map((extra, i) => (
-                              <span key={i} className="item-extra-tag">+ {extra.name} ${Number(extra.price || 0).toFixed(2)}</span>
-                            ))}
-                          </div>
-                        )}
-                        {item.notas && <div className="item-notes">📝 {item.notas}</div>}
-                      </div>
-                    ))
-                  )}
-                </div>
+                <ItemsList
+                  items={editMode
+                    ? activeEditItems
+                    : (() => {
+                        const grupos = [];
+                        (selectedOrder.items || []).forEach(dbItem => {
+                          const notes = dbItem.notes || dbItem.notas || '';
+                          if (notes.startsWith('__EXT__:')) {
+                            if (grupos.length > 0) grupos[grupos.length - 1].extras.push({
+                              id: dbItem.product_id, name: dbItem.product_name,
+                              selling_price: dbItem.selling_price, tax_rate: dbItem.tax_rate,
+                            });
+                          } else {
+                            grupos.push({
+                              id: dbItem.id, nombre: dbItem.product_name,
+                              product_name: dbItem.product_name, product_id: dbItem.product_id,
+                              cantidad: dbItem.quantity || 1, quantity: dbItem.quantity || 1,
+                              selling_price: Number(dbItem.selling_price) || 0,
+                              tax_rate: Number(dbItem.tax_rate) || 0,
+                              notas: dbItem.notes || '', extras: [],
+                            });
+                          }
+                        });
+                        return grupos;
+                      })()
+                  }
+                  eliminarItem={editMode
+                    ? (itemId) => setEditItems(prev => prev.map(it => it.id === itemId ? { ...it, _remove: true } : it))
+                    : () => {}
+                  }
+                  abrirEditarItem={editMode ? abrirEditarItem : () => {}}
+                />
 
                 <div className="summary-sticky">
                   <div className="summary-row">
                     <span>Subtotal:</span>
                     <span>{fmt(editMode ? editSubtotal : (selectedOrder.subtotal || 0))}</span>
                   </div>
+                  <div className="summary-row">
+                    <span>IVA:</span>
+                    <span>{fmt(editMode ? editIva : (selectedOrder.tax_amount || 0))}</span>
+                  </div>
                   <div className="summary-total">
                     <span>TOTAL:</span>
-                    <span>{fmt(editMode ? editSubtotal : (selectedOrder.total || selectedOrder.subtotal || 0))}</span>
+                    <span>{fmt(editMode ? editTotal : (selectedOrder.total || 0))}</span>
                   </div>
                 </div>
 

@@ -69,7 +69,7 @@ function RoleModal({ role, onClose, onSave, saving, modules }) {
       const idx   = perms.findIndex(p => p.modulo === mod.id);
       idx >= 0
         ? perms.splice(idx, 1)
-        : perms.push({ modulo: mod.id, features: mod.features?.map(ft => ft.id) ?? [] });
+        : perms.push({ modulo: mod.id, features: [] });
       return { ...f, permissions: perms };
     });
     setExp(e => e.includes(mod.id) ? e : [...e, mod.id]);

@@ -408,8 +408,87 @@
 
 .item-right {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+  padding-top: 2px;
+}
+
+/* ── Estilo comanda ─────────────────────────────────── */
+.item-row.comanda-style {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  border-left: 3px solid rgba(16, 185, 129, 0.45);
+  padding: 10px 14px;
+}
+
+.comanda-line-1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.comanda-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.comanda-qty {
+  color: #10b981;
+  font-weight: 900;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.comanda-nombre {
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comanda-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.comanda-unitprice {
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.comanda-sub-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding-left: 28px;
+  font-size: 12px;
+}
+
+.comanda-tree {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 11px;
+  flex-shrink: 0;
+  font-family: monospace;
+}
+
+.comanda-extra {
+  color: #a78bfa;
+}
+
+.comanda-nota {
+  color: rgba(255, 255, 255, 0.45);
+  font-style: italic;
 }
 
 .item-actions {
