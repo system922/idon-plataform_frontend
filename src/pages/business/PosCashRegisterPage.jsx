@@ -236,10 +236,6 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
   // GUARDAR CIERRE
   // ===============================
   const handleGuardarCierre = async () => {
-    if (!await showConfirm('¿Estás seguro de cerrar la caja? Esta acción no se puede deshacer.')) {
-      return;
-    }
-
     setCerrando(true);
     setError('');
 
