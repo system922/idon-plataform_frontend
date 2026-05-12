@@ -728,7 +728,7 @@ export default function OrdersHistoryPage() {
                             <button className="btn-action btn-delete" onClick={() => handleDeleteOrder(order.id)}>
                               <Trash2 size={13} /><span>Eliminar</span>
                             </button>
-                            <button className="btn-action btn-print" onClick={() => handlePrintOriginalOrder(order)}>
+                            <button className="btn-action btn-reprint" onClick={() => handlePrintOriginalOrder(order)}>
                               <Printer size={13} /><span>Reimprimir</span>
                             </button>
                           </div>
