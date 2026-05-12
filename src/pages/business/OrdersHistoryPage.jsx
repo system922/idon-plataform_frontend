@@ -7,6 +7,7 @@ import AddItemModal from '../../components/AddItemModal';
 import EditItemModal from '../../components/EditItemModal';
 import ItemsList from '../../components/ItemsList';
 import { fetchWithAuth } from '../../config/apiBase';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 import '../../styles/OrdersHistoryPage.css';
 import '../../styles/CreateOrder.css';
 
@@ -175,6 +176,8 @@ export default function OrdersHistoryPage() {
       setLoadingOrders(false);
     }
   };
+
+  useRealtimeSync('orders', loadOrders);
 
   const handleSelectOrder = async (order) => {
     if (editMode && selectedOrder?.id === order.id) return;

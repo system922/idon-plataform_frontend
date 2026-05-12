@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { Plus, Edit2, Trash2, X, Search, RefreshCw, ArrowUp, ArrowDown, Sliders } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 
 const EMPTY = { product_id: '', type: 'entrada', quantity: '', unit_cost: '', notes: '' };
 
@@ -180,6 +181,7 @@ export default function InventoryAdjustmentsPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useRealtimeSync(['inventory', 'products'], load);
 
   const handleSave = async (form) => {
     try {

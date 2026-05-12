@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { Plus, Edit2, Trash2, Tag, X, Search, RefreshCw } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 import '../../styles/InventoryCategoriesPage.css';
 
 const EMPTY_CATEGORY = { name: '', description: '' };
@@ -115,6 +116,7 @@ export default function InventoryCategoriesPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useRealtimeSync('categories', load);
 
   const openCreate = () => { setEditingCat(null); setShowModal(true); };
   const openEdit = (cat) => { setEditingCat(cat); setShowModal(true); };

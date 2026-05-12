@@ -6,6 +6,7 @@ import {
   Users, UserCheck, UserPlus, ShoppingBag, FileText, Zap
 } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 import '../../styles/CRMCustomersPage.css';
 
 // Modal para agregar/editar cliente
@@ -252,6 +253,8 @@ export default function CrmCustomers() {
     loadCustomers();
     loadStats();
   }, [loadCustomers, loadStats]);
+
+  useRealtimeSync('customers', () => { loadCustomers(); loadStats(); });
 
   // Guardar cliente
   const handleSaveCustomer = async (form) => {

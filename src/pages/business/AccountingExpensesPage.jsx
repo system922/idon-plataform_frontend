@@ -7,6 +7,7 @@ import {
 import PageTemplate from '../../components/PageTemplate';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
 import { fetchWithAuth } from '../../config/apiBase';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 import "../../styles/AccountingExpensesPage.css";
 
 // ─── Helper para obtener fecha actual en Ecuador ────────────────────────────
@@ -305,6 +306,8 @@ export default function AccountingExpensesPage() {
       loadExpenses();
     }
   }, [loadExpenses, categories]);
+
+  useRealtimeSync('expenses', loadExpenses);
 
   // Filtrar por búsqueda local (descripción o referencia)
   const filteredExpenses = expenses.filter(e =>

@@ -9,6 +9,7 @@ import { productService } from '../../services/productService';
 import { useAsyncOperation } from '../../hooks/useAsyncOperation';
 import { formatCurrency, calculatePVP, toNumber } from '../../utils/productUtils';
 import { ERROR_MESSAGES } from '../../constants/inventoryConstants';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 import '../../styles/DataTable.css';
 import '../../styles/ProductosPage.css';
 
@@ -45,6 +46,8 @@ const ProductosPage = () => {
   useEffect(() => {
     loadProducts();
   }, []);
+
+  useRealtimeSync(['products', 'categories', 'inventory'], loadProducts);
 
   // Guardar producto
   const handleSaveProduct = useCallback(async (payload) => {
