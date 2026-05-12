@@ -18,8 +18,7 @@ import {
 } from 'react-icons/fi';
 import { fetchWithAuth } from '../../config/apiBase';
 import { useCashDrawer } from '../../hooks/useCashDrawer';
-// IMPORTAR LOS COMPONENTES EXISTENTES
-import PrintCashCloseButton from '../../components/PrintCashCloseButton';
+import { usePrinterService } from '../../services/usePrinterService';
 import PrintCashClosePdfButton, { generateCashClosePdfBase64 } from '../../components/PrintCashClosePdfButton';
 import '../../styles/CierreDeCajaPage.css';
 
@@ -55,14 +54,10 @@ const DENOMINACIONES = {
   MONEDAS: [1, 0.50, 0.25, 0.10, 0.05, 0.01]
 };
 
-// CONFIGURACIÓN DE IMPRESORA
-const PRINTER_CONFIG = {
-  name: 'POS-58',
-  width: 32
-};
 
 const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
   const { openDrawer } = useCashDrawer();
+  const { print } = usePrinterService();
   const [loading, setLoading] = useState(false);
   const [cerrando, setCerrando] = useState(false);
   const [conteoEfectivo, setConteoEfectivo] = useState({});
@@ -84,8 +79,6 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
   
   const [incomeExtras, setIncomeExtras] = useState([]);
 
-  // Refs para los botones (para llamarlos programáticamente)
-  const printButtonRef = useRef(null);
   const pdfButtonRef = useRef(null);
   
   const today = new Date().toLocaleDateString('en-CA', {
@@ -337,17 +330,33 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
         cierreId: closeData.id
       });
 
-      // IMPRIMIR AUTOMÁTICAMENTE usando los componentes existentes
-      setTimeout(() => {
-        if (printButtonRef.current) {
-          printButtonRef.current.click();
-        }
-        setTimeout(() => {
-          if (pdfButtonRef.current) {
-            pdfButtonRef.current.click();
-          }
-        }, 1000);
-      }, 500);
+      // IMPRIMIR AUTOMÁTICAMENTE usando usePrinterService
+      const bizInfo = getBusinessInfo();
+      const printData = {
+        bizInfo,
+        close: closeDataConPropina,
+        summary: closeDataConPropina,
+        sales: {
+          transaction_count: closeDataConPropina.orders_system,
+          total: closeDataConPropina.total_system,
+        },
+        expenses: summary?.gastos || [],
+        cashFlow: {
+          opening_float: aperturaEfectivo + aperturaBanca,
+          extra_income: totalExtras,
+          expected_cash: totalGeneralEsperado,
+          counted_cash: totalContadoGeneral,
+          cash_diff: diferenciaGeneral,
+        },
+        totals: {
+          system_total: closeDataConPropina.total_system,
+          counted_total: closeDataConPropina.total_counted,
+          total_diff: closeDataConPropina.diff_total,
+        },
+      };
+      print('printer_main', 'cash-close', printData).catch(err =>
+        console.warn('[CierrePrint]', err.message)
+      );
 
       setTimeout(() => {
         onClose?.(true);
@@ -399,15 +408,24 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
             {resultadoCierre.success && (
               <div style={{ marginTop: 20, display: 'flex', gap: 12, flexDirection: 'column', alignItems: 'center' }}>
                 <div style={{ display: 'flex', gap: 12 }}>
-                  <PrintCashCloseButton
-                    ref={printButtonRef}
-                    close={closingConPropina || closing}
-                    datos={datosParaImpresion}
-                    bizInfo={getBusinessInfo()}
-                    printerConnected={true}
-                    printerTicket={PRINTER_CONFIG}
+                  <button
                     className="btn-primary"
-                  />
+                    style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                    onClick={() => {
+                      const bizInfo = getBusinessInfo();
+                      print('printer_main', 'cash-close', {
+                        bizInfo,
+                        close: closingConPropina || closing,
+                        summary: closingConPropina || closing,
+                        sales: { transaction_count: (closingConPropina || closing)?.orders_system, total: (closingConPropina || closing)?.total_system },
+                        expenses: summary?.gastos || [],
+                        cashFlow: { opening_float: aperturaEfectivo + aperturaBanca, extra_income: totalExtras, expected_cash: totalGeneralEsperado, counted_cash: totalContadoGeneral },
+                        totals: { system_total: (closingConPropina || closing)?.total_system, counted_total: (closingConPropina || closing)?.total_counted, total_diff: (closingConPropina || closing)?.diff_total },
+                      }).catch(e => console.warn(e));
+                    }}
+                  >
+                    <FiPrinter size={15} /> Reimprimir ticket
+                  </button>
                   <PrintCashClosePdfButton
                     ref={pdfButtonRef}
                     close={closingConPropina || closing}
@@ -417,7 +435,7 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                     className="btn-secondary"
                   />
                 </div>
-                <small style={{ color: '#a0a0b0' }}>✅ Generando impresión y PDF automáticamente...</small>
+                <small style={{ color: '#a0a0b0' }}>✅ Imprimiendo ticket automáticamente...</small>
               </div>
             )}
           </div>
@@ -432,14 +450,22 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                 <span>Ya existe un cierre registrado para hoy</span>
               </div>
               <div className="print-buttons-group">
-                <PrintCashCloseButton
-                  close={closingConPropina || closing}
-                  datos={datosParaImpresion}
-                  bizInfo={getBusinessInfo()}
-                  printerConnected={true}
-                  printerTicket={PRINTER_CONFIG}
+                <button
                   className="btn-print-small-modern"
-                />
+                  onClick={() => {
+                    print('printer_main', 'cash-close', {
+                      bizInfo: getBusinessInfo(),
+                      close: closingConPropina || closing,
+                      summary: closingConPropina || closing,
+                      sales: { transaction_count: (closingConPropina || closing)?.orders_system, total: (closingConPropina || closing)?.total_system },
+                      expenses: summary?.gastos || [],
+                      cashFlow: { opening_float: aperturaEfectivo + aperturaBanca, extra_income: totalExtras, expected_cash: totalGeneralEsperado, counted_cash: totalContadoGeneral },
+                      totals: { system_total: (closingConPropina || closing)?.total_system, counted_total: (closingConPropina || closing)?.total_counted, total_diff: (closingConPropina || closing)?.diff_total },
+                    }).catch(e => console.warn(e));
+                  }}
+                >
+                  <FiPrinter size={13} /> Imprimir
+                </button>
                 <PrintCashClosePdfButton
                   close={closingConPropina || closing}
                   opening={opening}
