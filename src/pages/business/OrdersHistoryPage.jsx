@@ -483,12 +483,6 @@ export default function OrdersHistoryPage() {
       return;
     }
     
-    const imprimir = window.confirm(
-      `¿Guardar cambios y enviar comanda a cocina?\n\n` +
-      `✅ Aceptar → Guarda e imprime\n` +
-      `❌ Cancelar → Solo guarda`
-    );
-    
     try {
       setIsSaving(true);
 
@@ -527,20 +521,22 @@ export default function OrdersHistoryPage() {
         total:      resData.total      ?? selectedOrder.total,
         items:      remainingItems,
       };
-      
+
       setSelectedOrder(updatedOrder);
-      
-      if (imprimir) {
-        const tipoOrden = selectedOrder.order_type === 'dine_in' ? 'LOCAL' : selectedOrder.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY';
-        await print('printer_comanda', 'comanda-mod', {
-          mesa:      selectedOrder.mesa_numero,
-          orden:     selectedOrder.order_number || selectedOrder.id.slice(0, 8),
-          tipoOrden,
-          items:     remainingItems,
-        });
-        setSuccess('✅ Orden guardada y comanda enviada a cocina');
+
+      // Siempre intentar imprimir la comanda modificada
+      const tipoOrden = selectedOrder.order_type === 'dine_in' ? 'LOCAL' : selectedOrder.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY';
+      const printResult = await print('printer_comanda', 'comanda-mod', {
+        mesa:      selectedOrder.mesa_numero,
+        orden:     selectedOrder.order_number || selectedOrder.id.slice(0, 8),
+        tipoOrden,
+        items:     remainingItems,
+      });
+
+      if (printResult?.success === false) {
+        setSuccess('✅ Orden guardada — ⚠️ No se pudo imprimir (QZ Tray no conectado)');
       } else {
-        setSuccess('✅ Orden guardada (sin impresión)');
+        setSuccess('✅ Orden guardada y comanda enviada a cocina');
       }
       
       setEditMode(false);
