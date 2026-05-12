@@ -46,15 +46,9 @@ export function useAutoPrint({ businessId, enabled = true }) {
         if (res.ok) {
           const full = await res.json();
           orderToprint = { ...order, ...full, items: full.items || full.pedido?.items || [] };
-        } else {
-          // fetch no-ok: desmarcar para que el próximo ciclo del poll lo reintente
-          printedIdsRef.current.delete(order.id);
-          return false;
         }
       } catch {
-        // error de red: desmarcar para que el poll reintente
-        printedIdsRef.current.delete(order.id);
-        return false;
+        // si falla el fetch, imprime con lo que llegó en el payload
       }
     }
 
