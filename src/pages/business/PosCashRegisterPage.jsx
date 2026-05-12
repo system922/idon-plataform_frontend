@@ -252,7 +252,9 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
           propinaFisico: propinaFisico,
           date: today,
           remarks,
-          cashDenominationCount: conteoEfectivo
+          cashDenominationCount: conteoEfectivo,
+          closing_user_id: operador?.id,
+          closing_user_name: userName,
         }),
       });
 

@@ -171,6 +171,53 @@ function AlertaAperturaModal({ onAceptar, abriendo }) {
 /* ══════════════════════════════════════════════════════════
    MODAL DE CONFIRMACIÓN PARA CIERRE DE CAJA
 ══════════════════════════════════════════════════════════ */
+function OrdenesPendientesModal({ ordenes, onClose }) {
+  return (
+    <div className="apertura-alert-overlay" style={{ zIndex: 99998 }}>
+      <div className="apertura-alert-modal" style={{ maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="apertura-alert-icon">
+          <FiAlertCircle size={48} color="#ef4444" />
+        </div>
+        <h2 className="apertura-alert-title" style={{ color: '#ef4444' }}>Órdenes Pendientes</h2>
+        <p className="apertura-alert-message">
+          <strong>No puedes cerrar la caja con órdenes pendientes de pago.</strong>
+          <br /><br />
+          Tienes <strong style={{ color: '#ef4444' }}>{ordenes.length} orden{ordenes.length !== 1 ? 'es' : ''}</strong> sin cobrar. Debes cobrarlas o eliminarlas antes de cerrar.
+        </p>
+        <div style={{ overflowY: 'auto', maxHeight: 200, margin: '0 0 16px', width: '100%' }}>
+          {ordenes.slice(0, 10).map(o => (
+            <div key={o.id} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '8px 12px', marginBottom: 6, borderRadius: 8,
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+              fontSize: 13,
+            }}>
+              <span style={{ color: '#fff' }}>
+                <strong>#{o.order_number || o.id}</strong>
+                {o.mesa_numero ? ` — Mesa ${o.mesa_numero}` : ''}
+              </span>
+              <span style={{ color: '#fbbf24', fontWeight: 700 }}>
+                ${parseFloat(o.total || 0).toFixed(2)}
+              </span>
+            </div>
+          ))}
+          {ordenes.length > 10 && (
+            <p style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: '8px 0 0' }}>
+              ...y {ordenes.length - 10} más
+            </p>
+          )}
+        </div>
+        <div className="modal-buttons-group">
+          <button type="button" className="btn-modal-confirmar" onClick={onClose}
+            style={{ background: 'linear-gradient(135deg,#ef4444,#dc2626)', width: '100%' }}>
+            Entendido — Ir a cobrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
   return (
     <div className="apertura-alert-overlay">
@@ -277,6 +324,7 @@ export default function BusinessLayout({ user, onLogout }) {
   const [datosCierre, setDatosCierre] = useState(null);
   const [cargandoCierre, setCargandoCierre] = useState(false);
   const [abriendoCajonCierre, setAbriendoCajonCierre] = useState(false);
+  const [ordenesPendientes, setOrdenesPendientes] = useState([]);
 
   // ═══════════════════════════════════════════════════════
   // 🔥 FUNCIÓN PARA ABRIR CAJÓN - IGUAL QUE EN GlobalExpenseBubble
@@ -388,6 +436,21 @@ export default function BusinessLayout({ user, onLogout }) {
     }
 
     setCargandoCierre(true);
+
+    // Verificar órdenes pendientes antes de permitir el cierre
+    try {
+      const res = await fetchWithAuth('/api/ordenes?status=pending');
+      if (res.ok) {
+        const pendientes = await res.json();
+        const lista = Array.isArray(pendientes) ? pendientes : (pendientes.orders || pendientes.data || []);
+        if (lista.length > 0) {
+          setOrdenesPendientes(lista);
+          setCargandoCierre(false);
+          return;
+        }
+      }
+    } catch { /* si falla la consulta, continuar */ }
+
     const datos = await cargarDatosCierre();
     
     if (!datos) {
@@ -574,6 +637,14 @@ export default function BusinessLayout({ user, onLogout }) {
             setMostrarAlerta(true);
             setAperturaIniciada(false);
           }}
+        />
+      )}
+
+      {/* Modal: órdenes pendientes — bloquea el cierre */}
+      {ordenesPendientes.length > 0 && (
+        <OrdenesPendientesModal
+          ordenes={ordenesPendientes}
+          onClose={() => setOrdenesPendientes([])}
         />
       )}
 
