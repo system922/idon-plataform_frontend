@@ -233,45 +233,22 @@ export default function Payments() {
   );
 }
 
-const EMAIL_TEMPLATES = [
-  {
-    key: 'bienvenida',
-    label: 'Bienvenida',
-    desc: 'Correo de bienvenida a la plataforma.',
-    color: '#22c55e',
-    bg: 'rgba(34,197,94,.08)',
-    border: 'rgba(34,197,94,.3)',
-  },
-  {
-    key: 'recordatorio_pago',
-    label: 'Recordatorio de pago',
-    desc: 'Aviso de pago próximo o vencido.',
-    color: '#f59e0b',
-    bg: 'rgba(245,158,11,.08)',
-    border: 'rgba(245,158,11,.3)',
-  },
-  {
-    key: 'suspension',
-    label: 'Suscripción suspendida',
-    desc: 'Notifica que el acceso fue suspendido.',
-    color: '#ef4444',
-    bg: 'rgba(239,68,68,.08)',
-    border: 'rgba(239,68,68,.3)',
-  },
-  {
-    key: 'activacion',
-    label: 'Suscripción activada',
-    desc: 'Confirma la reactivación de la cuenta.',
-    color: '#6366f1',
-    bg: 'rgba(99,102,241,.08)',
-    border: 'rgba(99,102,241,.3)',
-  },
-];
+const PALETTE = ['#22c55e','#f59e0b','#ef4444','#6366f1','#3b82f6','#8b5cf6'];
+const TYPE_COLORS = { bienvenida:'#22c55e', recordatorio_pago:'#f59e0b', suspension:'#ef4444', activacion:'#6366f1' };
 
 function EmailModal({ row, onClose }) {
-  const [selected, setSelected] = useState(null);
-  const [sending,  setSending]  = useState(false);
-  const [result,   setResult]   = useState(null);
+  const [selected,    setSelected]    = useState(null);
+  const [sending,     setSending]     = useState(false);
+  const [result,      setResult]      = useState(null);
+  const [templates,   setTemplates]   = useState([]);
+  const [loadingTpls, setLoadingTpls] = useState(true);
+
+  useEffect(() => {
+    adminApiService.get('/admin/email-templates')
+      .then(r => setTemplates((r.data || r || []).filter(t => t.is_active)))
+      .catch(() => setTemplates([]))
+      .finally(() => setLoadingTpls(false));
+  }, []);
 
   const handleSend = async () => {
     if (!selected) return;
@@ -313,36 +290,48 @@ function EmailModal({ row, onClose }) {
             Selecciona una plantilla
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {EMAIL_TEMPLATES.map(t => (
-              <div
-                key={t.key}
-                onClick={() => setSelected(t.key)}
-                style={{
-                  padding: '12px 16px',
-                  borderRadius: 10,
-                  cursor: 'pointer',
-                  background: selected === t.key ? t.bg : 'var(--admin-bg-primary)',
-                  border: `1.5px solid ${selected === t.key ? t.color : 'var(--admin-border-light)'}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  transition: 'all .15s',
-                }}
-              >
-                <div style={{
-                  width: 14, height: 14, borderRadius: '50%', flexShrink: 0,
-                  background: selected === t.key ? t.color : 'transparent',
-                  border: `2px solid ${t.color}`,
-                  transition: 'background .15s',
-                }} />
-                <div>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: selected === t.key ? t.color : 'var(--admin-text-primary)' }}>{t.label}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--admin-text-muted)' }}>{t.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {loadingTpls ? (
+            <div className="admin-loading" style={{ padding: '20px 0' }}>
+              <div className="admin-spinner" />Cargando plantillas...
+            </div>
+          ) : templates.length === 0 ? (
+            <p style={{ color: 'var(--admin-text-muted)', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>
+              No hay plantillas activas. Créalas en <strong>Comercial → Plantillas de Email</strong>.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {templates.map((t, i) => {
+                const color = TYPE_COLORS[t.type] || PALETTE[i % PALETTE.length];
+                const isSel = selected === t.type;
+                return (
+                  <div
+                    key={t.type}
+                    onClick={() => setSelected(t.type)}
+                    style={{
+                      padding: '12px 16px', borderRadius: 10, cursor: 'pointer',
+                      background: isSel ? `${color}14` : 'var(--admin-bg-primary)',
+                      border: `1.5px solid ${isSel ? color : 'var(--admin-border-light)'}`,
+                      display: 'flex', alignItems: 'center', gap: 12, transition: 'all .15s',
+                    }}
+                  >
+                    <div style={{
+                      width: 14, height: 14, borderRadius: '50%', flexShrink: 0,
+                      background: isSel ? color : 'transparent',
+                      border: `2px solid ${color}`, transition: 'background .15s',
+                    }} />
+                    <div>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: isSel ? color : 'var(--admin-text-primary)' }}>
+                        {t.label}
+                      </p>
+                      {t.description && (
+                        <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--admin-text-muted)' }}>{t.description}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {result && (
             <div style={{
@@ -362,7 +351,7 @@ function EmailModal({ row, onClose }) {
           {!result?.ok && (
             <button
               className="admin-btn admin-btn-primary"
-              disabled={!selected || sending}
+              disabled={!selected || sending || loadingTpls}
               onClick={handleSend}
               style={{ background: 'linear-gradient(135deg,#818cf8,#6366f1)', color: '#fff', border: 'none' }}
             >

@@ -95,7 +95,7 @@ export default function ManagerDashboard() {
   })();
 
   // Estados del dashboard
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({});
   const [graphData, setGraphData] = useState({ sales: [], purchases: [], hours: [] });
   const [loading, setLoading] = useState(true);
   const [graphLoading, setGraphLoading] = useState(true);
@@ -112,18 +112,11 @@ export default function ManagerDashboard() {
   async function fetchStats() {
     try {
       setLoading(true);
-      const [salesRes, purchasesRes, pendingRes] = await Promise.all([
-        fetchWithAuth(`/api/sales/today?date=${today}`),
-        fetchWithAuth(`/api/expenses/dashboard/summary?date=${today}`),
-        fetchWithAuth('/api/reports/pending'),
-      ]);
-
-      setStats({
-        sales: salesRes.ok ? await salesRes.json() : {},
-        purchases: purchasesRes.ok ? await purchasesRes.json() : {},
-        pending: pendingRes.ok ? await pendingRes.json() : {},
-      });
-    } catch {
+      const res = await fetchWithAuth(`/api/dashboard/stats?date=${today}`);
+      if (!res.ok) throw new Error('Error al cargar estadísticas');
+      const json = await res.json();
+      setStats(json.data ?? json);
+    } catch (err) {
       setError('Error al cargar estadísticas');
     } finally {
       setLoading(false);
@@ -140,22 +133,19 @@ export default function ManagerDashboard() {
       ]);
 
       const [salesData, purchasesData, attendanceData] = await Promise.all([
-        salesRes.ok ? salesRes.json() : [],
-        purchasesRes.ok ? purchasesRes.json() : [],
-        attendanceRes.ok ? attendanceRes.json() : [],
+        salesRes.ok ? salesRes.json() : Promise.resolve([]),
+        purchasesRes.ok ? purchasesRes.json() : Promise.resolve([]),
+        attendanceRes.ok ? attendanceRes.json() : Promise.resolve([]),
       ]);
 
-      // ✅ AHORA se incluyen TODOS los empleados (sin filtrar por null)
       const hours = toArray(attendanceData)
         .map(emp => {
           const h = calcHours(emp);
-
           return { day: emp.full_name?.split(' ')[0] ?? `Emp ${emp.employee_id}`, hours: h };
         });
 
-
       setGraphData({ sales: toArray(salesData), purchases: toArray(purchasesData), hours });
-    } catch {
+    } catch (err) {
       setGraphData({ sales: [], purchases: [], hours: [] });
     } finally {
       setGraphLoading(false);
@@ -176,32 +166,18 @@ export default function ManagerDashboard() {
 
   // ── Computed values con sanitización ─────────────────────────────────────
 
-  const rawSales     = stats?.sales     ?? {};
-  const rawPurchases = stats?.purchases ?? {};
-  const rawPending   = stats?.pending   ?? {};
-
-  let salesTotal     = Number(rawSales.total_cobrado)     || 0;
-  let ticketsCount   = Number(rawSales.tickets_count)     || 0;
-  let purchasesTotal = Number(rawPurchases.total)         || 0;
-  let pendingCount   = Number(rawPending.count)           || 0;
-
-  // Si hay tickets pero ventas total 0 → forzar tickets a 0 (inconsistencia de datos)
-  if (ticketsCount > 0 && salesTotal === 0) {
-    ticketsCount = 0;
-  }
-
-  // Las compras no deberían ser negativas; si lo son, usar valor absoluto
-  if (purchasesTotal < 0) {
-    purchasesTotal = Math.abs(purchasesTotal);
-  }
-
-  const balance = salesTotal - purchasesTotal;
+  const salesTotal     = Number(stats?.total_cobrado)  || 0;
+  const ticketsCount   = Number(stats?.tickets_count)  || 0;
+  const purchasesTotal = Math.abs(Number(stats?.expenses_total) || 0);
+  const pendingCount   = Number(stats?.pending_count)  || 0;
+  const salesMonth     = Number(stats?.sales_month)    || 0;
+  const balance        = salesTotal - purchasesTotal;
 
   const statsData = {
-    sales:    { total: salesTotal, tickets: ticketsCount },
+    sales:     { total: salesTotal, tickets: ticketsCount, month: salesMonth },
     purchases: { total: purchasesTotal },
     balance,
-    pending:  { count: pendingCount }
+    pending:   { count: pendingCount },
   };
 
   // ── Botón de actualizar para el header ────────────────────────────────────
@@ -217,17 +193,6 @@ export default function ManagerDashboard() {
       <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
     </button>
   );
-
-  // ── LOGS PARA DEPURAR EL GRÁFICO DE HORAS (ANTES DEL RENDER) ─────────────────
-
-  if (graphData.hours.length > 0) {
-
-  }
-
-  // ── EFECTO PARA LOGUEAR CAMBIOS EN graphData.hours ────────────────────────
-  useEffect(() => {
-
-  }, [graphData.hours]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 

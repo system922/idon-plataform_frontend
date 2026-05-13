@@ -22,13 +22,19 @@ const fmt = n =>
 export default function StatsCardsSection({ stats }) {
   const { sales, purchases, balance, pending } = stats;
 
+  const salesDetail = sales.tickets > 0
+    ? `${sales.tickets} ticket${sales.tickets !== 1 ? 's' : ''}`
+    : sales.month > 0
+      ? `Últimos 30 días: ${fmt(sales.month)}`
+      : 'Sin ventas hoy';
+
   return (
     <div className="stat-cards-row">
       <StatCard
         icon={<FiTrendingUp size={28} />}
         label="VENTAS HOY"
         value={fmt(sales.total)}
-        detail={`${sales.tickets} tickets`}
+        detail={salesDetail}
         color="#10b981"
         bg="rgba(16,185,129,0.16)"
       />

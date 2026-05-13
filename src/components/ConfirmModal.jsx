@@ -14,7 +14,7 @@ export default function ConfirmModal({ isOpen, message, title, danger = true, co
 
         {title && <h3 className="cm-title">{title}</h3>}
 
-        <p className="cm-message">{message}</p>
+        <div className="cm-message">{message}</div>
 
         <div className="cm-actions">
           <button className="cm-btn cm-btn-cancel" onClick={onCancel}>

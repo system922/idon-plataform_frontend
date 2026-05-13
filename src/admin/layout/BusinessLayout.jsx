@@ -573,8 +573,12 @@ export default function BusinessLayout({ user, onLogout }) {
   useEffect(() => {
     const load = async () => {
       try {
+        const storedBiz = getStoredBiz();
         const navRes = await fetch(`${API_BASE}/api/business-status/navigation`, {
-          headers: { 'Authorization': `Bearer ${getToken()}` },
+          headers: {
+            'Authorization': `Bearer ${getToken()}`,
+            ...(storedBiz?.id ? { 'x-business-id': storedBiz.id } : {}),
+          },
         });
         if (navRes.ok) {
           const navData = await navRes.json();

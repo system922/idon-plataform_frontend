@@ -8,6 +8,7 @@ import { Route, Navigate } from 'react-router-dom';
 import Settings            from '../pages/business/SettingsPage';
 import BusinessHome        from '../pages/business/BusinessHome';
 import Dashboard           from '../pages/business/DashboardPage';
+import DashboardRetail      from '../pages/business/RetailDashboardPage';
 import CoreUsersPage       from '../pages/business/UsersPage';
 import CoreRolesPage       from '../pages/business/RolesPage';
 import AuditLogs           from '../pages/business/AuditPage';
@@ -16,6 +17,7 @@ import AuditLogs           from '../pages/business/AuditPage';
 import AperturaCajaPage    from '../pages/business/PosAperturaCajaPage.jsx';
 import ReceiptPrint        from '../pages/business/ReceiptPrintPage';
 import Checkout            from '../pages/business/PosCheckoutPage';
+import PosRetail           from '../pages/business/PosRetailPage';
 import PosDiscounts from '../pages/business/PosDiscounts.jsx';
 
 
@@ -88,6 +90,7 @@ export const businessRoutes = (
     {/* ── Home del panel ── */}
     <Route index element={<OwnerRoute><BusinessHome /></OwnerRoute>} />
     <Route path="dashboard" element={<OwnerRoute><Dashboard /></OwnerRoute>} />
+
     <Route path="profile"   element={<ProfilePage />} />
 
     {/* ────────────────────────────────────────────────
@@ -96,6 +99,7 @@ export const businessRoutes = (
     <Route path="core"                          element={<GenericFeaturePage moduleName="Núcleo" />} />
     <Route path="core/core.settings"            element={<Settings />} />
     <Route path="core/core.dashboard"           element={<OwnerRoute><Dashboard /></OwnerRoute>} />
+    <Route path="core/core.retail_dashboard"    element={<OwnerRoute><DashboardRetail /></OwnerRoute>} />
     <Route path="core/core.users"               element={<CoreUsersPage />} />
     <Route path="core/core.roles"               element={<CoreRolesPage />} />
     <Route path="core/gestion-de-sucursales"    element={<GenericFeaturePage moduleName="Núcleo" featureName="Gestión de sucursales" />} />
@@ -110,6 +114,7 @@ export const businessRoutes = (
     <Route path="pos/pos.einvoicing"             element={<EinvoicingInvoicesPage />} />
     <Route path="pos/pos.receipt_print"          element={<ReceiptPrint />} />
     <Route path="pos/pos.sales"                  element={<Checkout />} />
+    <Route path="pos/pos.retail"                 element={<PosRetail />} />
     <Route path="pos/cotizaciones"               element={<GenericFeaturePage moduleName="Punto de Venta" featureName="Cotizaciones" />} />
     <Route path="pos/pos.discounts"              element={<PosDiscounts/>} />
     <Route path="pos/devoluciones-y-cambios"     element={<GenericFeaturePage moduleName="Punto de Venta" featureName="Devoluciones y cambios" />} />

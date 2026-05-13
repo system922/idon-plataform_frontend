@@ -87,7 +87,7 @@
 }
 
 /* ── Título ── */
-.cm-box .cm-title {
+.cm-overlay .cm-box .cm-title {
   font-size: 17px !important;
   font-weight: 800 !important;
   color: #ffffff !important;
@@ -99,15 +99,16 @@
 }
 
 /* ── Mensaje ── */
-.cm-box .cm-message {
+.cm-overlay .cm-box .cm-message {
   font-size: 14px !important;
-  color: rgba(255, 255, 255, 0.75) !important;
+  color: #e0e0e0 !important;
   line-height: 1.55 !important;
   margin: 0 0 26px 0 !important;
   max-width: 340px;
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+  width: 100%;
 }
 
 /* ── Botones ── */

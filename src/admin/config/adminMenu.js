@@ -32,8 +32,9 @@ export const ADMIN_MENU = [
     label: 'Comercial',
     icon: 'credit-card',
     subitems: [
-      { label: 'Planes',  path: '/admin/plans'    },
-      { label: 'Pagos',   path: '/admin/payments' },
+      { label: 'Planes',              path: '/admin/plans'            },
+      { label: 'Pagos',               path: '/admin/payments'         },
+      { label: 'Plantillas de Email', path: '/admin/email-templates'  },
     ],
   },
   {

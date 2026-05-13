@@ -124,6 +124,9 @@ const BusinessModulesModal = ({ business, onClose, onSaved }) => {
   const handleSave = async () => {
     if (saving) return; // ✅ Prevención de doble envío
     setSaving(true); setMsg(null);
+    console.log('[MODULES SAVE] business:', business.id, business.business_name);
+    console.log('[MODULES SAVE] moduleIds:', selectedMods);
+    console.log('[MODULES SAVE] featureIds:', selectedFeats);
     try {
       await adminApiService.put(`/admin/businesses/${business.id}/modules`, {
         moduleIds: selectedMods, featureIds: selectedFeats,

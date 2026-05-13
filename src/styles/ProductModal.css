@@ -1,216 +1,327 @@
-/* ProductModal.css - Estilos exclusivos para el modal */
+/* ProductModal.css */
+
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(4px);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  animation: overlayIn 0.2s ease;
+}
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .modal-container {
-  background: #0f0f0f;
-  border-radius: 20px;
-  width: 90%;
-  max-width: 1000px;
-  max-height: 90vh;
+  background: #111118;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 18px;
+  width: 96%;
+  max-width: 860px;
+  max-height: 92vh;
   overflow-y: auto;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 32px 64px rgba(0,0,0,0.6);
+  animation: modalIn 0.25s cubic-bezier(.34,1.56,.64,1);
 }
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+.modal-container::-webkit-scrollbar { width: 5px; }
+.modal-container::-webkit-scrollbar-track { background: transparent; }
+.modal-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
 
+/* ── Header ─────────────────────────────────────────────── */
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #2a2a2a;
-  background: #0a0a0a;
+  padding: 20px 28px;
+  background: linear-gradient(135deg, #0d0d14 0%, #111118 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-radius: 18px 18px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 20px;
-  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .modal-close {
-  background: none;
-  border: none;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
   color: #888;
   cursor: pointer;
-  padding: 8px;
+  padding: 7px;
   border-radius: 8px;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
 }
+.modal-close:hover { background: rgba(239,68,68,0.12); color: #ef4444; border-color: rgba(239,68,68,0.3); }
 
-.modal-body {
-  padding: 24px;
-}
+/* ── Body ────────────────────────────────────────────────── */
+.modal-body { padding: 24px 28px; }
 
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  gap: 18px;
 }
 
-.full-width {
-  grid-column: span 2;
-}
+.full-width { grid-column: span 2; }
 
+/* ── Labels ─────────────────────────────────────────────── */
+.field-label,
 .form-grid label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
-  font-weight: 600;
-  color: #a0a0a0;
+  font-weight: 700;
+  color: #6b7280;
   text-transform: uppercase;
-  margin-bottom: 6px;
+  letter-spacing: 0.8px;
+  margin-bottom: 7px;
 }
 
+/* ── Inputs base ─────────────────────────────────────────── */
 .form-grid input,
 .form-grid select,
 .form-grid textarea {
   width: 100%;
-  padding: 10px 12px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  border-radius: 8px;
-  color: white;
-  font-size: 13px;
+  padding: 11px 14px;
+  background: #0d0d14;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: #e8e8f0;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
+.form-grid input:focus,
+.form-grid select:focus,
+.form-grid textarea:focus {
+  outline: none;
+  border-color: #00c48c;
+  box-shadow: 0 0 0 3px rgba(0,196,140,0.1);
+}
+.form-grid input.error,
+.form-grid select.error { border-color: #ef4444; }
 
-.input-group {
+/* ── Barcode section ─────────────────────────────────────── */
+.barcode-field-wrap {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  gap: 10px;
+  align-items: stretch;
 }
 
-.input-group input {
+.barcode-input {
   flex: 1;
+  font-family: 'Courier New', Courier, monospace !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: 4px !important;
+  color: #00c48c !important;
+  background: #060e0a !important;
+  border: 1.5px solid #0e3323 !important;
+  border-radius: 10px !important;
+  padding: 14px 20px !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+.barcode-input::placeholder {
+  color: #1a4a30 !important;
+  letter-spacing: 4px;
+  font-size: 18px !important;
+  font-weight: 400 !important;
+}
+.barcode-input:focus {
+  border-color: #00c48c !important;
+  box-shadow: 0 0 0 3px rgba(0,196,140,0.15), 0 0 20px rgba(0,196,140,0.08) !important;
+  outline: none;
+}
+.barcode-input.error { border-color: #ef4444 !important; }
+
+/* EAN badge junto al label */
+.ean-label-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #020f08;
+  background: #00c48c;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 4px;
 }
 
+/* Botón Generar */
 .btn-secondary {
-  padding: 8px 12px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  border-radius: 8px;
-  color: #00c48c;
+  padding: 0 20px;
+  background: #12121e;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: #ef4444;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 7px;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+}
+.btn-secondary:hover {
+  background: rgba(239,68,68,0.1);
+  border-color: #ef4444;
+  color: #ff7070;
 }
 
-.currency-input {
-  position: relative;
-}
-
+/* ── Currency input ──────────────────────────────────────── */
+.currency-input { position: relative; }
 .currency-symbol {
   position: absolute;
-  left: 12px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #888;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
 }
+.currency-input input { padding-left: 30px; }
 
-.currency-input input {
-  padding-left: 28px;
-}
-
+/* ── Misc ────────────────────────────────────────────────── */
 .hint {
   display: block;
   font-size: 10px;
-  color: #666;
+  color: #4b5563;
+  margin-top: 5px;
+}
+.required { color: #ef4444; }
+.error-text {
+  display: block;
+  font-size: 11px;
+  color: #ef4444;
   margin-top: 4px;
 }
 
-.required {
-  color: #ef4444;
-  margin-left: 2px;
-}
-
+/* ── Checkboxes ──────────────────────────────────────────── */
 .checkbox-group {
   display: flex;
-  gap: 24px;
+  gap: 20px;
   align-items: center;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #2a2a2a;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+  margin-top: 4px;
 }
-
 .checkbox-group label {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
   font-size: 13px;
+  font-weight: 500;
+  color: #a0a0b0;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-bottom: 0;
+}
+.checkbox-group input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #00c48c;
+  cursor: pointer;
 }
 
+/* ── Footer ──────────────────────────────────────────────── */
 .modal-footer {
   display: flex;
-  justify-content: center;
-  gap: 16px;
-  padding: 20px 24px;
-  border-top: 1px solid #2a2a2a;
-  background: #0a0a0a;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 28px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  background: #0d0d14;
+  border-radius: 0 0 18px 18px;
+  position: sticky;
+  bottom: 0;
 }
 
 .btn-cancel {
-  padding: 8px 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid #2a2a2a;
-  border-radius: 8px;
-  color: #a0a0a0;
+  padding: 10px 22px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: #6b7280;
   cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  transition: all 0.15s;
 }
+.btn-cancel:hover { background: rgba(255,255,255,0.08); color: #a0a0b0; }
 
 .btn-save {
-  padding: 8px 20px;
-  background: #006648;
+  padding: 10px 28px;
+  background: linear-gradient(135deg, #00c48c 0%, #00a070 100%);
   border: none;
-  border-radius: 8px;
-  color: white;
+  border-radius: 10px;
+  color: #fff;
   cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  transition: all 0.15s;
+  box-shadow: 0 4px 14px rgba(0,196,140,0.25);
 }
-
 .btn-save:hover {
-  background: #008060;
+  background: linear-gradient(135deg, #00d49a 0%, #00b080 100%);
+  box-shadow: 0 6px 20px rgba(0,196,140,0.35);
+  transform: translateY(-1px);
 }
 
-@media (max-width: 768px) {
-  .modal-container {
-    width: 95%;
-  }
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-  .full-width {
-    grid-column: span 1;
-  }
-  .modal-footer {
-    flex-direction: column-reverse;
-  }
-  .modal-footer button {
-    width: 100%;
-  }
-  .input-group {
-    flex-direction: column;
-  }
-  .input-group .btn-secondary {
-    width: 100%;
-  }
-  .checkbox-group {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
+/* ── Error message ───────────────────────────────────────── */
+.error-message {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 8px;
+  font-size: 13px;
+  color: #ef4444;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .modal-container { width: 98%; border-radius: 14px; }
+  .modal-header, .modal-body, .modal-footer { padding-left: 16px; padding-right: 16px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .full-width { grid-column: span 1; }
+  .modal-footer { flex-direction: column-reverse; }
+  .modal-footer button { width: 100%; justify-content: center; }
+  .barcode-input { font-size: 18px !important; letter-spacing: 2px !important; }
+  .checkbox-group { flex-direction: column; align-items: flex-start; gap: 12px; }
 }

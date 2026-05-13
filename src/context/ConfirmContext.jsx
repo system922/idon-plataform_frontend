@@ -13,7 +13,7 @@ export function ConfirmProvider({ children }) {
       setState({
         open: true,
         message,
-        title:       opts.title       ?? '',
+        title:       opts.title       || null,
         danger:      opts.danger      ?? true,
         confirmText: opts.confirmText ?? 'Confirmar',
         cancelText:  opts.cancelText  ?? 'Cancelar',

@@ -18,6 +18,7 @@ import Modulos from './pages/admin_idon/Modulos';
 import Users from './pages/admin_idon/Users';
 import Requests from './pages/admin_idon/Requests';
 import BusinessTypes from './pages/admin_idon/BusinessTypes';
+import EmailTemplatesPage from './pages/admin_idon/EmailTemplatesPage';
 import ProfilePage from './pages/ProfilePage';
 import PublicLayout from './admin/layout/PublicLayout';
 
@@ -123,6 +124,7 @@ function AppRoutes({ user, setUser, handleLogout }) {
               <Route path="audit" element={<Audit />} />
               <Route path="requests" element={<Requests />} />
               <Route path="business-types" element={<BusinessTypes />} />
+              <Route path="email-templates" element={<EmailTemplatesPage />} />
               <Route path="profile" element={<ProfilePage user={user} />} />
             </Routes>
           </AdminLayout>

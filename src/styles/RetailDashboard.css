@@ -1,0 +1,260 @@
+/* ═══════════════════════════════════════════
+   Retail Dashboard — Responsive Styles
+   ═══════════════════════════════════════════ */
+
+.rd-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 4px 0 32px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ── Stats grid ─────────────────────────────── */
+.rd-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+.rd-stat-card {
+  background: #17192b;
+  border-radius: 14px;
+  border-left: 4px solid var(--card-color, #10b981);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rd-stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rd-stat-text { min-width: 0; overflow: hidden; }
+
+.rd-stat-label {
+  font-size: 10.5px;
+  color: #8892b0;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rd-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rd-stat-detail {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Charts row ─────────────────────────────── */
+.rd-charts {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  width: 100%;
+}
+
+.rd-panel {
+  background: #17192b;
+  border-radius: 14px;
+  padding: 20px 22px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rd-panel-title {
+  font-size: 15px;
+  color: #fff;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Top products ───────────────────────────── */
+.rd-products { width: 100%; }
+
+.rd-product-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rd-product-rank {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.rd-product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.rd-product-name-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.rd-product-name {
+  font-size: 13px;
+  color: #e2e8f0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.rd-product-total {
+  font-size: 12px;
+  font-weight: 700;
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.rd-bar-track {
+  height: 5px;
+  border-radius: 3px;
+  background: #233356;
+  overflow: hidden;
+}
+
+.rd-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: #5caaff;
+  transition: width 0.4s ease;
+}
+
+.rd-product-qty {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ── Empty placeholder ──────────────────────── */
+.rd-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  color: rgba(255,255,255,0.15);
+  font-size: 13px;
+}
+
+/* ── Spinning animation ─────────────────────── */
+@keyframes rd-spin {
+  to { transform: rotate(360deg); }
+}
+.rd-spinning { animation: rd-spin 0.8s linear infinite; }
+
+/* ═══ RESPONSIVE ════════════════════════════ */
+
+/* Tablet — 2 columnas en stats */
+@media (max-width: 900px) {
+  .rd-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .rd-charts {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Móvil — 2 columnas compactas en stats */
+@media (max-width: 600px) {
+  .rd-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .rd-stat-card {
+    padding: 14px 14px;
+    gap: 10px;
+    border-radius: 12px;
+  }
+
+  .rd-stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .rd-stat-value {
+    font-size: 18px;
+  }
+
+  .rd-stat-label {
+    font-size: 9.5px;
+    letter-spacing: 0.5px;
+  }
+
+  .rd-panel {
+    padding: 16px 14px;
+  }
+
+  .rd-panel-title {
+    font-size: 14px;
+  }
+
+  .rd-charts {
+    gap: 12px;
+  }
+
+  .rd-page {
+    gap: 12px;
+  }
+}
+
+/* Muy pequeño — stack a 1 columna */
+@media (max-width: 400px) {
+  .rd-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .rd-stat-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+}

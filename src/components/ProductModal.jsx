@@ -158,73 +158,54 @@ const ProductModal = ({ isOpen, product, onSave, onClose }) => {
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             <div className="form-grid">
-              {/* ========== FILA 1: CÓDIGO DE BARRAS + NOMBRE ========== */}
+
+              {/* ── CÓDIGO DE BARRAS (fila completa) ── */}
               <div className="full-width">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '16px' }}>
-                  {/* CÓDIGO DE BARRAS */}
+                <label className="field-label">
+                  Código de Barras <span className="required">*</span>
+                </label>
+                <div className="barcode-field-wrap">
+                  <input
+                    ref={barcodeRef}
+                    type="text"
+                    name="barcode"
+                    value={form.barcode}
+                    onChange={handleBarcodeChange}
+                    maxLength={13}
+                    placeholder="0000000000000"
+                    className={`barcode-input${errors.barcode ? ' error' : ''}`}
+                  />
+                  <button type="button" className="btn-secondary" onClick={handleGenerateBarcode}>
+                    <MdPublishedWithChanges size={15} />
+                    Generar
+                  </button>
+                </div>
+                {errors.barcode && <span className="error-text">{errors.barcode}</span>}
+                {!form.barcode && <small className="hint">EAN-13 · 13 dígitos</small>}
+              </div>
+
+              {/* ── NOMBRE + CATEGORÍA ── */}
+              <div className="full-width">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <label>Código de Barras <span className="required">*</span></label>
-                    <div className="input-group">
-                      <input 
-                        ref={barcodeRef} 
-                        type="text" 
-                        name="barcode" 
-                        value={form.barcode} 
-                        onChange={handleBarcodeChange} 
-                        maxLength={13} 
-                        placeholder="Escanear" 
-                        className={errors.barcode ? 'error' : ''} 
-                      />
-                      <button type="button" className="btn-secondary" onClick={handleGenerateBarcode}>
-                        <MdPublishedWithChanges size={16} />
-                        Generar
-                      </button>
-                    </div>
-                    {errors.barcode && <span className="error-text">{errors.barcode}</span>}
-                    <small className="hint">Código EAN-13 (13 dígitos)</small>
-                  </div>
-                  
-                  {/* NOMBRE */}
-                  <div>
-                    <label>Nombre <span className="required">*</span></label>
-                    <input 
-                      type="text" 
-                      name="name" 
-                      value={form.name} 
-                      onChange={handleChange} 
-                      placeholder="Ej: Café Americano" 
-                      className={errors.name ? 'error' : ''} 
+                    <label className="field-label">Nombre <span className="required">*</span></label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={form.name}
+                      onChange={handleChange}
+                      placeholder="Ej: Blusa corta"
+                      className={errors.name ? 'error' : ''}
                     />
                     {errors.name && <span className="error-text">{errors.name}</span>}
                   </div>
-                </div>
-              </div>
-              
-              {/* ========== FILA 2: DESCRIPCIÓN + CATEGORÍA ========== */}
-              <div className="full-width">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  {/* DESCRIPCIÓN */}
                   <div>
-                    <label>Descripción</label>
-                    <textarea 
-                      name="description" 
-                      rows="2" 
-                      value={form.description} 
-                      onChange={handleChange} 
-                      placeholder="Descripción adicional del producto" 
-                      style={{ resize: 'vertical' }} 
-                    />
-                    <small className="hint">Información adicional del producto</small>
-                  </div>
-                  
-                  {/* CATEGORÍA */}
-                  <div>
-                    <label>Categoría <span className="required">*</span></label>
-                    <select 
-                      name="category_id" 
-                      value={form.category_id} 
-                      onChange={handleChange} 
-                      disabled={loadingCategories} 
+                    <label className="field-label">Categoría <span className="required">*</span></label>
+                    <select
+                      name="category_id"
+                      value={form.category_id}
+                      onChange={handleChange}
+                      disabled={loadingCategories}
                       className={errors.category_id ? 'error' : ''}
                     >
                       <option value="">-- Seleccionar categoría --</option>
@@ -236,83 +217,57 @@ const ProductModal = ({ isOpen, product, onSave, onClose }) => {
                   </div>
                 </div>
               </div>
-              
-              {/* ========== FILA 3: PVP + COSTO + STOCK + STOCK MÍNIMO ========== */}
+
+              {/* ── DESCRIPCIÓN ── */}
+              <div className="full-width">
+                <label className="field-label">Descripción</label>
+                <textarea
+                  name="description"
+                  rows="2"
+                  value={form.description}
+                  onChange={handleChange}
+                  placeholder="Descripción adicional del producto"
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+
+              {/* ── PVP · COSTO · STOCK · STOCK MÍN ── */}
               <div className="full-width">
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-                  {/* PVP */}
                   <div>
-                    <label>P.V.P <span className="required">*</span></label>
+                    <label className="field-label">P.V.P <span className="required">*</span></label>
                     <div className="currency-input">
                       <span className="currency-symbol">$</span>
-                      <input 
-                        type="number" 
-                        step="0.01" 
-                        min="0" 
-                        name="pvp" 
-                        value={form.pvp} 
-                        onChange={handleChange} 
-                        placeholder="0.00" 
-                      />
+                      <input type="number" step="0.01" min="0" name="pvp" value={form.pvp} onChange={handleChange} placeholder="0.00" />
                     </div>
-                    <small className="hint">Precio final (IVA incluido)</small>
+                    <small className="hint">Precio final (IVA inc.)</small>
                     {errors.pvp && <span className="error-text">{errors.pvp}</span>}
                   </div>
-                  
-                  {/* COSTO */}
                   <div>
-                    <label>Costo</label>
+                    <label className="field-label">Costo</label>
                     <div className="currency-input">
                       <span className="currency-symbol">$</span>
-                      <input 
-                        type="number" 
-                        step="0.01" 
-                        min="0" 
-                        name="unit_cost" 
-                        value={form.unit_cost} 
-                        onChange={handleChange} 
-                        placeholder="0.00" 
-                      />
+                      <input type="number" step="0.01" min="0" name="unit_cost" value={form.unit_cost} onChange={handleChange} placeholder="0.00" />
                     </div>
-                    <small className="hint">Costo de compra o producción</small>
+                    <small className="hint">Costo de compra</small>
                   </div>
-                  
-                  {/* STOCK */}
                   <div>
-                    <label>Stock</label>
-                    <input 
-                      type="number" 
-                      step="1" 
-                      min="0" 
-                      name="stock" 
-                      value={form.stock} 
-                      onChange={handleChange} 
-                      placeholder="0" 
-                    />
+                    <label className="field-label">Stock</label>
+                    <input type="number" step="1" min="0" name="stock" value={form.stock} onChange={handleChange} placeholder="0" />
                   </div>
-                  
-                  {/* STOCK MÍNIMO */}
                   <div>
-                    <label>Stock Mínimo</label>
-                    <input 
-                      type="number" 
-                      step="1" 
-                      min="0" 
-                      name="min_stock" 
-                      value={form.min_stock} 
-                      onChange={handleChange} 
-                      placeholder="0" 
-                    />
-                    <small className="hint">Alerta cuando baja de este nivel</small>
+                    <label className="field-label">Stock Mínimo</label>
+                    <input type="number" step="1" min="0" name="min_stock" value={form.min_stock} onChange={handleChange} placeholder="0" />
+                    <small className="hint">Alerta de stock bajo</small>
                   </div>
                 </div>
               </div>
-              
-              {/* ========== FILA 4: CHECKBOXES ========== */}
+
+              {/* ── CHECKBOXES ── */}
               <div className="full-width checkbox-group">
                 <label>
                   <input type="checkbox" name="is_taxable" checked={form.is_taxable} onChange={handleChange} />
-                  <span>IVA</span>
+                  <span>Aplica IVA</span>
                 </label>
                 <label>
                   <input type="checkbox" name="is_active" checked={form.is_active} onChange={handleChange} />
