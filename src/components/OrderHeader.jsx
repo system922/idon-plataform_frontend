@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { FiChevronDown, FiMapPin, FiFileText } from 'react-icons/fi';
 
 export default function OrderHeader({
   orderType,
@@ -10,13 +11,17 @@ export default function OrderHeader({
   notas,
   setNotas
 }) {
+  const [showUbicacion, setShowUbicacion] = useState(false);
+  const [showNotas, setShowNotas] = useState(false);
+
   return (
     <section className="card card-soft">
       <div className="card-head">
         <h3>Datos de la orden</h3>
       </div>
       <div className="form-grid form-grid-3col">
-        {/* Línea 1: Tipo | Mesa | Ubicación */}
+
+        {/* TIPO */}
         <div className="field">
           <label>Tipo</label>
           <select value={orderType} onChange={(e) => setOrderType(e.target.value)}>
@@ -26,6 +31,7 @@ export default function OrderHeader({
           </select>
         </div>
 
+        {/* N° MESA */}
         <div className="field">
           <label>N° Mesa</label>
           <input
@@ -38,31 +44,55 @@ export default function OrderHeader({
           />
         </div>
 
-        <div className="field">
-          <label>Ubicación</label>
-          <input
-            type="text"
-            value={mesaId}
-            onChange={(e) => setMesaId(e.target.value)}
-            placeholder="A-1, Interior-5..."
-            disabled={orderType !== 'dine_in'}
-            style={{
-              opacity: orderType === 'dine_in' ? 1 : 0.5,
-              cursor: orderType === 'dine_in' ? 'text' : 'not-allowed'
-            }}
-          />
+        {/* UBICACIÓN — collapsible */}
+        <div className="field order-field-ubicacion">
+          <button
+            type="button"
+            className="collapsible-label"
+            onClick={() => setShowUbicacion(v => !v)}
+          >
+            <FiMapPin size={12} />
+            <span>Ubicación</span>
+            <FiChevronDown size={13} className={showUbicacion ? 'chev-open' : ''} />
+          </button>
+          {showUbicacion && (
+            <input
+              type="text"
+              value={mesaId}
+              onChange={(e) => setMesaId(e.target.value)}
+              placeholder="A-1, Interior-5..."
+              disabled={orderType !== 'dine_in'}
+              style={{
+                opacity: orderType === 'dine_in' ? 1 : 0.5,
+                cursor: orderType === 'dine_in' ? 'text' : 'not-allowed',
+                marginTop: 6
+              }}
+            />
+          )}
         </div>
 
-        {/* SOLO Notas */}
+        {/* NOTAS — collapsible, full width */}
         <div className="field field-full">
-          <label>Notas</label>
-          <textarea
-            value={notas}
-            onChange={(e) => setNotas(e.target.value)}
-            placeholder="Instrucciones especiales..."
-            rows={3}
-          />
+          <button
+            type="button"
+            className="collapsible-label"
+            onClick={() => setShowNotas(v => !v)}
+          >
+            <FiFileText size={12} />
+            <span>Notas</span>
+            <FiChevronDown size={13} className={showNotas ? 'chev-open' : ''} />
+          </button>
+          {showNotas && (
+            <textarea
+              value={notas}
+              onChange={(e) => setNotas(e.target.value)}
+              placeholder="Instrucciones especiales..."
+              rows={3}
+              style={{ marginTop: 6 }}
+            />
+          )}
         </div>
+
       </div>
     </section>
   );

@@ -37,11 +37,6 @@ export default function OrderSummary({
         <span>${totalConIva.toFixed(2)}</span>
       </div>
       
-      {/* Nota informativa */}
-      <div className="summary-note">
-        <small>El cobro se realiza en la pantalla Cobrar.</small>
-      </div>
-
       {/* Mensaje de validación - Número de mesa requerido */}
       {orderType === 'dine_in' && !numeroMesa && items.length > 0 && (
         <div className="validation-message warning">
@@ -53,7 +48,7 @@ export default function OrderSummary({
       {items.length === 0 && (
         <div className="validation-wrapper">
           <div className="validation-message warning">
-            <CiWarning /> Debe agregar al menos un producto a la orden <CiWarning />
+            <CiWarning size={12} /> Agrega al menos un producto <CiWarning size={12} />
           </div>
         </div>
       )}

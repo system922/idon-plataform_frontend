@@ -487,7 +487,7 @@ export default function ReportsSalesPage() {
               <th>{useEinvoicing ? 'N° Factura' : 'N° Orden'}</th>
               <th>Cliente</th>
               <th className="center">Subtotal</th>
-              <th className="center">{useEinvoicing ? 'IVA' : 'Impuesto'}</th>
+              <th className="center">{useEinvoicing ? 'IVA' : 'IVA'}</th>
               <th className="center">Total</th>
               <th className="center">Acciones</th>
             </tr>

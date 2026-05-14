@@ -69,23 +69,29 @@
 .card-soft {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 14px;
-  padding: 14px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.28);
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.22);
 }
 
-.card-head h3, .items-head h3 { 
-  margin: 0; 
+.card-head {
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.card-head h3, .items-head h3 {
+  margin: 0;
   color: #fff;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.2px;
 }
 
-.card-head p, .items-head p { 
-  margin: 6px 0 0; 
-  color: rgba(255,255,255,0.65); 
-  font-size: 13px;
+.card-head p, .items-head p {
+  margin: 2px 0 0;
+  color: rgba(255,255,255,0.65);
+  font-size: 12px;
 }
 
 /* ============================================================
@@ -93,10 +99,10 @@
 ============================================================ */
 
 .form-grid {
-  margin-top: 12px;
+  margin-top: 4px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 5px;
 }
 
 .form-grid-3col {
@@ -107,22 +113,22 @@
 
 .field label {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: rgba(255,255,255,0.78);
-  margin-bottom: 6px;
+  color: rgba(255,255,255,0.65);
+  margin-bottom: 2px;
   text-transform: uppercase;
   letter-spacing: 0.2px;
 }
 
 .field input, .field select, .field textarea {
   width: 100%;
-  height: 40px;
-  border-radius: 12px;
+  height: 34px;
+  border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.10);
   background: rgba(0,0,0,0.18);
   color: rgba(255,255,255,0.92);
-  padding: 8px 12px;
+  padding: 6px 10px;
   font-family: inherit;
   font-size: 13px;
   transition: all 0.15s ease;
@@ -131,7 +137,7 @@
 
 .field textarea {
   height: auto;
-  min-height: 80px;
+  min-height: 60px;
   resize: vertical;
 }
 
@@ -274,9 +280,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 16px;
-  margin-bottom: 16px;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   flex-wrap: wrap;
 }
@@ -328,34 +334,31 @@
 }
 
 .items-empty-panel {
-  min-height: 100px;
-  border-radius: 14px;
-  border: 1px dashed rgba(255,255,255,0.18);
+  border-radius: 8px;
+  border: 1px dashed rgba(255,255,255,0.15);
   background: rgba(255,255,255,0.03);
-  display: grid;
-  place-items: center;
-  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 8px;
+  gap: 0;
 }
 
 .empty-state {
-  border: 1px dashed rgba(255,255,255,0.18);
-  border-radius: 12px;
-  padding: 18px;
   text-align: center;
-  background: rgba(255,255,255,0.03);
+  padding: 0;
+  background: none;
+  border: none;
 }
 
-.empty-title { 
-  color: #fff; 
-  font-weight: 800; 
-  font-size: 13px;
-  margin-bottom: 4px;
-}
-
-.empty-desc { 
-  color: rgba(255,255,255,0.7); 
-  font-size: 12px; 
+.empty-title {
+  color: rgba(255,255,255,0.5);
+  font-weight: 600;
+  font-size: 11px;
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .items-list-modern {
@@ -702,18 +705,66 @@
 }
 
 /* ============================================================
+   COLLAPSIBLE FIELDS
+============================================================ */
+
+.collapsible-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 0;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+
+.collapsible-label:hover { color: #10b981; }
+
+.collapsible-label span { flex: 1; text-align: left; }
+
+.collapsible-label svg:last-child {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.collapsible-label .chev-open {
+  transform: rotate(180deg);
+}
+
+/* ============================================================
    RESPONSIVE - MÓVIL (640px)
 ============================================================ */
 
 @media (max-width: 640px) {
   .takeorder-shell { padding: 0 10px; gap: 10px; }
-  
-  .form-grid,
-  .form-grid-3col {
+
+  /* form-grid genérico → 1 columna */
+  .form-grid {
     grid-template-columns: 1fr;
     gap: 10px;
   }
-  .field-full { grid-column: 1; }
+
+  /* form-grid-3col (OrderHeader) → 2 col: TIPO | MESA en la misma fila */
+  .form-grid-3col {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* UBICACIÓN ocupa ancho completo en móvil */
+  .order-field-ubicacion {
+    grid-column: 1 / -1;
+  }
+
+  .field-full { grid-column: 1 / -1; }
   .card-soft { padding: 10px; }
   
   .items-head {
@@ -800,7 +851,13 @@
   .item-name { font-size: 12px; }
   .item-price { font-size: 12px; }
   .icon-btn { padding: 6px; }
-  
+
+  /* Evitar desbordamiento horizontal en filas de comanda */
+  .comanda-unitprice { display: none; }
+  .comanda-right { gap: 6px; flex-shrink: 1; }
+  .comanda-nombre { font-size: 13px; }
+  .item-row.comanda-style { overflow: hidden; }
+
   .validation-message { padding: 6px 10px; font-size: 11px; }
   .alert { padding: 6px 10px; font-size: 11px; margin-bottom: 10px; }
 }

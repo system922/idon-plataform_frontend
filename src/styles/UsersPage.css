@@ -231,7 +231,7 @@
 }
 
 .users-modal-header {
-  padding: 24px 28px;
+  padding: 14px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   justify-content: space-between;
@@ -240,7 +240,7 @@
 
 .users-modal-title {
   margin: 0;
-  font-size: 22px;
+  font-size: 17px;
   font-weight: 800;
   color: #fff;
 }
@@ -263,10 +263,10 @@
 }
 
 .users-modal-body {
-  padding: 20px 28px;
+  padding: 12px 20px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
 }
 
 .users-form-row {
@@ -283,7 +283,7 @@
   font-size: 11px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.55);
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 
 .users-form-label-hint {
@@ -293,8 +293,8 @@
 
 .users-form-input {
   width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
   border: 1.5px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.3);
   color: #fff;
@@ -312,8 +312,8 @@
 
 .users-form-select {
   width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
   border: 1.5px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.3);
   color: #fff;
@@ -328,15 +328,15 @@
 }
 
 .users-modal-footer {
-  padding: 20px 28px;
+  padding: 10px 20px 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
 }
 
 .users-btn-secondary {
-  padding: 10px 22px;
+  padding: 8px 18px;
   background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.8);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
@@ -358,7 +358,7 @@
 }
 
 .users-btn-primary {
-  padding: 10px 22px;
+  padding: 8px 18px;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: #fff;
   border: none;
@@ -576,7 +576,7 @@
 @media (max-width: 550px) {
   .users-form-row {
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
   }
 
   .dashboard-refresh-btn-header span {

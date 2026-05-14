@@ -456,18 +456,24 @@ function formatComandaModTicket(data, width = 32) {
 
 /**
  * TICKET SIMPLE (sin facturación electrónica)
- * data: { bizInfo, orden, customer, items, total, recibido, cambio, printerFooter }
- * items: [{ description, quantity, price (con IVA), total }]
+ * data: { bizInfo, orden, customer, items, subtotal, discount, discountName, tax, taxRate, total, recibido, cambio, metodoPago, printerFooter }
+ * items: [{ description, quantity, price, total }]
  */
 function formatSimpleTicket(data, width = 42) {
   const {
     bizInfo,
-    orden       = 'N/A',
-    customer    = {},
-    items       = [],
-    total       = 0,
-    recibido    = 0,
-    cambio      = 0,
+    orden        = 'N/A',
+    customer     = {},
+    items        = [],
+    subtotal     = 0,
+    discount     = 0,
+    discountName = null,
+    tax          = 0,
+    taxRate      = 15,
+    total        = 0,
+    recibido     = 0,
+    cambio       = 0,
+    metodoPago   = null,
     printerFooter,
   } = data;
 
@@ -518,8 +524,22 @@ function formatSimpleTicket(data, width = 42) {
   const mW   = 10;
   const labW = width - mW;
   const row  = (label, val) => padRight(label, labW) + padLeft(formatMoney(val), mW) + '\n';
+  const rowStr = (label, val) => padRight(label, labW) + padLeft(val, mW) + '\n';
 
+  if (subtotal > 0) {
+    t += row('SUBTOTAL:', subtotal);
+  }
+  if (discount > 0) {
+    const dLabel = discountName ? `DESC. (${discountName.substring(0, labW - 8)}):` : 'DESCUENTO:';
+    t += rowStr(dLabel, '-' + formatMoney(discount));
+  }
+  if (tax > 0) {
+    const rate = taxRate > 1 ? Math.round(taxRate) : Math.round(taxRate * 100);
+    t += row(`IVA (${rate}%):`, tax);
+  }
+  t += sep + '\n';
   t += row('TOTAL:', total);
+  t += sep + '\n';
   if (recibido > 0) t += row('RECIBIDO:', recibido);
   if (recibido > 0) t += row('CAMBIO:', Math.max(0, cambio));
   t += line + '\n';

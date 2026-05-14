@@ -46,7 +46,7 @@
 
 .business-content-inner {
   flex: 1;
-  padding: 24px;
+  padding: 6px 16px 12px;
 }
 
 /* ── Topbar ── */
@@ -166,7 +166,7 @@
     min-width: 220px;
   }
   .business-content-inner {
-    padding: 16px;
+    padding: 4px 14px 10px;
   }
 }
 
@@ -190,12 +190,19 @@
     top: 0;
     left: 0;
     height: 100vh;
-    width: 260px !important;
-    min-width: 260px !important;
+    width: 240px !important;
+    min-width: 240px !important;
     transform: translateX(-100%);
-    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 300;
     box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+  }
+
+  /* Colapsado en mobile: icon-only con logo visible */
+  .business-sidebar-wrapper.collapsed {
+    width: 80px !important;
+    min-width: 80px !important;
   }
 
   .business-sidebar-wrapper.mobile-open {
@@ -234,14 +241,49 @@
   }
 
   .mobile-topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 22px;
     font-weight: 900;
     letter-spacing: 0.5px;
     line-height: 1;
   }
 
+  .mobile-topbar-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    display: block;
+    flex-shrink: 0;
+  }
+
   .mobile-topbar-brand .logo-white { color: #fff; }
   .mobile-topbar-brand .logo-orange { color: #f97316; }
+
+  .mobile-topbar-brand-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .mobile-topbar-name {
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    line-height: 1.1;
+  }
+
+  .mobile-topbar-subtitle {
+    font-size: 6px;
+    font-weight: 600;
+    color: #6b7280;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
 
   .mobile-hamburger {
     background: transparent;
@@ -496,5 +538,22 @@
   }
   .business-content-area {
     min-height: calc(100dvh - 48px);
+  }
+}
+
+@media (max-width: 400px) {
+  .business-sidebar-wrapper {
+    width: 220px !important;
+    min-width: 220px !important;
+  }
+  .mobile-topbar {
+    height: 46px;
+    padding: 0 10px;
+  }
+  .mobile-topbar-brand {
+    font-size: 16px;
+  }
+  .business-content-area {
+    min-height: calc(100dvh - 46px);
   }
 }

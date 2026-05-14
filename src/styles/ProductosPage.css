@@ -270,17 +270,22 @@
   .grid-cards {
     grid-template-columns: 1fr;
   }
-  
+
   .page-actions {
     width: 100%;
     justify-content: space-between;
   }
-  
+
   .btn-primary {
     flex: 1;
     justify-content: center;
+    padding: 10px 12px;
+    font-size: 13px;
   }
-  
+
+  .btn-icon {
+    flex-shrink: 0;
+  }
 }
 
 /* ============================================================================
@@ -507,40 +512,67 @@
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .datatable-search {
     width: 100%;
+    min-width: 0;
   }
-  
+
+  .datatable-search-input {
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
+
   .datatable-footer {
     flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .datatable-pagination {
     justify-content: center;
   }
-  
+
+  .datatable-pagination-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .datatable-wrapper {
+    overflow-x: hidden;
+  }
+
+  .datatable-table {
+    min-width: 0;
+    width: 100%;
+  }
+
   .datatable-table thead {
     display: none;
   }
-  
+
   .datatable-table tbody tr {
     display: block;
     margin-bottom: 12px;
     border: 1px solid var(--border);
     border-radius: 12px;
     background: var(--bg-tertiary);
+    overflow: hidden;
   }
-  
+
   .datatable-table tbody td {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 12px;
+    padding: 10px 14px;
     border-bottom: 1px solid var(--border-light);
+    min-height: 40px;
+    gap: 8px;
   }
-  
+
   .datatable-table tbody td:last-child {
     border-bottom: none;
   }
-  
+
   .datatable-table tbody td::before {
     content: attr(data-label);
     font-weight: 600;
@@ -548,13 +580,20 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    flex-shrink: 0;
+    min-width: 80px;
   }
-  
+
+  .datatable-table tbody td > * {
+    text-align: right;
+  }
+
   .datatable-actions {
     justify-content: flex-end;
   }
-  
+
   .datatable-actions::before {
+    content: '';
     flex: 1;
   }
 }

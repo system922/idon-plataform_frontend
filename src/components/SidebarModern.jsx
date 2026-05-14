@@ -195,21 +195,23 @@ function UserCard({ user, onLogout, isCollapsed, onMobileClose }) {
 /* ─────────────────────────────────────────────
    SIDEBAR PRINCIPAL
 ───────────────────────────────────────────── */
-export default function SidebarModern({ 
-  user, 
-  menu, 
-  onLogout, 
-  collapsed, 
-  setCollapsed, 
+export default function SidebarModern({
+  user,
+  menu,
+  onLogout,
+  collapsed,
+  setCollapsed,
   onMobileClose,
-  onCerrarCaja,      // 👈 NUEVA PROp
-  onAbrirCaja,       // 👈 NUEVA PROp
-  aperturaHecha      // 👈 NUEVA PROp
+  onCerrarCaja,
+  onAbrirCaja,
+  aperturaHecha
 }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState({});
   const [logoError, setLogoError] = useState(false);
+
+  const isCollapsed = collapsed;
 
   // Filtrar el menú para no mostrar duplicados de apertura/cierre
   const sidebarMenu = Array.isArray(menu)
@@ -246,10 +248,10 @@ export default function SidebarModern({
   };
 
   return (
-    <div className={`sidebar-modern ${collapsed ? 'collapsed' : ''}`}>
+    <div className={`sidebar-modern ${isCollapsed ? 'collapsed' : ''}`}>
 
       {/* ── HEADER / LOGO ── */}
-      <div className={`sidebar-header ${collapsed ? 'collapsed-header' : ''}`}>
+      <div className={`sidebar-header ${isCollapsed ? 'collapsed-header' : ''}`}>
         <div className="sidebar-logo-block">
           <div className="sidebar-logo-icon">
             {!logoError ? (
@@ -264,7 +266,7 @@ export default function SidebarModern({
             )}
           </div>
 
-          {!collapsed && (
+          {!isCollapsed && (
             <div className="sidebar-logo-text">
               <h2><span className="logo-white">ID</span><span className="logo-orange">ON</span></h2>
               <span className="logo-subtitle">GESTIÓN MULTINEGOCIOS</span>
@@ -290,7 +292,7 @@ export default function SidebarModern({
               <MenuSection
                 key={idx}
                 section={section}
-                isCollapsed={collapsed}
+                isCollapsed={isCollapsed}
                 currentPath={currentPath}
                 onNavigate={handleNavigate}
                 expanded={!!expandedSections[key]}
@@ -301,7 +303,7 @@ export default function SidebarModern({
         ) : (
           <div className="sidebar-empty">
             <FiAlertCircle size={22} />
-            {!collapsed && <p>Sin módulos configurados</p>}
+            {!isCollapsed && <p>Sin módulos configurados</p>}
           </div>
         )}
 
@@ -313,10 +315,10 @@ export default function SidebarModern({
           <div
             className="menu-item sidebar-caja-abrir"
             onClick={handleAbrirCajaClick}
-            title={collapsed ? 'Abrir Caja' : ''}
+            title={isCollapsed ? 'Abrir Caja' : ''}
           >
             <span className="menu-icon"><FiUnlock size={17} /></span>
-            {!collapsed && <span className="menu-label">Abrir Caja</span>}
+            {!isCollapsed && <span className="menu-label">Abrir Caja</span>}
           </div>
         )}
 
@@ -325,16 +327,16 @@ export default function SidebarModern({
           <div
             className="menu-item sidebar-caja-cerrar"
             onClick={handleCerrarCajaClick}
-            title={collapsed ? 'Cerrar Caja' : ''}
+            title={isCollapsed ? 'Cerrar Caja' : ''}
           >
             <span className="menu-icon"><FiLock size={17} /></span>
-            {!collapsed && <span className="menu-label">Cuadrar Caja</span>}
+            {!isCollapsed && <span className="menu-label">Cuadrar Caja</span>}
           </div>
         )}
       </div>
 
       {/* ── FOOTER / USUARIO ── */}
-      <UserCard user={user} onLogout={onLogout} isCollapsed={collapsed} onMobileClose={onMobileClose} />
+      <UserCard user={user} onLogout={onLogout} isCollapsed={isCollapsed} onMobileClose={onMobileClose} />
     </div>
   );
 }

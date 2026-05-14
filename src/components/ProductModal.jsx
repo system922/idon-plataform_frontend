@@ -186,7 +186,7 @@ const ProductModal = ({ isOpen, product, onSave, onClose }) => {
 
               {/* ── NOMBRE + CATEGORÍA ── */}
               <div className="full-width">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="modal-grid-2">
                   <div>
                     <label className="field-label">Nombre <span className="required">*</span></label>
                     <input
@@ -194,7 +194,7 @@ const ProductModal = ({ isOpen, product, onSave, onClose }) => {
                       name="name"
                       value={form.name}
                       onChange={handleChange}
-                      placeholder="Ej: Blusa corta"
+                      placeholder="Ej: Producto A"
                       className={errors.name ? 'error' : ''}
                     />
                     {errors.name && <span className="error-text">{errors.name}</span>}
@@ -233,7 +233,7 @@ const ProductModal = ({ isOpen, product, onSave, onClose }) => {
 
               {/* ── PVP · COSTO · STOCK · STOCK MÍN ── */}
               <div className="full-width">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                <div className="modal-grid-4">
                   <div>
                     <label className="field-label">P.V.P <span className="required">*</span></label>
                     <div className="currency-input">

@@ -31,11 +31,7 @@ function formatMoney(val) {
 
 // Obtener fecha actual en Ecuador (YYYY-MM-DD)
 function getCurrentEcuadorDate() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
 }
 
 // Formatear fecha para mostrar (DD/MM/YYYY)
@@ -45,22 +41,12 @@ function formatDateForDisplay(dateStr) {
   return `${day}/${month}/${year}`;
 }
 
-// Función para extraer solo la fecha de un timestamp (YYYY-MM-DD)
+// Función para extraer solo la fecha de un timestamp (YYYY-MM-DD) en timezone Ecuador
 function extractDateFromTimestamp(timestamp) {
   if (!timestamp) return null;
-  if (typeof timestamp === 'string') {
-    if (timestamp.includes(' ')) {
-      return timestamp.split(' ')[0];
-    }
-    if (timestamp.includes('T')) {
-      return timestamp.split('T')[0];
-    }
-    return timestamp;
-  }
-  if (timestamp instanceof Date) {
-    return timestamp.toISOString().split('T')[0];
-  }
-  return null;
+  const d = new Date(timestamp);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
 }
 
 // Función para obtener el ícono según la acción

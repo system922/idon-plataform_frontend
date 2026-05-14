@@ -304,6 +304,11 @@ export default function BusinessLayout({ user, onLogout }) {
   const [error, setError] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Al abrir el drawer mobile, forzar sidebar expandido para que se vean los labels
+  useEffect(() => {
+    if (mobileOpen) setCollapsed(false);
+  }, [mobileOpen]);
   const [selectedBiz, setSelectedBiz] = useState(getStoredBiz);
 
   useQzTray();
@@ -699,7 +704,11 @@ export default function BusinessLayout({ user, onLogout }) {
         <div className="business-content-area">
           <div className="mobile-topbar">
             <span className="mobile-topbar-brand">
-              <span className="logo-white">ID</span><span className="logo-orange">ON</span>
+              <img src="/IDON_2.svg" alt="IDON" className="mobile-topbar-logo" />
+              <span className="mobile-topbar-brand-text">
+                <span className="mobile-topbar-name"><span className="logo-white">ID</span><span className="logo-orange">ON</span></span>
+                <span className="mobile-topbar-subtitle">GESTIÓN MULTINEGOCIOS</span>
+              </span>
             </span>
             <button
               className="mobile-hamburger"

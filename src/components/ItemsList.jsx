@@ -1,14 +1,12 @@
 import React from 'react';
-import { FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiShoppingCart } from 'react-icons/fi';
 
 export default function ItemsList({ items, eliminarItem, abrirEditarItem }) {
   if (!items || items.length === 0) {
     return (
       <div className="items-empty-panel">
-        <div className="empty-state">
-          <div className="empty-title">No hay items</div>
-          <div className="empty-desc">Agrega productos a la orden</div>
-        </div>
+        <FiShoppingCart size={18} style={{ color: 'rgba(255,255,255,0.25)', marginBottom: 4 }} />
+        <span className="empty-title">No hay items</span>
       </div>
     );
   }
