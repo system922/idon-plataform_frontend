@@ -130,8 +130,7 @@ export default function OrdersHistoryPage() {
   const [success, setSuccess] = useState('');
   const [printerConnected, setPrinterConnected] = useState(false);
   const [filterDate, setFilterDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
   });
   const [statusFilter, setStatusFilter] = useState('pending');
   const [showAddItemModal, setShowAddItemModal] = useState(false);
@@ -271,7 +270,7 @@ export default function OrdersHistoryPage() {
         const orderDateObj = new Date(fecha);
         if (isNaN(orderDateObj.getTime())) return false;
         
-        const orderDate = orderDateObj.toISOString().split('T')[0];
+        const orderDate = orderDateObj.toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
         return orderDate === filterDate;
       });
       
