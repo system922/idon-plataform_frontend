@@ -161,10 +161,8 @@ export default function OrdersHistoryPage() {
         const fecha = order.sale_date || order.created_at;
         if (!fecha) return false;
         
-        // Obtener solo la parte YYYY-MM-DD de la fecha de la orden
-        const orderDate = fecha.split('T')[0];
-        
-        // Comparar con filterDate (que ya está en formato YYYY-MM-DD de Ecuador)
+        // Convertir a fecha Ecuador (UTC-5) para comparar correctamente
+        const orderDate = new Date(fecha).toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
         return orderDate === filterDate;
       });
       
