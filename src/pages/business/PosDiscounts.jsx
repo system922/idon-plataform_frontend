@@ -400,6 +400,14 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
     if (discount && discount.type === 'fixed' && discount.applies_to === 'category' && discount.description?.startsWith('__FPPU__')) return 'fixed_price';
     return 'all';
   });
+  // 'fixed' = monto fijo | 'product' = producto específico | 'category' = categoría a elección
+  const [couponMode, setCouponMode] = useState(() => {
+    if (discount && discount.type === 'coupon') {
+      if (discount.applies_to === 'product') return 'product';
+      if (discount.applies_to === 'category') return 'category';
+    }
+    return 'fixed';
+  });
   // Modo combo: conjunto de productos específicos a precio especial
   const [comboMode, setComboMode] = useState(() =>
     !!(discount && String(discount.description || '').startsWith('__COMBO__'))
@@ -485,6 +493,15 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
     if (comboMode && comboItems.length < 2) {
       return setErr('El combo necesita al menos 2 productos');
     }
+    if (form.type === 'coupon' && !form.code?.trim()) {
+      return setErr('El cupón debe tener un código');
+    }
+    if (form.type === 'coupon' && couponMode === 'product' && !form.product_id) {
+      return setErr('Selecciona el producto que se regala con el cupón');
+    }
+    if (form.type === 'coupon' && couponMode === 'category' && !form.category_id) {
+      return setErr('Selecciona la categoría para el cupón a elección');
+    }
 
     setSaving(true);
     setErr('');
@@ -498,14 +515,19 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
         finalDesc = '__FPPU__' + finalDesc;
       }
 
+      const isCouponProduct  = form.type === 'coupon' && couponMode === 'product';
+      const isCouponCategory = form.type === 'coupon' && couponMode === 'category';
       const payload = {
         name: form.name,
         description: finalDesc,
         type: comboMode ? 'fixed' : form.type,
         value: parseFloat(form.value),
-        applies_to: comboMode ? 'order' : form.applies_to,
-        product_id: comboMode ? null : (form.product_id || null),
-        category_id: comboMode ? null : (form.category_id || null),
+        applies_to: comboMode ? 'order'
+          : isCouponProduct  ? 'product'
+          : isCouponCategory ? 'category'
+          : form.applies_to,
+        product_id:  comboMode ? null : isCouponCategory ? null : (form.product_id || null),
+        category_id: comboMode ? null : isCouponProduct  ? null : (form.category_id || null),
         min_amount: parseFloat(form.min_amount || 0),
         max_discount: form.max_discount ? parseFloat(form.max_discount) : null,
         min_quantity: parseInt(form.min_quantity) || 1,
@@ -922,6 +944,7 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                 );
               })()}
 
+              {form.type !== 'coupon' && (
               <div>
                 <label className="label">Aplicar a</label>
                 <select
@@ -935,18 +958,18 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                       if (form.type === 'buy_x_get_y') setField('type', 'percentage');
                     }
                   }}
-
                 >
                   <option value="order">Toda la orden</option>
                   <option value="product">Producto específico</option>
                   <option value="category">Categoría específica</option>
                 </select>
               </div>
+              )}
 
-              {form.applies_to === 'product' && (
+              {form.applies_to === 'product' && form.type !== 'coupon' && (
                 <div>
                   <label className="label">Producto</label>
-                  <select 
+                  <select
                     className="select"
                     value={form.product_id || ''}
                     onChange={e => setField('product_id', e.target.value)}
@@ -1168,14 +1191,187 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
               )}
 
               {form.type === 'coupon' && (
-                <div>
-                  <label className="label">Código de cupón</label>
-                  <input
-                    className="input"
-                    value={form.code || ''}
-                    onChange={e => setField('code', e.target.value.toUpperCase())}
-                    placeholder="EJ: DESCUENTO10"
-                  />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, background: 'rgba(236,72,153,0.05)', border: '1px solid rgba(236,72,153,0.2)', borderRadius: 10, padding: '14px' }}>
+                  <div style={{ fontWeight: 700, color: '#ec4899', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <FiAward size={14} /> Configuración del Cupón
+                  </div>
+
+                  {/* Toggle tipo de cupón */}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => { setCouponMode('fixed'); setField('applies_to', 'order'); setField('product_id', ''); setField('category_id', ''); }}
+                      style={{
+                        flex: 1, padding: '9px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                        border: couponMode === 'fixed' ? '2px solid #ec4899' : '1px solid #333',
+                        background: couponMode === 'fixed' ? 'rgba(236,72,153,0.12)' : '#111',
+                        color: couponMode === 'fixed' ? '#ec4899' : '#666', cursor: 'pointer',
+                      }}
+                    >
+                      💵 Monto fijo
+                      <div style={{ fontSize: 10, fontWeight: 400, marginTop: 2, opacity: 0.8 }}>Descuenta $ del total</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setCouponMode('product'); setField('applies_to', 'product'); setField('category_id', ''); }}
+                      style={{
+                        flex: 1, padding: '9px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                        border: couponMode === 'product' ? '2px solid #ec4899' : '1px solid #333',
+                        background: couponMode === 'product' ? 'rgba(236,72,153,0.12)' : '#111',
+                        color: couponMode === 'product' ? '#ec4899' : '#666', cursor: 'pointer',
+                      }}
+                    >
+                      🎁 Producto gratis
+                      <div style={{ fontSize: 10, fontWeight: 400, marginTop: 2, opacity: 0.8 }}>1 producto específico</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setCouponMode('category'); setField('applies_to', 'category'); setField('product_id', ''); setField('value', '100'); }}
+                      style={{
+                        flex: 1, padding: '9px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                        border: couponMode === 'category' ? '2px solid #ec4899' : '1px solid #333',
+                        background: couponMode === 'category' ? 'rgba(236,72,153,0.12)' : '#111',
+                        color: couponMode === 'category' ? '#ec4899' : '#666', cursor: 'pointer',
+                      }}
+                    >
+                      🏷️ Categoría a elección
+                      <div style={{ fontSize: 10, fontWeight: 400, marginTop: 2, opacity: 0.8 }}>Cliente elige qué item</div>
+                    </button>
+                  </div>
+
+                  {/* Código del cupón (siempre) */}
+                  <div>
+                    <label className="label">Código del cupón *</label>
+                    <input
+                      className="input"
+                      value={form.code || ''}
+                      onChange={e => setField('code', e.target.value.toUpperCase().replace(/\s/g, ''))}
+                      placeholder="EJ: GRATIS-LATTE"
+                    />
+                    <small className="help-text">El cajero debe ingresar este código exacto en el POS para activar el descuento.</small>
+                  </div>
+
+                  {/* Modo: Monto fijo */}
+                  {couponMode === 'fixed' && (
+                    <div>
+                      <label className="label">Valor del descuento ($) *</label>
+                      <input
+                        className="input"
+                        type="number" min="0" step="0.01"
+                        value={form.value}
+                        onChange={e => setField('value', e.target.value)}
+                        placeholder="Ej: 5.00"
+                      />
+                      <small className="help-text">Monto que se descuenta del subtotal de la orden (sin IVA).</small>
+                    </div>
+                  )}
+
+                  {/* Modo: Categoría a elección del cliente */}
+                  {couponMode === 'category' && (
+                    <>
+                      <div>
+                        <label className="label">Categoría del ítem gratis *</label>
+                        <select
+                          className="select"
+                          value={form.category_id || ''}
+                          onChange={e => { setField('category_id', e.target.value); setField('applies_to', 'category'); }}
+                        >
+                          <option value="">Seleccionar categoría...</option>
+                          {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                          ))}
+                        </select>
+                        <small className="help-text">Al canjear el cupón, el cajero elegirá cuál ítem de esta categoría va gratis.</small>
+                      </div>
+                      <div>
+                        <label className="label">Descuento sobre el ítem seleccionado (%)</label>
+                        <input
+                          className="input"
+                          type="number" min="1" max="100" step="1"
+                          value={form.value}
+                          onChange={e => setField('value', e.target.value)}
+                          placeholder="100"
+                        />
+                        <small className="help-text">Normalmente 100 (ítem completamente gratis). Puedes poner 50 para mitad de precio.</small>
+                      </div>
+                      {form.category_id && (
+                        <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: 8, padding: '10px 12px', fontSize: 12, lineHeight: 1.7 }}>
+                          <div style={{ fontWeight: 700, color: '#ec4899', marginBottom: 4 }}>
+                            🎯 Cómo funciona en el POS
+                          </div>
+                          <div style={{ color: 'rgba(255,255,255,0.6)' }}>
+                            Al ingresar el código en caja, el sistema mostrará todos los ítems de{' '}
+                            <strong style={{ color: '#f97316' }}>
+                              {categories.find(c => String(c.id) === String(form.category_id))?.name || 'la categoría'}
+                            </strong>{' '}
+                            que están en la orden. El cajero selecciona cuál(es) recibirán el {form.value || 100}% de descuento.
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Modo: Producto específico gratis */}
+                  {couponMode === 'product' && (
+                    <>
+                      <div>
+                        <label className="label">Producto que se regala *</label>
+                        <select
+                          className="select"
+                          value={form.product_id || ''}
+                          onChange={e => {
+                            const prod = products.find(p => String(p.id) === e.target.value);
+                            setField('product_id', e.target.value);
+                            setField('applies_to', 'product');
+                            if (prod) {
+                              // value = precio base sin IVA (selling_price)
+                              setField('value', parseFloat(prod.selling_price || prod.price || 0).toFixed(2));
+                            }
+                          }}
+                        >
+                          <option value="">Seleccionar producto...</option>
+                          {products.map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.name} — base ${parseFloat(p.selling_price || 0).toFixed(2)} · PVP ${(parseFloat(p.selling_price || 0) * (1 + ivaRate / 100)).toFixed(2)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {form.product_id && (() => {
+                        const prod = products.find(p => String(p.id) === String(form.product_id));
+                        if (!prod) return null;
+                        const base = parseFloat(prod.selling_price || 0);
+                        const pvp = base * (1 + ivaRate / 100);
+                        return (
+                          <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: 8, padding: '10px 12px', fontSize: 12, lineHeight: 1.7 }}>
+                            <div style={{ fontWeight: 700, color: '#ec4899', marginBottom: 4 }}>🎁 {prod.name} — completamente gratis</div>
+                            <div style={{ color: 'rgba(255,255,255,0.6)' }}>
+                              Precio base (sin IVA): <strong style={{ color: '#f1f5f9' }}>${base.toFixed(2)}</strong>
+                              {' '}· IVA {ivaRate}%: <strong style={{ color: '#f1f5f9' }}>${(pvp - base).toFixed(2)}</strong>
+                              {' '}· PVP: <strong style={{ color: '#10b981' }}>${pvp.toFixed(2)}</strong>
+                            </div>
+                            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, marginTop: 4 }}>
+                              El descuento aplicado será <strong style={{ color: '#ec4899' }}>${base.toFixed(2)}</strong> (base sin IVA).
+                              El cupón solo se activa si el producto está en la orden.
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      <div>
+                        <label className="label">Valor del descuento (base sin IVA) *</label>
+                        <input
+                          className="input"
+                          type="number" min="0" step="0.01"
+                          value={form.value}
+                          onChange={e => setField('value', e.target.value)}
+                          placeholder="Se llena automáticamente al seleccionar producto"
+                        />
+                        <small className="help-text">Se auto-completa con el precio base del producto. Ajusta si es necesario.</small>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
               </>

@@ -22,6 +22,8 @@ export default function PosRetailPage() {
   const { printerError } = useQzTray();
   const { print } = usePrinterService();
   const barcodeRef = useRef(null);
+  const appliedCouponRef = useRef(null);   // { discount, amount }
+  const manualDiscountRef = useRef(null);  // { discount, amount } — seleccionado manualmente
 
   // ── Catálogo ────────────────────────────────────────────────────────────────
   const [products, setProducts] = useState([]);
@@ -59,6 +61,16 @@ export default function PosRetailPage() {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [discountDetails, setDiscountDetails] = useState(null);
   const [totalConDescuento, setTotalConDescuento] = useState(0);
+
+  // ── Cupones ──────────────────────────────────────────────────────────────────
+  const [couponCodeInput, setCouponCodeInput] = useState('');
+  const [couponError, setCouponError] = useState('');
+  const [couponPendingSelect, setCouponPendingSelect] = useState(false);
+  const [pendingCoupon, setPendingCoupon] = useState(null);
+  const [couponSelectedItemIds, setCouponSelectedItemIds] = useState([]);
+  const [couponDiscountAmount, setCouponDiscountAmount] = useState(0);
+  const [appliedCouponDiscount, setAppliedCouponDiscount] = useState(null);
+  const [couponVersion, setCouponVersion] = useState(0);
 
   // ── Fiscal ──────────────────────────────────────────────────────────────────
   const [ivaRateGlobal, setIvaRateGlobal] = useState(15);
@@ -158,34 +170,57 @@ export default function PosRetailPage() {
     return Math.min(amount, baseAmt);
   }, [getSubtotalByCategory, getSubtotalByProduct, getQuantityByProduct]);
 
-  const getBestDiscount = useCallback((base, items) => {
-    if (!availableDiscounts.length || !items.length) return null;
-    const applicable = availableDiscounts
-      .filter(d => isDiscountApplicable(d, base, items))
-      .map(d => ({ discount: d, amount: calculateDiscountAmount(d, base, items) }))
-      .filter(x => x.amount > 0)
-      .sort((a, b) => (b.discount.priority || 0) - (a.discount.priority || 0) || b.amount - a.amount);
-    return applicable[0] || null;
-  }, [availableDiscounts, isDiscountApplicable, calculateDiscountAmount]);
 
-  // ── Recalcular descuento al cambiar carrito ──────────────────────────────────
+  // ── Recalcular totales cuando cambia carrito, cupón o descuento manual ──────
   useEffect(() => {
-    const cartItems = cart.map(i => ({ ...i, product_id: i.product_id, category_id: i.category_id }));
-    const best = getBestDiscount(subtotalSinIVA, cartItems);
-    if (best && best.amount > 0) {
-      setAppliedDiscount(best.discount);
-      setDiscountAmount(best.amount);
-      setDiscountDetails({ name: best.discount.name, type: best.discount.type, value: best.discount.value });
-      const b = Math.max(0, subtotalSinIVA - best.amount);
-      const r = subtotalSinIVA > 0 ? b / subtotalSinIVA : 1;
-      setTotalConDescuento(b + Math.round(ivaTotal * r * 100) / 100);
+    const cartItems = cart.map(i => ({ ...i }));
+    const ivaRate = ivaRateGlobal / 100;
+
+    // ── 1. Descuento manual (solo el que el cajero seleccionó) ──
+    const sel = manualDiscountRef.current;
+    let autoDiscountedTotal = totalBruto;
+    if (sel) {
+      const newAmt = calculateDiscountAmount(sel.discount, subtotalSinIVA, cartItems);
+      if (newAmt > 0) {
+        setAppliedDiscount(sel.discount);
+        setDiscountAmount(newAmt);
+        setDiscountDetails({ name: sel.discount.name, type: sel.discount.type, value: sel.discount.value });
+        const b = Math.max(0, subtotalSinIVA - newAmt);
+        const r = subtotalSinIVA > 0 ? b / subtotalSinIVA : 1;
+        autoDiscountedTotal = Math.round((b + ivaTotal * r) * 100) / 100;
+      } else {
+        manualDiscountRef.current = null;
+        setAppliedDiscount(null);
+        setDiscountAmount(0);
+        setDiscountDetails(null);
+      }
     } else {
       setAppliedDiscount(null);
       setDiscountAmount(0);
       setDiscountDetails(null);
-      setTotalConDescuento(totalBruto);
     }
-  }, [cart, availableDiscounts, subtotalSinIVA, ivaTotal, totalBruto, getBestDiscount]);
+
+    // ── 2. Cupón ──
+    let couponAmt = 0;
+    if (appliedCouponRef.current) {
+      const coupon = appliedCouponRef.current.discount;
+      couponAmt = coupon.applies_to === 'category'
+        ? appliedCouponRef.current.amount
+        : calculateDiscountAmount(coupon, subtotalSinIVA, cartItems);
+      couponAmt = Math.max(0, couponAmt);
+      setCouponDiscountAmount(couponAmt);
+      setAppliedCouponDiscount(coupon);
+    } else {
+      setCouponDiscountAmount(0);
+      setAppliedCouponDiscount(null);
+    }
+
+    // ── 3. Total final combinado ──
+    const finalTotal = couponAmt > 0
+      ? Math.round(Math.max(0, autoDiscountedTotal - couponAmt * (1 + ivaRate)) * 100) / 100
+      : autoDiscountedTotal;
+    setTotalConDescuento(finalTotal);
+  }, [cart, subtotalSinIVA, ivaTotal, totalBruto, ivaRateGlobal, calculateDiscountAmount, couponVersion]);
 
   // ── Carga inicial ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -312,7 +347,100 @@ export default function PosRetailPage() {
     setRefCard(''); setRefTransfer('');
     setMixtoManual(new Set()); setMixtoActive(new Set());
     setError(''); setSuccess('');
+    appliedCouponRef.current = null;
+    manualDiscountRef.current = null;
+    setCouponCodeInput('');
+    setCouponError('');
+    setCouponPendingSelect(false);
+    setPendingCoupon(null);
+    setCouponSelectedItemIds([]);
+    setCouponDiscountAmount(0);
+    setAppliedCouponDiscount(null);
     if (barcodeRef.current) barcodeRef.current.focus();
+  };
+
+  // ── Cupones ───────────────────────────────────────────────────────────────────
+  const aplicarCupon = () => {
+    setCouponError('');
+    const code = couponCodeInput.trim().toUpperCase();
+    if (!code) { setCouponError('Ingrese el código del cupón'); return; }
+    if (cart.length === 0) { setCouponError('Agrega productos al carrito primero'); return; }
+
+    const coupon = availableDiscounts.find(d =>
+      d.type === 'coupon' &&
+      d.is_active &&
+      ((d.code && d.code.toUpperCase() === code) || (d.name && d.name.toUpperCase() === code))
+    );
+
+    if (!coupon) { setCouponError('Código de cupón inválido o inactivo'); return; }
+
+    const cartItems = cart.map(i => ({ ...i }));
+
+    if (coupon.applies_to === 'category' && coupon.category_id) {
+      const catItems = cartItems.filter(item => String(item.category_id) === String(coupon.category_id));
+      if (catItems.length === 0) {
+        const catName = coupon.category_name || 'la categoría del cupón';
+        setCouponError(`No hay productos de "${catName}" en el carrito`);
+        return;
+      }
+      setPendingCoupon(coupon);
+      setCouponPendingSelect(true);
+      setCouponSelectedItemIds([]);
+      return;
+    }
+
+    if (coupon.applies_to === 'product' && coupon.product_id) {
+      const enCarrito = cartItems.some(item => String(item.product_id) === String(coupon.product_id));
+      if (!enCarrito) {
+        const prodName = coupon.product_name || 'el producto del cupón';
+        setCouponError(`Este cupón aplica solo si hay "${prodName}" en el carrito`);
+        return;
+      }
+    }
+
+    const newAmount = calculateDiscountAmount(coupon, subtotalSinIVA, cartItems);
+    if (newAmount <= 0) { setCouponError('El cupón no aplica a este carrito'); return; }
+
+    manualDiscountRef.current = null;
+    appliedCouponRef.current = { discount: coupon, amount: newAmount };
+    setCouponVersion(v => v + 1);
+    setSuccess(`Cupón "${coupon.name}" aplicado: -${fmt(newAmount)}`);
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const confirmarCuponCategoria = () => {
+    if (couponSelectedItemIds.length === 0) { setCouponError('Selecciona al menos un ítem'); return; }
+    const coupon = pendingCoupon;
+    const pct = Number(coupon.value) / 100;
+
+    const selectedTotal = cart
+      .filter(item => couponSelectedItemIds.includes(item.product_id))
+      .reduce((sum, item) => sum + item.selling_price * item.quantity, 0);
+
+    const newAmount = Math.round(selectedTotal * pct * 100) / 100;
+    if (newAmount <= 0) { setCouponError('El descuento resultó en 0'); return; }
+
+    manualDiscountRef.current = null;
+    appliedCouponRef.current = { discount: coupon, amount: newAmount };
+    setCouponVersion(v => v + 1);
+    setCouponPendingSelect(false);
+    setPendingCoupon(null);
+    setCouponSelectedItemIds([]);
+    setCouponError('');
+    setSuccess(`Cupón "${coupon.name}" aplicado: -${fmt(newAmount)}`);
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const quitarCupon = () => {
+    appliedCouponRef.current = null;
+    setCouponCodeInput('');
+    setCouponError('');
+    setCouponPendingSelect(false);
+    setPendingCoupon(null);
+    setCouponSelectedItemIds([]);
+    setCouponDiscountAmount(0);
+    setAppliedCouponDiscount(null);
+    setCouponVersion(v => v + 1);
   };
 
   // ── Escáner de código de barras ───────────────────────────────────────────────
@@ -459,7 +587,7 @@ export default function PosRetailPage() {
     });
     if (!itemsPayload.length) return null;
 
-    const descTotal = discountAmount || 0;
+    const descTotal = (discountAmount || 0) + (couponDiscountAmount || 0);
     const nuevaBase2 = Math.max(0, subtotalOrig - descTotal);
     const r = subtotalOrig > 0 ? nuevaBase2 / subtotalOrig : 1;
     const ivaFact = Math.round(ivaSumado * r * 100) / 100;
@@ -506,14 +634,19 @@ export default function PosRetailPage() {
       }));
       const printSub = items.reduce((s, i) => s + i.total, 0);
       const printIva = Math.round(ivaTotal * ratio * 100) / 100;
-      const printTotal = Math.max(0, printSub - discountAmount) + printIva;
+      const totalDescuentoImpresion = discountAmount + couponDiscountAmount;
+      const printTotal = Math.max(0, printSub - totalDescuentoImpresion) + printIva;
       const esCash = paymentMethod === 'cash' || paymentMethod === 'mixto';
+      const discountsPrint = [];
+      if (discountAmount > 0 && appliedDiscount) discountsPrint.push({ name: appliedDiscount.name, amount: discountAmount });
+      if (couponDiscountAmount > 0 && appliedCouponDiscount) discountsPrint.push({ name: `Cupón: ${appliedCouponDiscount.name}`, amount: couponDiscountAmount });
       const baseData = {
         bizInfo,
         customer: { name: clienteNombre || 'CONSUMIDOR FINAL', id: clienteCedula || '9999999999' },
         items,
-        subtotal: Math.max(0, printSub - discountAmount),
-        discount: discountAmount,
+        subtotal: Math.max(0, printSub - totalDescuentoImpresion),
+        discount: totalDescuentoImpresion,
+        discounts: discountsPrint.length > 0 ? discountsPrint : null,
         tax: printIva,
         taxRate: ivaRateGlobal,
         total: printTotal,
@@ -600,8 +733,8 @@ export default function PosRetailPage() {
           total: totalConDescuento,
           customer_document_number: cedula,
           customer_name: nombre,
-          discount_id: appliedDiscount?.id || null,
-          discount_amount: discountAmount,
+          discount_id: appliedDiscount?.id || appliedCouponDiscount?.id || null,
+          discount_amount: discountAmount + couponDiscountAmount,
           payment_method: paymentMethod,
           payments,
           amount_paid: metodoPago === 'cash' ? cashPaidAmt : totalConDescuento,
@@ -737,86 +870,237 @@ export default function PosRetailPage() {
 
         {/* PANEL DERECHO: FACTURACIÓN (más ancho) */}
         <div className="retail-cart-panel">
-          {/* Header del panel */}
-          <div className="rcp-header">
-            <div className="rcp-header-left">
-              <span className="rcp-title">Facturación</span>
-              {cart.length > 0 && (
-                <span className="rcp-count">{cart.reduce((s, i) => s + i.quantity, 0)} items</span>
-              )}
+
+          {/* ── SECCIÓN SUPERIOR: header + cliente + items (crece) ── */}
+          <div style={{ flex: 1, minHeight: 220, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Header del panel */}
+            <div className="rcp-header">
+              <div className="rcp-header-left">
+                <span className="rcp-title">Facturación</span>
+                {cart.length > 0 && (
+                  <span className="rcp-count">{cart.reduce((s, i) => s + i.quantity, 0)} items</span>
+                )}
+              </div>
+              <OpenDrawerButton />
             </div>
-            <OpenDrawerButton />
+
+            {/* Cliente */}
+            <div className="rcp-customer">
+              <div className="rcp-cx-row">
+                <div className="rcp-cx-doc">
+                  <input
+                    type="text"
+                    placeholder="Cédula / RUC"
+                    value={clienteCedula}
+                    onChange={e => setClienteCedula(e.target.value.replace(/\D/g, '').slice(0, 13))}
+                    onBlur={() => { if (clienteCedula.length === 10 || clienteCedula.length === 13) buscarClientePorDocumento(clienteCedula); }}
+                    onKeyDown={e => { if (e.key === 'Enter' && (clienteCedula.length === 10 || clienteCedula.length === 13)) buscarClientePorDocumento(clienteCedula); }}
+                    className="rcp-input"
+                  />
+                  {clientApiLoading && <div className="spinner-small" />}
+                </div>
+                <input type="text" placeholder="Nombre del cliente" value={clienteNombre} onChange={e => setClienteNombre(e.target.value)} className="rcp-input rcp-input-flex" />
+              </div>
+              <input type="email" placeholder="Email para factura electrónica" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} className="rcp-input rcp-input-full" />
+            </div>
+
+            {/* Mensajes */}
+            {error   && <div className="rcp-msg rcp-msg-error">{error}</div>}
+            {success && <div className="rcp-msg rcp-msg-success">{success}</div>}
+            {printerError && <div className="rcp-msg rcp-msg-error">⚠️ {printerError}</div>}
+
+            {/* Items del carrito */}
+            <div className="retail-cart-items">
+              {cart.length === 0 ? (
+                <div className="rcp-empty">
+                  <FiGrid size={32} style={{ opacity: 0.2, marginBottom: 8 }} />
+                  <p>Escanea o selecciona productos del catálogo</p>
+                </div>
+              ) : cart.map(item => (
+                <div key={item.product_id} className="rcp-item">
+                  <div className="rcp-item-info">
+                    <span className="rcp-item-name">{item.product_name}</span>
+                    {item.code && <span className="rcp-item-code">{item.code}</span>}
+                  </div>
+                  <div className="rcp-item-qty">
+                    <button className="rcp-qty-btn" onClick={() => updateQty(item.product_id, -1)}><FiMinus size={12} /></button>
+                    <input type="number" className="rcp-qty-input" value={item.quantity} min={1} onChange={e => setQtyDirect(item.product_id, e.target.value)} />
+                    <button className="rcp-qty-btn" onClick={() => updateQty(item.product_id, 1)}><FiPlus size={12} /></button>
+                  </div>
+                  <span className="rcp-item-total">{fmt((item.selling_price + item.tax_rate) * item.quantity)}</span>
+                  <button className="rcp-remove-btn" onClick={() => removeFromCart(item.product_id)}><FiTrash2 size={13} /></button>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Cliente */}
-          <div className="rcp-customer">
-            <div className="rcp-cx-row">
-              <div className="rcp-cx-doc">
-                <input
-                  type="text"
-                  placeholder="Cédula / RUC"
-                  value={clienteCedula}
-                  onChange={e => setClienteCedula(e.target.value.replace(/\D/g, '').slice(0, 13))}
-                  onBlur={() => { if (clienteCedula.length === 10 || clienteCedula.length === 13) buscarClientePorDocumento(clienteCedula); }}
-                  onKeyDown={e => { if (e.key === 'Enter' && (clienteCedula.length === 10 || clienteCedula.length === 13)) buscarClientePorDocumento(clienteCedula); }}
-                  className="rcp-input"
-                />
-                {clientApiLoading && <div className="spinner-small" />}
-              </div>
-              <input type="text" placeholder="Nombre del cliente" value={clienteNombre} onChange={e => setClienteNombre(e.target.value)} className="rcp-input rcp-input-flex" />
-            </div>
-            <input type="email" placeholder="Email para factura electrónica" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} className="rcp-input rcp-input-full" />
-          </div>
+          {/* ── SECCIÓN INFERIOR: descuentos + cupón + totales + pago ── */}
+          <div className="rcp-bottom-section">
 
-          {/* Mensajes */}
-          {error   && <div className="rcp-msg rcp-msg-error">{error}</div>}
-          {success && <div className="rcp-msg rcp-msg-success">{success}</div>}
-          {printerError && <div className="rcp-msg rcp-msg-error">⚠️ {printerError}</div>}
-
-          {/* Items del carrito */}
-          <div className="retail-cart-items">
-            {cart.length === 0 ? (
-              <div className="rcp-empty">
-                <FiGrid size={32} style={{ opacity: 0.2, marginBottom: 8 }} />
-                <p>Escanea o selecciona productos del catálogo</p>
-              </div>
-            ) : cart.map(item => (
-              <div key={item.product_id} className="rcp-item">
-                <div className="rcp-item-info">
-                  <span className="rcp-item-name">{item.product_name}</span>
-                  {item.code && <span className="rcp-item-code">{item.code}</span>}
+            {/* Descuentos disponibles */}
+            {cart.length > 0 && availableDiscounts.filter(d => d.is_active && d.type !== 'coupon' && isDiscountApplicable(d, subtotalSinIVA, cart)).length > 0 && (
+              <div style={{ padding: '10px 20px 0' }}>
+              <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: 12, padding: '12px 14px' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                  <FiPercent size={12} /> Descuentos disponibles
                 </div>
-                <div className="rcp-item-qty">
-                  <button className="rcp-qty-btn" onClick={() => updateQty(item.product_id, -1)}><FiMinus size={12} /></button>
-                  <input type="number" className="rcp-qty-input" value={item.quantity} min={1} onChange={e => setQtyDirect(item.product_id, e.target.value)} />
-                  <button className="rcp-qty-btn" onClick={() => updateQty(item.product_id, 1)}><FiPlus size={12} /></button>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 6 }}>
+                  {availableDiscounts
+                    .filter(d => d.is_active && d.type !== 'coupon' && isDiscountApplicable(d, subtotalSinIVA, cart))
+                    .map(discount => {
+                      const isSelected = appliedDiscount?.id === discount.id;
+                      const discountLabel =
+                        discount.type === 'percentage' ? `${discount.value}% DESC` :
+                        discount.type === 'fixed'      ? `$${parseFloat(discount.value).toFixed(2)} DESC` :
+                        discount.type === 'buy_x_get_y'? `COMPRA X LLEVA Y` :
+                        discount.type === 'bulk'       ? `${discount.value}% MAYOREO` :
+                        discount.type.toUpperCase();
+                      return (
+                        <button
+                          key={discount.id}
+                          title={discount.name}
+                          onClick={() => {
+                            const hasCoupon = !!appliedCouponRef.current;
+                            const couponAmt = couponDiscountAmount;
+                            const ivaMult = 1 + ivaRateGlobal / 100;
+                            if (isSelected) {
+                              manualDiscountRef.current = null;
+                              setAppliedDiscount(null);
+                              setDiscountAmount(0);
+                              setDiscountDetails(null);
+                              if (hasCoupon && couponAmt > 0) {
+                                setTotalConDescuento(Math.round(Math.max(0, totalBruto - couponAmt * ivaMult) * 100) / 100);
+                              } else {
+                                setTotalConDescuento(totalBruto);
+                              }
+                            } else {
+                              const cartItems = cart.map(i => ({ ...i }));
+                              const newAmt = calculateDiscountAmount(discount, subtotalSinIVA, cartItems);
+                              manualDiscountRef.current = { discount, amount: newAmt };
+                              setAppliedDiscount(discount);
+                              setDiscountAmount(newAmt);
+                              setDiscountDetails({ name: discount.name, type: discount.type, value: discount.value });
+                              const b = Math.max(0, subtotalSinIVA - newAmt);
+                              const r = subtotalSinIVA > 0 ? b / subtotalSinIVA : 1;
+                              const newTotal = Math.round((b + ivaTotal * r) * 100) / 100;
+                              if (hasCoupon && couponAmt > 0) {
+                                setTotalConDescuento(Math.round(Math.max(0, newTotal - couponAmt * ivaMult) * 100) / 100);
+                              } else {
+                                setTotalConDescuento(newTotal);
+                              }
+                            }
+                          }}
+                          style={{
+                            padding: '9px 10px', borderRadius: 10, textAlign: 'center', whiteSpace: 'normal',
+                            border: isSelected ? '1.5px solid #10b981' : '1px solid rgba(255,255,255,0.07)',
+                            background: isSelected ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.03)',
+                            color: isSelected ? '#10b981' : '#94a3b8',
+                            cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                            transition: 'all 0.18s',
+                            boxShadow: isSelected ? '0 0 0 1px rgba(16,185,129,0.2)' : 'none',
+                          }}
+                        >
+                          <div>{discountLabel}</div>
+                          <div style={{ fontSize: 11, opacity: 0.8, marginTop: 2 }}>{discount.name}</div>
+                        </button>
+                      );
+                    })}
                 </div>
-                <span className="rcp-item-total">{fmt((item.selling_price + item.tax_rate) * item.quantity)}</span>
-                <button className="rcp-remove-btn" onClick={() => removeFromCart(item.product_id)}><FiTrash2 size={13} /></button>
               </div>
-            ))}
-          </div>
+              </div>
+            )}
 
-          {/* Totales */}
-          {cart.length > 0 && (
-            <div className="rcp-totals">
-              <div className="rcp-total-row"><span>Subtotal</span><span>{fmt(subtotalSinIVA)}</span></div>
-              {appliedDiscount && discountAmount > 0 && (
-                <div className="rcp-total-row rcp-discount">
-                  <span><FiTag size={11} /> {appliedDiscount.name}</span>
-                  <span>-{fmt(discountAmount)}</span>
+            {/* Cupón */}
+            {cart.length > 0 && (
+              <div style={{ padding: '8px 20px 0' }}>
+              <div style={{ background: 'rgba(59,130,246,0.05)', border: `1px solid ${appliedCouponRef.current ? '#10b981' : 'rgba(255,255,255,0.07)'}`, borderRadius: 12, padding: '12px 14px', transition: 'border-color 0.2s' }}>
+                <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                  <FiTag size={12} /> Código de cupón
                 </div>
-              )}
-              <div className="rcp-total-row"><span>IVA {ivaRateGlobal}%</span><span>{fmt(nuevoIVA)}</span></div>
-              <div className="rcp-total-grand">
-                <span>TOTAL</span>
-                <span>{fmt(totalConDescuento)}</span>
+                {appliedCouponRef.current ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ flex: 1, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#10b981', fontWeight: 700, letterSpacing: '-0.2px' }}>
+                      ✓ {appliedCouponDiscount?.name} — -{fmt(couponDiscountAmount)}
+                    </span>
+                    <button onClick={quitarCupon} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, color: '#fca5a5', padding: '8px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                      <FiX size={12} /> Quitar
+                    </button>
+                  </div>
+                ) : couponPendingSelect ? (
+                  <div>
+                    <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8 }}>
+                      Selecciona ítems de <strong style={{ color: '#f1f5f9' }}>{pendingCoupon?.category_name || 'la categoría'}</strong>:
+                    </div>
+                    {cart.filter(item => String(item.category_id) === String(pendingCoupon?.category_id)).map(item => (
+                      <label key={item.product_id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, cursor: 'pointer', fontSize: 13, color: '#e2e8f0', padding: '6px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                        <input
+                          type="checkbox"
+                          checked={couponSelectedItemIds.includes(item.product_id)}
+                          onChange={e => {
+                            if (e.target.checked) setCouponSelectedItemIds(prev => [...prev, item.product_id]);
+                            else setCouponSelectedItemIds(prev => prev.filter(id => id !== item.product_id));
+                          }}
+                          style={{ accentColor: '#10b981' }}
+                        />
+                        <span style={{ flex: 1 }}>{item.product_name} × {item.quantity}</span>
+                        <span style={{ color: '#10b981', fontWeight: 700 }}>{fmt(item.selling_price * item.quantity)}</span>
+                      </label>
+                    ))}
+                    <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                      <button onClick={confirmarCuponCategoria} style={{ flex: 1, padding: '8px 0', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer', fontWeight: 700 }}>
+                        Confirmar
+                      </button>
+                      <button onClick={() => { setCouponPendingSelect(false); setPendingCoupon(null); setCouponSelectedItemIds([]); setCouponError(''); }} style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input
+                      type="text"
+                      value={couponCodeInput}
+                      onChange={e => { setCouponCodeInput(e.target.value.toUpperCase()); setCouponError(''); }}
+                      onKeyDown={e => { if (e.key === 'Enter') aplicarCupon(); }}
+                      placeholder="Código de cupón"
+                      style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#f1f5f9', padding: '8px 12px', fontSize: 13, outline: 'none' }}
+                    />
+                    <button onClick={aplicarCupon} style={{ padding: '8px 16px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer', fontWeight: 700 }}>
+                      Aplicar
+                    </button>
+                  </div>
+                )}
+                {couponError && <div style={{ color: '#fca5a5', fontSize: 12, marginTop: 6, background: 'rgba(239,68,68,0.08)', padding: '5px 8px', borderRadius: 6 }}>{couponError}</div>}
               </div>
-            </div>
-          )}
+              </div>
+            )}
 
-          {/* Pago */}
-          {cart.length > 0 && (
+            {/* Totales */}
+            {cart.length > 0 && (
+              <div className="rcp-totals">
+                <div className="rcp-total-row"><span>Subtotal</span><span>{fmt(subtotalSinIVA)}</span></div>
+                {appliedDiscount && discountAmount > 0 && (
+                  <div className="rcp-total-row rcp-discount">
+                    <span><FiTag size={11} /> {appliedDiscount.name}</span>
+                    <span>-{fmt(discountAmount)}</span>
+                  </div>
+                )}
+                {appliedCouponDiscount && couponDiscountAmount > 0 && (
+                  <div className="rcp-total-row rcp-discount">
+                    <span><FiTag size={11} /> Cupón: {appliedCouponDiscount.name}</span>
+                    <span>-{fmt(couponDiscountAmount)}</span>
+                  </div>
+                )}
+                <div className="rcp-total-row"><span>IVA {ivaRateGlobal}%</span><span>{fmt(nuevoIVA)}</span></div>
+                <div className="rcp-total-grand">
+                  <span>TOTAL</span>
+                  <span>{fmt(totalConDescuento)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Pago */}
+            {cart.length > 0 && (
             <div className="rcp-payment">
               {/* Métodos de pago */}
               <div className="rcp-methods">
@@ -939,8 +1223,10 @@ export default function PosRetailPage() {
                 </button>
               </div>
             </div>
-          )}
-        </div>
+            )}
+
+          </div>{/* /rcp-bottom-section */}
+        </div>{/* /retail-cart-panel */}
       </div>
     </PageTemplate>
   );

@@ -468,6 +468,7 @@ function formatSimpleTicket(data, width = 42) {
     subtotal     = 0,
     discount     = 0,
     discountName = null,
+    discounts    = null, // [{ name, amount }] — varios descuentos
     tax          = 0,
     taxRate      = 15,
     total        = 0,
@@ -529,10 +530,13 @@ function formatSimpleTicket(data, width = 42) {
   if (subtotal > 0) {
     t += row('SUBTOTAL:', subtotal);
   }
-  if (discount > 0) {
-    const dLabel = discountName ? `DESC. (${discountName.substring(0, labW - 8)}):` : 'DESCUENTO:';
-    t += rowStr(dLabel, '-' + formatMoney(discount));
-  }
+  const discountLines = discounts && discounts.length > 0
+    ? discounts.filter(d => d.amount > 0)
+    : (discount > 0 ? [{ name: discountName, amount: discount }] : []);
+  discountLines.forEach(d => {
+    const dLabel = d.name ? `DESC. (${d.name.substring(0, labW - 8)}):` : 'DESCUENTO:';
+    t += rowStr(dLabel, '-' + formatMoney(d.amount));
+  });
   if (tax > 0) {
     const rate = taxRate > 1 ? Math.round(taxRate) : Math.round(taxRate * 100);
     t += row(`IVA (${rate}%):`, tax);
@@ -566,6 +570,7 @@ function formatInvoiceTicket(data, width = 42) {
     subtotal_15 = 0,
     subtotal_0  = 0,
     discount    = 0,
+    discounts   = null, // [{ name, amount }]
     subtotal    = 0,
     tax         = 0,
     taxRate,
@@ -656,8 +661,15 @@ function formatInvoiceTicket(data, width = 42) {
     t += row(`SUBTOTAL ${vatLabel}:`, subtotal_15 || 0);
     t += row('SUBTOTAL 0%:',         subtotal_0  || 0);
   }
-  if (discount > 0) t += row('DESCUENTO:', discount);
-  t += row('SUBTOTAL:', subtotal || (subtotal_15 + subtotal_0 - discount));
+  const discountLinesFact = discounts && discounts.length > 0
+    ? discounts.filter(d => d.amount > 0)
+    : (discount > 0 ? [{ name: null, amount: discount }] : []);
+  discountLinesFact.forEach(d => {
+    const dLabel = d.name ? `DESC. (${d.name.substring(0, labW - 8)}):` : 'DESCUENTO:';
+    t += row(dLabel, d.amount);
+  });
+  const totalDescuentoFact = discountLinesFact.reduce((s, d) => s + d.amount, 0);
+  t += row('SUBTOTAL:', subtotal || (subtotal_15 + subtotal_0 - totalDescuentoFact));
   if (tax > 0) {
     const vatLabel = taxRate ? `${Math.round(taxRate * 100)}%` : '15%';
     t += row(`IVA ${vatLabel}:`, tax);

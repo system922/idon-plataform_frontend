@@ -33,6 +33,8 @@ export default function PosCheckoutPage() {
   const location = useLocation();
   const autoSelectRef = useRef(location.state?.orderNumber || null);
   const customerCedulaRef = useRef(location.state?.customerCedula || null);
+  const appliedCouponRef = useRef(null);    // { discount, amount, details }
+  const manualDiscountRef = useRef(null);   // { discount, amount, details } — seleccionado manualmente por el cajero
 
   const [orders, setOrders] = useState([]);
   const [bizInfo, setBizInfo] = useState(null);
@@ -73,8 +75,18 @@ export default function PosCheckoutPage() {
   const [availableDiscounts, setAvailableDiscounts] = useState([]);
   const [appliedDiscount, setAppliedDiscount] = useState(null);
   const [discountAmount, setDiscountAmount] = useState(0);
-  const [discountDetails, setDiscountDetails] = useState(null); // Para detalles del descuento aplicado
+  const [discountDetails, setDiscountDetails] = useState(null);
   const [totalOrdenConDescuento, setTotalOrdenConDescuento] = useState(0);
+
+  // ========== CUPONES (código manual) ==========
+  const [couponCodeInput, setCouponCodeInput] = useState('');
+  const [couponError, setCouponError] = useState('');
+  const [couponPendingSelect, setCouponPendingSelect] = useState(false);
+  const [pendingCoupon, setPendingCoupon] = useState(null);
+  const [couponSelectedItemIds, setCouponSelectedItemIds] = useState([]);
+  const [couponDiscountAmount, setCouponDiscountAmount] = useState(0); // separado del descuento auto
+  const [appliedCouponDiscount, setAppliedCouponDiscount] = useState(null); // el cupón activo (para display)
+  const [couponVersion, setCouponVersion] = useState(0); // incrementar para forzar recálculo via useEffect
 
   // ========== CONFIGURACIÓN FISCAL ==========
   const [ivaRateGlobal, setIvaRateGlobal] = useState(15);
@@ -310,11 +322,13 @@ export default function PosCheckoutPage() {
     return amount;
   }, [getSubtotalByCategory, getSubtotalByProduct, getQuantityByProduct, isComboDiscount, parseComboData, ivaRateGlobal]);
 
-  // Obtener el mejor descuento aplicable (prioridad)
+  // Obtener el mejor descuento aplicable (prioridad) — los cupones se excluyen, requieren código manual
   const getBestApplicableDiscount = useCallback((subtotalSinIVA, items) => {
     if (availableDiscounts.length === 0) return null;
-    
-    const applicable = availableDiscounts.filter(d => isDiscountApplicable(d, subtotalSinIVA, items));
+
+    const applicable = availableDiscounts
+      .filter(d => d.type !== 'coupon')
+      .filter(d => isDiscountApplicable(d, subtotalSinIVA, items));
     if (applicable.length === 0) return null;
     
     const applicableWithAmount = applicable.map(d => ({ 
@@ -434,36 +448,46 @@ export default function PosCheckoutPage() {
       setAppliedDiscount(null);
       setDiscountAmount(0);
       setDiscountDetails(null);
+      setCouponDiscountAmount(0);
+      setAppliedCouponDiscount(null);
       setTotalOrdenConDescuento(getOrderTotal());
       return;
     }
-    
+
     const subtotalSinIVA = getSubtotalSinIVA();
-    const ivaTotal = getIvaTotal();
+    const ivaRate = getIvaRate() / 100;
     const items = selectedOrder.items || [];
-    const best = getBestApplicableDiscount(subtotalSinIVA, items);
-    
+
+    // ── 1. Auto-descuento ──
+    // Con cupón activo: solo usar lo que el cajero seleccionó manualmente (manualDiscountRef)
+    // Sin cupón: auto-aplicar el mejor descuento disponible y guardarlo en manualDiscountRef
+    const couponActive = !!appliedCouponRef.current;
+    let best;
+    if (couponActive) {
+      best = manualDiscountRef.current; // puede ser null si el cajero no seleccionó ninguno
+    } else {
+      best = getBestApplicableDiscount(subtotalSinIVA, items);
+      manualDiscountRef.current = best || null; // sincronizar ref con el auto-descuento
+    }
+    let autoDiscountedTotal = getOrderTotal();
+
     if (best && best.amount > 0) {
       setAppliedDiscount(best.discount);
       setDiscountAmount(best.amount);
       setDiscountDetails(best.details);
-      
-      // 🔥 Calcular correctamente según tipo de descuento
-      let tipoDescuento = best.discount.applies_to || 'order'; // 'order', 'category', 'product'
+
+      let tipoDescuento = best.discount.applies_to || 'order';
       let nuevaBaseImponible = subtotalSinIVA;
       let nuevoIVA = 0;
-      let nuevoTotalFinal = null; // null = usar cálculo genérico al final
+      let nuevoTotalFinal = null;
 
       if (tipoDescuento === 'category' && best.discount.category_id &&
           String(best.discount.description || '').startsWith('__FPPU__')) {
-        // FPPU: precio fijo solo para ítems más caros que el target; extras baratos van a precio normal
         const catItems = items.filter(i => String(i.category_id) === String(best.discount.category_id));
-        const ivaRate = getIvaRate() / 100;
         const pvpFijo = Number(best.discount.value);
         const baseTarget = pvpFijo / (1 + ivaRate);
         const subtotalCategoria = getSubtotalByCategory(items, best.discount.category_id);
         const subtotalOtras = subtotalSinIVA - subtotalCategoria;
-        // PVP por item: precio fijo si es más caro que target, precio normal si no
         const pvpCategoriaCombinado = catItems.reduce((s, item) => {
           const price = Number(item.selling_price) || Number(item.unit_price) || 0;
           const qty   = Number(item.quantity) || 1;
@@ -475,44 +499,58 @@ export default function PosCheckoutPage() {
         nuevoIVA = Math.round((pvpCategoriaCombinado * ivaRate / (1 + ivaRate) + ivaOtras) * 100) / 100;
         nuevoTotalFinal = Math.round((pvpCategoriaCombinado + subtotalOtras + ivaOtras) * 100) / 100;
       } else if (tipoDescuento === 'category' && best.discount.category_id) {
-        // Descuento por categoría
         const subtotalCategoria = getSubtotalByCategory(items, best.discount.category_id);
         const subtotalOtras = subtotalSinIVA - subtotalCategoria;
-
         const subtotalCategoriaConDescuento = Math.max(0, subtotalCategoria - best.amount);
-        const ivaCategoriaConDescuento = Math.round(subtotalCategoriaConDescuento * (getIvaRate() / 100) * 100) / 100;
-        const ivaOtras = Math.round(subtotalOtras * (getIvaRate() / 100) * 100) / 100;
-
+        const ivaCategoriaConDescuento = Math.round(subtotalCategoriaConDescuento * ivaRate * 100) / 100;
+        const ivaOtras = Math.round(subtotalOtras * ivaRate * 100) / 100;
         nuevaBaseImponible = subtotalCategoriaConDescuento + subtotalOtras;
         nuevoIVA = ivaCategoriaConDescuento + ivaOtras;
       } else if (tipoDescuento === 'product' && best.discount.product_id) {
-        // Descuento por producto
         const subtotalProducto = getSubtotalByProduct(items, best.discount.product_id);
         const subtotalOtros = subtotalSinIVA - subtotalProducto;
-        
         const subtotalProductoConDescuento = Math.max(0, subtotalProducto - best.amount);
-        const ivaProductoConDescuento = Math.round(subtotalProductoConDescuento * (getIvaRate() / 100) * 100) / 100;
-        const ivaOtros = Math.round(subtotalOtros * (getIvaRate() / 100) * 100) / 100;
-        
+        const ivaProductoConDescuento = Math.round(subtotalProductoConDescuento * ivaRate * 100) / 100;
+        const ivaOtros = Math.round(subtotalOtros * ivaRate * 100) / 100;
         nuevaBaseImponible = subtotalProductoConDescuento + subtotalOtros;
         nuevoIVA = ivaProductoConDescuento + ivaOtros;
       } else {
-        // Descuento por orden (aplica a todo)
         nuevaBaseImponible = Math.max(0, subtotalSinIVA - best.amount);
-        nuevoIVA = Math.round(nuevaBaseImponible * (getIvaRate() / 100) * 100) / 100;
+        nuevoIVA = Math.round(nuevaBaseImponible * ivaRate * 100) / 100;
       }
 
-      const nuevoTotal = nuevoTotalFinal !== null
+      autoDiscountedTotal = nuevoTotalFinal !== null
         ? nuevoTotalFinal
         : Math.round((nuevaBaseImponible + nuevoIVA) * 100) / 100;
-      setTotalOrdenConDescuento(nuevoTotal);
     } else {
       setAppliedDiscount(null);
       setDiscountAmount(0);
       setDiscountDetails(null);
-      setTotalOrdenConDescuento(getOrderTotal());
+      autoDiscountedTotal = getOrderTotal();
     }
-  }, [selectedOrder, getSubtotalSinIVA, getIvaTotal, getOrderTotal, getBestApplicableDiscount, getIvaRate, getSubtotalByCategory, getSubtotalByProduct]);
+
+    // ── 2. Cupón manual (independiente del auto-descuento) ──
+    let couponAmt = 0;
+    if (appliedCouponRef.current) {
+      const coupon = appliedCouponRef.current.discount;
+      // Categoría: usar monto almacenado (el cajero eligió ítems específicos, no recalcular)
+      couponAmt = coupon.applies_to === 'category'
+        ? appliedCouponRef.current.amount
+        : calculateDiscountAmountForOrder(coupon, subtotalSinIVA, items);
+      couponAmt = Math.max(0, couponAmt);
+      setCouponDiscountAmount(couponAmt);
+      setAppliedCouponDiscount(coupon);
+    } else {
+      setCouponDiscountAmount(0);
+      setAppliedCouponDiscount(null);
+    }
+
+    // ── 3. Total final combinado ──
+    const finalTotal = couponAmt > 0
+      ? Math.round(Math.max(0, autoDiscountedTotal - couponAmt * (1 + ivaRate)) * 100) / 100
+      : autoDiscountedTotal;
+    setTotalOrdenConDescuento(finalTotal);
+  }, [selectedOrder, getSubtotalSinIVA, getIvaTotal, getOrderTotal, getBestApplicableDiscount, getIvaRate, getSubtotalByCategory, getSubtotalByProduct, calculateDiscountAmountForOrder]);
 
   // Cargar configuración fiscal
   const loadFiscalConfig = async () => {
@@ -578,7 +616,7 @@ export default function PosCheckoutPage() {
 
   useEffect(() => {
     updateDiscountValues();
-  }, [selectedOrder, updateDiscountValues]);
+  }, [selectedOrder, updateDiscountValues, couponVersion]);
 
   useEffect(() => {
     loadOrders();
@@ -635,6 +673,15 @@ export default function PosCheckoutPage() {
     setDiscountAmount(0);
     setDiscountDetails(null);
     setTotalOrdenConDescuento(0);
+    appliedCouponRef.current = null;
+    manualDiscountRef.current = null;
+    setCouponCodeInput('');
+    setCouponError('');
+    setCouponPendingSelect(false);
+    setPendingCoupon(null);
+    setCouponSelectedItemIds([]);
+    setCouponDiscountAmount(0);
+    setAppliedCouponDiscount(null);
   };
 
   const loadOrders = async () => {
@@ -825,6 +872,110 @@ export default function PosCheckoutPage() {
     setModoPorCobrar(false);
     setFacturaIndividual(false);
     setError('');
+    appliedCouponRef.current = null;
+    manualDiscountRef.current = null;
+    setCouponCodeInput('');
+    setCouponError('');
+    setCouponPendingSelect(false);
+    setPendingCoupon(null);
+    setCouponSelectedItemIds([]);
+    setCouponDiscountAmount(0);
+    setAppliedCouponDiscount(null);
+  };
+
+  const aplicarCupon = () => {
+    setCouponError('');
+    const code = couponCodeInput.trim().toUpperCase();
+    if (!code) { setCouponError('Ingrese el código del cupón'); return; }
+    if (!selectedOrder) { setCouponError('Seleccione una orden primero'); return; }
+
+    const coupon = availableDiscounts.find(d =>
+      d.type === 'coupon' &&
+      d.is_active &&
+      ((d.code && d.code.toUpperCase() === code) || (d.name && d.name.toUpperCase() === code))
+    );
+
+    if (!coupon) { setCouponError('Código de cupón inválido o inactivo'); return; }
+
+    const items = selectedOrder.items || [];
+
+    // Cupón de categoría a elección: abrir selector de ítems
+    if (coupon.applies_to === 'category' && coupon.category_id) {
+      const catItems = items.filter(item =>
+        String(item.category_id) === String(coupon.category_id) && !item.paid
+      );
+      if (catItems.length === 0) {
+        const catName = coupon.category_name || 'la categoría del cupón';
+        setCouponError(`No hay productos de "${catName}" en la orden`);
+        return;
+      }
+      setPendingCoupon(coupon);
+      setCouponPendingSelect(true);
+      setCouponSelectedItemIds([]);
+      return;
+    }
+
+    // Cupón de producto específico
+    if (coupon.applies_to === 'product' && coupon.product_id) {
+      const enOrden = items.some(item => String(item.product_id) === String(coupon.product_id));
+      if (!enOrden) {
+        const prodName = coupon.product_name || 'el producto del cupón';
+        setCouponError(`Este cupón aplica solo si hay "${prodName}" en la orden`);
+        return;
+      }
+    }
+
+    const subtotal = getSubtotalSinIVA();
+    const newAmount = calculateDiscountAmountForOrder(coupon, subtotal, items);
+    if (newAmount <= 0) { setCouponError('El cupón no aplica a esta orden'); return; }
+
+    const details = { name: coupon.name, type: coupon.type, applies_to: coupon.applies_to, value: coupon.value };
+    manualDiscountRef.current = null; // quitar auto-descuento al aplicar cupón
+    appliedCouponRef.current = { discount: coupon, amount: newAmount, details };
+    setCouponVersion(v => v + 1);
+    setSuccess(`Cupón "${coupon.name}" aplicado: -${fmt(newAmount)}`);
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const confirmarCuponCategoria = () => {
+    if (couponSelectedItemIds.length === 0) { setCouponError('Selecciona al menos un ítem'); return; }
+    const coupon = pendingCoupon;
+    const items = selectedOrder.items || [];
+    const pct = Number(coupon.value) / 100;
+
+    // Calcular descuento solo sobre los ítems elegidos por el cajero
+    const selectedTotal = items
+      .filter(item => couponSelectedItemIds.includes(item.id))
+      .reduce((sum, item) => {
+        const price = Number(item.selling_price) || Number(item.unit_price) || 0;
+        return sum + price * (Number(item.quantity) || 1);
+      }, 0);
+
+    const newAmount = Math.round(selectedTotal * pct * 100) / 100;
+    if (newAmount <= 0) { setCouponError('El descuento resultó en 0'); return; }
+
+    const details = { name: coupon.name, type: coupon.type, applies_to: 'category', value: coupon.value };
+    manualDiscountRef.current = null; // quitar auto-descuento al aplicar cupón
+    appliedCouponRef.current = { discount: coupon, amount: newAmount, details };
+    setCouponVersion(v => v + 1);
+    setCouponPendingSelect(false);
+    setPendingCoupon(null);
+    setCouponSelectedItemIds([]);
+    setCouponError('');
+    setSuccess(`Cupón "${coupon.name}" aplicado: -${fmt(newAmount)}`);
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const quitarCupon = () => {
+    appliedCouponRef.current = null;
+    setCouponCodeInput('');
+    setCouponError('');
+    setCouponPendingSelect(false);
+    setPendingCoupon(null);
+    setCouponSelectedItemIds([]);
+    setCouponDiscountAmount(0);
+    setAppliedCouponDiscount(null);
+    setCouponVersion(v => v + 1);
   };
 
   const onClienteCedulaBlurOrEnter = (e, esParaComensal = false, comensalId = null) => {
@@ -1083,7 +1234,7 @@ export default function PosCheckoutPage() {
     
     if (itemsPayload.length === 0) return null;
 
-    let descuentoTotal = discountAmount || 0;
+    let descuentoTotal = (discountAmount || 0) + (couponDiscountAmount || 0);
     
     // 🔥 Determinar si el descuento aplica a categoría o producto específico
     let tipoDescuento = appliedDiscount?.applies_to || 'order'; // 'order', 'category', 'product'
@@ -1289,7 +1440,11 @@ export default function PosCheckoutPage() {
       const printSubtotal = itemsToPrint.reduce((s, i) => s + i.total, 0);
       const printIvaBase = (order.items || []).reduce((s, item) =>
         s + (Number(item.tax_rate) || 0) * (Number(item.quantity) || 1), 0);
-      const printBaseConDesc = Math.max(0, printSubtotal - discountAmount);
+      const totalDescuentoImpresion = discountAmount + couponDiscountAmount;
+      const discountsPrint = [];
+      if (discountAmount > 0 && appliedDiscount) discountsPrint.push({ name: appliedDiscount.name, amount: discountAmount });
+      if (couponDiscountAmount > 0 && appliedCouponDiscount) discountsPrint.push({ name: `Cupón: ${appliedCouponDiscount.name}`, amount: couponDiscountAmount });
+      const printBaseConDesc = Math.max(0, printSubtotal - totalDescuentoImpresion);
       const nuevoIVAImpresion = Math.round(printBaseConDesc * (ivaRateGlobal / 100) * 100) / 100;
       const printTotalFinal = printBaseConDesc + nuevoIVAImpresion;
       const tieneFactura = !!invoiceNumber;
@@ -1305,7 +1460,8 @@ export default function PosCheckoutPage() {
             customer:     { name: customerName || clienteNombre || 'CONSUMIDOR FINAL', id: clienteCedula || '9999999999' },
             items:        itemsToPrint,
             subtotal:     printBaseConDesc,
-            discount:     discountAmount,
+            discount:     totalDescuentoImpresion,
+            discounts:    discountsPrint,
             tax:          nuevoIVAImpresion,
             taxRate:      ivaRateGlobal,
             total:        printTotalFinal,
@@ -1320,8 +1476,8 @@ export default function PosCheckoutPage() {
             customer:     { id: clienteCedula || '9999999999', name: customerName || clienteNombre || 'CONSUMIDOR FINAL' },
             items:        itemsToPrint,
             subtotal:     printSubtotal,
-            discount:     discountAmount,
-            discountName: appliedDiscount?.name || null,
+            discount:     totalDescuentoImpresion,
+            discounts:    discountsPrint,
             tax:          nuevoIVAImpresion,
             taxRate:      ivaRateGlobal,
             total:        printTotalFinal,
@@ -1427,7 +1583,7 @@ export default function PosCheckoutPage() {
 
           if (itemsFinales.length > 0) {
             const ordenCompleta = { ...selectedOrder, items: itemsFinales };
-            const discountInfo = appliedDiscount ? { id: appliedDiscount.id, name: appliedDiscount.name, amount: discountAmount } : null;
+            const discountInfo = (appliedDiscount || appliedCouponDiscount) ? { id: appliedDiscount?.id || appliedCouponDiscount?.id, name: appliedDiscount?.name || appliedCouponDiscount?.name, amount: discountAmount + couponDiscountAmount } : null;
             const invoiceData = await emitirFactura(ordenCompleta, clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', 'split', discountInfo, clienteEmail);
             await imprimirTicket(ordenCompleta, totalOrdenConDescuento, 0, invoiceData?.invoice_number, 'split', 'FACTURA FINAL', false);
           }
@@ -1443,7 +1599,7 @@ export default function PosCheckoutPage() {
             amount_paid: totalOrdenConDescuento,
             notes: orderNotes,
             discount_id: appliedDiscount?.id || null,
-            discount_amount: discountAmount
+            discount_amount: discountAmount + couponDiscountAmount
           })
         });
 
@@ -1502,7 +1658,14 @@ export default function PosCheckoutPage() {
       let nombre = clienteNombre?.trim() || 'CONSUMIDOR FINAL';
       let clienteId = await guardarCliente(cedula, nombre, clienteEmail?.trim() || null);
       let invoiceData = null;
-      const discountInfo = appliedDiscount ? { id: appliedDiscount.id, name: appliedDiscount.name, amount: discountAmount, type: appliedDiscount.type, applies_to: appliedDiscount.applies_to } : null;
+      const totalDescuento = discountAmount + couponDiscountAmount;
+      const discountInfo = (appliedDiscount || appliedCouponDiscount) ? {
+        id: appliedDiscount?.id || appliedCouponDiscount?.id,
+        name: [appliedDiscount?.name, appliedCouponDiscount?.name].filter(Boolean).join(' + '),
+        amount: totalDescuento,
+        type: appliedDiscount?.type || appliedCouponDiscount?.type,
+        applies_to: appliedDiscount?.applies_to || appliedCouponDiscount?.applies_to,
+      } : null;
 
       let debeAbrirCajon = false;
 
@@ -1521,7 +1684,7 @@ export default function PosCheckoutPage() {
             customer_document_number: cedula,
             notes: orderNotes,
             discount_id: appliedDiscount?.id || null,
-            discount_amount: discountAmount
+            discount_amount: totalDescuento
           }),
         });
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'cash', discountInfo, clienteEmail);
@@ -1541,7 +1704,7 @@ export default function PosCheckoutPage() {
             customer_document_number: cedula,
             notes: orderNotes,
             discount_id: appliedDiscount?.id || null,
-            discount_amount: discountAmount
+            discount_amount: totalDescuento
           }),
         });
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'card', discountInfo, clienteEmail);
@@ -1561,7 +1724,7 @@ export default function PosCheckoutPage() {
             customer_document_number: cedula,
             notes: orderNotes,
             discount_id: appliedDiscount?.id || null,
-            discount_amount: discountAmount
+            discount_amount: totalDescuento
           }),
         });
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'transfer', discountInfo, clienteEmail);
@@ -1589,7 +1752,7 @@ export default function PosCheckoutPage() {
             customer_document_number: cedula,
             notes: orderNotes,
             discount_id: appliedDiscount?.id || null,
-            discount_amount: discountAmount
+            discount_amount: totalDescuento
           }),
         });
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'mixto', discountInfo, clienteEmail);
@@ -1717,7 +1880,7 @@ export default function PosCheckoutPage() {
                     gap: '8px'
                   }}>
                     {availableDiscounts
-                      .filter(d => d.is_active && isDiscountApplicable(d, getOrderTotal(), selectedOrder?.items || []))
+                      .filter(d => d.is_active && d.type !== 'coupon' && isDiscountApplicable(d, getOrderTotal(), selectedOrder?.items || []))
                       .map(discount => {
                         const isSelected = appliedDiscount?.id === discount.id;
                         const isFPPU = discount.type === 'fixed' && discount.applies_to === 'category' &&
@@ -1734,24 +1897,39 @@ export default function PosCheckoutPage() {
                           <button
                             key={discount.id}
                             onClick={() => {
+                              const hasCoupon = !!appliedCouponRef.current;
+                              const couponAmt = couponDiscountAmount;
+                              const ivaMult = 1 + ivaRateGlobal / 100;
                               if (isSelected) {
+                                manualDiscountRef.current = null;
                                 setAppliedDiscount(null);
                                 setDiscountAmount(0);
                                 setDiscountDetails(null);
-                                setTotalOrdenConDescuento(getOrderTotal());
+                                // Si hay cupón activo, total = total sin IVA + IVA - cupón con IVA
+                                if (hasCoupon && couponAmt > 0) {
+                                  const base = getOrderTotal();
+                                  setTotalOrdenConDescuento(Math.round(Math.max(0, base - couponAmt * ivaMult) * 100) / 100);
+                                } else {
+                                  setTotalOrdenConDescuento(getOrderTotal());
+                                }
                               } else {
                                 const newAmount = calculateDiscountAmountForOrder(discount, getSubtotalSinIVA(), selectedOrder?.items || []);
+                                const details = {
+                                  name: discount.name, type: discount.type,
+                                  applies_to: discount.applies_to, value: discount.value,
+                                  product_name: discount.product_name, category_name: discount.category_name
+                                };
+                                manualDiscountRef.current = { discount, amount: newAmount, details };
                                 setAppliedDiscount(discount);
                                 setDiscountAmount(newAmount);
-                                setDiscountDetails({
-                                  name: discount.name,
-                                  type: discount.type,
-                                  applies_to: discount.applies_to,
-                                  value: discount.value,
-                                  product_name: discount.product_name,
-                                  category_name: discount.category_name
-                                });
+                                setDiscountDetails(details);
                                 recalcularTotalConDescuento(discount, newAmount);
+                                // Si hay cupón activo, restar también el cupón al total auto-descontado
+                                if (hasCoupon && couponAmt > 0) {
+                                  setTotalOrdenConDescuento(prev =>
+                                    Math.round(Math.max(0, prev - couponAmt * ivaMult) * 100) / 100
+                                  );
+                                }
                               }
                             }}
                             style={{
@@ -1776,6 +1954,100 @@ export default function PosCheckoutPage() {
                       })
                     }
                   </div>
+
+                </div>
+              )}
+
+              {/* ─── CUPÓN: input de código (siempre visible en modo normal) ─── */}
+              {!modoDividido && !modoPorCobrar && (
+                <div style={{
+                  background: '#1a1a2e',
+                  border: `1px solid ${appliedCouponRef.current ? '#10b981' : '#334155'}`,
+                  borderRadius: '8px',
+                  padding: '12px',
+                  marginBottom: '12px',
+                }}>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '600' }}>
+                    <FiTag size={13} /> CÓDIGO DE CUPÓN
+                  </div>
+                  {appliedCouponRef.current ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ flex: 1, background: 'rgba(16,185,129,0.12)', border: '1px solid #10b981', borderRadius: '6px', padding: '8px 12px', fontSize: '13px', color: '#10b981', fontWeight: '600' }}>
+                        ✓ {appliedCouponDiscount?.name} — -{fmt(couponDiscountAmount)}
+                      </span>
+                      <button onClick={quitarCupon} style={{ background: '#7f1d1d', border: 'none', borderRadius: '6px', color: '#fca5a5', padding: '8px 12px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                        <FiX size={12} /> Quitar
+                      </button>
+                    </div>
+                  ) : couponPendingSelect ? (
+                    /* ── Selector de ítem(s) dentro de la categoría del cupón ── */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ fontSize: '12px', color: '#f59e0b', fontWeight: '600' }}>
+                        🎯 Cupón "{pendingCoupon?.name}" — selecciona qué ítem(s) reciben el {pendingCoupon?.value}% de descuento:
+                      </div>
+                      {(selectedOrder?.items || [])
+                        .filter(item => String(item.category_id) === String(pendingCoupon?.category_id) && !item.paid)
+                        .map(item => {
+                          const checked = couponSelectedItemIds.includes(item.id);
+                          const base = (Number(item.selling_price) || Number(item.unit_price) || 0) * (Number(item.quantity) || 1);
+                          const descItem = Math.round(base * (Number(pendingCoupon?.value) / 100) * 100) / 100;
+                          return (
+                            <div
+                              key={item.id}
+                              onClick={() => setCouponSelectedItemIds(prev =>
+                                prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
+                              )}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer',
+                                padding: '8px 12px', borderRadius: '6px',
+                                background: checked ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
+                                border: `1px solid ${checked ? '#6366f1' : '#334155'}`,
+                              }}
+                            >
+                              <input type="checkbox" checked={checked} readOnly style={{ accentColor: '#6366f1', width: 16, height: 16, cursor: 'pointer' }} />
+                              <span style={{ flex: 1, fontSize: '13px', color: '#f1f5f9' }}>
+                                {item.quantity}× {item.product_name}
+                              </span>
+                              <span style={{ fontSize: '12px', color: '#94a3b8' }}>{fmt(base)}</span>
+                              {checked && <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '700' }}>-{fmt(descItem)}</span>}
+                            </div>
+                          );
+                        })}
+                      {couponError && <div style={{ color: '#ef4444', fontSize: '11px' }}>{couponError}</div>}
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <button
+                          onClick={confirmarCuponCategoria}
+                          disabled={couponSelectedItemIds.length === 0}
+                          style={{ flex: 1, background: couponSelectedItemIds.length > 0 ? '#6366f1' : '#334155', border: 'none', borderRadius: '6px', color: '#fff', padding: '9px', cursor: couponSelectedItemIds.length > 0 ? 'pointer' : 'not-allowed', fontSize: '13px', fontWeight: '600' }}
+                        >
+                          ✓ Aplicar descuento ({couponSelectedItemIds.length} ítem{couponSelectedItemIds.length !== 1 ? 's' : ''})
+                        </button>
+                        <button
+                          onClick={() => { setCouponPendingSelect(false); setPendingCoupon(null); setCouponSelectedItemIds([]); setCouponError(''); }}
+                          style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: '#94a3b8', padding: '9px 14px', cursor: 'pointer', fontSize: '13px' }}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <input
+                          type="text"
+                          placeholder="Ingrese el código del cupón"
+                          value={couponCodeInput}
+                          onChange={e => { setCouponCodeInput(e.target.value.toUpperCase()); setCouponError(''); }}
+                          onKeyPress={e => e.key === 'Enter' && aplicarCupon()}
+                          style={{ flex: 1, background: '#0f172a', border: `1px solid ${couponError ? '#ef4444' : '#334155'}`, borderRadius: '6px', color: '#f1f5f9', padding: '8px 12px', fontSize: '13px', outline: 'none' }}
+                        />
+                        <button onClick={aplicarCupon} style={{ background: '#6366f1', border: 'none', borderRadius: '6px', color: '#fff', padding: '8px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                          Aplicar
+                        </button>
+                      </div>
+                      {couponError && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '5px' }}>{couponError}</div>}
+                    </>
+                  )}
                 </div>
               )}
 
@@ -1806,10 +2078,16 @@ export default function PosCheckoutPage() {
                       {appliedDiscount && discountAmount > 0 && (
                         <div className="sub-iva-total discount-row">
                           <span>
-                            <FiTag size={12} /> DESCUENTO ({appliedDiscount.name}): 
+                            <FiTag size={12} /> DESCUENTO ({appliedDiscount.name}):
                             {appliedDiscount.type === 'percentage' ? ` ${appliedDiscount.value}%` : ` $${appliedDiscount.value}`}
                           </span>
                           <span style={{ color: '#10b981' }}>-{fmt(discountAmount)}</span>
+                        </div>
+                      )}
+                      {appliedCouponDiscount && couponDiscountAmount > 0 && (
+                        <div className="sub-iva-total discount-row">
+                          <span><FiTag size={12} /> CUPÓN ({appliedCouponDiscount.name})</span>
+                          <span style={{ color: '#10b981' }}>-{fmt(couponDiscountAmount)}</span>
                         </div>
                       )}
                       <div className="sub-iva-total"><span>BASE IMPONIBLE:</span><span>{fmt(nuevaBaseImponible)}</span></div>

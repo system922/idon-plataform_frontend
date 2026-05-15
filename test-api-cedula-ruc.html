@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test API Cédula / RUC</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 4px; color: #f8fafc; }
+    .subtitle { font-size: 0.85rem; color: #94a3b8; margin-bottom: 32px; }
+
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 28px;
+      width: 100%;
+      max-width: 620px;
+      margin-bottom: 20px;
+    }
+    .card h2 { font-size: 0.95rem; color: #94a3b8; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    label { display: block; font-size: 0.82rem; color: #94a3b8; margin-bottom: 6px; }
+    input, textarea {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #f1f5f9;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus { border-color: #6366f1; }
+    textarea { font-family: monospace; font-size: 0.82rem; resize: vertical; }
+
+    .row { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
+    .row > div { flex: 1; }
+    .row > div:last-child { flex: 0 0 auto; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+    .badge-cedula { background: #1d4ed8; color: #bfdbfe; }
+    .badge-ruc    { background: #7c3aed; color: #e9d5ff; }
+    .badge-unknown { background: #374151; color: #9ca3af; }
+
+    button {
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 24px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    button:hover { background: #4f46e5; }
+    button:disabled { background: #475569; cursor: not-allowed; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tab {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .tab.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+
+    .result-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: monospace;
+      font-size: 0.82rem;
+      color: #a5f3fc;
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 80px;
+      max-height: 420px;
+      overflow-y: auto;
+    }
+    .result-box.error { color: #fca5a5; }
+    .result-box.empty { color: #475569; font-style: italic; font-family: inherit; }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .status-pill {
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .status-200 { background: #064e3b; color: #6ee7b7; }
+    .status-4xx { background: #7f1d1d; color: #fca5a5; }
+    .status-5xx { background: #78350f; color: #fde68a; }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .field-item {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .field-item .key { font-size: 0.72rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+    .field-item .val { font-size: 0.95rem; color: #f1f5f9; font-weight: 600; margin-top: 2px; word-break: break-all; }
+
+    .loader {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid #334155;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .endpoint-url {
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: #6366f1;
+      background: #0f172a;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      margin-bottom: 14px;
+      word-break: break-all;
+    }
+    .divider { border: none; border-top: 1px solid #1e293b; margin: 18px 0; }
+  </style>
+</head>
+<body>
+
+  <h1>API Cédula / RUC &mdash; Ecuador</h1>
+  <p class="subtitle">socket-studio.com &bull; Prueba de integración</p>
+
+  <!-- Config card -->
+  <div class="card">
+    <h2>Configuración</h2>
+    <div style="margin-bottom: 14px;">
+      <label>Token JWT</label>
+      <textarea id="token" rows="3">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbXByZXNhIjoiSmVmZmVyc29uIENhZ3VhIiwiaWF0IjoxNzc4ODEwNjUzLCJleHAiOjE4MTAzNjgyNTN9.fSovCEHmzfQy-BS2pXnNSI9M03hwUxM2GWz77Bn7nEU</textarea>
+    </div>
+    <div style="margin-bottom: 14px;">
+      <label>Endpoint Cédula (reemplazar {cedula} con el número)</label>
+      <input id="endpointCedula" type="text" value="https://apicedula.socket-studio.com/consulta-cedula/consulta/{cedula}" />
+    </div>
+    <div>
+      <label>Endpoint RUC (reemplazar {ruc} con el número)</label>
+      <input id="endpointRuc" type="text" value="https://apicedula.socket-studio.com/consulta-ruc/consulta/{ruc}" />
+    </div>
+  </div>
+
+  <!-- Consulta card -->
+  <div class="card">
+    <h2>Consulta</h2>
+
+    <div class="row">
+      <div>
+        <label>Número de documento
+          <span id="docBadge" class="badge badge-unknown">???</span>
+        </label>
+        <input id="docInput" type="text" inputmode="numeric" maxlength="13"
+          placeholder="Ingrese cédula (10) o RUC (13)" oninput="onDocInput(this.value)" />
+      </div>
+      <div>
+        <button id="btnConsultar" onclick="consultar()" disabled>Consultar</button>
+      </div>
+    </div>
+
+    <div id="endpointPreview" class="endpoint-url" style="display:none;"></div>
+
+    <hr class="divider">
+
+    <div class="status-row" id="statusRow" style="display:none;">
+      <span>Respuesta:</span>
+      <span id="statusPill" class="status-pill"></span>
+      <span id="loadingSpinner" style="display:none;"><span class="loader"></span>Consultando...</span>
+    </div>
+
+    <!-- Parsed fields -->
+    <div id="parsedFields" style="display:none;"></div>
+
+    <!-- Raw JSON -->
+    <div id="rawLabel" style="font-size:0.8rem; color:#64748b; margin-bottom:6px; display:none;">JSON completo:</div>
+    <div id="resultBox" class="result-box empty">El resultado aparecerá aquí...</div>
+  </div>
+
+  <!-- History -->
+  <div class="card" id="historyCard" style="display:none;">
+    <h2>Historial <button onclick="clearHistory()" style="padding:4px 12px; font-size:0.75rem; background:#334155; float:right;">Limpiar</button></h2>
+    <div id="historyList" style="display:flex; flex-direction:column; gap:8px; margin-top:12px;"></div>
+  </div>
+
+<script>
+  const history = [];
+
+  function onDocInput(val) {
+    const digits = val.replace(/\D/g, '').slice(0, 13);
+    document.getElementById('docInput').value = digits;
+
+    const badge = document.getElementById('docBadge');
+    const btn = document.getElementById('btnConsultar');
+    const preview = document.getElementById('endpointPreview');
+
+    if (digits.length === 10) {
+      badge.className = 'badge badge-cedula';
+      badge.textContent = 'CÉDULA';
+      btn.disabled = false;
+      preview.style.display = 'block';
+      preview.textContent = buildUrl(digits);
+    } else if (digits.length === 13) {
+      badge.className = 'badge badge-ruc';
+      badge.textContent = 'RUC';
+      btn.disabled = false;
+      preview.style.display = 'block';
+      preview.textContent = buildUrl(digits);
+    } else {
+      badge.className = 'badge badge-unknown';
+      badge.textContent = digits.length > 0 ? `${digits.length} dígitos` : '???';
+      btn.disabled = true;
+      preview.style.display = 'none';
+    }
+  }
+
+  function buildUrl(doc) {
+    const isRuc = doc.length === 13;
+    const template = isRuc
+      ? document.getElementById('endpointRuc').value
+      : document.getElementById('endpointCedula').value;
+    return template.replace(isRuc ? '{ruc}' : '{cedula}', doc);
+  }
+
+  async function consultar() {
+    const doc = document.getElementById('docInput').value.replace(/\D/g, '');
+    const token = document.getElementById('token').value.trim();
+    if (!doc || !token) return;
+
+    const url = buildUrl(doc);
+    const isRuc = doc.length === 13;
+
+    // UI loading
+    document.getElementById('statusRow').style.display = 'flex';
+    document.getElementById('loadingSpinner').style.display = 'inline';
+    document.getElementById('statusPill').textContent = '';
+    document.getElementById('statusPill').className = 'status-pill';
+    document.getElementById('resultBox').className = 'result-box empty';
+    document.getElementById('resultBox').textContent = 'Consultando...';
+    document.getElementById('parsedFields').style.display = 'none';
+    document.getElementById('rawLabel').style.display = 'none';
+    document.getElementById('btnConsultar').disabled = true;
+
+    const startTime = Date.now();
+    let status = 0, data = null, err = null;
+
+    try {
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      status = res.status;
+      try { data = await res.json(); } catch { data = await res.text(); }
+    } catch (e) {
+      err = e.message;
+    }
+
+    const elapsed = Date.now() - startTime;
+
+    // Status pill
+    const pill = document.getElementById('statusPill');
+    pill.textContent = err ? 'Error de red' : `HTTP ${status}`;
+    pill.className = 'status-pill ' + (err ? 'status-4xx' : status < 300 ? 'status-200' : status < 500 ? 'status-4xx' : 'status-5xx');
+
+    // Result
+    const box = document.getElementById('resultBox');
+    if (err) {
+      box.className = 'result-box error';
+      box.textContent = `Error: ${err}`;
+    } else {
+      box.className = 'result-box';
+      box.textContent = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data);
+      document.getElementById('rawLabel').style.display = 'block';
+      if (typeof data === 'object' && data !== null) renderParsed(data, isRuc);
+    }
+
+    document.getElementById('loadingSpinner').style.display = 'none';
+    document.getElementById('btnConsultar').disabled = false;
+
+    // History
+    addHistory(doc, isRuc, status, elapsed, data, err);
+  }
+
+  function renderParsed(data, isRuc) {
+    const container = document.getElementById('parsedFields');
+    container.innerHTML = '';
+    container.style.display = 'block';
+
+    // Flat the object for display
+    const flat = flattenObj(data);
+    const grid = document.createElement('div');
+    grid.className = 'field-grid';
+
+    Object.entries(flat).forEach(([k, v]) => {
+      const item = document.createElement('div');
+      item.className = 'field-item';
+      item.innerHTML = `<div class="key">${k}</div><div class="val">${v !== null && v !== undefined ? v : '<span style="color:#475569">null</span>'}</div>`;
+      grid.appendChild(item);
+    });
+
+    container.appendChild(grid);
+    const div = document.createElement('hr');
+    div.className = 'divider';
+    container.appendChild(div);
+  }
+
+  function flattenObj(obj, prefix = '') {
+    const result = {};
+    for (const [k, v] of Object.entries(obj)) {
+      const key = prefix ? `${prefix}.${k}` : k;
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        Object.assign(result, flattenObj(v, key));
+      } else if (Array.isArray(v)) {
+        result[key] = `[${v.length} items]`;
+      } else {
+        result[key] = v;
+      }
+    }
+    return result;
+  }
+
+  function addHistory(doc, isRuc, status, elapsed, data, err) {
+    history.unshift({ doc, isRuc, status, elapsed, data, err, ts: new Date().toLocaleTimeString() });
+    if (history.length > 10) history.pop();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const card = document.getElementById('historyCard');
+    const list = document.getElementById('historyList');
+    card.style.display = 'block';
+    list.innerHTML = '';
+    history.forEach((h, i) => {
+      const el = document.createElement('div');
+      el.style.cssText = 'background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;';
+      el.innerHTML = `
+        <span class="badge ${h.isRuc ? 'badge-ruc' : 'badge-cedula'}">${h.isRuc ? 'RUC' : 'CED'}</span>
+        <span style="font-family:monospace;font-size:0.9rem;color:#f1f5f9;">${h.doc}</span>
+        <span class="status-pill ${h.err ? 'status-4xx' : h.status < 300 ? 'status-200' : 'status-4xx'}" style="font-size:0.72rem;">${h.err ? 'Error' : h.status}</span>
+        <span style="color:#64748b;font-size:0.78rem;">${h.elapsed}ms</span>
+        <span style="color:#64748b;font-size:0.78rem;margin-left:auto;">${h.ts}</span>
+      `;
+      el.onclick = () => {
+        document.getElementById('docInput').value = h.doc;
+        onDocInput(h.doc);
+        document.getElementById('resultBox').className = h.err ? 'result-box error' : 'result-box';
+        document.getElementById('resultBox').textContent = h.err
+          ? `Error: ${h.err}`
+          : (typeof h.data === 'object' ? JSON.stringify(h.data, null, 2) : String(h.data));
+        document.getElementById('rawLabel').style.display = 'block';
+        if (typeof h.data === 'object' && h.data !== null) renderParsed(h.data, h.isRuc);
+        const pill = document.getElementById('statusPill');
+        pill.textContent = h.err ? 'Error de red' : `HTTP ${h.status}`;
+        pill.className = 'status-pill ' + (h.err ? 'status-4xx' : h.status < 300 ? 'status-200' : 'status-4xx');
+        document.getElementById('statusRow').style.display = 'flex';
+      };
+      list.appendChild(el);
+    });
+  }
+
+  function clearHistory() {
+    history.length = 0;
+    document.getElementById('historyCard').style.display = 'none';
+  }
+
+  // Allow Enter key to trigger search
+  document.getElementById('docInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter' && !document.getElementById('btnConsultar').disabled) consultar();
+  });
+</script>
+</body>
+</html>
