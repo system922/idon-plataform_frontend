@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useAlert } from '../../components/ConfirmContext';
 import { Plus, Edit2, Trash2, X, Search, RefreshCw, BookOpen, ChevronRight, ChevronDown, Minus } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 
@@ -126,7 +127,7 @@ function IngredientsPanel({ recipe, onClose }) {
       setShowAdd(false);
       load();
     } catch (e) {
-      alert(e.message);
+      await alert.error(e.message);
     } finally {
       setSaving(false);
     }
@@ -218,6 +219,7 @@ function IngredientsPanel({ recipe, onClose }) {
 
 export default function InventoryRecipesPage() {
   const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [recipes, setRecipes]         = useState([]);
   const [categories, setCategories]   = useState([]);
   const [loading, setLoading]         = useState(true);
@@ -259,7 +261,7 @@ export default function InventoryRecipesPage() {
       setShowModal(false);
       setEditing(null);
     } catch (e) {
-      alert(e.message);
+      await alert.error(e.message);
     } finally {
       setSaving(false);
     }

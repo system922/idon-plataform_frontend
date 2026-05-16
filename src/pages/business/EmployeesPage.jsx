@@ -11,6 +11,7 @@ import {
 import '../../styles/EmployeesManagePage.css';
 
 import { fetchWithAuth } from '../../config/apiBase';
+import { useAlert } from '../../components/ConfirmContext';
 
 /* ================= CONFIRM DELETE ================= */
 function ConfirmDeleteModal({ employee, onClose, onConfirm, loading }) {
@@ -168,6 +169,8 @@ export default function EmployeesManagePage() {
 
   const [deleteModal, setDeleteModal] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  
+  const alert = useAlert();
 
   useEffect(() => {
     fetchEmployees();
@@ -208,7 +211,7 @@ export default function EmployeesManagePage() {
       fetchEmployees();
 
     } catch {
-      alert('Error guardando');
+      await alert.error('Error guardando');
     } finally {
       setSaving(false);
     }
@@ -227,7 +230,7 @@ export default function EmployeesManagePage() {
       fetchEmployees();
 
     } catch {
-      alert('Error al eliminar');
+      await alert.error('Error al eliminar');
     } finally {
       setDeleting(false);
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useAlert } from '../../components/ConfirmContext';
 import { Plus, Edit2, Trash2, X, Search, RefreshCw, Truck } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 
@@ -111,6 +112,7 @@ function SupplierModal({ supplier, onClose, onSave, saving }) {
 
 export default function InventorySuppliersPage() {
   const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [saving, setSaving]       = useState(false);
@@ -145,7 +147,7 @@ export default function InventorySuppliersPage() {
       setShowModal(false);
       setEditing(null);
     } catch (e) {
-      alert(e.message);
+      await alert.error(e.message);
     } finally {
       setSaving(false);
     }
@@ -158,7 +160,7 @@ export default function InventorySuppliersPage() {
       if (!res.ok) throw new Error('Error al eliminar');
       await load();
     } catch (e) {
-      alert(e.message);
+      await alert.error(e.message);
     }
   };
 

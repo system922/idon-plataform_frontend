@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useAlert } from '../../components/ConfirmContext';
 import {
   FiBox, FiPlus, FiEdit2, FiTrash2, FiCheck, FiX,
   FiRefreshCw, FiSettings, FiDollarSign,
@@ -12,6 +13,7 @@ const Lbl = ({ children }) => <label style={{ display: 'block', marginBottom: 5,
 
 export default function AdminModulos() {
   const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
@@ -38,7 +40,7 @@ export default function AdminModulos() {
       await adminApiService.delete(`/admin/modules/${id}`);
       load();
     } catch (e) {
-      alert('Error: ' + e.message);
+      await alert.error('Error: ' + e.message);
     }
   };
 
@@ -137,7 +139,7 @@ function ModuloModal({ item, onClose, onSaved }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.code || !form.name) return alert('Código y nombre son requeridos');
+    if (!form.code || !form.name) return await alert.error('Código y nombre son requeridos');
     setSaving(true);
     try {
       if (item) {
@@ -147,7 +149,7 @@ function ModuloModal({ item, onClose, onSaved }) {
       }
       onSaved(); onClose();
     } catch (e) {
-      alert('Error: ' + e.message);
+      await alert.error('Error: ' + e.message);
     } finally {
       setSaving(false);
     }

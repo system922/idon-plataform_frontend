@@ -11,6 +11,54 @@ export const useConfirmContext = () => {
   return context;
 };
 
+// Hook para mostrar alertas simples (sin confirmación)
+export const useAlert = () => {
+  const { showConfirm } = useConfirmContext();
+  
+  return {
+    info: (message, title = 'Información') => {
+      return showConfirm({
+        message,
+        title,
+        danger: false,
+        confirmText: 'Aceptar',
+        cancelText: null,
+        onConfirm: () => {},
+      });
+    },
+    success: (message, title = '✅ Éxito') => {
+      return showConfirm({
+        message,
+        title,
+        danger: false,
+        confirmText: 'Aceptar',
+        cancelText: null,
+        onConfirm: () => {},
+      });
+    },
+    error: (message, title = '❌ Error') => {
+      return showConfirm({
+        message,
+        title,
+        danger: true,
+        confirmText: 'Aceptar',
+        cancelText: null,
+        onConfirm: () => {},
+      });
+    },
+    warning: (message, title = '⚠️ Advertencia') => {
+      return showConfirm({
+        message,
+        title,
+        danger: true,
+        confirmText: 'Aceptar',
+        cancelText: null,
+        onConfirm: () => {},
+      });
+    },
+  };
+};
+
 export const ConfirmProvider = ({ children }) => {
   const { isOpen, open, close, confirm, config } = useConfirm();
 
@@ -40,6 +88,7 @@ export const ConfirmProvider = ({ children }) => {
         type={config.type}
         confirmText={config.confirmText}
         cancelText={config.cancelText}
+        danger={config.danger}
         onConfirm={confirm}
         onCancel={close}
       />

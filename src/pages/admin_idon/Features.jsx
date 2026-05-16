@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useAlert } from '../../components/ConfirmContext';
 import { FiStar, FiPlus, FiEdit2, FiTrash2, FiCheck, FiFilter, FiRefreshCw } from 'react-icons/fi';
 import { adminApiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
@@ -9,6 +10,7 @@ const Lbl = ({ children }) => <label style={{ display: 'block', marginBottom: 5,
 
 export default function Features() {
   const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [features,  setFeatures]  = useState([]);
   const [modules,   setModules]   = useState([]);
   const [loading,   setLoading]   = useState(true);
@@ -41,7 +43,7 @@ export default function Features() {
       await adminApiService.delete(`/admin/features/${id}`);
       load();
     } catch (e) {
-      alert('Error: ' + e.message);
+      await alert.error('Error: ' + e.message);
     }
   };
 
@@ -139,7 +141,7 @@ function FeatureModal({ item, modules, onClose, onSaved, defaultModuleId }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.code || !form.name || !form.module_id) return alert('Código, nombre y módulo son requeridos');
+    if (!form.code || !form.name || !form.module_id) return await alert.error('Código, nombre y módulo son requeridos');
     setSaving(true);
     try {
       if (item) {
@@ -149,7 +151,7 @@ function FeatureModal({ item, modules, onClose, onSaved, defaultModuleId }) {
       }
       onSaved(); onClose();
     } catch (e) {
-      alert('Error: ' + e.message);
+      await alert.error('Error: ' + e.message);
     } finally {
       setSaving(false);
     }

@@ -67,10 +67,83 @@ export default function LoginPage({ onLogin }) {
   ];
   const colors = ['#ff8c42', '#8CB79B', '#FF6B9D', '#00D4FF'];
 
+  // Features dinámicas que cambian según el logo
+  const logoFeatures = [
+    [
+      { Icon: FiTrendingUp,  label: 'Gestión integral de negocios' },
+      { Icon: FiShield,      label: 'Seguridad empresarial' },
+      { Icon: FiBarChart2,   label: 'Analytics en tiempo real' }
+    ],
+    [
+      { Icon: FiBarChart2,   label: 'Reportes detallados' },
+      { Icon: FiBriefcase,   label: 'Administración de nómina' },
+      { Icon: FiTrendingUp,  label: 'Crecimiento exponencial' }
+    ],
+    [
+      { Icon: FiShield,      label: 'Datos 100% seguros' },
+      { Icon: FiCheckCircle, label: 'Facturación automática' },
+      { Icon: FiBarChart2,   label: 'Decisiones basadas en datos' }
+    ]
+  ];
+
+  // Slides de propuesta de valor
+  const vpSlides = [
+    {
+      type: 'problem',
+      question: '¿AÚN HACES TODOS LOS PROCESOS DE TU NEGOCIO A MANO?',
+      answer: 'Eso se acabó con IDON'
+    },
+    {
+      type: 'features',
+      title: 'TODO EN UNA SOLA PLATAFORMA',
+      items: [
+        'POS Retail',
+        'POS Restaurante',
+        'Inventario',
+        'Facturación SRI',
+        'Colaboradores',
+        'Reportes & CRM',
+        'Email Marketing',
+        'Cierre de Caja'
+      ]
+    },
+    {
+      type: 'ctas',
+      buttons: [
+        { text: 'DEMO GRATUITO', type: 'primary' },
+      ],
+      subtext: 'sin tarjeta de crédito o débito',
+      benefits: [
+        'Facturas Electrónicas Ilimitadas',
+        'Todo en la nube',
+        'Configura en menos de 1 hora',
+        'Soporte al 100%'
+      ],
+    },
+    {
+      type: 'faq',
+      title: 'PREGUNTAS FRECUENTES',
+      items: [
+        {
+          q: '¿Necesito instalar algo?',
+          a: 'No. IDON es 100% en la nube. Funciona desde cualquier navegador, en computadora, tablet o celular.'
+        },
+        {
+          q: '¿Funciona con la facturación electrónica del SRI?',
+          a: 'Sí. IDON está integrado con el SRI para Ecuador. Genera facturas y notas de crédito válidas automáticamente.'
+        }
+      ]
+    }
+  ];
+
   const [logoIndex, setLogoIndex] = useState(0);
   const [logoColor, setLogoColor] = useState(0);
   const [logoOpacity, setLogoOpacity] = useState(1);
   const [businessLogo, setBusinessLogo] = useState(null);
+
+  /* ─── Value Proposition Slides ─── */
+  const [vpSlideIndex, setVpSlideIndex] = useState(0);
+  const [vpSlideOpacity, setVpSlideOpacity] = useState(1);
 
   useEffect(() => {
     return () => {
@@ -90,12 +163,15 @@ export default function LoginPage({ onLogin }) {
 
   useEffect(() => {
     const id = setInterval(() => {
+      // Fade out más suave (1000ms en lugar de inmediato)
       setLogoOpacity(0);
       setTimeout(() => {
+        // Cambiar logo a mitad de la transición
         setLogoIndex(prev => (prev + 1) % logos.length);
+        // Fade in suave
         setLogoOpacity(1);
-      }, 600);
-    }, 4000);
+      }, 800); // Esperar más tiempo para transición suave
+    }, 5500); // Aumentado de 4000 a 5500 para dar más tiempo
     return () => clearInterval(id);
   }, []);
 
@@ -105,6 +181,18 @@ export default function LoginPage({ onLogin }) {
     }, 2500);
     return () => clearInterval(id);
   }, []);
+
+  /* ─── VP Slides Rotation (7 seconds) ─── */
+  useEffect(() => {
+    const id = setInterval(() => {
+      setVpSlideOpacity(0);
+      setTimeout(() => {
+        setVpSlideIndex(prev => (prev + 1) % vpSlides.length);
+        setVpSlideOpacity(1);
+      }, 800);
+    }, 7000);
+    return () => clearInterval(id);
+  }, [vpSlides.length]);
 
   useEffect(() => {
     const saved = localStorage.getItem('business_logo') || SYSTEM_LOGO_URL;
@@ -510,10 +598,11 @@ export default function LoginPage({ onLogin }) {
               src={logos[logoIndex]}
               alt="IDON Logo"
               className="animated-logo"
+              key={`logo-${logoIndex}`}
               style={{
                 opacity: logoOpacity,
                 filter: `drop-shadow(0 0 28px ${currentColor}cc) drop-shadow(0 0 60px ${currentColor}66)`,
-                transition: 'opacity .6s ease, filter 1.2s ease'
+                transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1), filter 1.5s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1)'
               }}
             />
           </div>
@@ -523,17 +612,86 @@ export default function LoginPage({ onLogin }) {
             <div className="brand-tagline">Plataforma de Gestión Multi-Negocios</div>
           </div>
 
-          <div className="feature-list">
-            {[
-              { Icon: FiTrendingUp,  label: 'Gestión integral de negocios' },
-              { Icon: FiShield,      label: 'Seguridad empresarial' },
-              { Icon: FiBarChart2,   label: 'Analytics en tiempo real' }
-            ].map(({ Icon, label }) => (
-              <div className="feature-item" key={label}>
-                <div className="feature-icon-wrap"><Icon size={16} /></div>
-                <span>{label}</span>
+          {/* ─── VALUE PROPOSITION SLIDES ─── */}
+          <div className="value-proposition" key={`vp-${vpSlideIndex}`} style={{
+            opacity: vpSlideOpacity,
+            transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}>
+            {vpSlides[vpSlideIndex].type === 'problem' && (
+              <div className="vp-slide vp-slide-problem">
+                <div className="vp-problem-question">
+                  {vpSlides[vpSlideIndex].question}
+                </div>
+                <div className="vp-problem-answer">
+                  {vpSlides[vpSlideIndex].answer}
+                </div>
               </div>
-            ))}
+            )}
+
+            {vpSlides[vpSlideIndex].type === 'features' && (
+              <div className="vp-slide vp-slide-features">
+                <div className="vp-features-title">
+                  {vpSlides[vpSlideIndex].title}
+                </div>
+                <div className="vp-features-grid">
+                  {vpSlides[vpSlideIndex].items.map((item, idx) => (
+                    <div key={idx} className="vp-features-item" style={{
+                      animation: `slideInFeature 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) ${0.1 + idx * 0.1}s both`
+                    }}>
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {vpSlides[vpSlideIndex].type === 'ctas' && (
+              <div className="vp-slide vp-slide-ctas">
+                <div className="vp-ctas-buttons">
+                  {vpSlides[vpSlideIndex].buttons.map((btn, idx) => (
+                    <button 
+                      key={idx}
+                      className={`vp-cta-btn vp-cta-${btn.type}`}
+                      style={{
+                        animation: `slideInFeature 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${0.2 + idx * 0.2}s both`
+                      }}
+                    >
+                      {btn.text}
+                    </button>
+                  ))}
+                </div>
+                <div className="vp-ctas-subtext">
+                  {vpSlides[vpSlideIndex].subtext}
+                </div>
+                <div className="vp-ctas-benefits">
+                  {vpSlides[vpSlideIndex].benefits.map((benefit, idx) => (
+                    <div key={idx} className="vp-ctas-benefit" style={{
+                      animation: `slideInFeature 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) ${0.6 + idx * 0.1}s both`
+                    }}>
+                      {benefit}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {vpSlides[vpSlideIndex].type === 'faq' && (
+              <div className="vp-slide vp-slide-faq">
+                <div className="vp-faq-title">
+                  {vpSlides[vpSlideIndex].title}
+                </div>
+                <div className="vp-faq-items">
+                  {vpSlides[vpSlideIndex].items.map((item, idx) => (
+                    <div key={idx} className="vp-faq-item" style={{
+                      animation: `slideInFeature 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) ${0.1 + idx * 0.2}s both`
+                    }}>
+                      <div className="vp-faq-question">{item.q}</div>
+                      <div className="vp-faq-answer">{item.a}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="color-indicators">

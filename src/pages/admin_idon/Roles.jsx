@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useAlert } from '../../components/ConfirmContext';
 import {
   FiLock, FiPlus, FiEdit2, FiTrash2, FiCheck, FiRefreshCw,
   FiChevronDown, FiChevronRight, FiPackage, FiBriefcase, FiUsers
@@ -59,6 +60,7 @@ function PermsSummary({ permissions, modules }) {
 ════════════════════════════════════════════════════════════ */
 export default function Roles() {
   const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [businesses,       setBusinesses]      = useState([]);
   const [selectedBiz,      setSelectedBiz]     = useState(null);  // { id, name, slug, type }
   const [roles,            setRoles]           = useState([]);
@@ -98,7 +100,7 @@ export default function Roles() {
     try {
       await apiService.delete(`/admin/tenant-roles/${id}?businessId=${selectedBiz.id}`);
       loadRoles();
-    } catch (e) { alert('Error: ' + e.message); }
+    } catch (e) { await alert.error('Error: ' + e.message); }
   };
 
   return (
@@ -296,7 +298,7 @@ function RolModal({ item, modules, businessId, onClose, onSaved }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name) return alert('El nombre es requerido');
+    if (!form.name) return await alert.error('El nombre es requerido');
     setSaving(true);
     try {
       const payload = { businessId, ...form };
@@ -304,7 +306,7 @@ function RolModal({ item, modules, businessId, onClose, onSaved }) {
       else       await apiService.post('/admin/tenant-roles', payload);
       onSaved();
       onClose();
-    } catch (e) { alert('Error: ' + e.message); }
+    } catch (e) { await alert.error('Error: ' + e.message); }
     finally { setSaving(false); }
   };
 

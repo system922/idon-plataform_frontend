@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useAlert } from '../../components/ConfirmContext';
 import {
   FiPlus, FiEdit, FiTrash2, FiX, FiCheck, FiLoader,
   FiBox, FiStar, FiAlertCircle
@@ -9,6 +10,7 @@ import '../../styles/AdminPages.css';
 
 export default function AdminTemplatesPage() {
   const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [templates, setTemplates] = useState([]);
   const [businessTypes, setBusinessTypes] = useState([]);
   const [allModules, setAllModules] = useState([]);
@@ -174,7 +176,7 @@ export default function AdminTemplatesPage() {
       loadData();
     } catch (error) {
 
-      alert('Error al eliminar la plantilla');
+      await alert.error('Error al eliminar la plantilla');
     }
   };
 

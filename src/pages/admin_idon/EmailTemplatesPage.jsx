@@ -3,6 +3,7 @@ import {
   FiMail, FiPlus, FiEdit2, FiTrash2, FiRefreshCw, FiEye, FiCode,
 } from 'react-icons/fi';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useAlert } from '../../components/ConfirmContext';
 import { adminApiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
 
@@ -17,6 +18,7 @@ const colorFor = (type, i) => TYPE_COLORS[type] || PALETTE[i % PALETTE.length];
 
 export default function EmailTemplatesPage() {
   const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [templates, setTemplates] = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [editModal, setEditModal] = useState(null); // null | 'new' | template
@@ -43,7 +45,7 @@ export default function EmailTemplatesPage() {
       await adminApiService.delete(`/admin/email-templates/${type}`);
       await load();
     } catch (e) {
-      alert('Error: ' + e.message);
+      await alert.error('Error: ' + e.message);
     } finally {
       setDeleting(null);
     }
@@ -56,7 +58,7 @@ export default function EmailTemplatesPage() {
       });
       await load();
     } catch (e) {
-      alert('Error: ' + e.message);
+      await alert.error('Error: ' + e.message);
     }
   };
 

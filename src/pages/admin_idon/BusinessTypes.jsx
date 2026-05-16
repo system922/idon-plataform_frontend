@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useAlert } from '../../components/ConfirmContext';
 import {
   FiBriefcase, FiPlus, FiEdit2, FiTrash2, FiCheck,
   FiRefreshCw, FiX,
@@ -20,6 +21,7 @@ const Lbl = ({ children }) => (
 
 export default function BusinessTypes() {
   const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [types,   setTypes]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
@@ -46,7 +48,7 @@ export default function BusinessTypes() {
       await adminApiService.delete(`/admin/business-types/${id}`);
       load();
     } catch (e) {
-      alert('Error: ' + e.message);
+      await alert.error('Error: ' + e.message);
     }
   };
 
@@ -169,7 +171,7 @@ function BusinessTypeModal({ item, onClose, onSaved }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.code || !form.name) return alert('Código y nombre son requeridos');
+    if (!form.code || !form.name) return await alert.error('Código y nombre son requeridos');
     setSaving(true);
     try {
       if (item) {
@@ -180,7 +182,7 @@ function BusinessTypeModal({ item, onClose, onSaved }) {
       onSaved();
       onClose();
     } catch (e) {
-      alert('Error: ' + e.message);
+      await alert.error('Error: ' + e.message);
     } finally {
       setSaving(false);
     }

@@ -1,3 +1,18 @@
+/* ── Reset color para fondo blanco dentro de tema oscuro ──── */
+.einv-table-container {
+  color: #1e293b;
+}
+
+.einv-table th,
+.einv-table td {
+  color: inherit;
+}
+
+.einv-search-box,
+.einv-date-filter {
+  color: #1e293b;
+}
+
 /* ── Barra de búsqueda / filtros ─────────────────────────── */
 .einv-filter-bar {
   display: flex;

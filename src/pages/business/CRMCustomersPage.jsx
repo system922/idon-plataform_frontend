@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useAlert } from '../../components/ConfirmContext';
 import { 
   Plus, Edit2, Trash2, X, Search, RefreshCw, 
   Mail, Phone, CreditCard, ChevronLeft, ChevronRight,
@@ -155,6 +156,7 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
 // Componente principal
 export default function CrmCustomers() {
   const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

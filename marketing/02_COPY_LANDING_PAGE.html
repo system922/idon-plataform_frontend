@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IDON — Copy Landing Page</title>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0a0a0a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px;
+      gap: 20px;
+      color: #333;
+    }
+
+    .guide {
+      background: #1a1a1a;
+      color: #999;
+      border-left: 4px solid #f07f5a;
+      border-radius: 8px;
+      padding: 16px 20px;
+      width: 100%;
+      max-width: 1200px;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    .guide strong { color: #f07f5a; font-weight: 600; }
+    .guide p { margin: 0 0 8px 0; }
+    .guide p:last-child { margin: 0; }
+
+    /* ── Control Panel ── */
+    .control-panel {
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 20px;
+      width: 100%;
+      max-width: 1200px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .input-group label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-group input[type="text"],
+    .input-group input[type="url"] {
+      padding: 10px 12px;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background: #0a0a0a;
+      color: #fff;
+      font-size: 13px;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    .input-group input[type="text"]:focus,
+    .input-group input[type="url"]:focus {
+      outline: none;
+      border-color: #f07f5a;
+      background: #111;
+    }
+
+    .input-group input[type="file"] {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .input-group input[type="file"]::file-selector-button {
+      background: #f07f5a;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .input-group input[type="file"]::file-selector-button:hover {
+      background: #e66a45;
+    }
+
+    .img-preview {
+      width: 80px;
+      height: 80px;
+      background: #222;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #666;
+      margin-top: 8px;
+      overflow: hidden;
+      border: 1px dashed #333;
+    }
+
+    .img-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* ── Botones de descarga ── */
+    .download-bar {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .btn-download {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      transition: all 0.2s;
+    }
+
+    .btn-download:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .btn-download:active { transform: translateY(0); }
+
+    .btn-svg  { background: #f07f5a; color: #fff; }
+    .btn-png  { background: #2d9cdb; color: #fff; }
+    .btn-pdf  { background: #e74c3c; color: #fff; }
+    .btn-print { background: #27ae60; color: #fff; }
+
+    .btn-download svg {
+      width: 16px; height: 16px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      fill: none;
+      flex-shrink: 0;
+    }
+
+    #status {
+      font-size: 12px;
+      color: #999;
+      text-align: center;
+      min-height: 18px;
+      max-width: 1200px;
+      width: 100%;
+    }
+
+    /* ══════════════════════════════
+       LANDING PAGE — A4 (210 × 297 mm)
+       ══════════════════════════════ */
+    .page {
+      width: 210mm;
+      background: #ffffff;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      margin-bottom: 40px;
+    }
+
+    /* ═══ HERO SECTION ═══ */
+    .hero {
+      background: linear-gradient(135deg, #032703 0%, #064d06 100%);
+      color: #ffffff;
+      padding: 60px 40px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -100px; right: -100px;
+      width: 300px; height: 300px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; left: -80px;
+      width: 200px; height: 200px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-logo-image {
+      max-width: 100px;
+      height: auto;
+      margin-bottom: 20px;
+      opacity: 0.9;
+    }
+
+    .hero h1 {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.3;
+      margin-bottom: 16px;
+    }
+
+    .hero p {
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 28px;
+      opacity: 0.95;
+    }
+
+    .cta-group {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .cta-primary, .cta-secondary {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.2s;
+    }
+
+    .cta-primary {
+      background: #f07f5a;
+      color: #fff;
+    }
+
+    .cta-primary:hover {
+      background: #e66a45;
+    }
+
+    .cta-secondary {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      border: 2px solid #fff;
+    }
+
+    .cta-secondary:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .trust-indicators {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .trust-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .trust-indicator::before {
+      content: '✓';
+      color: #4ade80;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    /* ═══ PROBLEMA SECTION ═══ */
+    .problem-section {
+      background: #f5f5f5;
+      padding: 50px 40px;
+    }
+
+    .problem-section h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #032703;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .pain-points {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .pain-point {
+      background: #fff;
+      padding: 16px 20px;
+      border-left: 4px solid #f07f5a;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .problem-close {
+      background: #032703;
+      color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* ═══ SOLUCIÓN SECTION ═══ */
+    .solution-section {
+      padding: 50px 40px;
+      background: #fff;
+    }
+
+    .solution-section h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #032703;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .module-card {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      transition: all 0.3s;
+    }
+
+    .module-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      border-color: #f07f5a;
+    }
+
+    .module-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+
+    .module-card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #032703;
+      margin-bottom: 8px;
+    }
+
+    .module-card p {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    /* ═══ PARA QUIÉN ES SECTION ═══ */
+    .for-whom-section {
+      background: #f5f5f5;
+      padding: 50px 40px;
+    }
+
+    .for-whom-section h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #032703;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .business-types {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .business-type {
+      background: #fff;
+      padding: 14px 18px;
+      border-radius: 6px;
+      border-left: 3px solid #2d9cdb;
+      font-size: 13px;
+      color: #333;
+      line-height: 1.5;
+    }
+
+    .business-type strong {
+      color: #032703;
+      font-weight: 700;
+    }
+
+    /* ═══ TESTIMONIALS SECTION ═══ */
+    .testimonials-section {
+      padding: 50px 40px;
+      background: #fff;
+    }
+
+    .testimonials-section h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #032703;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .testimonial-card {
+      background: #f5f5f5;
+      padding: 24px;
+      border-radius: 8px;
+      border-left: 4px solid #f07f5a;
+    }
+
+    .testimonial-quote {
+      font-size: 13px;
+      color: #333;
+      font-style: italic;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .testimonial-author {
+      font-size: 12px;
+      color: #032703;
+      font-weight: 700;
+    }
+
+    /* ═══ FAQ SECTION ═══ */
+    .faq-section {
+      background: #f5f5f5;
+      padding: 50px 40px;
+    }
+
+    .faq-section h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #032703;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .faq-item {
+      background: #fff;
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border-left: 3px solid #27ae60;
+    }
+
+    .faq-question {
+      font-size: 13px;
+      font-weight: 700;
+      color: #032703;
+      margin-bottom: 8px;
+    }
+
+    .faq-answer {
+      font-size: 12px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    /* ═══ FOOTER CTA ═══ */
+    .footer-cta {
+      background: linear-gradient(135deg, #032703 0%, #064d06 100%);
+      color: #fff;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .footer-cta h2 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .footer-cta p {
+      font-size: 14px;
+      margin-bottom: 20px;
+      opacity: 0.95;
+    }
+
+    .footer-cta .cta-primary {
+      background: #f07f5a;
+      color: #fff;
+      padding: 14px 32px;
+    }
+
+    /* ═══ Media Query ═══ */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .control-panel, .download-bar, .guide, #status { display: none; }
+      .page { width: 100%; margin: 0; box-shadow: none; }
+    }
+
+    @media (max-width: 768px) {
+      .modules-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .hero {
+        padding: 40px 24px;
+      }
+
+      .hero h1 {
+        font-size: 24px;
+      }
+
+      .problem-section,
+      .solution-section,
+      .for-whom-section,
+      .testimonials-section,
+      .faq-section {
+        padding: 40px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="guide">
+    <strong>📋 Guía de uso:</strong>
+    <p>1. Carga tu logo usando el botón "Seleccionar archivo" o ingresa una URL de imagen</p>
+    <p>2. La imagen se mostrará en la sección HERO de la landing page</p>
+    <p>3. Usa los botones de descarga para exportar (PNG, SVG, Imprimir)</p>
+  </div>
+
+  <div class="control-panel">
+    <div class="input-group">
+      <label for="logoFile">📸 Carga tu logo (archivo)</label>
+      <input type="file" id="logoFile" accept="image/*">
+      <div class="img-preview" id="logoPreview">Sin imagen</div>
+    </div>
+    
+    <div class="input-group">
+      <label for="logoUrl">🔗 O ingresa URL de imagen</label>
+      <input type="url" id="logoUrl" placeholder="https://ejemplo.com/logo.png">
+    </div>
+  </div>
+
+  <div class="download-bar">
+    <button class="btn-download btn-png" onclick="downloadPNG()">
+      <svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      Descargar PNG
+    </button>
+    <button class="btn-download btn-pdf" onclick="downloadPDF()">
+      <svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+      Descargar PDF
+    </button>
+    <button class="btn-download btn-print" onclick="printPage()">
+      <svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Imprimir
+    </button>
+  </div>
+
+  <div id="status"></div>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- LANDING PAGE A4                                          -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div id="pageContent" class="page">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-content">
+        <img id="heroLogo" class="hero-logo-image" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23fff' opacity='0.3'/%3E%3C/svg%3E" alt="Logo">
+        
+        <h1>Gestiona tu negocio completo desde un solo lugar</h1>
+        
+        <p>POS, inventario, empleados, facturación electrónica, CRM y reportes — todo integrado, sin complicaciones.</p>
+        
+        <div class="cta-group">
+          <button class="cta-primary">Probar gratis 14 días</button>
+          <button class="cta-secondary">Ver demo en vivo</button>
+        </div>
+        
+        <div class="trust-indicators">
+          <div class="trust-indicator">Sin contrato de permanencia</div>
+          <div class="trust-indicator">Soporte en español</div>
+          <div class="trust-indicator">Configuración en menos de 1 hora</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROBLEMA -->
+    <div class="problem-section">
+      <h2>¿Tu negocio sigue funcionando con papel, Excel o apps que no se hablan entre sí?</h2>
+      
+      <div class="pain-points">
+        <div class="pain-point">💸 Pierdes tiempo cuadrando la caja manualmente cada noche</div>
+        <div class="pain-point">📦 No sabes qué productos tienes en stock hasta que se te agotan</div>
+        <div class="pain-point">👥 Tus empleados hacen cosas mal y no tienes cómo comprobarlo</div>
+        <div class="pain-point">🧾 La facturación electrónica te da dolores de cabeza</div>
+        <div class="pain-point">📊 Nunca sabes realmente si tu negocio está ganando o perdiendo</div>
+      </div>
+
+      <div class="problem-close">
+        <strong>Con IDON, todo eso cambia desde el primer día.</strong>
+      </div>
+    </div>
+
+    <!-- SOLUCIÓN -->
+    <div class="solution-section">
+      <h2>Todo lo que necesita tu negocio, en un solo sistema</h2>
+      
+      <div class="modules-grid">
+        <div class="module-card">
+          <div class="module-icon">🛒</div>
+          <h3>Punto de Venta (POS)</h3>
+          <p>Cobra rápido, aplica descuentos, imprime recibos</p>
+        </div>
+        
+        <div class="module-card">
+          <div class="module-icon">📦</div>
+          <h3>Inventario</h3>
+          <p>Control de stock en tiempo real, alertas de bajo inventario</p>
+        </div>
+        
+        <div class="module-card">
+          <div class="module-icon">👥</div>
+          <h3>Empleados</h3>
+          <p>Nómina, asistencia, turnos y permisos desde una pantalla</p>
+        </div>
+        
+        <div class="module-card">
+          <div class="module-icon">📊</div>
+          <h3>Reportes</h3>
+          <p>Ventas, productos más rentables, análisis por período</p>
+        </div>
+        
+        <div class="module-card">
+          <div class="module-icon">🧾</div>
+          <h3>Facturación Electrónica</h3>
+          <p>Integración SRI, facturas y notas de crédito automáticas</p>
+        </div>
+        
+        <div class="module-card">
+          <div class="module-icon">🍽️</div>
+          <h3>Comandas (Restaurantes)</h3>
+          <p>Pantalla de cocina, mesas, pedidos a domicilio</p>
+        </div>
+        
+        <div class="module-card">
+          <div class="module-icon">📧</div>
+          <h3>CRM & Marketing</h3>
+          <p>Gestión de clientes, campañas de email, segmentación</p>
+        </div>
+        
+        <div class="module-card">
+          <div class="module-icon">💰</div>
+          <h3>Contabilidad</h3>
+          <p>Balance general, cuentas por cobrar y pagar</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARA QUIÉN ES -->
+    <div class="for-whom-section">
+      <h2>IDON funciona para tu tipo de negocio</h2>
+      
+      <div class="business-types">
+        <div class="business-type">
+          <strong>🍽️ Restaurantes y cafeterías</strong> — Comandas, cocina, mesas, delivery
+        </div>
+        <div class="business-type">
+          <strong>🛍️ Tiendas y retail</strong> — POS, inventario, proveedores, reportes
+        </div>
+        <div class="business-type">
+          <strong>💅 Salones y spas</strong> — Reservas, clientes, empleados, servicios
+        </div>
+        <div class="business-type">
+          <strong>🏪 Minimarkets y farmacias</strong> — Stock, ventas rápidas, facturación
+        </div>
+        <div class="business-type">
+          <strong>🌐 Negocios con varias sucursales</strong> — Gestión centralizada, reportes por local
+        </div>
+      </div>
+    </div>
+
+    <!-- TESTIMONIOS -->
+    <div class="testimonials-section">
+      <h2>Negocios como el tuyo ya usan IDON</h2>
+      
+      <div class="testimonials-grid">
+        <div class="testimonial-card">
+          <div class="testimonial-quote">
+            "Antes tardaba 2 horas cuadrando la caja. Ahora lo hago en 5 minutos. Los reportes me dicen exactamente qué platos me dejan más ganancia."
+          </div>
+          <div class="testimonial-author">🍽️ Juan P., dueño de restaurante, Quito</div>
+        </div>
+        
+        <div class="testimonial-card">
+          <div class="testimonial-quote">
+            "Nunca supe lo que era tener el inventario bajo control hasta que usé IDON. Cero pérdidas por caducados o robos desde que activamos los alertas."
+          </div>
+          <div class="testimonial-author">🛍️ María G., propietaria de minimarket, Guayaquil</div>
+        </div>
+        
+        <div class="testimonial-card">
+          <div class="testimonial-quote">
+            "Mis empleadas ya no se confunden con los turnos y yo puedo ver todo desde el celular aunque no esté en el local."
+          </div>
+          <div class="testimonial-author">💅 Sofía M., dueña de salón de belleza, Cuenca</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="faq-section">
+      <h2>Preguntas frecuentes</h2>
+      
+      <div class="faq-item">
+        <div class="faq-question">¿Necesito instalar algo?</div>
+        <div class="faq-answer">No. IDON es 100% en la nube. Funciona desde cualquier navegador, en computadora, tablet o celular.</div>
+      </div>
+      
+      <div class="faq-item">
+        <div class="faq-question">¿Qué pasa con mis datos si cancelo?</div>
+        <div class="faq-answer">Tus datos son tuyos. Puedes exportarlos en Excel antes de salir, sin restricciones.</div>
+      </div>
+      
+      <div class="faq-item">
+        <div class="faq-question">¿Funciona con la facturación electrónica del SRI?</div>
+        <div class="faq-answer">Sí. IDON está integrado con el SRI para Ecuador. Genera facturas y notas de crédito válidas automáticamente.</div>
+      </div>
+    </div>
+
+    <!-- FOOTER CTA -->
+    <div class="footer-cta">
+      <h2>¿Listo para transformar tu negocio?</h2>
+      <p>Prueba IDON gratis por 14 días. Sin tarjeta de crédito, sin compromiso.</p>
+      <button class="cta-primary">Comenzar ahora</button>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    // CARGAR LOGO
+    document.getElementById('logoFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          document.getElementById('heroLogo').src = event.target.result;
+          document.getElementById('logoPreview').innerHTML = '<img src="' + event.target.result + '" alt="Preview">';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // CARGAR LOGO DESDE URL
+    document.getElementById('logoUrl').addEventListener('change', function(e) {
+      const url = e.target.value.trim();
+      if (url) {
+        const img = new Image();
+        img.onload = function() {
+          document.getElementById('heroLogo').src = url;
+          document.getElementById('logoPreview').innerHTML = '<img src="' + url + '" alt="Preview">';
+        };
+        img.onerror = function() {
+          updateStatus('❌ URL de imagen no válida', true);
+        };
+        img.src = url;
+      }
+    });
+
+    function updateStatus(msg, isError = false) {
+      const status = document.getElementById('status');
+      status.textContent = msg;
+      status.style.color = isError ? '#e74c3c' : '#27ae60';
+      setTimeout(() => { status.textContent = ''; }, 4000);
+    }
+
+    // DESCARGAR PNG
+    function downloadPNG() {
+      updateStatus('⏳ Generando PNG...');
+      const element = document.getElementById('pageContent');
+      html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = '02_COPY_LANDING_PAGE.png';
+        link.click();
+        updateStatus('✓ PNG descargado');
+      }).catch(err => {
+        updateStatus('Error: ' + err.message, true);
+      });
+    }
+
+    // DESCARGAR PDF
+    function downloadPDF() {
+      updateStatus('⏳ Generando PDF...');
+      const element = document.getElementById('pageContent');
+      html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      }).then(canvas => {
+        const img = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = 'data:application/pdf;base64,' + btoa(unescape(encodeURIComponent(canvas.toDataURL('image/png'))));
+        
+        // Usando jsPDF sería mejor, pero sin librería usamos alternativa
+        const pdf = `%PDF-1.4
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+3 0 obj<</Type/Page/Parent 2 0 R/Resources<</Font<<>>>>endobj
+xref
+0 4
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+trailer<</Size 4/Root 1 0 R>>
+startxref
+229
+%%EOF`;
+        
+        // Alternativa: Descargar como PNG y luego convertir
+        const link2 = document.createElement('a');
+        link2.href = canvas.toDataURL('image/png');
+        link2.download = '02_COPY_LANDING_PAGE_preview.png';
+        link2.click();
+        updateStatus('✓ Imagen generada (usar herramienta online para convertir a PDF)');
+      }).catch(err => {
+        updateStatus('Error: ' + err.message, true);
+      });
+    }
+
+    // IMPRIMIR
+    function printPage() {
+      const element = document.getElementById('pageContent');
+      const printWindow = window.open('', '', 'height=600,width=800');
+      printWindow.document.write('<html><head><title>IDON Landing Page</title>');
+      printWindow.document.write(document.querySelector('style').innerHTML);
+      printWindow.document.write('</head><body>');
+      printWindow.document.write(element.innerHTML);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      setTimeout(() => {
+        printWindow.print();
+        updateStatus('✓ Abierta ventana de impresión');
+      }, 250);
+    }
+  </script>
+
+</body>
+</html>

@@ -8,6 +8,7 @@ import {
   FiUsers, FiUserCheck, FiMap, FiMapPin, FiList, FiGlobe,
   FiBell, FiFileText, FiThermometer, FiClipboard,
 } from 'react-icons/fi';
+import { useAlert } from '../../components/ConfirmContext';
 import PageTemplate from '../../components/PageTemplate';
 import SubscriptionModal from './SubscriptionModal';
 import { adminApiService } from '../../services/apiService';
@@ -316,7 +317,7 @@ const EditClientModal = ({ client, onClose, onSaved }) => {
     try {
       await adminApiService.put(`/admin/clients/${client.id}`, form);
       onSaved(); onClose();
-    } catch (e) { alert('❌ ' + e.message); } finally { setSaving(false); }
+    } catch (e) { await alert.error('❌ ' + e.message); } finally { setSaving(false); }
   };
 
   return (
@@ -364,7 +365,7 @@ const EditBusinessModal = ({ business, onClose, onSaved }) => {
     try {
       await adminApiService.put(`/admin/businesses/${business.id}`, { name });
       onSaved(); onClose();
-    } catch (e) { alert('❌ ' + e.message); } finally { setSaving(false); }
+    } catch (e) { await alert.error('❌ ' + e.message); } finally { setSaving(false); }
   };
 
   return (
@@ -395,6 +396,7 @@ const EditBusinessModal = ({ business, onClose, onSaved }) => {
 
 /* ══ COMPONENTE PRINCIPAL ═══════════════════════════════════ */
 export default function ClientsPage() {
+  const alert = useAlert();
   const [clients, setClients] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);

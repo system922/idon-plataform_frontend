@@ -8,6 +8,7 @@ import '../../styles/PayrollPro.css';
 
 import { fetchWithAuth } from '../../config/apiBase';
 import { usePrinterService } from '../../services/usePrinterService';
+import { useAlert } from '../../components/ConfirmContext';
 
 function getBusinessInfo() {
   try {
@@ -20,6 +21,7 @@ function getBusinessInfo() {
 export default function EmployeesPayRollPage() {
 
   const { print, openCashDrawer, getPrinterConfig } = usePrinterService();
+  const alert = useAlert();
   
   // Estados para filtros y datos
   const [type, setType] = useState('monthly');
@@ -167,7 +169,7 @@ export default function EmployeesPayRollPage() {
     } catch (error) {
 
       setAvailableEmployees([]);
-      alert('Error al cargar empleados: ' + error.message);
+      await alert.error('Error al cargar empleados: ' + error.message);
     } finally {
       setLoadingEmployees(false);
     }
@@ -203,11 +205,11 @@ export default function EmployeesPayRollPage() {
    */
   async function generate() {
     if (!start) {
-      alert('Selecciona la fecha de inicio');
+      await alert.warning('Selecciona la fecha de inicio');
       return;
     }
     if (selectedEmployees.size === 0) {
-      alert('Selecciona al menos un empleado');
+      await alert.warning('Selecciona al menos un empleado');
       return;
     }
     if (isGenerating || loading) return;
@@ -236,12 +238,12 @@ export default function EmployeesPayRollPage() {
       setData(Array.isArray(json) ? json : []);
       
       if (json.length === 0) {
-        alert('⚠️ No se encontraron datos para los empleados seleccionados');
+        await alert.warning('No se encontraron datos para los empleados seleccionados');
       }
     } catch (error) {
 
       setData([]);
-      alert('Error al generar nómina: ' + error.message);
+      await alert.error('Error al generar nómina: ' + error.message);
     } finally {
       setLoading(false);
       setIsGenerating(false);
@@ -258,13 +260,13 @@ export default function EmployeesPayRollPage() {
     const selectedData = data.filter(emp => selectedEmployees.has(String(emp.employee_id)));
     
     if (selectedData.length === 0) {
-      alert('No hay empleados seleccionados para guardar');
+      await alert.warning('No hay empleados seleccionados para guardar');
       return;
     }
     
     const now = Date.now();
     if (now - lastSaveTime.current < 3000) {
-      alert('Por favor espera unos segundos antes de guardar nuevamente');
+      await alert.warning('Por favor espera unos segundos antes de guardar nuevamente');
       return;
     }
     
@@ -288,7 +290,7 @@ export default function EmployeesPayRollPage() {
       const result = await res.json();
       
       if (result.success) {
-        alert(`✅ Nómina guardada correctamente para ${selectedData.length} empleado(s)`);
+        await alert.success(`Nómina guardada correctamente para ${selectedData.length} empleado(s)`);
         
         // Remover los empleados guardados de la lista de datos
         const remainingData = data.filter(emp => !selectedEmployees.has(emp.employee_id));
@@ -297,11 +299,11 @@ export default function EmployeesPayRollPage() {
         // Limpiar la selección
         setSelectedEmployees(new Set());
       } else {
-        alert('⚠️ ' + (result.message || 'Error al guardar la nómina'));
+        await alert.error(result.message || 'Error al guardar la nómina');
       }
     } catch (error) {
 
-      alert('Error al guardar la nómina: ' + error.message);
+      await alert.error('Error al guardar la nómina: ' + error.message);
     } finally {
       setLoading(false);
       setIsSaving(false);
@@ -332,13 +334,13 @@ export default function EmployeesPayRollPage() {
         setSavedPayrolls(processedPayrolls);
         setShowSaved(true);
       } else {
-        alert('No hay nóminas guardadas');
+        await alert.info('No hay nóminas guardadas');
         setSavedPayrolls([]);
       }
     } catch (error) {
 
       setSavedPayrolls([]);
-      alert("Error consultando nómina guardada");
+      await alert.error("Error consultando nómina guardada");
     } finally {
       setLoading(false);
       setIsLoadingSaved(false);
@@ -368,7 +370,7 @@ export default function EmployeesPayRollPage() {
       setShowDetails(true);
     } catch (error) {
 
-      alert('Error cargando detalle de nómina');
+      await alert.error('Error cargando detalle de nómina');
     } finally {
       setLoading(false);
       setIsLoadingDetails(false);
@@ -400,7 +402,7 @@ export default function EmployeesPayRollPage() {
       setShowPrint(true);
     } catch (error) {
 
-      alert('Error cargando detalle de nómina');
+      await alert.error('Error cargando detalle de nómina');
     }
   }
 
@@ -422,7 +424,7 @@ export default function EmployeesPayRollPage() {
   const emp = selectedEmployee;
   
   if (isPaying || loading) {
-    alert('Por favor espera, ya se está procesando un pago');
+    await alert.warning('Por favor espera, ya se está procesando un pago');
     return;
   }
   
@@ -432,7 +434,7 @@ export default function EmployeesPayRollPage() {
   const now = Date.now();
   const lastPayForKey = lastPayTime.current[processingKey];
   if (lastPayForKey && (now - lastPayForKey) < 5000) {
-    alert('Por favor espera unos segundos antes de pagar nuevamente');
+    await alert.warning('Por favor espera unos segundos antes de pagar nuevamente');
     return;
   }
   
@@ -448,7 +450,7 @@ export default function EmployeesPayRollPage() {
     
     const operador = JSON.parse(localStorage.getItem('idonUser') || '{}');
     if (!operador?.id) {
-      alert('No se encontró información del usuario. Inicia sesión nuevamente.');
+      await alert.error('No se encontró información del usuario. Inicia sesión nuevamente.');
       return;
     }
     
@@ -475,7 +477,7 @@ export default function EmployeesPayRollPage() {
       await openCashDrawer().catch(() => {});
     }
 
-    alert(`✅ Pago registrado correctamente para ${emp.full_name} (${paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'})`);
+    await alert.success(`Pago registrado correctamente para ${emp.full_name} (${paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'})`);
     // ========== FIN DEL NUEVO CÓDIGO ==========
     
     // Actualizar el estado local si el modal de detalles está abierto
@@ -490,7 +492,7 @@ export default function EmployeesPayRollPage() {
     
   } catch (error) {
 
-    alert('Error registrando pago: ' + error.message);
+    await alert.error('Error registrando pago: ' + error.message);
   } finally {
     setLoading(false);
     setIsPaying(false);
@@ -692,23 +694,55 @@ export default function EmployeesPayRollPage() {
             
             <table className="pay-table">
               <thead>
-                <tr><th>Colaborador/a</th><th>Horas</th><th>Horas Extras</th><th>Días</th>
-                <th>{selectedPayrollDetails.payment_type === 'hourly' ? 'Valor Hora' : 'Sueldo Diario'}</th>
-                <th>Total a Pagar</th><th>Pagar</th><th>Imprimir</th>
-              </tr>
+                <tr>
+                  <th>Colaborador/a</th>
+                  {selectedPayrollDetails.payment_type === 'hourly' ? (
+                    <>
+                      <th>Ordinarias</th>
+                      <th>Suplementarias<br/><small>+50%</small></th>
+                      <th>Extraordinarias<br/><small>+100%</small></th>
+                      <th>Nocturnas<br/><small>+25%</small></th>
+                    </>
+                  ) : (
+                    <>
+                      <th>Horas</th>
+                      <th>Días</th>
+                    </>
+                  )}
+                  <th>Total a Pagar</th>
+                  <th>Pagar</th>
+                  <th>Imprimir</th>
+                </tr>
               </thead>
               <tbody>
                 {selectedPayrollDetails.employees.map(emp => (
                   <tr key={emp.payroll_id}>
                     <td style={{fontWeight: 500}}>{emp.full_name}</td>
-                    <td style={{textAlign: 'center'}}>{n(emp.total_hours).toFixed(2)}</td>
-                    <td style={{color: n(emp.extra_hours) > 0 ? '#fbbf24' : '#666', textAlign: 'center'}}>{n(emp.extra_hours).toFixed(2)}</td>
-                    <td style={{textAlign: 'center'}}>{n(emp.days_worked || 1).toFixed(0)}</td>
-                    <td style={{textAlign: 'center'}}>
-                      {selectedPayrollDetails.payment_type === 'hourly' 
-                        ? `$${n(emp.hourly_rate).toFixed(2)}`
-                        : `$${n(emp.daily_rate).toFixed(2)}`}
-                    </td>
+                    {selectedPayrollDetails.payment_type === 'hourly' ? (
+                      <>
+                        <td style={{textAlign: 'center'}}>
+                          {n(emp.ordinary_hours || 0).toFixed(0)}h<br/>
+                          <small style={{color: '#666'}}>@${n(emp.hourly_rate).toFixed(2)}</small>
+                        </td>
+                        <td style={{textAlign: 'center', backgroundColor: '#fef3c7'}}>
+                          {n(emp.supplementary_hours || 0).toFixed(0)}h<br/>
+                          <small style={{color: '#666'}}>@${(n(emp.hourly_rate) * 1.5).toFixed(2)}</small>
+                        </td>
+                        <td style={{textAlign: 'center', backgroundColor: '#fecaca'}}>
+                          {n(emp.extraordinary_hours || 0).toFixed(0)}h<br/>
+                          <small style={{color: '#666'}}>@${(n(emp.hourly_rate) * 2.0).toFixed(2)}</small>
+                        </td>
+                        <td style={{textAlign: 'center', backgroundColor: '#bfdbfe'}}>
+                          {n(emp.night_hours || 0).toFixed(0)}h<br/>
+                          <small style={{color: '#666'}}>@${(n(emp.hourly_rate) * 1.25).toFixed(2)}</small>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td style={{textAlign: 'center'}}>{n(emp.total_hours).toFixed(2)}</td>
+                        <td style={{textAlign: 'center'}}>{n(emp.days_worked || 1).toFixed(0)}</td>
+                      </>
+                    )}
                     <td style={{fontWeight: 600, color: '#10b981', textAlign: 'right'}}>${n(emp.total_pay).toFixed(2)}</td>
                     <td style={{textAlign: 'center'}}>
                       <button className="pay-btn-small" onClick={() => handlePayClick(emp)} disabled={isPaying}>💰 Pagar</button>
@@ -720,10 +754,12 @@ export default function EmployeesPayRollPage() {
                 ))}
               </tbody>
               <tfoot>
-                <tr><td colSpan={6} style={{textAlign: 'right'}}><strong>TOTAL GENERAL</strong></td>
-                <td style={{fontWeight: 800, color: '#10b981', textAlign: 'right'}}><strong>${selectedPayrollDetails.employees.reduce((acc, e) => acc + n(e.total_pay || 0), 0).toFixed(2)}</strong></td>
-                <td></td>
-              </tr>
+                <tr>
+                  <td colSpan={selectedPayrollDetails.payment_type === 'hourly' ? 5 : 3} style={{textAlign: 'right'}}><strong>TOTAL GENERAL</strong></td>
+                  <td style={{fontWeight: 800, color: '#10b981', textAlign: 'right'}}><strong>${selectedPayrollDetails.employees.reduce((acc, e) => acc + n(e.total_pay || 0), 0).toFixed(2)}</strong></td>
+                  <td></td>
+                  <td></td>
+                </tr>
               </tfoot>
             </table>
             <div style={{textAlign:'right'}}><button className="pay-btn" onClick={() => setShowDetails(false)}>Cerrar</button></div>
@@ -873,7 +909,7 @@ export default function EmployeesPayRollPage() {
       <div className="pay-legend">
         <small>
           {paymentType === 'hourly' 
-            ? '📊 El pago se calcula multiplicando las horas trabajadas por el valor hora. Las horas extras se pagan al 150%.'
+            ? '📊 Ley de Ecuador: Ordinarias ($2.01/h) | Suplementarias ($3.01/h +50%) | Extraordinarias ($4.02/h +100%) | Nocturnas ($2.51/h +25%)'
             : '💰 El pago es el sueldo fijo diario configurado en la base de datos.'}
         </small>
       </div>

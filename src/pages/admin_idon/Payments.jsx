@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useAlert } from '../../components/ConfirmContext';
 import {
   FiCreditCard, FiRefreshCw, FiCheck, FiAlertCircle,
   FiClock, FiXCircle, FiCheckCircle, FiCalendar, FiMail,
@@ -26,6 +27,7 @@ function payInfo(nextBillingAt, status) {
 
 export default function Payments() {
   const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [data,     setData]     = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState(null);
@@ -56,7 +58,7 @@ export default function Payments() {
       setPayModal(null);
       await load();
     } catch (e) {
-      alert('Error: ' + e.message);
+      await alert.error('Error: ' + e.message);
     } finally {
       setActing(null);
     }
@@ -69,7 +71,7 @@ export default function Payments() {
       await adminApiService.post(`/admin/subscriptions/${subId}/suspend`, {});
       await load();
     } catch (e) {
-      alert('Error: ' + e.message);
+      await alert.error('Error: ' + e.message);
     } finally {
       setActing(null);
     }

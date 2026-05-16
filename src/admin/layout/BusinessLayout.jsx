@@ -8,7 +8,7 @@ import {
   FiDollarSign, FiClipboard, FiThermometer, FiTruck, FiGrid,
   FiCalendar, FiStar, FiShoppingBag, FiClock, FiUsers,
   FiUserCheck, FiMap, FiMapPin, FiList, FiGlobe, FiBell,
-  FiFileText, FiUser, FiAlertCircle, FiZap, FiMenu, FiInbox,
+  FiFileText, FiAlertCircle, FiZap, FiMenu, FiInbox,
   FiLock, FiLoader
 } from 'react-icons/fi';
 import API_BASE, { fetchWithAuth } from '../../config/apiBase';
@@ -526,7 +526,7 @@ export default function BusinessLayout({ user, onLogout }) {
 
   const handleClickAbrirCaja = async () => {
     if (aperturaHecha) {
-      alert('Ya hay una apertura de caja activa para hoy');
+      await alert.warning('Ya hay una apertura de caja activa para hoy');
       return;
     }
     

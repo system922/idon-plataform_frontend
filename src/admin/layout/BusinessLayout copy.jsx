@@ -24,6 +24,7 @@ import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';
 import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
 import { useAutoPrint } from '../../hooks/useAutoPrint';
 import { useQzTray } from '../../components/useQzTray';
+import { useAlert } from '../../components/ConfirmContext';
 
 const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
 
@@ -229,6 +230,7 @@ function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
 ══════════════════════════════════════════════════════════ */
 export default function BusinessLayout({ user, onLogout }) {
   const navigate = useNavigate();
+  const alert = useAlert();
 
   // 🔥 SOLO UN HOOK para abrir cajón - el mismo que usa PosCheckoutPage
   const { openDrawer: openDrawerQz, printerError, isQzReady } = useQzTray();
@@ -480,7 +482,7 @@ export default function BusinessLayout({ user, onLogout }) {
 
   const handleClickAbrirCaja = async () => {
     if (aperturaHecha) {
-      alert('Ya hay una apertura de caja activa para hoy');
+      await alert.warning('Ya hay una apertura de caja activa para hoy');
       return;
     }
     

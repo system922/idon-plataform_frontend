@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useConfirm } from '../../context/ConfirmContext';
+import { useAlert } from '../../components/ConfirmContext';
 import {
   FiMail, FiPlus, FiEdit2, FiTrash2, FiRefreshCw,
   FiAlertCircle, FiSearch, FiSend, FiClock, FiCheckCircle,
@@ -478,6 +479,7 @@ function EmailLogItem({ log }) {
 export default function NotificationsEmailPage() {
   const { selectedBusiness } = useBusinessContext();
   const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [templates, setTemplates] = useState([]);
   const [emailLogs, setEmailLogs] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -654,9 +656,9 @@ export default function NotificationsEmailPage() {
       loadEmailLogs();
       
       if (data.type === 'campaign') {
-        alert(`📧 Campaña enviada:\n✅ Enviados: ${result.sent || 0}\n❌ Fallidos: ${result.failed || 0}`);
+        await alert.success(`Campaña enviada:\n✅ Enviados: ${result.sent || 0}\n❌ Fallidos: ${result.failed || 0}`);
       } else {
-        alert(`📧 Email enviado correctamente a ${data.to}`);
+        await alert.success(`Email enviado correctamente a ${data.to}`);
       }
     } catch (e) {
       setError(e.message);

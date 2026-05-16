@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useAlert } from '../../components/ConfirmContext';
 import { Plus, Edit2, Trash2, Users, X, Search, RefreshCw, Unlock, CheckCircle, AlertCircle } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/UsersPage.css';
@@ -131,6 +132,7 @@ function UserModal({ user, onClose, onSave, saving, roles }) {
 
 export default function CoreUsersPage() {
   const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [users,       setUsers      ] = useState([]);
   const [roles,       setRoles      ] = useState([]);
   const [loading,     setLoading    ] = useState(true);
@@ -218,7 +220,7 @@ export default function CoreUsersPage() {
       if (!res.ok) throw new Error(data.error ?? 'Error al eliminar');
       load();
     } catch (e) {
-      alert(e.message);
+      await alert.error(e.message);
     } finally { 
       setSaving(false); 
     }

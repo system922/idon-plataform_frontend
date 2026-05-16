@@ -11,6 +11,7 @@ import {
 import '../../styles/AttendancePage.css';
 
 import { fetchWithAuth } from '../../config/apiBase';
+import { useAlert } from '../../components/ConfirmContext';
 
 /* ================= MODAL MEJORADO ================= */
 function AttendanceModal({ employees, attendanceData, onClose, onSave, saving }) {
@@ -29,29 +30,59 @@ function AttendanceModal({ employees, attendanceData, onClose, onSave, saving })
     // Buscar el registro de asistencia actual de ese empleado
     const empAttendance = attendanceData.find(a => a.id === employeeId);
     if (!empAttendance) {
-      // Si no hay datos, asumir que no tiene ninguna marcación (mostrar todas)
-      setAvailableTypes(['check_in', 'lunch_out', 'lunch_in', 'check_out']);
+      // Si no hay datos, asumir que no tiene ninguna marcación
+      // OPCIÓN A: Solo entrada (sin almuerzo) + salida
+      // OPCIÓN B: Entrada + almuerzo completo
+      setAvailableTypes([{ value: 'check_in', label: 'Entrada' }]);
       setType('check_in');
       return;
     }
 
     const missing = [];
-    if (!empAttendance.horaEntrada) missing.push({ value: 'check_in', label: 'Entrada' });
-    if (!empAttendance.horaSalidaAlmuerzo && empAttendance.horaEntrada) missing.push({ value: 'lunch_out', label: 'Salida almuerzo' });
-    if (!empAttendance.horaEntradaAlmuerzo && empAttendance.horaSalidaAlmuerzo) missing.push({ value: 'lunch_in', label: 'Entrada almuerzo' });
-    if (!empAttendance.horaSalida && empAttendance.horaEntradaAlmuerzo) missing.push({ value: 'check_out', label: 'Salida' });
-
-    // Si no tiene entrada, solo puede hacer entrada
-    if (!empAttendance.horaEntrada && missing.length === 0) {
+    
+    // Primero: entrada
+    if (!empAttendance.horaEntrada) {
       missing.push({ value: 'check_in', label: 'Entrada' });
+      setAvailableTypes(missing);
+      setType('check_in');
+      return;
     }
 
-    setAvailableTypes(missing);
-    if (missing.length > 0) {
-      setType(missing[0].value);
-    } else {
-      setType('');
+    // Si tiene entrada, ofrecer opciones:
+    // A) Solo salida (sin almuerzo)
+    // B) Almuerzo completo
+    if (!empAttendance.horaSalida && !empAttendance.horaSalidaAlmuerzo) {
+      // Decidir: ¿va al almuerzo o sale directamente?
+      // Mostrar ambas opciones en un selector especial
+      missing.push(
+        { value: 'check_out', label: 'Salida (sin almuerzo)' },
+        { value: 'lunch_out', label: 'Salida almuerzo (con almuerzo)' }
+      );
+      setAvailableTypes(missing);
+      if (missing.length > 0) setType(missing[0].value);
+      return;
     }
+
+    // Si marcó salida de almuerzo
+    if (empAttendance.horaSalidaAlmuerzo && !empAttendance.horaEntradaAlmuerzo) {
+      missing.push({ value: 'lunch_in', label: 'Entrada almuerzo' });
+      setAvailableTypes(missing);
+      if (missing.length > 0) setType(missing[0].value);
+      return;
+    }
+
+    // Si marcó entrada de almuerzo
+    if (empAttendance.horaEntradaAlmuerzo && !empAttendance.horaSalida) {
+      missing.push({ value: 'check_out', label: 'Salida' });
+      setAvailableTypes(missing);
+      if (missing.length > 0) setType(missing[0].value);
+      return;
+    }
+
+    // Jornada completa
+    setAvailableTypes([]);
+    setType('');
+
   }, [employeeId, attendanceData]);
 
   return (
@@ -116,6 +147,7 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const alert = useAlert();
 
   useEffect(() => {
     fetchAll();
@@ -182,7 +214,7 @@ export default function AttendancePage() {
       setShowModal(false);
       fetchAttendance();
     } catch {
-      alert('Error al registrar');
+      await alert.error('Error al registrar');
     } finally {
       setSaving(false);
     }
@@ -223,16 +255,32 @@ export default function AttendancePage() {
               Cédula: <b>{a.cedula}</b>
             </div>
             <div className="att-times">
-              <div><FiCheckCircle /> {a.horaEntrada || '-'}</div>
-              <div><FiXCircle /> {a.horaSalidaAlmuerzo || '-'}</div>
-              <div><FiCheckCircle /> {a.horaEntradaAlmuerzo || '-'}</div>
-              <div><FiXCircle /> {a.horaSalida || '-'}</div>
+              {a.horaEntrada && (
+                <>
+                  <div><FiCheckCircle /> Entrada: {a.horaEntrada}</div>
+                  {a.horaSalidaAlmuerzo ? (
+                    <>
+                      <div><FiXCircle /> Salida almuerzo: {a.horaSalidaAlmuerzo}</div>
+                      {a.horaEntradaAlmuerzo && <div><FiCheckCircle /> Entrada almuerzo: {a.horaEntradaAlmuerzo}</div>}
+                      {a.horaSalida && <div><FiXCircle /> Salida: {a.horaSalida}</div>}
+                    </>
+                  ) : (
+                    a.horaSalida && <div><FiXCircle /> Salida: {a.horaSalida}</div>
+                  )}
+                </>
+              )}
             </div>
             <div className="att-status">
               <FiClock /> {a.status}
             </div>
           </div>
         ))}
+      </div>
+
+      <div style={{marginTop: 20, padding: '12px 16px', backgroundColor: '#ecfdf5', borderRadius: 6, borderLeft: '4px solid #10b981'}}>
+        <small style={{color: '#047857'}}>
+          ✅ <strong>Marcaciones Flexibles:</strong> Elige entre entrada/salida sin almuerzo (2 marcaciones) o con almuerzo completo (4 marcaciones). Al marcar salida, se calculan y guardan automáticamente las horas trabajadas.
+        </small>
       </div>
 
       {showModal && (
