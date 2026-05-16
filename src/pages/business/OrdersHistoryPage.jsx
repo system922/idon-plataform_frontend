@@ -64,6 +64,9 @@ export default function OrdersHistoryPage() {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [extrasItem, setExtrasItem] = useState([]);
+  const [showSplitModal, setShowSplitModal] = useState(false);
+  const [splitSelection, setSplitSelection] = useState(new Set());
+  const [isSplitting, setIsSplitting] = useState(false);
 
 
   useEffect(() => {
@@ -412,6 +415,113 @@ export default function OrdersHistoryPage() {
     
     setSuccess(`✅ "${item.nombre}" separado en ${cantidad} unidades`);
     setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const abrirDividirOrden = () => {
+    setSplitSelection(new Set());
+    setShowSplitModal(true);
+  };
+
+  const toggleSplitItem = (itemId) => {
+    setSplitSelection(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  };
+
+  const confirmarDivision = async () => {
+    if (splitSelection.size === 0) {
+      setError('Selecciona al menos un producto para la nueva orden');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    const itemsParaNueva = activeEditItems.filter(i => splitSelection.has(i.id));
+    const itemsQueQuedan = activeEditItems.filter(i => !splitSelection.has(i.id));
+
+    if (itemsQueQuedan.length === 0) {
+      setError('Debes dejar al menos un producto en la orden original');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    try {
+      setIsSplitting(true);
+
+      const toItems = (list) => list.flatMap(item => {
+        const base = { product_id: item.product_id, quantity: item.quantity || item.cantidad || 1, notes: item.notas || null };
+        const extras = (item.extras || []).map(e => ({
+          product_id: e.id || e.product_id,
+          quantity: item.quantity || item.cantidad || 1,
+          notes: `__EXT__: + ${e.name}${e.nota ? ': ' + e.nota : ''}`,
+        }));
+        return [base, ...extras];
+      });
+
+      const calcTotals = (list) => {
+        const subtotal = list.reduce((s, i) => s + (Number(i.selling_price) || 0) * (i.cantidad || i.quantity || 1), 0);
+        const iva = list.reduce((s, i) => s + (Number(i.tax_rate) || 0) * (i.cantidad || i.quantity || 1), 0);
+        return { subtotal, iva, total: subtotal + iva };
+      };
+
+      const nuevaTotals = calcTotals(itemsParaNueva);
+      const quedaTotals = calcTotals(itemsQueQuedan);
+
+      // Calcular sufijo: contar órdenes que ya son divisiones de esta (mismo número base o con _N)
+      const baseNumber = selectedOrder.order_number || selectedOrder.id.slice(0, 8);
+      const baseClean = baseNumber.replace(/_\d+$/, ''); // quitar sufijo previo si lo tiene
+      const existentes = orders.filter(o => {
+        const n = o.order_number || '';
+        return n === baseClean || n.startsWith(baseClean + '_');
+      });
+      const nextSuffix = existentes.length; // 1, 2, 3...
+      const newOrderNumber = `${baseClean}_${nextSuffix}`;
+
+      // 1. Crear nueva orden
+      const resNueva = await fetchWithAuth('/api/ordenes', {
+        method: 'POST',
+        body: JSON.stringify({
+          numero_mesa: selectedOrder.mesa_numero,
+          mesa_id: selectedOrder.mesa_id,
+          order_type: selectedOrder.order_type || 'dine_in',
+          order_number: newOrderNumber,
+          items: toItems(itemsParaNueva),
+          notas: `División de #${baseClean}`,
+        }),
+      });
+
+      if (!resNueva.ok) {
+        const d = await resNueva.json();
+        throw new Error(d.error || 'Error al crear nueva orden');
+      }
+
+      // 2. Actualizar orden original
+      const resOriginal = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          items: toItems(itemsQueQuedan),
+          subtotal: quedaTotals.subtotal,
+          tax_amount: quedaTotals.iva,
+          total: quedaTotals.total,
+        }),
+      });
+
+      if (!resOriginal.ok) throw new Error('Error al actualizar orden original');
+
+      setEditItems(itemsQueQuedan);
+      setSplitSelection(new Set());
+      setShowSplitModal(false);
+      setSuccess(`✅ Orden dividida. Nueva orden creada con ${itemsParaNueva.length} producto(s)`);
+      setTimeout(() => setSuccess(''), 5000);
+      await loadOrders();
+    } catch (err) {
+      setError(err.message || 'Error al dividir la orden');
+      setTimeout(() => setError(''), 4000);
+    } finally {
+      setIsSplitting(false);
+    }
   };
 
   const abrirEditarItem = (item) => {
@@ -789,12 +899,20 @@ export default function OrdersHistoryPage() {
                     <button className="btn-add-product" onClick={() => setShowAddItemModal(true)}>
                       + Agregar producto
                     </button>
-                    <button 
-                      className="btn-separar-productos" 
+                    <button
+                      className="btn-separar-productos"
                       onClick={separarProductosPorUnidad}
                       title="Convertir productos con cantidad > 1 en items individuales"
                     >
                       🔄 Separar productos por unidad
+                    </button>
+                    <button
+                      className="btn-separar-productos"
+                      onClick={abrirDividirOrden}
+                      title="Dividir esta orden en dos órdenes separadas"
+                      style={{ background: 'rgba(104,66,254,0.15)', borderColor: 'rgba(104,66,254,0.4)', color: '#a78bfa' }}
+                    >
+                      ✂️ Dividir orden
                     </button>
                   </div>
                 )}
@@ -865,6 +983,137 @@ export default function OrdersHistoryPage() {
             )}
           </div>
         </div>
+
+        {/* MODAL DIVIDIR ORDEN */}
+        {showSplitModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <div style={{ background: '#111827', border: '1px solid #1e3a3a', borderRadius: 16, padding: 24, width: 500, maxWidth: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <div>
+                  <h3 style={{ margin: 0, color: '#f1f5f9', fontSize: 17, fontWeight: 700 }}>✂️ Dividir Orden</h3>
+                  <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b' }}>
+                    Mesa {selectedOrder?.mesa_numero} · #{selectedOrder?.order_number || selectedOrder?.id?.slice(0,8)}
+                    &nbsp;·&nbsp;Selecciona los productos para la <strong style={{ color: '#a78bfa' }}>nueva orden</strong>
+                  </p>
+                </div>
+                <button onClick={() => setShowSplitModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: 2 }}>&times;</button>
+              </div>
+
+              {/* Controles selección */}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => setSplitSelection(new Set(activeEditItems.map(i => i.id)))}
+                  style={{ fontSize: 12, padding: '5px 12px', background: 'rgba(104,66,254,0.12)', color: '#a78bfa', border: '1px solid rgba(104,66,254,0.3)', borderRadius: 6, cursor: 'pointer' }}
+                >
+                  Seleccionar todo
+                </button>
+                <button
+                  onClick={() => setSplitSelection(new Set())}
+                  style={{ fontSize: 12, padding: '5px 12px', background: 'rgba(100,116,139,0.12)', color: '#94a3b8', border: '1px solid rgba(100,116,139,0.25)', borderRadius: 6, cursor: 'pointer' }}
+                >
+                  Limpiar
+                </button>
+                <span style={{ marginLeft: 'auto', fontSize: 12, color: '#64748b', alignSelf: 'center' }}>
+                  {activeEditItems.length} producto(s) en total
+                </span>
+              </div>
+
+              {/* Lista de items */}
+              <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {activeEditItems.map(item => {
+                  const selected = splitSelection.has(item.id);
+                  const qty = item.cantidad || item.quantity || 1;
+                  const subtotal = (Number(item.selling_price) || 0) * qty;
+                  const iva = (Number(item.tax_rate) || 0) * qty;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => toggleSplitItem(item.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                        background: selected ? 'rgba(104,66,254,0.12)' : 'rgba(255,255,255,0.03)',
+                        border: `1.5px solid ${selected ? '#6842fe' : 'rgba(255,255,255,0.07)'}`,
+                        borderRadius: 10, cursor: 'pointer', transition: 'border-color 0.15s, background 0.15s',
+                      }}
+                    >
+                      <div style={{
+                        width: 20, height: 20, borderRadius: 5, border: `2px solid ${selected ? '#6842fe' : '#334155'}`,
+                        background: selected ? '#6842fe' : 'transparent',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}>
+                        {selected && <span style={{ color: '#fff', fontSize: 11, fontWeight: 900 }}>✓</span>}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.nombre || item.product_name}
+                        </div>
+                        {item.notas && (
+                          <div style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>{item.notas}</div>
+                        )}
+                        {(item.extras || []).length > 0 && (
+                          <div style={{ color: '#6ee7b7', fontSize: 11, marginTop: 2 }}>
+                            + {item.extras.map(e => e.name).join(', ')}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ color: '#94a3b8', fontSize: 11 }}>x{qty}</div>
+                        <div style={{ color: '#10b981', fontWeight: 700, fontSize: 13 }}>{fmt(subtotal + iva)}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Resumen selección */}
+              {splitSelection.size > 0 && (() => {
+                const selItems = activeEditItems.filter(i => splitSelection.has(i.id));
+                const total = selItems.reduce((s, i) => {
+                  const qty = i.cantidad || i.quantity || 1;
+                  return s + (Number(i.selling_price) || 0) * qty + (Number(i.tax_rate) || 0) * qty;
+                }, 0);
+                return (
+                  <div style={{ background: 'rgba(104,66,254,0.1)', border: '1px solid rgba(104,66,254,0.25)', borderRadius: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                    <span style={{ color: '#a78bfa' }}>{splitSelection.size} producto(s) → nueva orden</span>
+                    <strong style={{ color: '#a78bfa' }}>{fmt(total)}</strong>
+                  </div>
+                );
+              })()}
+
+              {/* Acciones */}
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setShowSplitModal(false)}
+                  disabled={isSplitting}
+                  style={{ padding: '10px 20px', background: 'rgba(100,116,139,0.15)', color: '#94a3b8', border: '1px solid rgba(100,116,139,0.25)', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmarDivision}
+                  disabled={isSplitting || splitSelection.size === 0 || splitSelection.size === activeEditItems.length}
+                  style={{
+                    padding: '10px 20px',
+                    background: (isSplitting || splitSelection.size === 0 || splitSelection.size === activeEditItems.length) ? 'rgba(104,66,254,0.3)' : '#6842fe',
+                    color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13,
+                    cursor: (isSplitting || splitSelection.size === 0 || splitSelection.size === activeEditItems.length) ? 'default' : 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 7,
+                  }}
+                >
+                  ✂️ {isSplitting ? 'Creando orden...' : `Crear Nueva Orden${splitSelection.size > 0 ? ` (${splitSelection.size})` : ''}`}
+                </button>
+              </div>
+
+              {splitSelection.size === activeEditItems.length && activeEditItems.length > 0 && (
+                <p style={{ margin: 0, fontSize: 11, color: '#f87171', textAlign: 'center' }}>
+                  Debes dejar al menos un producto en la orden original
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         <AddItemModal
           showAddItemModal={showAddItemModal}

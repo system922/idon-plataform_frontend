@@ -61,6 +61,9 @@ export default function EmployeesPayRollPage() {
   const [isLoadingSaved, setIsLoadingSaved] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
+  const [paidPayrolls, setPaidPayrolls] = useState([]);
+  const [showPaid, setShowPaid] = useState(false);
+  const [isLoadingPaid, setIsLoadingPaid] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   
@@ -314,36 +317,53 @@ export default function EmployeesPayRollPage() {
    * Ver todas las nóminas guardadas
    */
   async function viewSavedPayroll() {
-    if (isLoadingSaved || loading) return;
-    
+    if (isLoadingSaved) return;
+
     try {
       setIsLoadingSaved(true);
-      setLoading(true);
-      
+
       const res = await fetchWithAuth(`/api/payroll/all-saved`);
       const json = await res.json();
-      
-      if (Array.isArray(json) && json.length > 0) {
-        const processedPayrolls = json.map(payroll => ({
-          ...payroll,
-          start_date: formatDate(payroll.start_date),
-          end_date: formatDate(payroll.end_date),
-          total_amount: Number(payroll.total_amount) || 0,
-          total_employees: Number(payroll.total_employees) || 0
-        }));
-        setSavedPayrolls(processedPayrolls);
-        setShowSaved(true);
-      } else {
-        await alert.info('No hay nóminas por pagar');
-        setSavedPayrolls([]);
-      }
-    } catch (error) {
 
+      const processed = Array.isArray(json) ? json.map(payroll => ({
+        ...payroll,
+        start_date: formatDate(payroll.start_date),
+        end_date: formatDate(payroll.end_date),
+        total_amount: Number(payroll.total_amount) || 0,
+        total_employees: Number(payroll.total_employees) || 0
+      })) : [];
+
+      setSavedPayrolls(processed);
+      setShowSaved(true);
+    } catch (error) {
       setSavedPayrolls([]);
-      await alert.error("Error consultando nómina guardada");
+      setShowSaved(true);
     } finally {
-      setLoading(false);
       setIsLoadingSaved(false);
+    }
+  }
+
+  async function viewPaidPayrolls() {
+    if (isLoadingPaid) return;
+    try {
+      setIsLoadingPaid(true);
+      const res = await fetchWithAuth('/api/payroll/all-paid');
+      const json = await res.json();
+      const processed = Array.isArray(json) ? json.map(p => ({
+        ...p,
+        start_date: formatDate(p.start_date),
+        end_date: formatDate(p.end_date),
+        payment_date: formatDate(p.payment_date),
+        total_amount: Number(p.total_amount) || 0,
+        total_employees: Number(p.total_employees) || 0,
+      })) : [];
+      setPaidPayrolls(processed);
+      setShowPaid(true);
+    } catch {
+      setPaidPayrolls([]);
+      setShowPaid(true);
+    } finally {
+      setIsLoadingPaid(false);
     }
   }
 
@@ -351,28 +371,22 @@ export default function EmployeesPayRollPage() {
    * Ver detalle de una nómina específica por fecha
    */
   async function viewPayrollDetails(payrollGroup) {
-    if (isLoadingDetails || loading) return;
-    
+    if (isLoadingDetails) return;
+
     try {
       setIsLoadingDetails(true);
-      setLoading(true);
-      
-      const startDate = payrollGroup.start_date;
-      const endDate = payrollGroup.end_date;
-      
-      const res = await fetchWithAuth(`/api/payroll/saved-by-date?start_date=${startDate}&end_date=${endDate}`);
+
+      const res = await fetchWithAuth(`/api/payroll/saved-by-date?start_date=${payrollGroup.start_date}&end_date=${payrollGroup.end_date}`);
       const details = await res.json();
-      
+
       setSelectedPayrollDetails({
         ...payrollGroup,
         employees: Array.isArray(details) ? details : []
       });
       setShowDetails(true);
     } catch (error) {
-
       await alert.error('Error cargando detalle de nómina');
     } finally {
-      setLoading(false);
       setIsLoadingDetails(false);
     }
   }
@@ -641,40 +655,106 @@ export default function EmployeesPayRollPage() {
       {/* MODAL DE NÓMINAS GUARDADAS */}
       {showSaved && (
         <div className="pay-modal-backdrop" style={{ zIndex: 2000 }}>
-          <div className="pay-modal" style={{minWidth: 700, maxWidth: '90%'}}>
-            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 10}}>
-              <b>📋 Nóminas Guardadas</b>
-              <button onClick={() => setShowSaved(false)} style={{fontSize: 22, background: 'none', border: 'none', cursor: 'pointer'}}>&times;</button>
+          <div className="pay-modal" style={{ minWidth: savedPayrolls.length === 0 ? 420 : 700, maxWidth: '90%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <b>📋 Nóminas por Pagar</b>
+              <button onClick={() => setShowSaved(false)} style={{ fontSize: 22, background: 'none', border: 'none', cursor: 'pointer' }}>&times;</button>
             </div>
-            
-            <table className="pay-table" style={{margin:"10px 0"}}>
-              <thead>
-                <tr><th>Fecha</th><th>Período</th><th>Tipo de Pago</th><th>Colaboradores</th><th>Total</th><th>Acción</th></tr>
-              </thead>
-              <tbody>
-                {savedPayrolls.length === 0 ? (
-                  <tr><td colSpan={6} style={{textAlign: 'center', padding: 40}}>No hay nóminas por pagar</td></tr>
-                ) : (
-                  savedPayrolls.map((payroll, idx) => (
-                    <tr key={idx}>
-                      <td>{payroll.start_date}</td>
-                      <td>{payroll.start_date === payroll.end_date ? payroll.start_date : `${payroll.start_date} → ${payroll.end_date}`}</td>
-                      <td>{payroll.payment_type === 'hourly' ? '⏱️ Por Horas' : '📅 Pago Diario'}</td>
-                      <td style={{textAlign: 'center'}}>{payroll.total_employees}</td>
-                      <td style={{fontWeight: 600, color: '#10b981', textAlign: 'right'}}>${payroll.total_amount.toFixed(2)}</td>
-                      <td><button className="pay-btn-small" onClick={() => viewPayrollDetails(payroll)}><Eye size={14}/> Ver Detalle</button></td>
+
+            {savedPayrolls.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: '#10b981', marginBottom: 6 }}>Todo al día</div>
+                <div style={{ color: '#aaa', fontSize: 13 }}>No hay nóminas pendientes de pago.<br />Genera y guarda una nómina para verla aquí.</div>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 24 }}>
+                  <button className="pay-btn" onClick={() => setShowSaved(false)}>Cerrar</button>
+                  <button
+                    className="pay-btn"
+                    style={{ background: '#1e3a5f', color: '#60a5fa', border: '1px solid #2563eb' }}
+                    onClick={() => { setShowSaved(false); viewPaidPayrolls(); }}
+                    disabled={isLoadingPaid}
+                  >
+                    {isLoadingPaid ? 'Cargando...' : '📂 Ver Nóminas Pagadas'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <table className="pay-table" style={{ margin: '10px 0' }}>
+                  <thead>
+                    <tr><th>Fecha</th><th>Período</th><th>Tipo de Pago</th><th>Colaboradores</th><th>Total</th><th>Acción</th></tr>
+                  </thead>
+                  <tbody>
+                    {savedPayrolls.map((payroll, idx) => (
+                      <tr key={idx}>
+                        <td>{payroll.start_date}</td>
+                        <td>{payroll.start_date === payroll.end_date ? payroll.start_date : `${payroll.start_date} → ${payroll.end_date}`}</td>
+                        <td>{payroll.payment_type === 'hourly' ? '⏱️ Por Horas' : '📅 Pago Diario'}</td>
+                        <td style={{ textAlign: 'center' }}>{payroll.total_employees}</td>
+                        <td style={{ fontWeight: 600, color: '#10b981', textAlign: 'right' }}>${payroll.total_amount.toFixed(2)}</td>
+                        <td><button className="pay-btn-small" onClick={() => viewPayrollDetails(payroll)} disabled={isLoadingDetails}><Eye size={14} /> {isLoadingDetails ? '...' : 'Ver Detalle'}</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'right' }}><strong>TOTAL GENERAL</strong></td>
+                      <td style={{ fontWeight: 800, color: '#10b981', textAlign: 'right' }}><strong>${savedPayrolls.reduce((acc, e) => acc + (e.total_amount || 0), 0).toFixed(2)}</strong></td>
+                      <td></td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-              <tfoot>
-                <tr><td colSpan={4} style={{textAlign: 'right'}}><strong>TOTAL GENERAL</strong></td>
-                <td style={{fontWeight: 800, color: '#10b981', textAlign: 'right'}}><strong>${savedPayrolls.reduce((acc, e) => acc + (e.total_amount || 0), 0).toFixed(2)}</strong></td>
-                <td></td>
-              </tr>
-              </tfoot>
-            </table>
-            <div style={{textAlign:'right'}}><button className="pay-btn" onClick={() => setShowSaved(false)}>Cerrar</button></div>
+                  </tfoot>
+                </table>
+                <div style={{ textAlign: 'right' }}><button className="pay-btn" onClick={() => setShowSaved(false)}>Cerrar</button></div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL NÓMINAS PAGADAS */}
+      {showPaid && (
+        <div className="pay-modal-backdrop" style={{ zIndex: 2500 }}>
+          <div className="pay-modal" style={{ minWidth: paidPayrolls.length === 0 ? 420 : 700, maxWidth: '90%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <b>📂 Nóminas Pagadas</b>
+              <button onClick={() => setShowPaid(false)} style={{ fontSize: 22, background: 'none', border: 'none', cursor: 'pointer' }}>&times;</button>
+            </div>
+
+            {paidPayrolls.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
+                <div style={{ color: '#aaa', fontSize: 13 }}>No hay nóminas pagadas aún.</div>
+                <button className="pay-btn" onClick={() => setShowPaid(false)} style={{ marginTop: 20 }}>Cerrar</button>
+              </div>
+            ) : (
+              <>
+                <table className="pay-table" style={{ margin: '10px 0' }}>
+                  <thead>
+                    <tr><th>Fecha de Pago</th><th>Período</th><th>Tipo</th><th>Empleados</th><th>Total Pagado</th></tr>
+                  </thead>
+                  <tbody>
+                    {paidPayrolls.map((p, idx) => (
+                      <tr key={idx}>
+                        <td style={{ color: '#10b981', fontWeight: 600 }}>{p.payment_date || '—'}</td>
+                        <td>{p.start_date === p.end_date ? p.start_date : `${p.start_date} → ${p.end_date}`}</td>
+                        <td>{p.payment_type === 'hourly' ? '⏱️ Por Horas' : '📅 Pago Diario'}</td>
+                        <td style={{ textAlign: 'center' }}>{p.total_employees}</td>
+                        <td style={{ fontWeight: 700, color: '#10b981', textAlign: 'right' }}>${p.total_amount.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'right' }}><strong>TOTAL</strong></td>
+                      <td style={{ fontWeight: 800, color: '#10b981', textAlign: 'right' }}>
+                        <strong>${paidPayrolls.reduce((acc, p) => acc + p.total_amount, 0).toFixed(2)}</strong>
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+                <div style={{ textAlign: 'right' }}><button className="pay-btn" onClick={() => setShowPaid(false)}>Cerrar</button></div>
+              </>
+            )}
           </div>
         </div>
       )}
