@@ -400,14 +400,25 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
     if (discount && discount.type === 'fixed' && discount.applies_to === 'category' && discount.description?.startsWith('__FPPU__')) return 'fixed_price';
     return 'all';
   });
-  // 'fixed' = monto fijo | 'product' = producto específico | 'category' = categoría a elección
+  // 'fixed' | 'product' | 'category' | 'multiproduct'
   const [couponMode, setCouponMode] = useState(() => {
     if (discount && discount.type === 'coupon') {
       if (discount.applies_to === 'product') return 'product';
       if (discount.applies_to === 'category') return 'category';
+      if (discount.applies_to === 'products_list') return 'multiproduct';
     }
     return 'fixed';
   });
+  const [multiProductIds, setMultiProductIds] = useState(() => {
+    if (discount?.type === 'coupon' && discount.applies_to === 'products_list') {
+      try { return JSON.parse(discount.description?.replace('__MULTIPRODUCT__', '') || '[]').map(p => String(p.id)); }
+      catch { return []; }
+    }
+    return [];
+  });
+  const [productSearch, setProductSearch] = useState('');
+  const toggleMultiProduct = (id) =>
+    setMultiProductIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   // Modo combo: conjunto de productos específicos a precio especial
   const [comboMode, setComboMode] = useState(() =>
     !!(discount && String(discount.description || '').startsWith('__COMBO__'))
@@ -499,8 +510,8 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
     if (form.type === 'coupon' && couponMode === 'product' && !form.product_id) {
       return setErr('Selecciona el producto que se regala con el cupón');
     }
-    if (form.type === 'coupon' && couponMode === 'category' && !form.category_id) {
-      return setErr('Selecciona la categoría para el cupón a elección');
+    if (form.type === 'coupon' && couponMode === 'multiproduct' && multiProductIds.length === 0) {
+      return setErr('Selecciona al menos 1 producto para el cupón');
     }
 
     setSaving(true);
@@ -508,26 +519,33 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
 
     try {
       let finalDesc = form.description || '';
+      const isCouponProduct      = form.type === 'coupon' && couponMode === 'product';
+      const isCouponCategory     = form.type === 'coupon' && couponMode === 'category';
+      const isCouponMultiProduct = form.type === 'coupon' && couponMode === 'multiproduct';
       if (comboMode) {
         const comboData = { price: parseFloat(form.value), items: comboItems };
         finalDesc = '__COMBO__' + JSON.stringify(comboData) + '||' + finalDesc;
       } else if (categoryMode === 'fixed_price') {
         finalDesc = '__FPPU__' + finalDesc;
+      } else if (isCouponMultiProduct) {
+        const selProds = products
+          .filter(p => multiProductIds.includes(String(p.id)))
+          .map(p => ({ id: p.id, name: p.name, price: parseFloat(p.selling_price || 0) }));
+        finalDesc = '__MULTIPRODUCT__' + JSON.stringify(selProds);
       }
 
-      const isCouponProduct  = form.type === 'coupon' && couponMode === 'product';
-      const isCouponCategory = form.type === 'coupon' && couponMode === 'category';
       const payload = {
         name: form.name,
         description: finalDesc,
         type: comboMode ? 'fixed' : form.type,
         value: parseFloat(form.value),
-        applies_to: comboMode ? 'order'
-          : isCouponProduct  ? 'product'
-          : isCouponCategory ? 'category'
+        applies_to: comboMode          ? 'order'
+          : isCouponProduct            ? 'product'
+          : isCouponCategory           ? 'category'
+          : isCouponMultiProduct       ? 'products_list'
           : form.applies_to,
-        product_id:  comboMode ? null : isCouponCategory ? null : (form.product_id || null),
-        category_id: comboMode ? null : isCouponProduct  ? null : (form.category_id || null),
+        product_id:  comboMode ? null : (isCouponCategory || isCouponMultiProduct) ? null : (form.product_id || null),
+        category_id: comboMode ? null : (isCouponProduct  || isCouponMultiProduct) ? null : (form.category_id || null),
         min_amount: parseFloat(form.min_amount || 0),
         max_discount: form.max_discount ? parseFloat(form.max_discount) : null,
         min_quantity: parseInt(form.min_quantity) || 1,
@@ -982,7 +1000,7 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                 </div>
               )}
 
-              {form.applies_to === 'category' && (
+              {form.applies_to === 'category' && form.type !== 'coupon' && (
                 <>
                   <div>
                     <label className="label">Categoría</label>
@@ -1237,6 +1255,19 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                       🏷️ Categoría a elección
                       <div style={{ fontSize: 10, fontWeight: 400, marginTop: 2, opacity: 0.8 }}>Cliente elige qué item</div>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => { setCouponMode('multiproduct'); setField('applies_to', 'products_list'); setField('product_id', ''); setField('category_id', ''); setField('value', '100'); }}
+                      style={{
+                        flex: 1, padding: '9px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                        border: couponMode === 'multiproduct' ? '2px solid #ec4899' : '1px solid #333',
+                        background: couponMode === 'multiproduct' ? 'rgba(236,72,153,0.12)' : '#111',
+                        color: couponMode === 'multiproduct' ? '#ec4899' : '#666', cursor: 'pointer',
+                      }}
+                    >
+                      🛒 Varios productos
+                      <div style={{ fontSize: 10, fontWeight: 400, marginTop: 2, opacity: 0.8 }}>Elige de una lista</div>
+                    </button>
                   </div>
 
                   {/* Código del cupón (siempre) */}
@@ -1266,22 +1297,74 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                     </div>
                   )}
 
-                  {/* Modo: Categoría a elección del cliente */}
+                  {/* Modo: Categoría a elección — el cajero elige en caja */}
                   {couponMode === 'category' && (
                     <>
                       <div>
-                        <label className="label">Categoría del ítem gratis *</label>
-                        <select
-                          className="select"
-                          value={form.category_id || ''}
-                          onChange={e => { setField('category_id', e.target.value); setField('applies_to', 'category'); }}
-                        >
-                          <option value="">Seleccionar categoría...</option>
-                          {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                          ))}
-                        </select>
-                        <small className="help-text">Al canjear el cupón, el cajero elegirá cuál ítem de esta categoría va gratis.</small>
+                        <label className="label">Descuento sobre el ítem seleccionado (%)</label>
+                        <input
+                          className="input"
+                          type="number" min="1" max="100" step="1"
+                          value={form.value}
+                          onChange={e => setField('value', e.target.value)}
+                          placeholder="100"
+                        />
+                        <small className="help-text">100 = completamente gratis. 50 = mitad de precio.</small>
+                      </div>
+                      <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: 8, padding: '10px 12px', fontSize: 12, lineHeight: 1.7 }}>
+                        <div style={{ fontWeight: 700, color: '#ec4899', marginBottom: 4 }}>🎯 Cómo funciona en el POS</div>
+                        <div style={{ color: 'rgba(255,255,255,0.6)' }}>
+                          Al ingresar el código en caja, el cajero verá <strong style={{ color: '#f97316' }}>todos los productos de la orden</strong> y elige cuál(es) reciben el {form.value || 100}% de descuento.
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Modo: Varios productos a elección */}
+                  {couponMode === 'multiproduct' && (
+                    <>
+                      <div>
+                        <label className="label">Productos que el cliente puede recibir gratis *</label>
+                        <input
+                          className="input"
+                          placeholder="Buscar producto..."
+                          value={productSearch}
+                          onChange={e => setProductSearch(e.target.value)}
+                          style={{ marginBottom: 8 }}
+                        />
+                        <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid #2a2a2a', borderRadius: 8, background: '#0d0d0d' }}>
+                          {products
+                            .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                            .map(p => {
+                              const checked = multiProductIds.includes(String(p.id));
+                              const pvp = (parseFloat(p.selling_price || 0) * (1 + ivaRate / 100)).toFixed(2);
+                              return (
+                                <div
+                                  key={p.id}
+                                  onClick={() => toggleMultiProduct(String(p.id))}
+                                  style={{
+                                    display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px',
+                                    cursor: 'pointer', borderBottom: '1px solid #1a1a1a',
+                                    background: checked ? 'rgba(236,72,153,0.1)' : 'transparent',
+                                    transition: 'background 0.15s',
+                                  }}
+                                >
+                                  <input type="checkbox" checked={checked} readOnly style={{ accentColor: '#ec4899', width: 15, height: 15, cursor: 'pointer', flexShrink: 0 }} />
+                                  <span style={{ flex: 1, fontSize: 13, color: checked ? '#f9a8d4' : '#ccc' }}>{p.name}</span>
+                                  <span style={{ fontSize: 11, color: '#666' }}>${pvp}</span>
+                                </div>
+                              );
+                            })}
+                          {products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase())).length === 0 && (
+                            <div style={{ padding: '14px 12px', fontSize: 12, color: '#555', textAlign: 'center' }}>Sin resultados</div>
+                          )}
+                        </div>
+                        {multiProductIds.length > 0 && (
+                          <div style={{ marginTop: 8, fontSize: 12, color: '#ec4899', fontWeight: 700 }}>
+                            ✓ {multiProductIds.length} producto{multiProductIds.length !== 1 ? 's' : ''} seleccionado{multiProductIds.length !== 1 ? 's' : ''}
+                          </div>
+                        )}
+                        <small className="help-text">En caja, el cajero verá solo estos productos de la orden y elegirá cuál(es) recibe gratis el cliente.</small>
                       </div>
                       <div>
                         <label className="label">Descuento sobre el ítem seleccionado (%)</label>
@@ -1292,22 +1375,8 @@ function DiscountModal({ onClose, onSaved, discount = null }) {
                           onChange={e => setField('value', e.target.value)}
                           placeholder="100"
                         />
-                        <small className="help-text">Normalmente 100 (ítem completamente gratis). Puedes poner 50 para mitad de precio.</small>
+                        <small className="help-text">100 = completamente gratis. 50 = mitad de precio.</small>
                       </div>
-                      {form.category_id && (
-                        <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: 8, padding: '10px 12px', fontSize: 12, lineHeight: 1.7 }}>
-                          <div style={{ fontWeight: 700, color: '#ec4899', marginBottom: 4 }}>
-                            🎯 Cómo funciona en el POS
-                          </div>
-                          <div style={{ color: 'rgba(255,255,255,0.6)' }}>
-                            Al ingresar el código en caja, el sistema mostrará todos los ítems de{' '}
-                            <strong style={{ color: '#f97316' }}>
-                              {categories.find(c => String(c.id) === String(form.category_id))?.name || 'la categoría'}
-                            </strong>{' '}
-                            que están en la orden. El cajero selecciona cuál(es) recibirán el {form.value || 100}% de descuento.
-                          </div>
-                        </div>
-                      )}
                     </>
                   )}
 

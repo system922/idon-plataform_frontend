@@ -29,11 +29,11 @@ import '../../styles/CheckoutModern.css';
 export default function PosCheckoutPage() {
   const { selectedBusiness } = useBusinessContext();
   const { printerError } = useQzTray();
-  const { print } = usePrinterService();
+  const { print, openCashDrawer } = usePrinterService();
   const location = useLocation();
   const autoSelectRef = useRef(location.state?.orderNumber || null);
   const customerCedulaRef = useRef(location.state?.customerCedula || null);
-  const appliedCouponRef = useRef(null);    // { discount, amount, details }
+  const appliedCouponsRef = useRef([]);      // [{ discount, amount, details }, ...]
   const manualDiscountRef = useRef(null);   // { discount, amount, details } — seleccionado manualmente por el cajero
 
   const [orders, setOrders] = useState([]);
@@ -79,14 +79,14 @@ export default function PosCheckoutPage() {
   const [totalOrdenConDescuento, setTotalOrdenConDescuento] = useState(0);
 
   // ========== CUPONES (código manual) ==========
-  const [couponCodeInput, setCouponCodeInput] = useState('');
-  const [couponError, setCouponError] = useState('');
+  const [couponSlots, setCouponSlots] = useState([{ code: '', error: '' }]); // slots de input
   const [couponPendingSelect, setCouponPendingSelect] = useState(false);
   const [pendingCoupon, setPendingCoupon] = useState(null);
+  const [pendingSlotIdx, setPendingSlotIdx] = useState(null);
   const [couponSelectedItemIds, setCouponSelectedItemIds] = useState([]);
-  const [couponDiscountAmount, setCouponDiscountAmount] = useState(0); // separado del descuento auto
-  const [appliedCouponDiscount, setAppliedCouponDiscount] = useState(null); // el cupón activo (para display)
-  const [couponVersion, setCouponVersion] = useState(0); // incrementar para forzar recálculo via useEffect
+  const [couponDiscountAmount, setCouponDiscountAmount] = useState(0); // suma total de cupones
+  const [couponVersion, setCouponVersion] = useState(0);
+  const [descuentosExpanded, setDescuentosExpanded] = useState(false);
 
   // ========== CONFIGURACIÓN FISCAL ==========
   const [ivaRateGlobal, setIvaRateGlobal] = useState(15);
@@ -357,7 +357,7 @@ export default function PosCheckoutPage() {
 
   const getSubtotalSinIVA = useCallback(() => {
     if (!selectedOrder) return 0;
-    return (selectedOrder.items || []).reduce((sum, item) => {
+    return (selectedOrder.items || []).filter(item => !item.paid).reduce((sum, item) => {
       const price = Number(item.selling_price) || Number(item.unit_price) || 0;
       const quantity = Number(item.quantity) || 1;
       return sum + (price * quantity);
@@ -368,13 +368,14 @@ export default function PosCheckoutPage() {
 
   const getIvaTotal = useCallback(() => {
     if (!selectedOrder) return 0;
-    return (selectedOrder.items || []).reduce((sum, item) =>
+    return (selectedOrder.items || []).filter(item => !item.paid).reduce((sum, item) =>
       sum + (Number(item.tax_rate) || 0) * (Number(item.quantity) || 1), 0);
   }, [selectedOrder]);
 
   const getOrderTotal = useCallback(() => {
     if (!selectedOrder) return 0;
-    if (selectedOrder.total && typeof selectedOrder.total === 'number' && selectedOrder.total > 0)
+    const hasPaidItems = (selectedOrder.items || []).some(item => item.paid);
+    if (!hasPaidItems && selectedOrder.total && typeof selectedOrder.total === 'number' && selectedOrder.total > 0)
       return Number(selectedOrder.total);
     return getSubtotalSinIVA() + getIvaTotal();
   }, [selectedOrder, getSubtotalSinIVA, getIvaTotal]);
@@ -449,7 +450,6 @@ export default function PosCheckoutPage() {
       setDiscountAmount(0);
       setDiscountDetails(null);
       setCouponDiscountAmount(0);
-      setAppliedCouponDiscount(null);
       setTotalOrdenConDescuento(getOrderTotal());
       return;
     }
@@ -458,18 +458,13 @@ export default function PosCheckoutPage() {
     const ivaRate = getIvaRate() / 100;
     const items = selectedOrder.items || [];
 
-    // ── 1. Auto-descuento ──
-    // Con cupón activo: solo usar lo que el cajero seleccionó manualmente (manualDiscountRef)
-    // Sin cupón: auto-aplicar el mejor descuento disponible y guardarlo en manualDiscountRef
-    const couponActive = !!appliedCouponRef.current;
-    let best;
-    if (couponActive) {
-      best = manualDiscountRef.current; // puede ser null si el cajero no seleccionó ninguno
-    } else {
-      best = getBestApplicableDiscount(subtotalSinIVA, items);
-      manualDiscountRef.current = best || null; // sincronizar ref con el auto-descuento
-    }
+    // ── 1. Auto-descuento — solo el que el cajero seleccionó manualmente ──
+    const couponActive = appliedCouponsRef.current.length > 0;
+    const best = manualDiscountRef.current;
     let autoDiscountedTotal = getOrderTotal();
+    // Base imponible después del descuento regular (antes del cupón)
+    // Se calcula desde los ítems para evitar valores redondeados del DB
+    let discountedBase = subtotalSinIVA;
 
     if (best && best.amount > 0) {
       setAppliedDiscount(best.discount);
@@ -519,6 +514,7 @@ export default function PosCheckoutPage() {
         nuevoIVA = Math.round(nuevaBaseImponible * ivaRate * 100) / 100;
       }
 
+      discountedBase = nuevaBaseImponible;
       autoDiscountedTotal = nuevoTotalFinal !== null
         ? nuevoTotalFinal
         : Math.round((nuevaBaseImponible + nuevoIVA) * 100) / 100;
@@ -526,29 +522,30 @@ export default function PosCheckoutPage() {
       setAppliedDiscount(null);
       setDiscountAmount(0);
       setDiscountDetails(null);
-      autoDiscountedTotal = getOrderTotal();
+      // discountedBase ya es subtotalSinIVA
     }
 
-    // ── 2. Cupón manual (independiente del auto-descuento) ──
+    // ── 2. Cupones manuales — suma de todos ──
     let couponAmt = 0;
-    if (appliedCouponRef.current) {
-      const coupon = appliedCouponRef.current.discount;
-      // Categoría: usar monto almacenado (el cajero eligió ítems específicos, no recalcular)
-      couponAmt = coupon.applies_to === 'category'
-        ? appliedCouponRef.current.amount
+    for (const c of appliedCouponsRef.current) {
+      const coupon = c.discount;
+      const amt = coupon.applies_to === 'category'
+        ? c.amount
         : calculateDiscountAmountForOrder(coupon, subtotalSinIVA, items);
-      couponAmt = Math.max(0, couponAmt);
-      setCouponDiscountAmount(couponAmt);
-      setAppliedCouponDiscount(coupon);
-    } else {
-      setCouponDiscountAmount(0);
-      setAppliedCouponDiscount(null);
+      couponAmt += Math.max(0, amt);
     }
+    setCouponDiscountAmount(couponAmt);
 
     // ── 3. Total final combinado ──
-    const finalTotal = couponAmt > 0
-      ? Math.round(Math.max(0, autoDiscountedTotal - couponAmt * (1 + ivaRate)) * 100) / 100
-      : autoDiscountedTotal;
+    // Se calcula desde la base (no desde el total del DB) para evitar errores de redondeo
+    let finalTotal;
+    if (couponAmt > 0) {
+      const baseAfterCoupon = Math.max(0, discountedBase - couponAmt);
+      const ivaAfterCoupon = Math.round(baseAfterCoupon * ivaRate * 100) / 100;
+      finalTotal = Math.round((baseAfterCoupon + ivaAfterCoupon) * 100) / 100;
+    } else {
+      finalTotal = autoDiscountedTotal;
+    }
     setTotalOrdenConDescuento(finalTotal);
   }, [selectedOrder, getSubtotalSinIVA, getIvaTotal, getOrderTotal, getBestApplicableDiscount, getIvaRate, getSubtotalByCategory, getSubtotalByProduct, calculateDiscountAmountForOrder]);
 
@@ -582,9 +579,9 @@ export default function PosCheckoutPage() {
           }
           
           // Validación según tipo de aplicación
-          if (d.applies_to === 'category' && !d.category_id) {
+          if (d.applies_to === 'category' && !d.category_id && d.type !== 'coupon') {
             console.warn('[DESCUENTOS FILTRADO] Descuento por categoría sin category_id:', d.name);
-            return false; // Descuento por categoría necesita category_id
+            return false; // Los cupones pueden no tener category_id (selección al cobrar)
           }
           if (d.applies_to === 'product' && !d.product_id) {
             console.warn('[DESCUENTOS FILTRADO] Descuento por producto sin product_id:', d.name);
@@ -673,15 +670,14 @@ export default function PosCheckoutPage() {
     setDiscountAmount(0);
     setDiscountDetails(null);
     setTotalOrdenConDescuento(0);
-    appliedCouponRef.current = null;
+    appliedCouponsRef.current = [];
     manualDiscountRef.current = null;
-    setCouponCodeInput('');
-    setCouponError('');
+    setCouponSlots([{ code: '', error: '' }]);
     setCouponPendingSelect(false);
     setPendingCoupon(null);
+    setPendingSlotIdx(null);
     setCouponSelectedItemIds([]);
     setCouponDiscountAmount(0);
-    setAppliedCouponDiscount(null);
   };
 
   const loadOrders = async () => {
@@ -872,78 +868,102 @@ export default function PosCheckoutPage() {
     setModoPorCobrar(false);
     setFacturaIndividual(false);
     setError('');
-    appliedCouponRef.current = null;
+    appliedCouponsRef.current = [];
     manualDiscountRef.current = null;
-    setCouponCodeInput('');
-    setCouponError('');
+    setCouponSlots([{ code: '', error: '' }]);
     setCouponPendingSelect(false);
     setPendingCoupon(null);
+    setPendingSlotIdx(null);
     setCouponSelectedItemIds([]);
     setCouponDiscountAmount(0);
-    setAppliedCouponDiscount(null);
   };
 
-  const aplicarCupon = () => {
-    setCouponError('');
-    const code = couponCodeInput.trim().toUpperCase();
-    if (!code) { setCouponError('Ingrese el código del cupón'); return; }
-    if (!selectedOrder) { setCouponError('Seleccione una orden primero'); return; }
+  const setSlotError = (idx, err) =>
+    setCouponSlots(prev => prev.map((s, i) => i === idx ? { ...s, error: err } : s));
+
+  const aplicarCupon = (slotIdx) => {
+    const slot = couponSlots[slotIdx];
+    const code = (slot?.code || '').trim().toUpperCase();
+    setSlotError(slotIdx, '');
+    if (!code) { setSlotError(slotIdx, 'Ingrese el código del cupón'); return; }
+    if (!selectedOrder) { setSlotError(slotIdx, 'Seleccione una orden primero'); return; }
+
+    const alreadyApplied = appliedCouponsRef.current.some(c =>
+      (c.discount.code && c.discount.code.toUpperCase() === code) ||
+      (c.discount.name && c.discount.name.toUpperCase() === code)
+    );
+    if (alreadyApplied) { setSlotError(slotIdx, 'Este cupón ya fue aplicado'); return; }
 
     const coupon = availableDiscounts.find(d =>
       d.type === 'coupon' &&
       d.is_active &&
       ((d.code && d.code.toUpperCase() === code) || (d.name && d.name.toUpperCase() === code))
     );
-
-    if (!coupon) { setCouponError('Código de cupón inválido o inactivo'); return; }
+    if (!coupon) { setSlotError(slotIdx, 'Código de cupón inválido o inactivo'); return; }
 
     const items = selectedOrder.items || [];
 
-    // Cupón de categoría a elección: abrir selector de ítems
-    if (coupon.applies_to === 'category' && coupon.category_id) {
-      const catItems = items.filter(item =>
-        String(item.category_id) === String(coupon.category_id) && !item.paid
-      );
-      if (catItems.length === 0) {
-        const catName = coupon.category_name || 'la categoría del cupón';
-        setCouponError(`No hay productos de "${catName}" en la orden`);
+    if (coupon.applies_to === 'category') {
+      const elegibles = coupon.category_id
+        ? items.filter(item => String(item.category_id) === String(coupon.category_id) && !item.paid)
+        : items.filter(item => !item.paid);
+      if (elegibles.length === 0) {
+        setSlotError(slotIdx, 'No hay productos disponibles en la orden para este cupón');
         return;
       }
       setPendingCoupon(coupon);
+      setPendingSlotIdx(slotIdx);
       setCouponPendingSelect(true);
       setCouponSelectedItemIds([]);
       return;
     }
 
-    // Cupón de producto específico
+    if (coupon.applies_to === 'products_list') {
+      try {
+        const allowed = JSON.parse(coupon.description?.replace('__MULTIPRODUCT__', '') || '[]');
+        const allowedIds = allowed.map(p => String(p.id));
+        const matchItems = items.filter(item => allowedIds.includes(String(item.product_id)) && !item.paid);
+        if (matchItems.length === 0) {
+          setSlotError(slotIdx, 'Ninguno de los productos del cupón está en la orden');
+          return;
+        }
+      } catch {
+        setSlotError(slotIdx, 'Cupón inválido');
+        return;
+      }
+      setPendingCoupon(coupon);
+      setPendingSlotIdx(slotIdx);
+      setCouponPendingSelect(true);
+      setCouponSelectedItemIds([]);
+      return;
+    }
+
     if (coupon.applies_to === 'product' && coupon.product_id) {
       const enOrden = items.some(item => String(item.product_id) === String(coupon.product_id));
       if (!enOrden) {
-        const prodName = coupon.product_name || 'el producto del cupón';
-        setCouponError(`Este cupón aplica solo si hay "${prodName}" en la orden`);
+        setSlotError(slotIdx, `Este cupón aplica solo si hay "${coupon.product_name || 'el producto'}" en la orden`);
         return;
       }
     }
 
     const subtotal = getSubtotalSinIVA();
     const newAmount = calculateDiscountAmountForOrder(coupon, subtotal, items);
-    if (newAmount <= 0) { setCouponError('El cupón no aplica a esta orden'); return; }
+    if (newAmount <= 0) { setSlotError(slotIdx, 'El cupón no aplica a esta orden'); return; }
 
     const details = { name: coupon.name, type: coupon.type, applies_to: coupon.applies_to, value: coupon.value };
-    manualDiscountRef.current = null; // quitar auto-descuento al aplicar cupón
-    appliedCouponRef.current = { discount: coupon, amount: newAmount, details };
+    appliedCouponsRef.current = [...appliedCouponsRef.current, { discount: coupon, amount: newAmount, details }];
+    setCouponSlots(prev => prev.map((s, i) => i === slotIdx ? { code: '', error: '' } : s));
     setCouponVersion(v => v + 1);
     setSuccess(`Cupón "${coupon.name}" aplicado: -${fmt(newAmount)}`);
     setTimeout(() => setSuccess(''), 3000);
   };
 
   const confirmarCuponCategoria = () => {
-    if (couponSelectedItemIds.length === 0) { setCouponError('Selecciona al menos un ítem'); return; }
+    if (couponSelectedItemIds.length === 0) { setSlotError(pendingSlotIdx ?? 0, 'Selecciona al menos un ítem'); return; }
     const coupon = pendingCoupon;
     const items = selectedOrder.items || [];
     const pct = Number(coupon.value) / 100;
 
-    // Calcular descuento solo sobre los ítems elegidos por el cajero
     const selectedTotal = items
       .filter(item => couponSelectedItemIds.includes(item.id))
       .reduce((sum, item) => {
@@ -952,29 +972,24 @@ export default function PosCheckoutPage() {
       }, 0);
 
     const newAmount = Math.round(selectedTotal * pct * 100) / 100;
-    if (newAmount <= 0) { setCouponError('El descuento resultó en 0'); return; }
+    if (newAmount <= 0) { setSlotError(pendingSlotIdx ?? 0, 'El descuento resultó en 0'); return; }
 
     const details = { name: coupon.name, type: coupon.type, applies_to: 'category', value: coupon.value };
-    manualDiscountRef.current = null; // quitar auto-descuento al aplicar cupón
-    appliedCouponRef.current = { discount: coupon, amount: newAmount, details };
+    appliedCouponsRef.current = [...appliedCouponsRef.current, { discount: coupon, amount: newAmount, details }];
+    if (pendingSlotIdx !== null) {
+      setCouponSlots(prev => prev.map((s, i) => i === pendingSlotIdx ? { code: '', error: '' } : s));
+    }
     setCouponVersion(v => v + 1);
     setCouponPendingSelect(false);
     setPendingCoupon(null);
+    setPendingSlotIdx(null);
     setCouponSelectedItemIds([]);
-    setCouponError('');
     setSuccess(`Cupón "${coupon.name}" aplicado: -${fmt(newAmount)}`);
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  const quitarCupon = () => {
-    appliedCouponRef.current = null;
-    setCouponCodeInput('');
-    setCouponError('');
-    setCouponPendingSelect(false);
-    setPendingCoupon(null);
-    setCouponSelectedItemIds([]);
-    setCouponDiscountAmount(0);
-    setAppliedCouponDiscount(null);
+  const quitarCupon = (couponIdx) => {
+    appliedCouponsRef.current = appliedCouponsRef.current.filter((_, i) => i !== couponIdx);
     setCouponVersion(v => v + 1);
   };
 
@@ -1059,8 +1074,16 @@ export default function PosCheckoutPage() {
 
   const subtotalSinIVAMostrar = getSubtotalSinIVA();
   const ivaRateMostrar = getIvaRate();
-  const nuevaBaseImponible = Math.max(0, subtotalSinIVAMostrar - discountAmount);
+  const nuevaBaseImponible = Math.max(0, subtotalSinIVAMostrar - discountAmount - couponDiscountAmount);
   const nuevoIVAMostrar = Math.round(nuevaBaseImponible * (ivaRateMostrar / 100) * 100) / 100;
+
+  // Total de ítems aún NO pagados (para modo dividido)
+  const itemsPendientes = (selectedOrder?.items || []).filter(item => !item.paid);
+  const subtotalPendiente = itemsPendientes.reduce((s, item) =>
+    s + (Number(item.selling_price) || Number(item.unit_price) || 0) * (Number(item.quantity) || 1), 0);
+  const ivaPendiente = itemsPendientes.reduce((s, item) =>
+    s + (Number(item.tax_rate) || 0) * (Number(item.quantity) || 1), 0);
+  const totalPendiente = subtotalPendiente + ivaPendiente;
 
   // ─── Funciones cuenta dividida ─────────────────────────────────────────────
   const agregarComensal = () => {
@@ -1196,7 +1219,9 @@ export default function PosCheckoutPage() {
   const totalPagadoMixto = (parseFloat(amountPaid) || 0) + (parseFloat(cardPaid) || 0) + (parseFloat(transferPaid) || 0);
   const faltanteMixto = Math.max(0, totalOrdenConDescuento - totalPagadoMixto);
   const cambioMixto = Math.max(0, totalPagadoMixto - totalOrdenConDescuento);
-  const totalOrdenBruto = getOrderTotal();
+  const totalOrdenBruto = (selectedOrder?.items || []).reduce((s, item) =>
+    s + (Number(item.selling_price) || Number(item.unit_price) || 0) * (Number(item.quantity) || 1)
+    + (Number(item.tax_rate) || 0) * (Number(item.quantity) || 1), 0);
 
   const FORMA_PAGO_MAP = { cash: '01', card: '19', transfer: '20', mixto: '01', split: '01' };
 
@@ -1443,7 +1468,7 @@ export default function PosCheckoutPage() {
       const totalDescuentoImpresion = discountAmount + couponDiscountAmount;
       const discountsPrint = [];
       if (discountAmount > 0 && appliedDiscount) discountsPrint.push({ name: appliedDiscount.name, amount: discountAmount });
-      if (couponDiscountAmount > 0 && appliedCouponDiscount) discountsPrint.push({ name: `Cupón: ${appliedCouponDiscount.name}`, amount: couponDiscountAmount });
+      appliedCouponsRef.current.forEach(c => discountsPrint.push({ name: `Cupón: ${c.discount.name}`, amount: c.amount }));
       const printBaseConDesc = Math.max(0, printSubtotal - totalDescuentoImpresion);
       const nuevoIVAImpresion = Math.round(printBaseConDesc * (ivaRateGlobal / 100) * 100) / 100;
       const printTotalFinal = printBaseConDesc + nuevoIVAImpresion;
@@ -1567,11 +1592,12 @@ export default function PosCheckoutPage() {
       } else {
         const itemsCompletos = comensal.items.map(itemId => selectedOrder?.items?.find(i => i.id === itemId)).filter(i => i);
         setPagosRegistrados(prev => [...prev, { cliente: { cedula, nombre, email }, items: itemsCompletos, total: totalComensal, metodoPago: comensal.metodoPago, payments }]);
+        if (debeAbrirCajon) openCashDrawer();
         setSuccess(`Pago registrado para ${nombre}`);
       }
 
       setClientesDivididos(prev => prev.filter(c => c.id !== comensal.id));
-      const ordenActualizada = await recargarOrden();
+      const [ordenActualizada] = await Promise.all([recargarOrden(), loadOrders()]);
       const itemsPendientes = ordenActualizada?.items?.filter(i => !i.paid).length || 0;
 
       if (itemsPendientes === 0) {
@@ -1583,7 +1609,7 @@ export default function PosCheckoutPage() {
 
           if (itemsFinales.length > 0) {
             const ordenCompleta = { ...selectedOrder, items: itemsFinales };
-            const discountInfo = (appliedDiscount || appliedCouponDiscount) ? { id: appliedDiscount?.id || appliedCouponDiscount?.id, name: appliedDiscount?.name || appliedCouponDiscount?.name, amount: discountAmount + couponDiscountAmount } : null;
+            const discountInfo = (appliedDiscount || appliedCouponsRef.current.length > 0) ? { id: appliedDiscount?.id, name: [appliedDiscount?.name, ...appliedCouponsRef.current.map(c => c.discount.name)].filter(Boolean).join(' + '), amount: discountAmount + couponDiscountAmount } : null;
             const invoiceData = await emitirFactura(ordenCompleta, clienteCedula || '9999999999', clienteNombre || 'CONSUMIDOR FINAL', 'split', discountInfo, clienteEmail);
             await imprimirTicket(ordenCompleta, totalOrdenConDescuento, 0, invoiceData?.invoice_number, 'split', 'FACTURA FINAL', false);
           }
@@ -1659,12 +1685,12 @@ export default function PosCheckoutPage() {
       let clienteId = await guardarCliente(cedula, nombre, clienteEmail?.trim() || null);
       let invoiceData = null;
       const totalDescuento = discountAmount + couponDiscountAmount;
-      const discountInfo = (appliedDiscount || appliedCouponDiscount) ? {
-        id: appliedDiscount?.id || appliedCouponDiscount?.id,
-        name: [appliedDiscount?.name, appliedCouponDiscount?.name].filter(Boolean).join(' + '),
+      const discountInfo = (appliedDiscount || appliedCouponsRef.current.length > 0) ? {
+        id: appliedDiscount?.id,
+        name: [appliedDiscount?.name, ...appliedCouponsRef.current.map(c => c.discount.name)].filter(Boolean).join(' + '),
         amount: totalDescuento,
-        type: appliedDiscount?.type || appliedCouponDiscount?.type,
-        applies_to: appliedDiscount?.applies_to || appliedCouponDiscount?.applies_to,
+        type: appliedDiscount?.type,
+        applies_to: appliedDiscount?.applies_to,
       } : null;
 
       let debeAbrirCajon = false;
@@ -1861,193 +1887,178 @@ export default function PosCheckoutPage() {
                 </div>
               )}
 
-              {/* ===== SECCIÓN DE DESCUENTOS DISPONIBLES ===== */}
-              {!modoDividido && !modoPorCobrar && availableDiscounts.length > 0 && (
-                <div style={{
-                  background: '#1a3a3a',
-                  border: '1px solid #2d5f5f',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  marginBottom: '12px',
-                  color: '#e0e0e0'
-                }}>
-                  <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <FiPercent size={14} /> DESCUENTOS DISPONIBLES
-                  </div>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                    gap: '8px'
-                  }}>
-                    {availableDiscounts
-                      .filter(d => d.is_active && d.type !== 'coupon' && isDiscountApplicable(d, getOrderTotal(), selectedOrder?.items || []))
-                      .map(discount => {
-                        const isSelected = appliedDiscount?.id === discount.id;
-                        const isFPPU = discount.type === 'fixed' && discount.applies_to === 'category' &&
-                          String(discount.description || '').startsWith('__FPPU__');
-                        const discountLabel =
-                          isFPPU ? `$${parseFloat(discount.value).toFixed(2)}/u FIJO` :
-                          discount.type === 'percentage' ? `${discount.value}% DESC` :
-                          discount.type === 'fixed' ? `$${parseFloat(discount.value).toFixed(2)} DESC` :
-                          discount.type === 'buy_x_get_y' ? `COMPRA X LLEVA Y` :
-                          discount.type === 'bulk' ? `${discount.value}% MAYOREO` :
-                          `CUPÓN`;
-                        
-                        return (
-                          <button
-                            key={discount.id}
-                            onClick={() => {
-                              const hasCoupon = !!appliedCouponRef.current;
-                              const couponAmt = couponDiscountAmount;
-                              const ivaMult = 1 + ivaRateGlobal / 100;
-                              if (isSelected) {
-                                manualDiscountRef.current = null;
-                                setAppliedDiscount(null);
-                                setDiscountAmount(0);
-                                setDiscountDetails(null);
-                                // Si hay cupón activo, total = total sin IVA + IVA - cupón con IVA
-                                if (hasCoupon && couponAmt > 0) {
-                                  const base = getOrderTotal();
-                                  setTotalOrdenConDescuento(Math.round(Math.max(0, base - couponAmt * ivaMult) * 100) / 100);
-                                } else {
-                                  setTotalOrdenConDescuento(getOrderTotal());
-                                }
-                              } else {
-                                const newAmount = calculateDiscountAmountForOrder(discount, getSubtotalSinIVA(), selectedOrder?.items || []);
-                                const details = {
-                                  name: discount.name, type: discount.type,
-                                  applies_to: discount.applies_to, value: discount.value,
-                                  product_name: discount.product_name, category_name: discount.category_name
-                                };
-                                manualDiscountRef.current = { discount, amount: newAmount, details };
-                                setAppliedDiscount(discount);
-                                setDiscountAmount(newAmount);
-                                setDiscountDetails(details);
-                                recalcularTotalConDescuento(discount, newAmount);
-                                // Si hay cupón activo, restar también el cupón al total auto-descontado
-                                if (hasCoupon && couponAmt > 0) {
-                                  setTotalOrdenConDescuento(prev =>
-                                    Math.round(Math.max(0, prev - couponAmt * ivaMult) * 100) / 100
-                                  );
-                                }
-                              }
-                            }}
-                            style={{
-                              padding: '8px 10px',
-                              borderRadius: '6px',
-                              border: isSelected ? '2px solid #10b981' : '1px solid #404040',
-                              background: isSelected ? 'rgba(16, 185, 129, 0.2)' : '#262626',
-                              color: isSelected ? '#10b981' : '#b0b0b0',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              fontWeight: '600',
-                              transition: 'all 0.2s',
-                              textAlign: 'center',
-                              whiteSpace: 'normal'
-                            }}
-                            title={discount.name}
-                          >
-                            <div>{discountLabel}</div>
-                            <div style={{ fontSize: '11px', opacity: 0.8, marginTop: '2px' }}>{discount.name}</div>
-                          </button>
-                        );
-                      })
-                    }
-                  </div>
-
-                </div>
-              )}
-
-              {/* ─── CUPÓN: input de código (siempre visible en modo normal) ─── */}
+              {/* ===== DESCUENTOS + CUPONES ===== */}
               {!modoDividido && !modoPorCobrar && (
-                <div style={{
-                  background: '#1a1a2e',
-                  border: `1px solid ${appliedCouponRef.current ? '#10b981' : '#334155'}`,
-                  borderRadius: '8px',
-                  padding: '12px',
-                  marginBottom: '12px',
-                }}>
-                  <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '600' }}>
-                    <FiTag size={13} /> CÓDIGO DE CUPÓN
-                  </div>
-                  {appliedCouponRef.current ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ flex: 1, background: 'rgba(16,185,129,0.12)', border: '1px solid #10b981', borderRadius: '6px', padding: '8px 12px', fontSize: '13px', color: '#10b981', fontWeight: '600' }}>
-                        ✓ {appliedCouponDiscount?.name} — -{fmt(couponDiscountAmount)}
+                <div style={{ background: '#1a3a3a', border: '1px solid #2d5f5f', borderRadius: '8px', marginBottom: '12px', color: '#e0e0e0', overflow: 'hidden' }}>
+                  <div onClick={() => setDescuentosExpanded(p => !p)}
+                    style={{ fontSize: '13px', fontWeight: '600', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none', borderBottom: descuentosExpanded ? '1px solid #2d5f5f' : 'none' }}>
+                    <FiPercent size={14} />
+                    DESCUENTOS Y CUPONES
+                    {(appliedDiscount || appliedCouponsRef.current.length > 0) && (
+                      <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#10b981', fontWeight: '700' }}>
+                        -{fmt(discountAmount + couponDiscountAmount)}
                       </span>
-                      <button onClick={quitarCupon} style={{ background: '#7f1d1d', border: 'none', borderRadius: '6px', color: '#fca5a5', padding: '8px 12px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap' }}>
-                        <FiX size={12} /> Quitar
-                      </button>
+                    )}
+                    <span style={{ marginLeft: appliedDiscount || appliedCouponsRef.current.length > 0 ? '0' : 'auto', color: '#94a3b8', fontSize: '12px' }}>
+                      {descuentosExpanded ? '▲' : '▼'}
+                    </span>
+                  </div>
+                  {descuentosExpanded && <div style={{ padding: '12px' }}>
+
+                  {/* ── Descuentos disponibles ── */}
+                  {availableDiscounts.filter(d => d.is_active && d.type !== 'coupon' && isDiscountApplicable(d, getOrderTotal(), selectedOrder?.items || [])).length > 0 && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginBottom: '10px' }}>
+                      {availableDiscounts
+                        .filter(d => d.is_active && d.type !== 'coupon' && isDiscountApplicable(d, getOrderTotal(), selectedOrder?.items || []))
+                        .map(discount => {
+                          const isSelected = appliedDiscount?.id === discount.id;
+                          const isFPPU = discount.type === 'fixed' && discount.applies_to === 'category' &&
+                            String(discount.description || '').startsWith('__FPPU__');
+                          const discountLabel =
+                            isFPPU ? `$${parseFloat(discount.value).toFixed(2)}/u FIJO` :
+                            discount.type === 'percentage' ? `${discount.value}% DESC` :
+                            discount.type === 'fixed' ? `$${parseFloat(discount.value).toFixed(2)} DESC` :
+                            discount.type === 'buy_x_get_y' ? `COMPRA X LLEVA Y` :
+                            discount.type === 'bulk' ? `${discount.value}% MAYOREO` : `DESC`;
+                          return (
+                            <button
+                              key={discount.id}
+                              onClick={() => {
+                                const couponAmt = couponDiscountAmount;
+                                const ivaMult = 1 + ivaRateGlobal / 100;
+                                if (isSelected) {
+                                  manualDiscountRef.current = null;
+                                  setAppliedDiscount(null);
+                                  setDiscountAmount(0);
+                                  setDiscountDetails(null);
+                                  const base = getOrderTotal();
+                                  setTotalOrdenConDescuento(couponAmt > 0 ? Math.round(Math.max(0, base - couponAmt * ivaMult) * 100) / 100 : base);
+                                } else {
+                                  const newAmount = calculateDiscountAmountForOrder(discount, getSubtotalSinIVA(), selectedOrder?.items || []);
+                                  const details = { name: discount.name, type: discount.type, applies_to: discount.applies_to, value: discount.value, product_name: discount.product_name, category_name: discount.category_name };
+                                  manualDiscountRef.current = { discount, amount: newAmount, details };
+                                  setAppliedDiscount(discount);
+                                  setDiscountAmount(newAmount);
+                                  setDiscountDetails(details);
+                                  recalcularTotalConDescuento(discount, newAmount);
+                                  if (couponAmt > 0) {
+                                    setTotalOrdenConDescuento(prev => Math.round(Math.max(0, prev - couponAmt * ivaMult) * 100) / 100);
+                                  }
+                                }
+                              }}
+                              style={{ padding: '8px 10px', borderRadius: '6px', border: isSelected ? '2px solid #10b981' : '1px solid #404040', background: isSelected ? 'rgba(16,185,129,0.2)' : '#262626', color: isSelected ? '#10b981' : '#b0b0b0', cursor: 'pointer', fontSize: '12px', fontWeight: '600', transition: 'all 0.2s', textAlign: 'center', whiteSpace: 'normal' }}
+                              title={discount.name}
+                            >
+                              <div>{discountLabel}</div>
+                              <div style={{ fontSize: '11px', opacity: 0.8, marginTop: '2px' }}>{discount.name}</div>
+                            </button>
+                          );
+                        })}
                     </div>
-                  ) : couponPendingSelect ? (
-                    /* ── Selector de ítem(s) dentro de la categoría del cupón ── */
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  )}
+
+
+                  {/* ── Selector de ítems para cupón de categoría ── */}
+                  {couponPendingSelect && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', padding: '10px' }}>
                       <div style={{ fontSize: '12px', color: '#f59e0b', fontWeight: '600' }}>
                         🎯 Cupón "{pendingCoupon?.name}" — selecciona qué ítem(s) reciben el {pendingCoupon?.value}% de descuento:
                       </div>
                       {(selectedOrder?.items || [])
-                        .filter(item => String(item.category_id) === String(pendingCoupon?.category_id) && !item.paid)
+                        .filter(item => {
+                          if (item.paid) return false;
+                          if (pendingCoupon?.applies_to === 'category') {
+                            return pendingCoupon.category_id
+                              ? String(item.category_id) === String(pendingCoupon.category_id)
+                              : true;
+                          }
+                          if (pendingCoupon?.applies_to === 'products_list') {
+                            try {
+                              const allowed = JSON.parse(pendingCoupon.description?.replace('__MULTIPRODUCT__', '') || '[]');
+                              return allowed.some(p => String(p.id) === String(item.product_id));
+                            } catch { return false; }
+                          }
+                          return false;
+                        })
                         .map(item => {
                           const checked = couponSelectedItemIds.includes(item.id);
                           const base = (Number(item.selling_price) || Number(item.unit_price) || 0) * (Number(item.quantity) || 1);
                           const descItem = Math.round(base * (Number(pendingCoupon?.value) / 100) * 100) / 100;
                           return (
-                            <div
-                              key={item.id}
-                              onClick={() => setCouponSelectedItemIds(prev =>
-                                prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
-                              )}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer',
-                                padding: '8px 12px', borderRadius: '6px',
-                                background: checked ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
-                                border: `1px solid ${checked ? '#6366f1' : '#334155'}`,
-                              }}
-                            >
+                            <div key={item.id} onClick={() => setCouponSelectedItemIds(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id])}
+                              style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '8px 12px', borderRadius: '6px', background: checked ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${checked ? '#6366f1' : '#334155'}` }}>
                               <input type="checkbox" checked={checked} readOnly style={{ accentColor: '#6366f1', width: 16, height: 16, cursor: 'pointer' }} />
-                              <span style={{ flex: 1, fontSize: '13px', color: '#f1f5f9' }}>
-                                {item.quantity}× {item.product_name}
-                              </span>
+                              <span style={{ flex: 1, fontSize: '13px', color: '#f1f5f9' }}>{item.quantity}× {item.product_name}</span>
                               <span style={{ fontSize: '12px', color: '#94a3b8' }}>{fmt(base)}</span>
                               {checked && <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '700' }}>-{fmt(descItem)}</span>}
                             </div>
                           );
                         })}
-                      {couponError && <div style={{ color: '#ef4444', fontSize: '11px' }}>{couponError}</div>}
+                      {pendingSlotIdx !== null && couponSlots[pendingSlotIdx]?.error && (
+                        <div style={{ color: '#ef4444', fontSize: '11px' }}>{couponSlots[pendingSlotIdx].error}</div>
+                      )}
                       <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                        <button
-                          onClick={confirmarCuponCategoria}
-                          disabled={couponSelectedItemIds.length === 0}
-                          style={{ flex: 1, background: couponSelectedItemIds.length > 0 ? '#6366f1' : '#334155', border: 'none', borderRadius: '6px', color: '#fff', padding: '9px', cursor: couponSelectedItemIds.length > 0 ? 'pointer' : 'not-allowed', fontSize: '13px', fontWeight: '600' }}
-                        >
-                          ✓ Aplicar descuento ({couponSelectedItemIds.length} ítem{couponSelectedItemIds.length !== 1 ? 's' : ''})
+                        <button onClick={confirmarCuponCategoria} disabled={couponSelectedItemIds.length === 0}
+                          style={{ flex: 1, background: couponSelectedItemIds.length > 0 ? '#6366f1' : '#334155', border: 'none', borderRadius: '6px', color: '#fff', padding: '9px', cursor: couponSelectedItemIds.length > 0 ? 'pointer' : 'not-allowed', fontSize: '13px', fontWeight: '600' }}>
+                          ✓ Aplicar ({couponSelectedItemIds.length} ítem{couponSelectedItemIds.length !== 1 ? 's' : ''})
                         </button>
-                        <button
-                          onClick={() => { setCouponPendingSelect(false); setPendingCoupon(null); setCouponSelectedItemIds([]); setCouponError(''); }}
-                          style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: '#94a3b8', padding: '9px 14px', cursor: 'pointer', fontSize: '13px' }}
-                        >
+                        <button onClick={() => { setCouponPendingSelect(false); setPendingCoupon(null); setPendingSlotIdx(null); setCouponSelectedItemIds([]); }}
+                          style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: '#94a3b8', padding: '9px 14px', cursor: 'pointer', fontSize: '13px' }}>
                           Cancelar
                         </button>
                       </div>
                     </div>
-                  ) : (
-                    <>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <input
-                          type="text"
-                          placeholder="Ingrese el código del cupón"
-                          value={couponCodeInput}
-                          onChange={e => { setCouponCodeInput(e.target.value.toUpperCase()); setCouponError(''); }}
-                          onKeyPress={e => e.key === 'Enter' && aplicarCupon()}
-                          style={{ flex: 1, background: '#0f172a', border: `1px solid ${couponError ? '#ef4444' : '#334155'}`, borderRadius: '6px', color: '#f1f5f9', padding: '8px 12px', fontSize: '13px', outline: 'none' }}
-                        />
-                        <button onClick={aplicarCupon} style={{ background: '#6366f1', border: 'none', borderRadius: '6px', color: '#fff', padding: '8px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap' }}>
-                          Aplicar
-                        </button>
-                      </div>
-                      {couponError && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '5px' }}>{couponError}</div>}
-                    </>
                   )}
+
+                  {/* ── Cupones: cards aplicadas + inputs en una sola fila ── */}
+                  <div style={{ borderTop: '1px solid #2d5f5f', paddingTop: '10px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: '6px' }}>
+                      {/* Cards de cupones ya aplicados */}
+                      {appliedCouponsRef.current.map((c, idx) => (
+                        <div key={`applied-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(16,185,129,0.12)', border: '1px solid #10b981', borderRadius: '6px', padding: '7px 10px', flexShrink: 0 }}>
+                          <FiTag size={11} style={{ color: '#10b981' }} />
+                          <span style={{ fontSize: '12px', fontWeight: '700', color: '#10b981', whiteSpace: 'nowrap' }}>{c.discount.name}</span>
+                          <span style={{ fontSize: '11px', color: '#6ee7b7', whiteSpace: 'nowrap' }}>-{fmt(c.amount)}</span>
+                          <button onClick={() => quitarCupon(idx)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: '0 2px', display: 'flex', alignItems: 'center' }}>
+                            <FiX size={12} />
+                          </button>
+                        </div>
+                      ))}
+                      {/* Inputs de cupones */}
+                      {couponSlots.map((slot, idx) => (
+                        <div key={idx} style={{ flex: '1 1 160px', minWidth: '140px' }}>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <input
+                              type="text"
+                              placeholder="Código de cupón"
+                              value={slot.code}
+                              onChange={e => setCouponSlots(prev => prev.map((s, i) => i === idx ? { ...s, code: e.target.value.toUpperCase(), error: '' } : s))}
+                              onKeyPress={e => e.key === 'Enter' && aplicarCupon(idx)}
+                              style={{ flex: 1, minWidth: 0, background: '#0f172a', border: `1px solid ${slot.error ? '#ef4444' : '#334155'}`, borderRadius: '6px', color: '#f1f5f9', padding: '7px 10px', fontSize: '13px', outline: 'none' }}
+                            />
+                            <button onClick={() => aplicarCupon(idx)}
+                              style={{ background: '#6366f1', border: 'none', borderRadius: '6px', color: '#fff', padding: '7px 10px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                              Aplicar
+                            </button>
+                            {couponSlots.length > 1 && (
+                              <button onClick={() => setCouponSlots(prev => prev.filter((_, i) => i !== idx))}
+                                style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: '#94a3b8', padding: '7px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                                <FiX size={13} />
+                              </button>
+                            )}
+                          </div>
+                          {slot.error && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '3px' }}>{slot.error}</div>}
+                        </div>
+                      ))}
+                      {/* Botón agregar */}
+                      <button
+                        onClick={() => setCouponSlots(prev => [...prev, { code: '', error: '' }])}
+                        style={{ background: '#1e3a3a', border: '1px solid #2d5f5f', borderRadius: '6px', color: '#94a3b8', cursor: 'pointer', padding: '7px 10px', fontSize: '11px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, alignSelf: 'flex-start' }}>
+                        <FiPlus size={11} /> +
+                      </button>
+                    </div>
+                  </div>
+                  </div>}
                 </div>
               )}
 
@@ -2084,12 +2095,12 @@ export default function PosCheckoutPage() {
                           <span style={{ color: '#10b981' }}>-{fmt(discountAmount)}</span>
                         </div>
                       )}
-                      {appliedCouponDiscount && couponDiscountAmount > 0 && (
-                        <div className="sub-iva-total discount-row">
-                          <span><FiTag size={12} /> CUPÓN ({appliedCouponDiscount.name})</span>
-                          <span style={{ color: '#10b981' }}>-{fmt(couponDiscountAmount)}</span>
+                      {appliedCouponsRef.current.map((c, idx) => (
+                        <div key={idx} className="sub-iva-total discount-row">
+                          <span><FiTag size={12} /> CUPÓN ({c.discount.name})</span>
+                          <span style={{ color: '#10b981' }}>-{fmt(c.amount)}</span>
                         </div>
-                      )}
+                      ))}
                       <div className="sub-iva-total"><span>BASE IMPONIBLE:</span><span>{fmt(nuevaBaseImponible)}</span></div>
                       <div className="sub-iva-total"><span>IVA ({ivaRateMostrar}%):</span><span>{fmt(nuevoIVAMostrar)}</span></div>
                       <div className="sub-iva-total total-row"><span><strong>TOTAL CON DESCUENTO:</strong></span><span className="total-amount"><strong>{fmt(totalOrdenConDescuento)}</strong></span></div>
@@ -2187,9 +2198,10 @@ export default function PosCheckoutPage() {
                     ))}
                     {selectedOrder.items.filter(item => !item.paid).length === 0 && <div className="empty-state">✓ Todos los productos han sido pagados</div>}
                     
-                    {selectedItems.length > 0 && (
-                      <div className="totals-footer small"><div>Seleccionado: {fmt(getSplitSubtotal() + getSplitTax())}</div></div>
-                    )}
+                    <div className="totals-footer small">
+                      <div>Pendiente por pagar: <strong>{fmt(totalPendiente)}</strong></div>
+                      {selectedItems.length > 0 && <div>Seleccionado: {fmt(getSplitSubtotal() + getSplitTax())}</div>}
+                    </div>
 
                     <div className="clientes-container">
                       <div className="clientes-header">
@@ -2361,7 +2373,7 @@ export default function PosCheckoutPage() {
                 <div className="historial-pagos">
                   <div className="historial-titulo">📋 Pagos realizados:</div>
                   {pagosRegistrados.map((pago, idx) => <div key={idx} className="historial-item">• Pago {idx + 1} - {fmt(pago.total)} ({pago.items.length} productos)</div>)}
-                  <div className="historial-total">Total pagado: {fmt(pagosRegistrados.reduce((s, p) => s + p.total, 0))} / Total orden: {fmt(totalOrdenBruto)}</div>
+                  <div className="historial-total">Total pagado: {fmt(pagosRegistrados.reduce((s, p) => s + p.total, 0))} / Pendiente: {fmt(Math.max(0, totalOrdenBruto - totalPagadoAcumulado))}</div>
                   {totalPagadoAcumulado >= totalOrdenBruto && <div className="historial-completado">✅ ¡Pago completado! La factura se generará automáticamente.</div>}
                 </div>
               )}
