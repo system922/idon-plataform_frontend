@@ -334,7 +334,7 @@ export default function EmployeesPayRollPage() {
         setSavedPayrolls(processedPayrolls);
         setShowSaved(true);
       } else {
-        await alert.info('No hay nóminas guardadas');
+        await alert.info('No hay nóminas por pagar');
         setSavedPayrolls([]);
       }
     } catch (error) {
@@ -653,7 +653,7 @@ export default function EmployeesPayRollPage() {
               </thead>
               <tbody>
                 {savedPayrolls.length === 0 ? (
-                  <tr><td colSpan={6} style={{textAlign: 'center', padding: 40}}>No hay nóminas guardadas</td></tr>
+                  <tr><td colSpan={6} style={{textAlign: 'center', padding: 40}}>No hay nóminas por pagar</td></tr>
                 ) : (
                   savedPayrolls.map((payroll, idx) => (
                     <tr key={idx}>
