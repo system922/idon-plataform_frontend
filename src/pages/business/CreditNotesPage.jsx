@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { Plus, Eye, Send, RefreshCw, AlertCircle, Check, X, FileText } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
+import { usePrinterService } from '../../services/usePrinterService';
 import '../../styles/CreditNotes.css';
 
 export default function CreditNotes() {
+  const { print } = usePrinterService();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false); // ✅ NUEVO: Para prevenir doble envío
@@ -68,10 +70,10 @@ export default function CreditNotes() {
     setFormData({
       ...formData,
       items: itemsCopy,
-      subtotal: invoice.subtotal,
-      iva_amount: invoice.iva_amount,
-      discount_amount: invoice.discount_amount || 0,
-      total: invoice.total
+      subtotal: parseFloat(invoice.subtotal) || 0,
+      iva_amount: parseFloat(invoice.iva_amount) || 0,
+      discount_amount: parseFloat(invoice.discount_amount) || 0,
+      total: parseFloat(invoice.total) || 0,
     });
   };
 
@@ -108,11 +110,34 @@ export default function CreditNotes() {
         method: 'POST',
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error('Error al emitir nota de crédito');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al emitir nota de crédito');
       setSuccess('Nota de crédito emitida correctamente');
       setShowModal(false);
       loadCreditNotes();
       setTimeout(() => setSuccess(''), 3000);
+      if (data.id) window.open(`/api/einvoicing/credit-notes/${data.id}/pdf`, '_blank');
+
+      // Imprimir en térmica
+      try {
+        let bizInfo = {};
+        const cfgRes = await fetchWithAuth('/api/einvoicing/config');
+        if (cfgRes.ok) {
+          const cfg = await cfgRes.json();
+          bizInfo = { ruc: cfg.ruc, company_name: cfg.razon_social, trade_name: cfg.nombre_comercial || cfg.razon_social, address: cfg.direccion_matriz };
+        }
+        const cnNumber = data.id ? `001-001-${String(data.id).padStart(9, '0')}` : 'N/A';
+        await print('printer_main', 'credit-note', {
+          bizInfo,
+          creditNote: { number: cnNumber, reference_invoice: selectedInvoice.invoice_number, date: new Date().toISOString() },
+          customer:   { name: selectedInvoice.customer_name, id: selectedInvoice.customer_ruc },
+          reason:     formData.reason,
+          items:      payload.items,
+          subtotal:   totalCredited,
+          iva:        ivaCredited,
+          total:      totalCredited + ivaCredited,
+        });
+      } catch { /* fallo silencioso si QZ no está activo */ }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -210,8 +235,8 @@ export default function CreditNotes() {
                           <input type="number" step="1" value={item.quantity_credited} onChange={e => {
                             const newItems = [...formData.items];
                             newItems[idx].quantity_credited = Number(e.target.value);
-                            newItems[idx].subtotal_credited = newItems[idx].quantity_credited * newItems[idx].unit_price;
-                            setFormData({...formData, items: newItems, subtotal: newItems.reduce((s,i)=>s+i.subtotal_credited,0)});
+                            newItems[idx].subtotal_credited = newItems[idx].quantity_credited * (parseFloat(newItems[idx].unit_price) || 0);
+                            setFormData({...formData, items: newItems, subtotal: newItems.reduce((s,i)=>s+(parseFloat(i.subtotal_credited)||0),0)});
                           }} />
                         </div>
                       ))}

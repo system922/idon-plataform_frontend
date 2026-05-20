@@ -315,7 +315,7 @@ export default function AccountingBalance() {
   // ============================================================
   return (
     <PageTemplate
-      title="Balance General"
+      title="BALANCE GENERAL"
       subtitle="Estado de Resultados - Pérdidas y Ganancias"
     >
       <div className="accounting-balance-container">

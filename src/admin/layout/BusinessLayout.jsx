@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
+import { useSoundAlert } from '../../hooks/useSoundAlert';
 import SidebarModern from '../../components/SidebarModern';
 import {
   FiSettings, FiShoppingCart, FiBox, FiBarChart2, FiCreditCard,
@@ -314,6 +316,21 @@ export default function BusinessLayout({ user, onLogout }) {
   useQzTray();
   useAutoPrint({ businessId: selectedBiz?.id, enabled: !!selectedBiz?.id });
   const { updateReady, countdown } = useAppVersion();
+  const { playOrderReady } = useSoundAlert();
+
+  // Escuchar evento order_ready para alertar al cajero con sonido
+  useEffect(() => {
+    if (!selectedBiz?.id) return;
+    const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
+    const socket = io(API_BASE, {
+      auth: { token, businessId: selectedBiz.id },
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 10,
+      reconnectionDelay: 3000,
+    });
+    socket.on('order_ready', () => { playOrderReady(); });
+    return () => socket.disconnect();
+  }, [selectedBiz?.id, playOrderReady]);
 
   // Apertura de caja
   const [aperturaChecked, setAperturaChecked] = useState(false);

@@ -1,8 +1,15 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import PageTemplate from '../../components/PageTemplate';
-import { fetchWithAuth } from '../../config/apiBase';
+import React, { useState, useEffect, useCallback } from "react";
 import { useConfirm } from '../../context/ConfirmContext';
-import '../../styles/PurchasesHistory.css';
+import {
+  FiDollarSign, FiPlus, FiEdit2, FiTrash2, FiRefreshCw,
+  FiAlertCircle, FiSearch, FiCalendar, FiChevronDown,
+  FiDownload, FiX, FiTag, FiTrendingUp
+} from "react-icons/fi";
+import PageTemplate from '../../components/PageTemplate';
+import { useBusinessContext } from '../../admin/config/BusinessContext';
+import { fetchWithAuth } from '../../config/apiBase';
+import { useRealtimeSync } from '../../hooks/useRealtimeSync';
+import "../../styles/AccountingExpensesPage.css";
 
 // ─── Helper para obtener fecha actual en Ecuador ────────────────────────────
 function getTodayDateInEcuador() {
@@ -11,540 +18,645 @@ function getTodayDateInEcuador() {
   return now.toLocaleDateString('en-CA', { timeZone: TZ });
 }
 
-export default function PurchasesHistory() {
-  const { showConfirm } = useConfirm();
-  const [gastos, setGastos] = useState([]);
-  const [categorias, setCategorias] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [guardando, setGuardando] = useState(false);
+// ─── Helper para formatear fecha ────────────────────────────────────────────
+const formatDate = (dateValue) => {
+  if (!dateValue) return '-';
+  const date = new Date(dateValue);
+  if (isNaN(date.getTime())) return 'Fecha inválida';
+  return date.toLocaleDateString('es-EC');
+};
+
+// ─── Modal de Gastos (adaptado a la tabla real) ─────────────────────────────
+function ExpenseModal({ expense, categories, onClose, onSave, saving }) {
+  const [form, setForm] = useState({
+    description: '',
+    amount: '',
+    category_id: '',
+    date: getTodayDateInEcuador(),
+    reference: ''
+  });
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  
-  // Filtros
-  const [fechaDesde, setFechaDesde] = useState('');
-  const [fechaHasta, setFechaHasta] = useState('');
-  const [categoriaFiltro, setCategoriaFiltro] = useState('');
-  const [referenciaBusqueda, setReferenciaBusqueda] = useState('');
-  
-  // Paginación
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-  
-  // Modal states
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [gastoEditando, setGastoEditando] = useState(null);
-  
-  // Form states
-  const [fecha, setFecha] = useState(getTodayDateInEcuador());
-  const [categoriaId, setCategoriaId] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [monto, setMonto] = useState('');
-  const [referencia, setReferencia] = useState('');
 
-  // ── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
-    cargarGastos();
-    cargarCategorias();
-  }, []);
-
-  async function cargarGastos() {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      if (fechaDesde) params.append('date_from', fechaDesde);
-      if (fechaHasta) params.append('date_to', fechaHasta);
-      if (categoriaFiltro) params.append('category_id', categoriaFiltro);
-      if (referenciaBusqueda) params.append('reference', referenciaBusqueda);
-      
-      const res = await fetchWithAuth(`/api/purchases/expenses?${params.toString()}`);
-      const data = await res.json();
-      setGastos(Array.isArray(data) ? data : data?.expenses ?? data?.data ?? []);
-      setCurrentPage(1);
-    } catch (err) {
-      setError('Error al cargar gastos');
-    } finally {
-      setLoading(false);
+    if (expense) {
+      setForm({
+        description: expense.description || '',
+        amount: expense.amount || '',
+        category_id: expense.category_id || '',
+        date: expense.date?.split('T')[0] || getTodayDateInEcuador(),
+        reference: expense.reference || ''
+      });
     }
-  }
+  }, [expense]);
 
-  async function cargarCategorias() {
-    try {
-      const res = await fetchWithAuth('/api/purchases/categories');
-      const data = await res.json();
-      setCategorias(Array.isArray(data) ? data : data?.categorias ?? data?.data ?? []);
-    } catch (err) {
-      setError('Error al cargar categorías');
-    }
-  }
-
-  // ── CRUD Operations ────────────────────────────────────────────────────────
-  async function crearGasto() {
-    if (!fecha || !categoriaId || !monto || monto <= 0) {
-      setError('Fecha, categoría y monto son requeridos');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.description.trim()) {
+      setError('La descripción es requerida');
       return;
     }
-
-    try {
-      setGuardando(true);
-      const res = await fetchWithAuth('/api/purchases/expenses', {
-        method: 'POST',
-        body: JSON.stringify({
-          date: fecha,
-          category_id: categoriaId,
-          description: descripcion,
-          amount: parseFloat(monto),
-          reference: referencia,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Error al registrar gasto');
-      }
-
-      setSuccess('✅ Gasto registrado exitosamente');
-      setShowAddModal(false);
-      resetForm();
-      cargarGastos();
-
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      setError(err?.message || 'Error al registrar gasto');
-      setTimeout(() => setError(''), 3000);
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  async function actualizarGasto() {
-    if (!fecha || !categoriaId || !monto || monto <= 0) {
-      setError('Fecha, categoría y monto son requeridos');
+    if (!form.amount || parseFloat(form.amount) <= 0) {
+      setError('El monto debe ser mayor a 0');
       return;
     }
-
-    try {
-      setGuardando(true);
-      const res = await fetchWithAuth(`/api/purchases/expenses/${gastoEditando.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          date: fecha,
-          category_id: categoriaId,
-          description: descripcion,
-          amount: parseFloat(monto),
-          reference: referencia,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Error al actualizar gasto');
-      }
-
-      setSuccess('✅ Gasto actualizado exitosamente');
-      setShowEditModal(false);
-      resetForm();
-      cargarGastos();
-
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      setError(err?.message || 'Error al actualizar gasto');
-      setTimeout(() => setError(''), 3000);
-    } finally {
-      setGuardando(false);
+    if (!form.category_id) {
+      setError('La categoría es requerida');
+      return;
     }
-  }
+    onSave(form);
+  };
 
-  async function eliminarGasto(id, descripcion) {
-    if (!await showConfirm(`¿Eliminar gasto "${descripcion}"?`)) return;
-
-    try {
-      setGuardando(true);
-      const res = await fetchWithAuth(`/api/purchases/expenses/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Error al eliminar gasto');
-      }
-
-      setSuccess('✅ Gasto eliminado exitosamente');
-      cargarGastos();
-
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      setError(err?.message || 'Error al eliminar gasto');
-      setTimeout(() => setError(''), 3000);
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  function abrirEditar(gasto) {
-    setGastoEditando(gasto);
-    setFecha(gasto.date);
-    setCategoriaId(gasto.category_id);
-    setDescripcion(gasto.description || '');
-    setMonto(gasto.amount.toString());
-    setReferencia(gasto.reference || '');
-    setShowEditModal(true);
-  }
-
-  function resetForm() {
-    setFecha(getTodayDateInEcuador());
-    setCategoriaId('');
-    setDescripcion('');
-    setMonto('');
-    setReferencia('');
-    setGastoEditando(null);
-  }
-
-  function aplicarFiltros() {
-    cargarGastos();
-  }
-
-  function limpiarFiltros() {
-    setFechaDesde('');
-    setFechaHasta('');
-    setCategoriaFiltro('');
-    setReferenciaBusqueda('');
-    setTimeout(() => cargarGastos(), 100);
-  }
-
-  // ── Totales y paginación ───────────────────────────────────────────────────
-  const totalGastos = useMemo(() => {
-    return gastos.reduce((sum, g) => sum + (parseFloat(g.amount) || 0), 0);
-  }, [gastos]);
-
-  const paginatedGastos = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return gastos.slice(start, start + itemsPerPage);
-  }, [gastos, currentPage]);
-
-  const totalPages = Math.ceil(gastos.length / itemsPerPage);
-
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <PageTemplate title="Historial de Gastos" subtitle="Gestión de gastos y compras realizadas">
-      <div className="purchases-history-shell">
-        {error && <div className="alert alert-error">{error}</div>}
-        {success && <div className="alert alert-success">{success}</div>}
-
-        {/* Header con botón nuevo gasto */}
-        <div className="history-header">
-          <button 
-            className="btn-primary"
-            onClick={() => setShowAddModal(true)}
-            disabled={guardando}
-          >
-            <i className="fas fa-plus"></i> Nuevo Gasto
+    <div className="expense-modal-overlay" onClick={onClose}>
+      <div className="expense-modal-box" onClick={e => e.stopPropagation()}>
+        <div className="expense-modal-header">
+          <h2>{expense ? 'Editar gasto' : 'Nuevo gasto'}</h2>
+          <button type="button" onClick={onClose} className="expense-modal-close">
+            <FiX size={22} />
           </button>
         </div>
 
-        {/* Filtros */}
-        <div className="filters-bar">
-          <div className="filter-group">
-            <label>Fecha desde</label>
-            <input 
-              type="date" 
-              value={fechaDesde} 
-              onChange={e => setFechaDesde(e.target.value)}
-            />
+        {error && (
+          <div className="alert alert-error">
+            <FiAlertCircle size={16} /> {error}
           </div>
-          <div className="filter-group">
-            <label>Fecha hasta</label>
-            <input 
-              type="date" 
-              value={fechaHasta} 
-              onChange={e => setFechaHasta(e.target.value)}
-            />
-          </div>
-          <div className="filter-group">
-            <label>Categoría</label>
-            <select value={categoriaFiltro} onChange={e => setCategoriaFiltro(e.target.value)}>
-              <option value="">Todas</option>
-              {categorias.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="filter-group">
-            <label>Referencia</label>
-            <input 
-              type="text" 
-              value={referenciaBusqueda} 
-              onChange={e => setReferenciaBusqueda(e.target.value)}
-              placeholder="Buscar por referencia..."
-            />
-          </div>
-          <div className="filter-actions">
-            <button className="btn-search" onClick={aplicarFiltros}>
-              <i className="fas fa-search"></i> Buscar
-            </button>
-            <button className="btn-clear" onClick={limpiarFiltros}>
-              <i className="fas fa-times"></i> Limpiar
-            </button>
-          </div>
-        </div>
+        )}
 
-        {/* Resumen */}
-        <div className="summary-card">
-          <div className="summary-item">
-            <span className="summary-label">Total Gastos:</span>
-            <span className="summary-value">${totalGastos.toFixed(2)}</span>
-          </div>
-          <div className="summary-item">
-            <span className="summary-label">Registros:</span>
-            <span className="summary-value">{gastos.length}</span>
-          </div>
-        </div>
-
-        {/* Tabla de gastos */}
-        {loading ? (
-          <div className="loading-spinner">Cargando gastos...</div>
-        ) : (
-          <>
-            <div className="table-container">
-              <table className="expenses-table">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Categoría</th>
-                    <th>Descripción</th>
-                    <th>Monto</th>
-                    <th>Referencia</th>
-                    <th>Registrado por</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedGastos.length === 0 ? (
-                    <tr>
-                      <td colSpan="7" className="empty-table">
-                        <i className="fas fa-receipt"></i>
-                        <p>No hay gastos registrados</p>
-                        <button className="btn-secondary" onClick={() => setShowAddModal(true)}>
-                          Registrar primer gasto
-                        </button>
-                      </td>
-                    </tr>
-                  ) : (
-                    paginatedGastos.map(gasto => (
-                      <tr key={gasto.id}>
-                        <td data-label="Fecha">{new Date(gasto.date).toLocaleDateString('es-ES')}</td>
-                        <td data-label="Categoría">
-                          <span
-                            className="category-badge"
-                            style={{ backgroundColor: gasto.category_color || '#e8f5e9', color: gasto.category_color_dark || '#2e7d32' }}
-                          >
-                            {gasto.category_name}
-                          </span>
-                        </td>
-                        <td data-label="Descripción">{gasto.description || '-'}</td>
-                        <td className="amount" data-label="Monto">${(parseFloat(gasto.amount) || 0).toFixed(2)}</td>
-                        <td data-label="Referencia">{gasto.reference || '-'}</td>
-                        <td data-label="Registrado por">{gasto.created_by_name || 'Sistema'}</td>
-                        <td className="actions" data-label="Acciones">
-                          <button 
-                            className="icon-btn edit" 
-                            onClick={() => abrirEditar(gasto)}
-                            disabled={guardando}
-                          >
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button 
-                            className="icon-btn delete" 
-                            onClick={() => eliminarGasto(gasto.id, gasto.description || gasto.reference || 'gasto')}
-                            disabled={guardando}
-                          >
-                            <i className="fas fa-trash"></i>
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+        <form onSubmit={handleSubmit}>
+          <div className="expense-form-grid">
+            <div className="expense-form-group full-width">
+              <label>Descripción *</label>
+              <input
+                type="text"
+                value={form.description}
+                onChange={e => setForm({ ...form, description: e.target.value })}
+                placeholder="Ej: Compra de insumos, Pago de servicios..."
+                autoFocus
+              />
             </div>
 
-            {/* Paginación */}
-            {totalPages > 1 && (
-              <div className="pagination">
-                <button 
-                  className="page-btn" 
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <i className="fas fa-chevron-left"></i>
-                </button>
-                {[...Array(totalPages)].map((_, i) => (
-                  <button 
-                    key={i} 
-                    className={`page-btn ${currentPage === i + 1 ? 'active' : ''}`}
-                    onClick={() => setCurrentPage(i + 1)}
-                  >
-                    {i + 1}
-                  </button>
+            <div className="expense-form-group">
+              <label>Monto *</label>
+              <input
+                type="number"
+                step="0.01"
+                value={form.amount}
+                onChange={e => setForm({ ...form, amount: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="expense-form-group">
+              <label>Categoría *</label>
+              <select
+                value={form.category_id}
+                onChange={e => setForm({ ...form, category_id: e.target.value })}
+              >
+                <option value="">Seleccionar categoría</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
-                <button 
-                  className="page-btn" 
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  <i className="fas fa-chevron-right"></i>
-                </button>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Modal Agregar Gasto */}
-        {showAddModal && (
-          <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-            <div className="modal-content" onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2>Registrar Nuevo Gasto</h2>
-                <button className="close-btn" onClick={() => setShowAddModal(false)}>&times;</button>
-              </div>
-              <div className="modal-body">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Fecha *</label>
-                    <input 
-                      type="date" 
-                      value={fecha} 
-                      onChange={e => setFecha(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Categoría *</label>
-                    <select value={categoriaId} onChange={e => setCategoriaId(e.target.value)} required>
-                      <option value="">Seleccionar categoría</option>
-                      {categorias.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Descripción</label>
-                  <textarea
-                    value={descripcion}
-                    onChange={e => setDescripcion(e.target.value)}
-                    placeholder="Descripción del gasto"
-                    rows="3"
-                  />
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Monto *</label>
-                    <input 
-                      type="number" 
-                      step="0.01" 
-                      value={monto} 
-                      onChange={e => setMonto(e.target.value)}
-                      placeholder="0.00"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Referencia</label>
-                    <input 
-                      type="text" 
-                      value={referencia} 
-                      onChange={e => setReferencia(e.target.value)}
-                      placeholder="Factura #, comprobante, etc."
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button className="btn-secondary" onClick={() => setShowAddModal(false)}>
-                  Cancelar
-                </button>
-                <button className="btn-primary" onClick={crearGasto} disabled={guardando}>
-                  {guardando ? 'Guardando...' : 'Registrar Gasto'}
-                </button>
-              </div>
+              </select>
             </div>
+
+            <div className="expense-form-group">
+              <label>Fecha *</label>
+              <input
+                type="date"
+                value={form.date}
+                onChange={e => setForm({ ...form, date: e.target.value })}
+              />
+            </div>
+
+            <div className="expense-form-group">
+              <label>Referencia/N°</label>
+              <input
+                type="text"
+                value={form.reference}
+                onChange={e => setForm({ ...form, reference: e.target.value })}
+                placeholder="Factura #, comprobante..."
+              />
+            </div>
+          </div>
+
+          <div className="expense-modal-footer">
+            <button className="expense-btn-cancel" type="button" onClick={onClose} disabled={saving}>
+              Cancelar
+            </button>
+            <button className="expense-btn-save" type="submit" disabled={saving}>
+              {saving ? 'Guardando...' : expense ? 'Guardar cambios' : 'Crear gasto'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Modal de categorías ─────────────────────────────────────────────────────
+function CategoryModal({ category, onClose, onSave, saving }) {
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    setName(category?.name || '');
+  }, [category]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setError('El nombre de la categoría es requerido');
+      return;
+    }
+    onSave({ name: name.trim() });
+  };
+
+  return (
+    <div className="expense-modal-overlay" onClick={onClose}>
+      <div className="expense-modal-box expense-modal-small" onClick={e => e.stopPropagation()}>
+        <div className="expense-modal-header">
+          <h2>{category ? 'Editar categoría' : 'Nueva categoría'}</h2>
+          <button type="button" onClick={onClose} className="expense-modal-close">
+            <FiX size={22} />
+          </button>
+        </div>
+
+        {error && (
+          <div className="alert alert-error">
+            <FiAlertCircle size={16} /> {error}
           </div>
         )}
 
-        {/* Modal Editar Gasto */}
-        {showEditModal && (
-          <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-            <div className="modal-content" onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2>Editar Gasto</h2>
-                <button className="close-btn" onClick={() => setShowEditModal(false)}>&times;</button>
-              </div>
-              <div className="modal-body">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Fecha *</label>
-                    <input 
-                      type="date" 
-                      value={fecha} 
-                      onChange={e => setFecha(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Categoría *</label>
-                    <select value={categoriaId} onChange={e => setCategoriaId(e.target.value)} required>
-                      <option value="">Seleccionar categoría</option>
-                      {categorias.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Descripción</label>
-                  <textarea
-                    value={descripcion}
-                    onChange={e => setDescripcion(e.target.value)}
-                    placeholder="Descripción del gasto"
-                    rows="3"
-                  />
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Monto *</label>
-                    <input 
-                      type="number" 
-                      step="0.01" 
-                      value={monto} 
-                      onChange={e => setMonto(e.target.value)}
-                      placeholder="0.00"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Referencia</label>
-                    <input 
-                      type="text" 
-                      value={referencia} 
-                      onChange={e => setReferencia(e.target.value)}
-                      placeholder="Factura #, comprobante, etc."
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button className="btn-secondary" onClick={() => setShowEditModal(false)}>
-                  Cancelar
-                </button>
-                <button className="btn-primary" onClick={actualizarGasto} disabled={guardando}>
-                  {guardando ? 'Guardando...' : 'Actualizar Gasto'}
-                </button>
-              </div>
-            </div>
+        <form onSubmit={handleSubmit}>
+          <div className="expense-form-group">
+            <label>Nombre de la categoría *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Ej: Insumos, Servicios, Nómina..."
+              autoFocus
+            />
+          </div>
+
+          <div className="expense-modal-footer">
+            <button className="expense-btn-cancel" type="button" onClick={onClose}>
+              Cancelar
+            </button>
+            <button className="expense-btn-save" type="submit" disabled={saving}>
+              {saving ? 'Guardando...' : category ? 'Guardar' : 'Crear'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Página principal ─────────────────────────────────────────────────────────
+export default function AccountingExpensesPage() {
+  const { selectedBusiness } = useBusinessContext();
+  const { showConfirm } = useConfirm();
+  const [expenses, setExpenses] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [totalExpenses, setTotalExpenses] = useState(0);
+
+  // ─── Cargar categorías ─────────────────────────────────────────────────────
+  const loadCategories = useCallback(async () => {
+    if (!selectedBusiness?.id) return;
+    try {
+      const res = await fetchWithAuth('/api/expense-categories');
+      if (!res.ok) throw new Error('Error al cargar categorías');
+      const data = await res.json();
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (err) {
+
+    }
+  }, [selectedBusiness]);
+
+  // ─── Cargar gastos (compatible con dos formatos de respuesta) ──────────────
+  const loadExpenses = useCallback(async () => {
+    if (!selectedBusiness?.id) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const params = new URLSearchParams();
+      if (dateFrom) params.append('date_from', dateFrom);
+      if (dateTo) params.append('date_to', dateTo);
+      if (selectedCategory) params.append('category_id', selectedCategory);
+      
+      const res = await fetchWithAuth(`/api/expenses?${params}`);
+      if (!res.ok) throw new Error('Error al cargar gastos');
+      const data = await res.json();
+      
+      // Compatibilidad con diferentes estructuras de respuesta:
+      // - Array directo
+      // - { data: [...] }
+      // - { expenses: [...] } (formato original del backend)
+      let expensesList = [];
+      if (Array.isArray(data)) {
+        expensesList = data;
+      } else if (data.data && Array.isArray(data.data)) {
+        expensesList = data.data;
+      } else if (data.expenses && Array.isArray(data.expenses)) {
+        expensesList = data.expenses;
+      }
+      
+      // Mapear para agregar category_name
+      expensesList = expensesList.map(exp => ({
+        ...exp,
+        category_name: exp.category_name || categories.find(c => c.id === exp.category_id)?.name || 'Sin categoría'
+      }));
+      
+      setExpenses(expensesList);
+      const total = expensesList.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+      setTotalExpenses(total);
+      
+    } catch (err) {
+
+      setError('Error al cargar los gastos');
+      setExpenses([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedBusiness, dateFrom, dateTo, selectedCategory, categories]);
+
+  // Cargar categorías al inicio y cuando cambie el negocio
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
+
+  // Cargar gastos cuando cambien filtros o categorías
+  useEffect(() => {
+    if (categories.length > 0 || !selectedBusiness) {
+      loadExpenses();
+    }
+  }, [loadExpenses, categories]);
+
+  useRealtimeSync('expenses', loadExpenses);
+
+  // Filtrar por búsqueda local (descripción o referencia)
+  const filteredExpenses = expenses.filter(e =>
+    e.description?.toLowerCase().includes(search.toLowerCase()) ||
+    e.reference?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadCategories();
+    await loadExpenses();
+    setRefreshing(false);
+  };
+
+  const handleSaveExpense = async (form) => {
+    setSaving(true);
+    setError('');
+    try {
+      const isEdit = !!editingExpense;
+      const url = isEdit ? `/api/expenses/${editingExpense.id}` : '/api/expenses';
+      const method = isEdit ? 'PUT' : 'POST';
+      
+      const payload = {
+        description: form.description,
+        amount: parseFloat(form.amount),
+        category_id: form.category_id,
+        date: form.date,
+        reference: form.reference || null,
+        created_by: selectedBusiness?.userId || null
+      };
+      
+      const res = await fetchWithAuth(url, {
+        method,
+        body: JSON.stringify(payload)
+      });
+      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Error al guardar');
+      }
+      
+      setShowModal(false);
+      setEditingExpense(null);
+      loadExpenses();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteExpense = async (expense) => {
+    if (!await showConfirm(`¿Eliminar el gasto "${expense.description}"?`)) return;
+    setSaving(true);
+    try {
+      const res = await fetchWithAuth(`/api/expenses/${expense.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Error al eliminar');
+      loadExpenses();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveCategory = async (form) => {
+    setSaving(true);
+    try {
+      const isEdit = !!editingCategory;
+      const url = isEdit ? `/api/expense-categories/${editingCategory.id}` : '/api/expense-categories';
+      const method = isEdit ? 'PUT' : 'POST';
+      
+      const res = await fetchWithAuth(url, { method, body: JSON.stringify(form) });
+      if (!res.ok) throw new Error('Error al guardar categoría');
+      
+      setShowCategoryModal(false);
+      setEditingCategory(null);
+      loadCategories();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteCategory = async (category) => {
+    if (!await showConfirm(`¿Eliminar la categoría "${category.name}"? Los gastos quedarán sin categoría.`)) return;
+    try {
+      const res = await fetchWithAuth(`/api/expense-categories/${category.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Error al eliminar categoría');
+      loadCategories();
+      loadExpenses();
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  // Exportar a CSV (la ruta puede no existir; se comenta para no estorbar)
+  const handleExport = async () => {
+    setError('Exportación no disponible aún. Por favor, usa la versión de escritorio.');
+  };
+
+  const openCreateExpense = () => {
+    setEditingExpense(null);
+    setError('');
+    setShowModal(true);
+  };
+
+  const openEditExpense = (expense) => {
+    setEditingExpense(expense);
+    setError('');
+    setShowModal(true);
+  };
+
+  const openCreateCategory = () => {
+    setEditingCategory(null);
+    setShowCategoryModal(true);
+  };
+
+  const resetFilters = () => {
+    setDateFrom('');
+    setDateTo('');
+    setSelectedCategory('');
+    setSearch('');
+  };
+
+  // Botones header
+  const refreshButton = (
+    <button onClick={handleRefresh} className="expense-refresh-btn" disabled={refreshing}>
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
+  const exportButton = (
+    <button onClick={handleExport} className="expense-btn-secondary" disabled>
+      <FiDownload size={16} /> Exportar CSV
+    </button>
+  );
+
+  const newExpenseButton = (
+    <button onClick={openCreateExpense} className="expense-btn-primary">
+      <FiPlus size={16} /> Nuevo gasto
+    </button>
+  );
+
+  return (
+    <PageTemplate
+      title="HISTORIAL DE GASTOS"
+      subtitle="Gestión y control de gastos contables"
+      theme="business"
+      loading={loading}
+      headerAction={
+        <div className="expense-header-actions">
+          {newExpenseButton}
+          {exportButton}
+          {refreshButton}
+        </div>
+      }
+    >
+      {error && (
+        <div className="alert alert-error">
+          <FiAlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      {/* Filtros */}
+      <div className="expense-filters-bar">
+        <div className="expense-search-wrapper">
+          <FiSearch size={16} className="expense-search-icon" />
+          <input
+            type="text"
+            placeholder="Buscar por descripción o referencia..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="expense-search-input"
+          />
+        </div>
+
+        <div className="expense-filter-group">
+          <button 
+            className={`expense-filter-btn ${showDateFilter ? 'active' : ''}`}
+            onClick={() => setShowDateFilter(!showDateFilter)}
+          >
+            <FiCalendar size={16} /> Fecha <FiChevronDown size={14} />
+          </button>
+
+          <select
+            value={selectedCategory}
+            onChange={e => setSelectedCategory(e.target.value)}
+            className="expense-filter-select"
+          >
+            <option value="">Todas las categorías</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+
+          <button onClick={resetFilters} className="expense-filter-clear">
+            Limpiar filtros
+          </button>
+        </div>
+
+        {showDateFilter && (
+          <div className="expense-date-range">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={e => setDateFrom(e.target.value)}
+            />
+            <span>a</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={e => setDateTo(e.target.value)}
+            />
           </div>
         )}
       </div>
+
+      {/* Tarjetas de resumen */}
+      <div className="expense-summary-grid">
+        <div className="expense-summary-card">
+          <div className="expense-summary-icon"><FiDollarSign size={24} /></div>
+          <div className="expense-summary-content">
+            <div className="expense-summary-title">Total Gastos</div>
+            <div className="expense-summary-value">${totalExpenses.toFixed(2)}</div>
+          </div>
+        </div>
+        <div className="expense-summary-card">
+          <div className="expense-summary-icon"><FiTrendingUp size={24} /></div>
+          <div className="expense-summary-content">
+            <div className="expense-summary-title">Promedio diario</div>
+            <div className="expense-summary-value">
+              ${expenses.length > 0 ? (totalExpenses / expenses.length).toFixed(2) : '0.00'}
+            </div>
+          </div>
+        </div>
+        <div className="expense-summary-card">
+          <div className="expense-summary-icon"><FiTag size={24} /></div>
+          <div className="expense-summary-content">
+            <div className="expense-summary-title">Categorías</div>
+            <div className="expense-summary-value">{categories.length}</div>
+          </div>
+        </div>
+        <div className="expense-summary-card">
+          <div className="expense-summary-icon"><FiCalendar size={24} /></div>
+          <div className="expense-summary-content">
+            <div className="expense-summary-title">Total Gastos</div>
+            <div className="expense-summary-value">{expenses.length}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabla de gastos */}
+      <div className="expense-table-container">
+        <div className="expense-table-header">
+          <h3>Listado de gastos</h3>
+          <button onClick={openCreateCategory} className="expense-link-btn">
+            <FiPlus size={14} /> Gestionar categorías
+          </button>
+        </div>
+
+        <div className="expense-table-wrapper">
+          <table className="expense-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Descripción</th>
+                <th>Categoría</th>
+                <th>Referencia</th>
+                <th className="expense-text-right">Monto</th>
+                <th style={{ width: '80px' }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredExpenses.length === 0 && !loading ? (
+                <tr>
+                  <td colSpan={6} className="expense-empty-state">
+                    <FiDollarSign size={48} />
+                    <span>No hay gastos registrados</span>
+                    <button onClick={openCreateExpense} className="expense-empty-btn">
+                      <FiPlus size={14} /> Registrar primer gasto
+                    </button>
+                  </td>
+                </tr>
+              ) : (
+                filteredExpenses.map(expense => (
+                  <tr key={expense.id}>
+                    <td>{formatDate(expense.date)}</td>
+                    <td className="expense-description">{expense.description}</td>
+                    <td>
+                      <span className="expense-category-badge">
+                        {expense.category_name || 'Sin categoría'}
+                      </span>
+                    </td>
+                    <td className="expense-reference">{expense.reference || '—'}</td>
+                    <td className="expense-text-right expense-amount">
+                      ${parseFloat(expense.amount).toFixed(2)}
+                    </td>
+                    <td className="expense-actions">
+                      <button className="expense-action-btn edit" onClick={() => openEditExpense(expense)} title="Editar">
+                        <FiEdit2 size={14} />
+                      </button>
+                      <button className="expense-action-btn delete" onClick={() => handleDeleteExpense(expense)} title="Eliminar">
+                        <FiTrash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+            {filteredExpenses.length > 0 && (
+              <tfoot>
+                <tr>
+                  <td colSpan={4} className="expense-footer-label">Total</td>
+                  <td className="expense-text-right expense-footer-total">
+                    ${filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0).toFixed(2)}
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      </div>
+
+      {/* Modal de gasto */}
+      {showModal && (
+        <ExpenseModal
+          expense={editingExpense}
+          categories={categories}
+          onClose={() => { setShowModal(false); setEditingExpense(null); }}
+          onSave={handleSaveExpense}
+          saving={saving}
+        />
+      )}
+
+      {/* Modal de categoría */}
+      {showCategoryModal && (
+        <CategoryModal
+          category={editingCategory}
+          onClose={() => { setShowCategoryModal(false); setEditingCategory(null); }}
+          onSave={handleSaveCategory}
+          saving={saving}
+        />
+      )}
     </PageTemplate>
   );
 }

@@ -62,16 +62,20 @@ export const useAlert = () => {
 export const ConfirmProvider = ({ children }) => {
   const { isOpen, open, close, confirm, config } = useConfirm();
 
-  const showConfirm = (options) => {
+  const showConfirm = (options, extraOptions = {}) => {
+    const normalized = typeof options === 'string'
+      ? { message: options, ...extraOptions }
+      : { ...options, ...extraOptions };
+
     return new Promise((resolve) => {
       open({
-        ...options,
+        ...normalized,
         onConfirm: async () => {
-          await options.onConfirm?.();
+          await normalized.onConfirm?.();
           resolve(true);
         },
         onCancel: () => {
-          options.onCancel?.();
+          normalized.onCancel?.();
           resolve(false);
         },
       });

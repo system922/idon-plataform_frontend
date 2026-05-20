@@ -62,16 +62,21 @@ import CrmSegments           from '../pages/business/CrmSegments';
 
 
 import AccountingBalancePage  from '../pages/business/AccountingBalancePage';
-import AccountingExpensesPage from '../pages/business/AccountingExpensesPage';
 import AccountingReceivablePage from '../pages/business/AccountingReceivablePage';
 import AccountingPayablePage  from '../pages/business/AccountingPayablePage';
+import AccountingSriPage      from '../pages/business/AccountingSriPage';
 
 import NotificationsPush       from '../pages/business/NotificationsPush';
 import NotificationsScheduled from '../pages/business/NotificationsSchedulesPage';
 import NotificationsEmail      from '../pages/business/NotificationsEmailPage';
 
-import EinvoicingInvoicesPage from '../pages/business/EinvoicingInvoicesPage';
-import CreditNotes            from '../pages/business/CreditNotesPage';
+import EinvoicingInvoicesPage    from '../pages/business/EinvoicingInvoicesPage';
+import CreditNotes               from '../pages/business/CreditNotesPage';
+import DebitNotes                from '../pages/business/DebitNotesPage';
+import EinvoicingVoidPage        from '../pages/business/EinvoicingVoidPage';
+import EinvoicingRemissionsPage  from '../pages/business/EinvoicingRemissionsPage';
+import EinvoicingReportsPage     from '../pages/business/EinvoicingReportsPage';
+import EinvoicingRetentionsPage  from '../pages/business/EinvoicingRetentionsPage';
 
 
 function OwnerRoute({ children }) {
@@ -157,9 +162,9 @@ export const businessRoutes = (
     ──────────────────────────────────────────────── */}
     <Route path="accounting"                          element={<GenericFeaturePage moduleName="Contabilidad" />} />
     <Route path="accounting/accounting.balance"       element={<AccountingBalancePage />} />
-    <Route path="accounting/accounting.expenses"      element={<AccountingExpensesPage />} />
     <Route path="accounting/accounting.receivable"    element={<AccountingReceivablePage />} />
     <Route path="accounting/accounting.payable"       element={<AccountingPayablePage />} />
+    <Route path="accounting/accounting.sri"           element={<AccountingSriPage />} />
     <Route path="accounting/:feature"                 element={<GenericFeaturePage moduleName="Contabilidad" />} />
 
     {/* ────────────────────────────────────────────────
@@ -176,6 +181,7 @@ export const businessRoutes = (
         COCINA  /app/kitchen
     ──────────────────────────────────────────────── */}
     <Route path="kitchen"                     element={<GenericFeaturePage moduleName="Cocina" />} />
+    <Route path="kitchen/kitchen.kds"         element={<OrdersKitchenScreenPage />} />
     <Route path="kitchen/:feature"            element={<GenericFeaturePage moduleName="Cocina" />} />
 
     {/* ────────────────────────────────────────────────
@@ -275,7 +281,12 @@ export const businessRoutes = (
         FACTURACIÓN ELECTRÓNICA  /app/einvoicing
     ──────────────────────────────────────────────── */}
     <Route path="einvoicing/einvoicing.status"          element={<EinvoicingInvoicesPage />} />
-    <Route path="einvoicing/einvoicing.credit_notes" element={<CreditNotes />} />
+    <Route path="einvoicing/einvoicing.credit_notes"    element={<CreditNotes />} />
+    <Route path="einvoicing/einvoicing.debit_notes"     element={<DebitNotes />} />
+    <Route path="einvoicing/einvoicing.void"            element={<EinvoicingVoidPage />} />
+    <Route path="einvoicing/einvoicing.remissions"      element={<EinvoicingRemissionsPage />} />
+    <Route path="einvoicing/einvoicing.reports"         element={<EinvoicingReportsPage />} />
+    <Route path="einvoicing/einvoicing.retentions"      element={<EinvoicingRetentionsPage />} />
 
 
     {/* ── Catch-all ── */}

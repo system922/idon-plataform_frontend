@@ -18,6 +18,7 @@ import { FaHandHoldingDollar } from "react-icons/fa6";
 import { BsCurrencyExchange } from "react-icons/bs";
 import { FaMoneyBillTransfer } from "react-icons/fa6";
 import { CiWarning } from "react-icons/ci";
+import { MdOutlineReceiptLong } from "react-icons/md";
 import { IoFileTrayFull } from "react-icons/io5";
 import OpenDrawerButton from '../../components/OpenDrawerButton';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
@@ -87,6 +88,18 @@ export default function PosCheckoutPage() {
   const [couponDiscountAmount, setCouponDiscountAmount] = useState(0); // suma total de cupones
   const [couponVersion, setCouponVersion] = useState(0);
   const [descuentosExpanded, setDescuentosExpanded] = useState(false);
+
+  // ========== NOTA DE CRÉDITO COMO PAGO ==========
+  const [creditNotesAvailable, setCreditNotesAvailable] = useState([]);
+  const [appliedCreditNote,    setAppliedCreditNote   ] = useState(null);
+  const [creditNoteApplyAmt,   setCreditNoteApplyAmt  ] = useState('');
+  const [cnLoading,            setCnLoading           ] = useState(false);
+  // Método para el restante cuando la NC no cubre el total
+  const [cnMetodoRestante,  setCnMetodoRestante ] = useState('');
+  const [cnCashPaid,        setCnCashPaid       ] = useState('');
+  const [cnCashPaidRaw,     setCnCashPaidRaw    ] = useState('');
+  const [cnCardRef,         setCnCardRef        ] = useState('');
+  const [cnTransferRef,     setCnTransferRef    ] = useState('');
 
   // ========== CONFIGURACIÓN FISCAL ==========
   const [ivaRateGlobal, setIvaRateGlobal] = useState(15);
@@ -641,6 +654,20 @@ export default function PosCheckoutPage() {
     }
   };
 
+  const loadCreditNotes = async (ruc, name) => {
+    setCnLoading(true);
+    setAppliedCreditNote(null);
+    setCreditNoteApplyAmt('');
+    try {
+      const params = new URLSearchParams();
+      if (ruc && ruc !== '9999999999') params.set('customer_ruc', ruc);
+      if (name && name.trim()) params.set('customer_name', name.trim());
+      const res = await fetchWithAuth(`/api/einvoicing/credit-notes/available?${params}`);
+      if (res.ok) setCreditNotesAvailable(await res.json());
+    } catch { }
+    finally { setCnLoading(false); }
+  };
+
   const resetForm = async () => {
     setClienteCedula('9999999999');
     setClienteNombre('');
@@ -678,6 +705,12 @@ export default function PosCheckoutPage() {
     setPendingSlotIdx(null);
     setCouponSelectedItemIds([]);
     setCouponDiscountAmount(0);
+    setCreditNotesAvailable([]);
+    setAppliedCreditNote(null);
+    setCreditNoteApplyAmt('');
+    setCnMetodoRestante('');
+    setCnCashPaid(''); setCnCashPaidRaw('');
+    setCnCardRef(''); setCnTransferRef('');
   };
 
   const loadOrders = async () => {
@@ -687,7 +720,7 @@ export default function PosCheckoutPage() {
         fetchWithAuth('/api/products'),
       ]);
       const raw = await res.json();
-      const todosActivos = Array.isArray(raw) ? raw.filter(o => o.status !== 'paid') : [];
+      const todosActivos = Array.isArray(raw) ? raw.filter(o => o.status !== 'paid' && o.status !== 'cancelled') : [];
 
       // Mapa product_id → category_id para enriquecer items
       let productCategoryMap = {};
@@ -1784,6 +1817,63 @@ export default function PosCheckoutPage() {
         invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'mixto', discountInfo, clienteEmail);
         debeAbrirCajon = (cashNeeded > 0);
         await imprimirTicket(selectedOrder, totalOrdenConDescuento, cashAmt - cashNeeded, invoiceData?.invoice_number, null, null, debeAbrirCajon, 'mixto');
+      } else if (metodoPagoNormal === 'credit_note') {
+        if (!appliedCreditNote) throw new Error('Selecciona una nota de crédito');
+        const applyAmt  = parseFloat(creditNoteApplyAmt) || 0;
+        const restante  = Math.round(Math.max(0, totalOrdenConDescuento - applyAmt) * 100) / 100;
+        if (applyAmt <= 0) throw new Error('El monto a aplicar debe ser mayor a 0');
+        if (applyAmt > parseFloat(appliedCreditNote.remaining_balance) + 0.01)
+          throw new Error(`Monto mayor al saldo disponible ($${parseFloat(appliedCreditNote.remaining_balance).toFixed(2)})`);
+
+        // Validar pago del restante
+        if (restante > 0.01) {
+          if (!cnMetodoRestante) throw new Error(`Faltan ${fmt(restante)} — selecciona cómo pagar el restante`);
+          if (cnMetodoRestante === 'cash') {
+            const cashAmt = parseFloat(cnCashPaid) || 0;
+            if (cashAmt < restante - 0.01) throw new Error(`Monto insuficiente. Faltan ${fmt(restante - cashAmt)}`);
+          } else if (cnMetodoRestante === 'card'     && !cnCardRef    ) throw new Error('Ingrese la referencia de la tarjeta');
+          else if   (cnMetodoRestante === 'transfer' && !cnTransferRef) throw new Error('Ingrese la referencia de la transferencia');
+        }
+
+        // Aplicar saldo NC
+        const actualApply = Math.min(applyAmt, parseFloat(appliedCreditNote.remaining_balance));
+        const applyRes = await fetchWithAuth(`/api/einvoicing/credit-notes/${appliedCreditNote.id}/apply`, {
+          method: 'POST',
+          body: JSON.stringify({ amount: actualApply }),
+        });
+        if (!applyRes.ok) { const d = await applyRes.json(); throw new Error(d.error || 'Error al aplicar nota de crédito'); }
+
+        // Construir detalle de pagos
+        const paymentsNC = [{ method: 'credit_note', amount: actualApply, reference: `NC#${appliedCreditNote.id}` }];
+        if (restante > 0.01) {
+          if      (cnMetodoRestante === 'cash')     paymentsNC.push({ method: 'cash',     amount: restante });
+          else if (cnMetodoRestante === 'card')     paymentsNC.push({ method: 'card',     amount: restante, reference_number: cnCardRef     });
+          else if (cnMetodoRestante === 'transfer') paymentsNC.push({ method: 'transfer', amount: restante, reference_number: cnTransferRef });
+        }
+
+        const notasPago = `NC#${appliedCreditNote.id} $${actualApply.toFixed(2)}` +
+          (restante > 0.01 ? ` + ${cnMetodoRestante} $${restante.toFixed(2)}` : '') +
+          (orderNotes ? `. ${orderNotes}` : '');
+
+        await fetchWithAuth(`/api/ordenes/${selectedOrder.id}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            status: 'paid',
+            payment_method: 'credit_note',
+            amount_paid: totalOrdenConDescuento,
+            payments: paymentsNC,
+            id_customer: cedula,
+            customer_name: nombre,
+            customer_document_number: cedula,
+            notes: notasPago.trim(),
+            discount_id: appliedDiscount?.id || null,
+            discount_amount: totalDescuento,
+          }),
+        });
+        invoiceData = await emitirFactura(selectedOrder, cedula, nombre, 'credit_note', discountInfo, clienteEmail);
+        debeAbrirCajon = (cnMetodoRestante === 'cash' && restante > 0.01);
+        const cnCambio = cnMetodoRestante === 'cash' ? Math.max(0, (parseFloat(cnCashPaid) || 0) - restante) : 0;
+        await imprimirTicket(selectedOrder, totalOrdenConDescuento, cnCambio, invoiceData?.invoice_number, null, null, debeAbrirCajon, 'credit_note');
       }
 
       if (selectedOrder.status === 'draft') {
@@ -1808,11 +1898,15 @@ export default function PosCheckoutPage() {
           <div className="cmbx-row">
             <select value={selectedOrder?.id || ''} onChange={e => handleSelectOrder(e.target.value)} className="combobox" style={{ width: '130px' }}>
               <option value="">No. Orden</option>
-              {orders.map(order => (
-                <option key={order.id} value={order.id}>
-                  {order.mesa_numero ? `Mesa ${order.mesa_numero}` : order.order_type === 'delivery' ? 'DELIVERY' : 'PARA LLEVAR'} - #{order.order_number || order.id}
-                </option>
-              ))}
+              {orders.map(order => {
+                const lugar = order.mesa_numero ? `Mesa ${order.mesa_numero}` : order.order_type === 'delivery' ? 'DELIVERY' : 'PARA LLEVAR';
+                const prefix = order.status === 'completed' ? '✓ LISTA - ' : order.status === 'sent' ? '🍳 - ' : '';
+                return (
+                  <option key={order.id} value={order.id}>
+                    {prefix}{lugar} #{order.order_number || order.id}
+                  </option>
+                );
+              })}
             </select>
 
             {(!modoDividido || (modoDividido && !facturaIndividual)) && (
@@ -2110,6 +2204,7 @@ export default function PosCheckoutPage() {
                       <button className={metodoPagoNormal === 'card' ? "selected" : ""} onClick={() => setMetodoPagoNormal('card')}><FiCreditCard size={20} /> Tarjeta</button>
                       <button className={metodoPagoNormal === 'transfer' ? "selected" : ""} onClick={() => setMetodoPagoNormal('transfer')}><FiSmartphone size={20} /> Transferencia</button>
                       <button className={metodoPagoNormal === 'mixto' ? "selected" : ""} onClick={() => { setMetodoPagoNormal('mixto'); setAmountPaidRaw(''); setAmountPaid(''); setCardPaidRaw(''); setCardPaid(''); setTransferPaidRaw(''); setTransferPaid(''); setMixtoManual(new Set()); setMixtoActive(new Set()); }}><FiGrid size={20} /> Mixto</button>
+                      <button className={metodoPagoNormal === 'credit_note' ? "selected" : ""} onClick={() => { setMetodoPagoNormal('credit_note'); loadCreditNotes(clienteCedula, clienteNombre); }}><MdOutlineReceiptLong size={20} /> Nota de Crédito</button>
                     </div>
 
                     {metodoPagoNormal === 'cash' && (
@@ -2183,6 +2278,105 @@ export default function PosCheckoutPage() {
                         )}
                       </>
                     )}
+
+                    {metodoPagoNormal === 'credit_note' && (
+                      <div style={{ marginTop: 10, background: 'rgba(104,66,254,0.06)', border: '1px solid rgba(104,66,254,0.2)', borderRadius: 10, padding: '12px 14px' }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#a78bfa', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <MdOutlineReceiptLong size={14} /> Notas de crédito disponibles
+                          <button onClick={() => loadCreditNotes(clienteCedula, clienteNombre)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontSize: 11 }}>
+                            {cnLoading ? '...' : '↺ Buscar'}
+                          </button>
+                        </div>
+                        {cnLoading && <div style={{ fontSize: 12, color: '#94a3b8' }}>Buscando...</div>}
+                        {!cnLoading && creditNotesAvailable.length === 0 && (
+                          <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                            No hay notas de crédito disponibles para este cliente.<br />
+                            <span style={{ fontSize: 11 }}>RUC buscado: {clienteCedula}</span>
+                          </div>
+                        )}
+                        {creditNotesAvailable.map(cn => {
+                          const balance = parseFloat(cn.remaining_balance);
+                          const isSelected = appliedCreditNote?.id === cn.id;
+                          return (
+                            <div key={cn.id}
+                              onClick={() => { setAppliedCreditNote(cn); setCreditNoteApplyAmt(Math.min(balance, totalOrdenConDescuento).toFixed(2)); }}
+                              style={{ cursor: 'pointer', padding: '8px 10px', borderRadius: 8, marginBottom: 6, border: `1.5px solid ${isSelected ? '#7c3aed' : 'rgba(104,66,254,0.2)'}`, background: isSelected ? 'rgba(124,58,237,0.12)' : 'rgba(15,23,42,0.4)' }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                                <span style={{ fontWeight: 700, color: '#a78bfa' }}>NC#{cn.id} · Fac. {cn.reference_invoice || '—'}</span>
+                                <span style={{ fontWeight: 800, color: '#34d399' }}>Saldo: ${balance.toFixed(2)}</span>
+                              </div>
+                              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{(cn.reason || '').substring(0, 60)}</div>
+                            </div>
+                          );
+                        })}
+                        {appliedCreditNote && (() => {
+                          const ncBalance  = parseFloat(appliedCreditNote.remaining_balance);
+                          const ncApply    = parseFloat(creditNoteApplyAmt) || 0;
+                          const ncRestante = Math.max(0, totalOrdenConDescuento - ncApply);
+                          const ncCambio   = cnMetodoRestante === 'cash' ? Math.max(0, (parseFloat(cnCashPaid) || 0) - ncRestante) : 0;
+                          return (
+                            <>
+                              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <label style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0 }}>Monto a aplicar:</label>
+                                <input
+                                  type="number" step="0.01" min="0" max={ncBalance}
+                                  value={creditNoteApplyAmt}
+                                  onChange={e => { setCreditNoteApplyAmt(e.target.value); setCnMetodoRestante(''); setCnCashPaid(''); setCnCardRef(''); setCnTransferRef(''); }}
+                                  style={{ width: 90, padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(124,58,237,0.4)', background: '#0f172a', color: '#f1f5f9', fontSize: 13 }}
+                                />
+                                <span style={{ fontSize: 11, color: '#64748b' }}>/ ${ncBalance.toFixed(2)} disp.</span>
+                              </div>
+
+                              {ncRestante > 0.01 && (
+                                <div style={{ marginTop: 10, background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 8, padding: '10px 12px' }}>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24', marginBottom: 8 }}>
+                                    Restante a pagar: <strong>{fmt(ncRestante)}</strong> — ¿cómo paga el cliente?
+                                  </div>
+                                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                                    {[
+                                      { key: 'cash',     label: 'Efectivo',       Icon: FaHandHoldingDollar },
+                                      { key: 'card',     label: 'Tarjeta',        Icon: FiCreditCard       },
+                                      { key: 'transfer', label: 'Transferencia',  Icon: FaMoneyBillTransfer },
+                                    ].map(({ key, label, Icon }) => (
+                                      <button key={key}
+                                        onClick={() => { setCnMetodoRestante(key); setCnCashPaid(''); setCnCashPaidRaw(''); setCnCardRef(''); setCnTransferRef(''); }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                          background: cnMetodoRestante === key ? 'rgba(245,158,11,0.2)' : 'rgba(15,23,42,0.5)',
+                                          border: `1.5px solid ${cnMetodoRestante === key ? '#fbbf24' : 'rgba(245,158,11,0.2)'}`,
+                                          color: cnMetodoRestante === key ? '#fbbf24' : '#94a3b8' }}>
+                                        <Icon size={13} /> {label}
+                                      </button>
+                                    ))}
+                                  </div>
+
+                                  {cnMetodoRestante === 'cash' && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                      <label style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0 }}>Recibido:</label>
+                                      <input type="text" inputMode="numeric"
+                                        value={cnCashPaid}
+                                        onChange={e => { let d = e.target.value.replace(/\D/g, ''); if (!d) d = '0'; if (d.length > 8) d = d.slice(0,8); setCnCashPaidRaw(d); setCnCashPaid((parseInt(d,10)/100).toFixed(2)); }}
+                                        placeholder="0.00"
+                                        style={{ width: 90, padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(245,158,11,0.4)', background: '#0f172a', color: '#f1f5f9', fontSize: 13 }}
+                                      />
+                                      {ncCambio > 0 && <span style={{ fontSize: 12, color: '#34d399' }}>Cambio: {fmt(ncCambio)}</span>}
+                                    </div>
+                                  )}
+                                  {(cnMetodoRestante === 'card' || cnMetodoRestante === 'transfer') && (
+                                    <input type="text"
+                                      value={cnMetodoRestante === 'card' ? cnCardRef : cnTransferRef}
+                                      onChange={e => cnMetodoRestante === 'card' ? setCnCardRef(e.target.value) : setCnTransferRef(e.target.value)}
+                                      placeholder="Número de referencia"
+                                      style={{ width: '100%', padding: '5px 8px', borderRadius: 6, border: '1px solid rgba(245,158,11,0.4)', background: '#0f172a', color: '#f1f5f9', fontSize: 13, boxSizing: 'border-box' }}
+                                    />
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </>
                 ) : modoDividido ? (
                   // Modo dividido
@@ -2226,24 +2420,23 @@ export default function PosCheckoutPage() {
                               {clientesDivididos.length > 1 && <button onClick={() => eliminarComensal(comensal.id)} className="btn-delete"><FiX size={14} /> Eliminar</button>}
                             </div>
 
-                            {facturaIndividual ? (
-                              <div className="comensal-datos">
-                                <div className="busqueda-container">
-                                  <input type="text" placeholder="Cédula/RUC" value={comensal.cedula || ''}
-                                    onChange={e => {
-                                      const val = e.target.value.replace(/\D/g, '').slice(0,13);
-                                      actualizarComensal(comensal.id, 'cedula', val);
-                                      if (val.length === 10 || val.length === 13) buscarClientePorDocumento(val, true, comensal.id);
-                                      else { actualizarComensal(comensal.id, 'nombre', ''); actualizarComensal(comensal.id, 'email', ''); }
-                                    }} />
-                                  {clientApiLoading && <div className="spinner-small"></div>}
-                                </div>
-                                <input type="text" placeholder="Nombre completo" value={comensal.nombre || ''} onChange={e => actualizarComensal(comensal.id, 'nombre', e.target.value)} />
-                                <input type="email" placeholder="Email (factura)" value={comensal.email || ''} onChange={e => actualizarComensal(comensal.id, 'email', e.target.value)} />
+                            <div className="comensal-datos">
+                              <div className="busqueda-container">
+                                <input type="text" placeholder="Cédula/RUC" value={comensal.cedula || ''}
+                                  onChange={e => {
+                                    const val = e.target.value.replace(/\D/g, '').slice(0,13);
+                                    actualizarComensal(comensal.id, 'cedula', val);
+                                    if (val.length === 10 || val.length === 13) buscarClientePorDocumento(val, true, comensal.id);
+                                    else { actualizarComensal(comensal.id, 'nombre', ''); actualizarComensal(comensal.id, 'email', ''); }
+                                  }}
+                                  onBlur={e => onClienteCedulaBlurOrEnter(e, true, comensal.id)}
+                                  onKeyPress={e => onClienteCedulaBlurOrEnter(e, true, comensal.id)}
+                                />
+                                {clientApiLoading && <div className="spinner-small"></div>}
                               </div>
-                            ) : (
-                              <div className="comensal-sin-datos"><span className="comensal-numero">Comensal {idx + 1}</span></div>
-                            )}
+                              <input type="text" placeholder="Nombre completo" value={comensal.nombre || ''} onChange={e => actualizarComensal(comensal.id, 'nombre', e.target.value)} />
+                              <input type="email" placeholder="Email (factura)" value={comensal.email || ''} onChange={e => actualizarComensal(comensal.id, 'email', e.target.value)} />
+                            </div>
 
                             <div className="productos-asignados">
                               <span>🍽️ Productos asignados:</span>
@@ -2356,7 +2549,17 @@ export default function PosCheckoutPage() {
               </div>
 
               <div className="actions-row">
-                <button className="btn-guardar" disabled={printLoading || (!modoDividido && !modoPorCobrar && metodoPagoNormal === 'cash' && (!amountPaid || Math.round((parseFloat(amountPaid) || 0) * 100) / 100 < Math.round(totalOrdenConDescuento * 100) / 100))}
+                <button className="btn-guardar" disabled={printLoading || (!modoDividido && !modoPorCobrar && metodoPagoNormal === 'cash' && (!amountPaid || Math.round((parseFloat(amountPaid) || 0) * 100) / 100 < Math.round(totalOrdenConDescuento * 100) / 100)) || (metodoPagoNormal === 'credit_note' && (() => {
+                    if (!appliedCreditNote || !creditNoteApplyAmt) return true;
+                    const ncApply    = parseFloat(creditNoteApplyAmt) || 0;
+                    const ncRestante = Math.max(0, totalOrdenConDescuento - ncApply);
+                    if (ncRestante <= 0.01) return false; // NC cubre todo
+                    if (!cnMetodoRestante) return true;
+                    if (cnMetodoRestante === 'cash') return (parseFloat(cnCashPaid) || 0) < ncRestante - 0.01;
+                    if (cnMetodoRestante === 'card') return !cnCardRef;
+                    if (cnMetodoRestante === 'transfer') return !cnTransferRef;
+                    return false;
+                  })())}
                   onClick={() => { 
                     if (!modoDividido) {
                       pagoNormal();

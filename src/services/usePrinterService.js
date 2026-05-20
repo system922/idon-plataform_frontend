@@ -85,6 +85,9 @@ export function usePrinterService() {
       case 'ticket-simple':
         content = formatSimpleTicket(data, paperWidth);
         break;
+      case 'credit-note':
+        content = formatCreditNoteTicket(data, paperWidth);
+        break;
       default:
         throw new Error(`Template '${template}' no reconocido`);
     }
@@ -1249,6 +1252,99 @@ function numberToWords(num) {
     return letras[centena] + (resto > 0 ? ' ' + numberToWords(resto) : '');
   }
   return numberToWords(Math.floor(num / 1000)) + ' MIL' + (num % 1000 > 0 ? ' ' + numberToWords(num % 1000) : '');
+}
+
+/**
+ * NOTA DE CRÉDITO
+ * data: { bizInfo, creditNote, customer, reason, items, subtotal, iva, total, printerFooter }
+ * creditNote: { number, reference_invoice, date }
+ * items: [{ description, quantity, unit_price, subtotal }]
+ */
+function formatCreditNoteTicket(data, width = 42) {
+  const {
+    bizInfo,
+    creditNote  = {},
+    customer    = {},
+    reason      = '',
+    items       = [],
+    subtotal    = 0,
+    iva         = 0,
+    total       = 0,
+    printerFooter,
+  } = data;
+
+  const line = '='.repeat(width);
+  const sep  = '-'.repeat(width);
+  let t = '';
+
+  // ─── Encabezado negocio ───────────────────────────────────────────────────
+  if (bizInfo?.trade_name) {
+    wrap(bizInfo.trade_name.toUpperCase(), width).forEach(l => (t += padCenter(l, width) + '\n'));
+  }
+  if (bizInfo?.company_name && bizInfo.company_name !== bizInfo?.trade_name) {
+    wrap(bizInfo.company_name, width).forEach(l => (t += padCenter(l, width) + '\n'));
+  }
+  if (bizInfo?.ruc) t += padCenter(`RUC: ${bizInfo.ruc}`, width) + '\n';
+  if (bizInfo?.address) wrap(bizInfo.address, width).forEach(l => (t += padCenter(l, width) + '\n'));
+  t += line + '\n';
+
+  // ─── Encabezado documento ────────────────────────────────────────────────
+  t += padCenter('*** NOTA DE CREDITO ***', width) + '\n';
+  t += padCenter(`No. ${creditNote.number || 'N/A'}`, width) + '\n';
+  t += sep + '\n';
+
+  // ─── Datos ───────────────────────────────────────────────────────────────
+  if (customer?.name)               t += `CLIENTE: ${customer.name}\n`;
+  if (customer?.id)                 t += `RUC/CI:  ${customer.id}\n`;
+  if (creditNote?.reference_invoice) t += `Fac. ref: ${creditNote.reference_invoice}\n`;
+  if (creditNote?.date)             t += `Fecha: ${formatDate(creditNote.date, 'short')}\n`;
+  t += sep + '\n';
+
+  // ─── Motivo ───────────────────────────────────────────────────────────────
+  t += 'MOTIVO:\n';
+  wrap(reason, width).forEach(l => (t += l + '\n'));
+  t += sep + '\n';
+
+  // ─── Tabla de ítems ───────────────────────────────────────────────────────
+  if (items.length > 0) {
+    const qW = 4, pW = 8, tW = 9;
+    const dW = Math.max(6, width - qW - pW - tW - 3);
+
+    t += padLeft('CANT', qW) + ' ' + padRight('DESC', dW) + ' ' + padLeft('P.UNT', pW) + ' ' + padLeft('TOTAL', tW) + '\n';
+    t += sep + '\n';
+
+    items.forEach(item => {
+      const qty   = Number(item.quantity ?? item.qty ?? 1);
+      const desc  = String(item.description || 'Producto').toUpperCase();
+      const price = Number(item.unit_price ?? item.price ?? 0);
+      const tot   = Number(item.subtotal   ?? qty * price);
+
+      const descLines = wrap(desc, dW);
+      t += padLeft(String(qty), qW) + ' ' + padRight(descLines[0] || '', dW) + ' ' + padLeft(formatMoney(price), pW) + ' ' + padLeft(formatMoney(tot), tW) + '\n';
+      for (let i = 1; i < descLines.length; i++) {
+        t += ' '.repeat(qW + 1) + padRight(descLines[i], dW) + '\n';
+      }
+    });
+    t += sep + '\n';
+  }
+
+  // ─── Totales ──────────────────────────────────────────────────────────────
+  const mW   = 12;
+  const labW = width - mW;
+  const row  = (label, val) => padRight(label, labW) + padLeft(formatMoney(val), mW) + '\n';
+
+  t += row('SUBTOTAL:', subtotal);
+  t += row('IVA 15%:',  iva);
+  t += line + '\n';
+  t += row('TOTAL A ACREDITAR:', total);
+  t += line + '\n';
+
+  // ─── Pie ──────────────────────────────────────────────────────────────────
+  if (printerFooter) t += padCenter(printerFooter, width) + '\n';
+  t += padCenter('Original: Adquirente / Copia: Emisor', width) + '\n';
+  t += line + '\n\n';
+
+  return t;
 }
 
 /**

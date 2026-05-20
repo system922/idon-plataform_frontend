@@ -54,7 +54,7 @@ export default function OrdersHistoryPage() {
   // 🔥 FECHA INICIAL EN ECUADOR
   const [filterDate, setFilterDate] = useState(() => getEcuadorDate());
   
-  const [statusFilter, setStatusFilter] = useState('pending');
+  const [statusFilter, setStatusFilter] = useState('active');
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showEditItemModal, setShowEditItemModal] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
@@ -469,26 +469,18 @@ export default function OrdersHistoryPage() {
       const nuevaTotals = calcTotals(itemsParaNueva);
       const quedaTotals = calcTotals(itemsQueQuedan);
 
-      // Calcular sufijo: contar órdenes que ya son divisiones de esta (mismo número base o con _N)
-      const baseNumber = selectedOrder.order_number || selectedOrder.id.slice(0, 8);
-      const baseClean = baseNumber.replace(/_\d+$/, ''); // quitar sufijo previo si lo tiene
-      const existentes = orders.filter(o => {
-        const n = o.order_number || '';
-        return n === baseClean || n.startsWith(baseClean + '_');
-      });
-      const nextSuffix = existentes.length; // 1, 2, 3...
-      const newOrderNumber = `${baseClean}_${nextSuffix}`;
-
       // 1. Crear nueva orden
       const resNueva = await fetchWithAuth('/api/ordenes', {
         method: 'POST',
         body: JSON.stringify({
-          numero_mesa: selectedOrder.mesa_numero,
+          mesa_numero: selectedOrder.mesa_numero,
           mesa_id: selectedOrder.mesa_id,
           order_type: selectedOrder.order_type || 'dine_in',
-          order_number: newOrderNumber,
           items: toItems(itemsParaNueva),
-          notas: `División de #${baseClean}`,
+          subtotal: nuevaTotals.subtotal,
+          tax_amount: nuevaTotals.iva,
+          total: nuevaTotals.total,
+          notas: `División de #${selectedOrder.order_number || selectedOrder.id.slice(0, 8)}`,
         }),
       });
 
@@ -734,11 +726,31 @@ export default function OrdersHistoryPage() {
   );
 
   const estadosDisponibles = [
-    { value: 'pending', label: 'Pendientes', color: 'warning' },
-    { value: 'paid', label: 'Pagadas', color: 'success' },
-    { value: 'cancelled', label: 'Canceladas', color: 'danger' },
-    { value: '', label: 'Todas', color: 'info' },
+    { value: 'active',    label: 'Activas',           color: 'info'    },
+    { value: 'pending',   label: 'Pendientes',        color: 'warning' },
+    { value: 'sent',      label: 'En preparación',    color: 'info'    },
+    { value: 'completed', label: 'Listas para mesa',  color: 'purple'  },
+    { value: 'cancelled', label: 'Canceladas',        color: 'danger'  },
+    { value: 'paid',      label: 'Pagadas',            color: 'success' },
+    { value: '',          label: 'Todas',              color: 'info'    },
   ];
+
+  const STATUS_LABEL = {
+    pending:   'Pendiente',
+    sent:      'En cocina',
+    completed: 'Lista ✓',
+    paid:      'Pagada',
+    cancelled: 'Cancelada',
+    draft:     'Borrador',
+  };
+  const STATUS_COLOR = {
+    pending:   'warning',
+    sent:      'info',
+    completed: 'purple',
+    paid:      'success',
+    cancelled: 'danger',
+    draft:     'secondary',
+  };
 
   const getItemTotal = (item) => {
     return Number(item.line_total) || Number(item.subtotal) || 0;
@@ -845,8 +857,8 @@ export default function OrdersHistoryPage() {
                           <small>#{order.order_number || order.id.slice(0,8)}</small>
                         </td>
                         <td data-label="Estado">
-                          <span className={`badge badge-${order.status === 'paid' ? 'success' : order.status === 'pending' ? 'warning' : 'danger'}`}>
-                            {order.status === 'paid' ? 'Pagada' : order.status === 'pending' ? 'Pendiente' : order.status}
+                          <span className={`badge badge-${STATUS_COLOR[order.status] || 'secondary'}`}>
+                            {STATUS_LABEL[order.status] || order.status || '—'}
                           </span>
                         </td>
                         <td data-label="Items">{order.items?.filter(i => !(i.notes||'').startsWith('__EXT__:')).length || 0}</td>

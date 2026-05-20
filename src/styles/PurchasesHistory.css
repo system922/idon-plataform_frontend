@@ -131,7 +131,7 @@
 .expenses-table td {
   padding: 15px;
   border-bottom: 1px solid #f0f0f0;
-  color: #333;
+  color: #1a1a2e;
   font-size: 14px;
 }
 
@@ -155,31 +155,45 @@
 .actions {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .icon-btn {
   background: none;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
-  padding: 6px;
+  padding: 6px 10px;
   border-radius: 6px;
   transition: all 0.2s;
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .icon-btn.edit {
-  color: #667eea;
+  color: #4f46e5;
+  background: #eef0ff;
+  border-color: #c7d2fe;
 }
 
 .icon-btn.edit:hover {
-  background: #e8eaff;
+  background: #c7d2fe;
+  border-color: #818cf8;
 }
 
 .icon-btn.delete {
-  color: #e53e3e;
+  color: #dc2626;
+  background: #fff1f2;
+  border-color: #fecdd3;
 }
 
 .icon-btn.delete:hover {
-  background: #fff5f5;
+  background: #fecdd3;
+  border-color: #f87171;
 }
 
 .empty-table {
