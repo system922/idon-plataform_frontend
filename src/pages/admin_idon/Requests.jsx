@@ -130,15 +130,18 @@ const AdminSolicitudes = () => {
   const handleApprove = async (requestId) => {
     try {
       await apiService.post(`/admin/${requestId}/approve`, {});
-      await fetchRequests();
     } catch (err) {
-
+      setError(err.message || 'Error al aprobar la solicitud');
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      await fetchRequests();
     }
   };
 
   const handleReject = async (requestId) => {
-    try { await apiService.post(`/admin/${requestId}/reject`, {}); await fetchRequests(); }
+    try { await apiService.post(`/admin/${requestId}/reject`, {}); }
     catch { }
+    finally { await fetchRequests(); }
   };
 
   return (
