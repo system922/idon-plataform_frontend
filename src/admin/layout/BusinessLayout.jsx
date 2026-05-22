@@ -596,6 +596,7 @@ export default function BusinessLayout({ user, onLogout }) {
   useEffect(() => {
     const load = async () => {
       try {
+        localStorage.removeItem('idonNavModules');
         const storedBiz = getStoredBiz();
         const navRes = await fetch(`${API_BASE}/api/business-status/navigation`, {
           headers: {
@@ -605,7 +606,10 @@ export default function BusinessLayout({ user, onLogout }) {
         });
         if (navRes.ok) {
           const navData = await navRes.json();
-          if (navData.ok) setNavData(navData.data);
+          if (navData.ok) {
+            setNavData(navData.data);
+            try { localStorage.setItem('idonNavModules', JSON.stringify(navData.data)); } catch {}
+          }
         }
       } catch (e) {
 

@@ -4,7 +4,6 @@ import PageTemplate from '../../components/PageTemplate';
 import StatsCardsSection from '../../components/StatsCardsSection';
 import SalesChartSection from '../../components/SalesChartSection';
 import GraphsRowSection from '../../components/GraphsRowSection.js';
-import QuickActionsSection from '../../components/QuickActionsSection';
 import { fetchWithAuth } from '../../config/apiBase';
 import { useAuth } from '../../context/AuthContext';
 import { FiRefreshCw } from 'react-icons/fi';
@@ -214,7 +213,6 @@ export default function ManagerDashboard() {
           hoursData={graphData.hours}
           graphLoading={graphLoading}
         />
-        <QuickActionsSection />
       </div>
     </PageTemplate>
   );

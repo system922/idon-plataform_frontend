@@ -5,7 +5,11 @@ import {
   FiBell, FiShoppingCart, FiCreditCard,
   FiUsers, FiPackage,
 } from 'react-icons/fi';
-import { useBusiness } from '../context/BusinessContext';
+
+const getNavData = () => {
+  try { return JSON.parse(localStorage.getItem('idonNavModules') || 'null'); }
+  catch { return null; }
+};
 
 // Solo rutas que tienen página real en businessRoutes.jsx
 const ALL_ACTIONS = [
@@ -21,34 +25,56 @@ const ALL_ACTIONS = [
 ];
 
 // ── Extrae todos los paths del menú de navegación activo ──────────────────────
+// Soporta dos formatos:
+//   1) Sidebar array: [{ path, items: [{path}] }]
+//   2) Raw API:       { modules: [{ pages: [{path}] }] }
 function getAllNavPaths(navigation) {
   const paths = [];
-  if (!Array.isArray(navigation)) return paths;
-  navigation.forEach(section => {
-    if (section.path) paths.push(section.path);
-    if (Array.isArray(section.items)) {
-      section.items.forEach(item => { if (item.path) paths.push(item.path); });
-    }
-  });
+  const toAbsolute = p => (!p ? null : p.startsWith('/app') ? p : `/app${p}`);
+
+  // Formato sidebar (array)
+  if (Array.isArray(navigation)) {
+    navigation.forEach(section => {
+      const p = toAbsolute(section.path);
+      if (p) paths.push(p);
+      if (Array.isArray(section.items)) {
+        section.items.forEach(item => {
+          const ip = toAbsolute(item.path);
+          if (ip) paths.push(ip);
+        });
+      }
+    });
+    return paths;
+  }
+
+  // Formato raw API: { modules: [{pages:[{path}]}] }
+  if (Array.isArray(navigation?.modules)) {
+    navigation.modules.forEach(mod => {
+      (mod.pages || []).forEach(page => {
+        const p = toAbsolute(page.path);
+        if (p) paths.push(p);
+      });
+    });
+    return paths;
+  }
+
   return paths;
 }
 
-// ── Verifica si una acción es accesible (match exacto o por prefijo) ──────────
+// ── Verifica si una acción es accesible (match exacto o por prefijo directo) ──
 function hasAccess(navPaths, targetPath) {
   if (!navPaths.length) return true; // si no cargó navegación, mostrar todo
   return navPaths.some(navPath =>
     navPath === targetPath ||
     navPath.startsWith(targetPath + '/') ||
-    targetPath.startsWith(navPath + '/') ||
-    navPath.startsWith(targetPath.split('/').slice(0, 3).join('/'))
+    targetPath.startsWith(navPath + '/')
   );
 }
 
 export default function QuickActionsSection() {
   const navigate = useNavigate();
-  const { navigation } = useBusiness();
 
-  const navPaths = getAllNavPaths(navigation);
+  const navPaths = getAllNavPaths(getNavData());
   const visible  = ALL_ACTIONS.filter(a => hasAccess(navPaths, a.path));
 
   if (!visible.length) return null;
