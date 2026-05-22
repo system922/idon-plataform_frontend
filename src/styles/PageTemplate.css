@@ -316,17 +316,27 @@
 @media (max-width: 768px) {
   .page-template { padding: 8px 12px 12px; }
   .page-template-header {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
   }
-  .page-template-header-actions { width: 100%; }
-  .page-template-header-actions button { flex: 1; min-width: 100px; }
-  .page-template-title { font-size: 17px; }
+  .page-template-title { font-size: 16px; }
+  .page-template-subtitle { font-size: 11px; }
   .page-template-content { gap: 10px; }
   .page-template-error { flex-direction: column; align-items: flex-start; }
   .page-template-error-retry { width: 100%; justify-content: center; }
   .table th, .table td { padding: 10px 12px; font-size: 12px; }
+}
+
+/* ── POS Retail: el contenido necesita ocupar el resto de la altura ── */
+.pos-retail-template { display: flex; flex-direction: column; min-height: 0; }
+.pos-retail-template .page-template-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
 }
 
 @media (max-width: 480px) {

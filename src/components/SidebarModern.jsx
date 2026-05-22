@@ -135,7 +135,10 @@ function UserCard({ user, onLogout, isCollapsed, onMobileClose }) {
 
   const name  = getUserName(user);
   const email = user?.email || '';
-  const role  = user?.userType === 'admin_idon' ? 'Super Admin' : (user?.role || 'Usuario');
+  const rawRole = (user?.role || '').toLowerCase();
+  const role  = user?.userType === 'admin_idon' ? 'Super Admin'
+    : rawRole === 'owner' ? 'Admin'
+    : (user?.role || 'Usuario');
 
   return (
     <div className="sidebar-footer" ref={ref}>

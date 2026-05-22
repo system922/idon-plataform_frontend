@@ -451,7 +451,7 @@ export default function BusinessLayout({ user, onLogout }) {
           new_values: data,
           reason: "Cierre de caja"
         })
-      }).catch(err => console.warn('Error guardando auditoría:', err));
+      }).catch(() => {});
     }
     
     setMostrarCierreForm(false);
@@ -522,7 +522,7 @@ export default function BusinessLayout({ user, onLogout }) {
           },
           reason: "Registro de Apertura"
         })
-      }).catch(err => console.warn('Error guardando auditoría:', err));
+      }).catch(() => {});
     }
 
     setAperturaHecha(true);

@@ -2,7 +2,7 @@
 
 ## PITCH DE 30 SEGUNDOS (Elevator Pitch)
 
-> "IDON es un sistema de gestión multinegocios. En lugar de usar 5 aplicaciones distintas para el POS, el inventario, los empleados, la facturación y los reportes, con IDON tienes todo en un solo lugar, desde tu celular, sin instalar nada. Las empresas que lo usan ahorran entre 2 y 5 horas diarias de trabajo manual. El plan básico cuesta menos de lo que gastas en un almuerzo de negocios al mes."
+> "IDON es un sistema de gestión multinegocios. En lugar de usar 5 aplicaciones distintas para el POS, el inventario, los empleados, la facturación y los reportes, con IDON tienes todo en un solo lugar, desde tu celular, sin instalar nada. Las empresas que lo usan ahorran entre 2 y 5 horas diarias de trabajo manual."
 
 ---
 
@@ -35,8 +35,8 @@
 #### Para Restaurantes:
 1. Mostrar: toma de comanda en tablet
 2. Mostrar: comanda llega a pantalla de cocina
-3. Mostrar: cierre de mesa y cobro (efectivo o tarjeta)
-4. Mostrar: reporte de ventas por mesero y por plato
+3. Mostrar: cierre de mesa y cobro (efectivo, transferencia o tarjeta)
+4. Mostrar: reporte de ventas
 5. Mostrar: inventario de insumos con alerta de bajo stock
 
 #### Para Retail / Minimarket:

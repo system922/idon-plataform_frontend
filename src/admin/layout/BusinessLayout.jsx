@@ -18,6 +18,7 @@ import '../../styles/BusinessLayout.css';
 import Footer from '../../components/common/Footer';
 
 import { BusinessContextProvider } from '../../admin/config/BusinessContext';
+import { BusinessProvider } from '../../context/BusinessContext';
 import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';
 import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
 import { usePrinterService } from '../../services/usePrinterService';
@@ -633,6 +634,7 @@ export default function BusinessLayout({ user, onLogout }) {
 
   return (
     <BusinessContextProvider>
+    <BusinessProvider>
       {/* Banner de actualización automática */}
       {updateReady && (
         <div style={{
@@ -754,6 +756,7 @@ export default function BusinessLayout({ user, onLogout }) {
           <Footer />
         </div>
       </div>
+    </BusinessProvider>
     </BusinessContextProvider>
   );
 }

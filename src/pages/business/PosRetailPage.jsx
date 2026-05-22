@@ -22,8 +22,14 @@ export default function PosRetailPage() {
   const { printerError } = useQzTray();
   const { print } = usePrinterService();
   const barcodeRef = useRef(null);
-  const appliedCouponRef = useRef(null);   // { discount, amount }
-  const manualDiscountRef = useRef(null);  // { discount, amount } — seleccionado manualmente
+  const appliedCouponRef = useRef(null);
+  const manualDiscountRef = useRef(null);
+  const printResolveRef = useRef(null);
+
+  const [showPrintModal, setShowPrintModal] = useState(false);
+
+  const awaitPrintDecision = () => new Promise(res => { printResolveRef.current = res; setShowPrintModal(true); });
+  const handlePrintDecision = (v) => { setShowPrintModal(false); printResolveRef.current?.(v); };
 
   // ── Catálogo ────────────────────────────────────────────────────────────────
   const [products, setProducts] = useState([]);
@@ -63,6 +69,8 @@ export default function PosRetailPage() {
   const [totalConDescuento, setTotalConDescuento] = useState(0);
 
   // ── Cupones ──────────────────────────────────────────────────────────────────
+  const [showCoupon, setShowCoupon] = useState(false);
+  const [mobileTab, setMobileTab] = useState('catalog');
   const [couponCodeInput, setCouponCodeInput] = useState('');
   const [couponError, setCouponError] = useState('');
   const [couponPendingSelect, setCouponPendingSelect] = useState(false);
@@ -750,14 +758,17 @@ export default function PosRetailPage() {
       };
       const invoiceData = await emitirFactura(ordenParaFactura, cedula, nombre, paymentMethod, clienteEmail?.trim() || null);
 
-      await imprimirFactura(
-        ordenParaFactura,
-        metodoPago === 'cash' ? cashPaidAmt : totalConDescuento,
-        cambioFinal,
-        invoiceData?.invoice_number,
-        debeAbrirCajon,
-        paymentMethod,
-      );
+      const shouldPrint = await awaitPrintDecision();
+      if (shouldPrint) {
+        await imprimirFactura(
+          ordenParaFactura,
+          metodoPago === 'cash' ? cashPaidAmt : totalConDescuento,
+          cambioFinal,
+          invoiceData?.invoice_number,
+          debeAbrirCajon,
+          paymentMethod,
+        );
+      }
 
       setSuccess(`✅ Venta completada${invoiceData ? ` | Factura ${invoiceData.invoice_number}` : ''}`);
       clearCart();
@@ -773,24 +784,29 @@ export default function PosRetailPage() {
     <PageTemplate
       title="POS Retail"
       subtitle="Escanea o busca productos y cobra al instante"
-      backButton
-      headerAction={
-        <button
-          onClick={() => navigate('/app/pos/pos.retail_dashboard')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '8px 14px', borderRadius: 8, border: 'none',
-            background: 'rgba(92,170,255,.15)', color: '#5caaff',
-            fontWeight: 700, fontSize: 13, cursor: 'pointer',
-          }}
-        >
-          Dashboard
-        </button>
-      }
+      className="pos-retail-template"
     >
+      <div className="retail-pos-wrapper">
+      {/* Tab bar — solo visible en móvil */}
+      <div className="retail-mobile-tabs">
+        <button
+          className={`retail-mobile-tab${mobileTab === 'catalog' ? ' active' : ''}`}
+          onClick={() => setMobileTab('catalog')}
+        >
+          <FiGrid size={15} /> Catálogo
+        </button>
+        <button
+          className={`retail-mobile-tab${mobileTab === 'cart' ? ' active' : ''}`}
+          onClick={() => setMobileTab('cart')}
+        >
+          <FiCheck size={15} /> Cobrar
+          {cart.length > 0 && <span className="retail-mobile-tab-badge">{cart.reduce((s,i)=>s+i.quantity,0)}</span>}
+        </button>
+      </div>
+
       <div className="retail-pos-layout">
         {/* PANEL IZQUIERDO: CATÁLOGO (más angosto) */}
-        <div className="retail-catalog-panel">
+        <div className={`retail-catalog-panel${mobileTab === 'catalog' ? ' mob-active' : ' mob-hidden'}`}>
           {/* Barra de búsqueda + escáner */}
           <div className="retail-search-bar">
             <div className="retail-barcode-wrap">
@@ -824,24 +840,17 @@ export default function PosRetailPage() {
             </div>
           </div>
 
-          {/* Tabs de categorías */}
-          <div className="retail-category-tabs">
-            <button
-              className={`retail-cat-tab${!selectedCategory ? ' active' : ''}`}
-              onClick={() => setSelectedCategory(null)}
-            >
-              Todos
-            </button>
+          {/* Selector de categoría */}
+          <select
+            className="retail-category-select"
+            value={selectedCategory ?? ''}
+            onChange={e => setSelectedCategory(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">Todas las categorías</option>
             {categories.map(cat => (
-              <button
-                key={cat.id}
-                className={`retail-cat-tab${selectedCategory === cat.id ? ' active' : ''}`}
-                onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
-              >
-                {cat.name}
-              </button>
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
-          </div>
+          </select>
 
           {/* Grid de productos */}
           <div className="retail-product-grid">
@@ -869,7 +878,7 @@ export default function PosRetailPage() {
         </div>
 
         {/* PANEL DERECHO: FACTURACIÓN (más ancho) */}
-        <div className="retail-cart-panel">
+        <div className={`retail-cart-panel${mobileTab === 'cart' ? ' mob-active' : ' mob-hidden'}`}>
 
           {/* ── SECCIÓN SUPERIOR: header + cliente + items (crece) ── */}
           <div style={{ flex: 1, minHeight: 220, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -886,22 +895,92 @@ export default function PosRetailPage() {
 
             {/* Cliente */}
             <div className="rcp-customer">
-              <div className="rcp-cx-row">
+              <div className="rcp-cx-row rcp-cx-row-single">
                 <div className="rcp-cx-doc">
                   <input
                     type="text"
                     placeholder="Cédula / RUC"
                     value={clienteCedula}
-                    onChange={e => setClienteCedula(e.target.value.replace(/\D/g, '').slice(0, 13))}
-                    onBlur={() => { if (clienteCedula.length === 10 || clienteCedula.length === 13) buscarClientePorDocumento(clienteCedula); }}
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 13);
+                      setClienteCedula(val);
+                      if (val.length === 10 || val.length === 13) buscarClientePorDocumento(val);
+                      else if (val.length < 10) { setClienteNombre(''); setClienteEmail(''); }
+                    }}
                     onKeyDown={e => { if (e.key === 'Enter' && (clienteCedula.length === 10 || clienteCedula.length === 13)) buscarClientePorDocumento(clienteCedula); }}
                     className="rcp-input"
                   />
                   {clientApiLoading && <div className="spinner-small" />}
                 </div>
                 <input type="text" placeholder="Nombre del cliente" value={clienteNombre} onChange={e => setClienteNombre(e.target.value)} className="rcp-input rcp-input-flex" />
+                <input type="email" placeholder="Email" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} className="rcp-input rcp-input-flex" />
               </div>
-              <input type="email" placeholder="Email para factura electrónica" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} className="rcp-input rcp-input-full" />
+            </div>
+
+            {/* Cupón colapsable */}
+            <div className="rcp-coupon-collapse">
+              <button
+                type="button"
+                className={`rcp-coupon-toggle${showCoupon ? ' open' : ''}${appliedCouponRef.current ? ' applied' : ''}`}
+                onClick={() => setShowCoupon(v => !v)}
+              >
+                <FiTag size={12} />
+                <span>{appliedCouponRef.current ? `Cupón: ${appliedCouponDiscount?.name} (-${fmt(couponDiscountAmount)})` : 'Código de cupón'}</span>
+                <span className="rcp-coupon-chevron">{showCoupon ? '▲' : '▼'}</span>
+              </button>
+
+              {showCoupon && (
+                <div className="rcp-coupon-body">
+                  {appliedCouponRef.current ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ flex: 1, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#10b981', fontWeight: 700 }}>
+                        ✓ {appliedCouponDiscount?.name} — -{fmt(couponDiscountAmount)}
+                      </span>
+                      <button onClick={quitarCupon} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, color: '#fca5a5', padding: '8px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                        <FiX size={12} /> Quitar
+                      </button>
+                    </div>
+                  ) : couponPendingSelect ? (
+                    <div>
+                      <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8 }}>
+                        Selecciona ítems de <strong style={{ color: '#f1f5f9' }}>{pendingCoupon?.category_name || 'la categoría'}</strong>:
+                      </div>
+                      {cart.filter(item => String(item.category_id) === String(pendingCoupon?.category_id)).map(item => (
+                        <label key={item.product_id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, cursor: 'pointer', fontSize: 13, color: '#e2e8f0', padding: '6px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                          <input
+                            type="checkbox"
+                            checked={couponSelectedItemIds.includes(item.product_id)}
+                            onChange={e => {
+                              if (e.target.checked) setCouponSelectedItemIds(prev => [...prev, item.product_id]);
+                              else setCouponSelectedItemIds(prev => prev.filter(id => id !== item.product_id));
+                            }}
+                            style={{ accentColor: '#10b981' }}
+                          />
+                          <span style={{ flex: 1 }}>{item.product_name} × {item.quantity}</span>
+                          <span style={{ color: '#10b981', fontWeight: 700 }}>{fmt(item.selling_price * item.quantity)}</span>
+                        </label>
+                      ))}
+                      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                        <button onClick={confirmarCuponCategoria} style={{ flex: 1, padding: '8px 0', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer', fontWeight: 700 }}>Confirmar</button>
+                        <button onClick={() => { setCouponPendingSelect(false); setPendingCoupon(null); setCouponSelectedItemIds([]); setCouponError(''); }} style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input
+                        type="text"
+                        value={couponCodeInput}
+                        onChange={e => { setCouponCodeInput(e.target.value.toUpperCase()); setCouponError(''); }}
+                        onKeyDown={e => { if (e.key === 'Enter') aplicarCupon(); }}
+                        placeholder="Código de cupón"
+                        style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#f1f5f9', padding: '8px 12px', fontSize: 13, outline: 'none' }}
+                      />
+                      <button onClick={aplicarCupon} style={{ padding: '8px 16px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer', fontWeight: 700 }}>Aplicar</button>
+                    </div>
+                  )}
+                  {couponError && <div style={{ color: '#fca5a5', fontSize: 12, marginTop: 6, background: 'rgba(239,68,68,0.08)', padding: '5px 8px', borderRadius: 6 }}>{couponError}</div>}
+                </div>
+              )}
             </div>
 
             {/* Mensajes */}
@@ -919,10 +998,13 @@ export default function PosRetailPage() {
               ) : cart.map(item => (
                 <div key={item.product_id} className="rcp-item">
                   <div className="rcp-item-info">
-                    <span className="rcp-item-name">{item.product_name}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className="rcp-item-qty-badge">{item.quantity}x</span>
+                      <span className="rcp-item-name">{item.product_name}</span>
+                    </div>
                     {item.code && <span className="rcp-item-code">{item.code}</span>}
                   </div>
-                  <div className="rcp-item-qty">
+                  <div className="rcp-item-controls">
                     <button className="rcp-qty-btn" onClick={() => updateQty(item.product_id, -1)}><FiMinus size={12} /></button>
                     <input type="number" className="rcp-qty-input" value={item.quantity} min={1} onChange={e => setQtyDirect(item.product_id, e.target.value)} />
                     <button className="rcp-qty-btn" onClick={() => updateQty(item.product_id, 1)}><FiPlus size={12} /></button>
@@ -1010,71 +1092,6 @@ export default function PosRetailPage() {
               </div>
             )}
 
-            {/* Cupón */}
-            {cart.length > 0 && (
-              <div style={{ padding: '8px 20px 0' }}>
-              <div style={{ background: 'rgba(59,130,246,0.05)', border: `1px solid ${appliedCouponRef.current ? '#10b981' : 'rgba(255,255,255,0.07)'}`, borderRadius: 12, padding: '12px 14px', transition: 'border-color 0.2s' }}>
-                <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-                  <FiTag size={12} /> Código de cupón
-                </div>
-                {appliedCouponRef.current ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ flex: 1, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#10b981', fontWeight: 700, letterSpacing: '-0.2px' }}>
-                      ✓ {appliedCouponDiscount?.name} — -{fmt(couponDiscountAmount)}
-                    </span>
-                    <button onClick={quitarCupon} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, color: '#fca5a5', padding: '8px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                      <FiX size={12} /> Quitar
-                    </button>
-                  </div>
-                ) : couponPendingSelect ? (
-                  <div>
-                    <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8 }}>
-                      Selecciona ítems de <strong style={{ color: '#f1f5f9' }}>{pendingCoupon?.category_name || 'la categoría'}</strong>:
-                    </div>
-                    {cart.filter(item => String(item.category_id) === String(pendingCoupon?.category_id)).map(item => (
-                      <label key={item.product_id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, cursor: 'pointer', fontSize: 13, color: '#e2e8f0', padding: '6px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
-                        <input
-                          type="checkbox"
-                          checked={couponSelectedItemIds.includes(item.product_id)}
-                          onChange={e => {
-                            if (e.target.checked) setCouponSelectedItemIds(prev => [...prev, item.product_id]);
-                            else setCouponSelectedItemIds(prev => prev.filter(id => id !== item.product_id));
-                          }}
-                          style={{ accentColor: '#10b981' }}
-                        />
-                        <span style={{ flex: 1 }}>{item.product_name} × {item.quantity}</span>
-                        <span style={{ color: '#10b981', fontWeight: 700 }}>{fmt(item.selling_price * item.quantity)}</span>
-                      </label>
-                    ))}
-                    <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                      <button onClick={confirmarCuponCategoria} style={{ flex: 1, padding: '8px 0', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer', fontWeight: 700 }}>
-                        Confirmar
-                      </button>
-                      <button onClick={() => { setCouponPendingSelect(false); setPendingCoupon(null); setCouponSelectedItemIds([]); setCouponError(''); }} style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
-                        Cancelar
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <input
-                      type="text"
-                      value={couponCodeInput}
-                      onChange={e => { setCouponCodeInput(e.target.value.toUpperCase()); setCouponError(''); }}
-                      onKeyDown={e => { if (e.key === 'Enter') aplicarCupon(); }}
-                      placeholder="Código de cupón"
-                      style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#f1f5f9', padding: '8px 12px', fontSize: 13, outline: 'none' }}
-                    />
-                    <button onClick={aplicarCupon} style={{ padding: '8px 16px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer', fontWeight: 700 }}>
-                      Aplicar
-                    </button>
-                  </div>
-                )}
-                {couponError && <div style={{ color: '#fca5a5', fontSize: 12, marginTop: 6, background: 'rgba(239,68,68,0.08)', padding: '5px 8px', borderRadius: 6 }}>{couponError}</div>}
-              </div>
-              </div>
-            )}
-
             {/* Totales */}
             {cart.length > 0 && (
               <div className="rcp-totals">
@@ -1144,7 +1161,7 @@ export default function PosRetailPage() {
                   </div>
                   <div className="rcp-cash-cambio">
                     <label>Cambio</label>
-                    <span className={changeNormal > 0 ? 'cambio-pos' : 'cambio-zero'}>{fmt(changeNormal)}</span>
+                    <span className="rcp-cambio-box">{fmt(changeNormal)}</span>
                   </div>
                 </div>
               )}
@@ -1227,7 +1244,26 @@ export default function PosRetailPage() {
 
           </div>{/* /rcp-bottom-section */}
         </div>{/* /retail-cart-panel */}
-      </div>
+      </div>{/* /retail-pos-layout */}
+      </div>{/* /retail-pos-wrapper */}
+
+      {showPrintModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: '#13131f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '32px 28px', maxWidth: 340, width: '90%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+            <div style={{ fontSize: 44, marginBottom: 12 }}>🧾</div>
+            <h3 style={{ color: '#f1f5f9', margin: '0 0 8px', fontSize: 18, fontWeight: 700 }}>¿Imprimir comprobante?</h3>
+            <p style={{ color: '#64748b', fontSize: 13, margin: '0 0 24px' }}>El pago fue registrado exitosamente.</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button onClick={() => handlePrintDecision(true)} style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <FiCheck size={15} /> Sí, imprimir
+              </button>
+              <button onClick={() => handlePrintDecision(false)} style={{ background: 'rgba(255,255,255,0.06)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <FiX size={15} /> No
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageTemplate>
   );
 }

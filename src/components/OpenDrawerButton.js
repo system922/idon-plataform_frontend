@@ -294,7 +294,7 @@ function OpenDrawerButton({ label = "Abrir Caja", onDone, disabled = false, clas
         onClick={() => { setPwOpen(true); setModalErr(''); setErr(''); setReasonModalErr(''); }}
         disabled={disabled || loading}
       >
-        <FiInbox size={18} /> {loading ? 'Abriendo...' : label}
+        <FiInbox size={12} /> {loading ? 'Abriendo...' : label}
       </button>
 
       {err && <div className="odr-error-msg">{err}</div>}

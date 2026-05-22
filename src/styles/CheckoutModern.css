@@ -72,11 +72,11 @@
 .checkout-modern-card {
   width: 100%;
   max-width: 1400px;
-  background: linear-gradient(135deg, var(--bg-card) 0%, #0f0f18 100%);
+  background: linear-gradient(160deg, #0f0f1a 0%, #0a0a12 100%);
   border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-xl);
-  padding: 28px 32px;
+  border: 1px solid rgba(16,185,129,0.1);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.04) inset;
+  padding: 24px 28px;
   transition: var(--transition-slow);
   position: relative;
   overflow: hidden;
@@ -104,18 +104,18 @@
 .cmbx-row {
   display: flex;
   align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
+  gap: 10px;
+  flex-wrap: nowrap;
   margin-bottom: 15px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
 
 .combobox {
-  flex: 1;
-  min-width: 10%;
-  font-size: 14px;
-  padding: 10px 12px;
+  flex: 0 0 auto;
+  width: 140px;
+  font-size: 8px;
+  padding: 4px 6px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--bg-input);
@@ -143,29 +143,38 @@
 
 .cliente-fields {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: nowrap;
   align-items: center;
+  min-width: 0;
 }
 
 .cliente-fields input {
-  padding: 10px 14px;
+  padding: 4px 6px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  font-size: 14px;
+  font-size: 8px;
   background: #0a0a12;
   transition: var(--transition);
+  min-width: 0;
 }
 
-.cliente-fields input:first-child {
+/* cédula: ancho fijo pequeño */
+.cliente-fields .cf-cedula {
+  flex: 0 0 140px;
   color: #34d399;
   font-weight: 700;
 }
-.cliente-fields input:nth-child(2) {
+/* nombre: ocupa el doble que email */
+.cliente-fields .cf-nombre {
+  flex: 1.8 1 0;
   color: #ffffff;
   font-weight: 500;
 }
-.cliente-fields input:nth-child(3) {
+/* email: ocupa menos que nombre */
+.cliente-fields .cf-email {
+  flex: 1.5 1 0;
   color: #a78bfa;
   font-weight: 500;
 }
@@ -195,80 +204,58 @@
    ============================================ */
 .pay-methods {
   display: flex;
-  gap: 12px;
-  margin: 20px 0;
+  gap: 4px;
+  margin: 10px 0;
   flex-wrap: wrap;
+  background: rgba(0,0,0,0.3);
+  border-radius: 10px;
+  padding: 3px;
+  border: 1px solid var(--border);
 }
 
 .pay-btn {
   flex: 1;
-  min-width: 120px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
+  min-width: 80px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
   font-weight: 600;
-  font-size: 14px;
-  border-radius: var(--radius-md);
-  padding: 12px 20px;
+  font-size: 12px;
+  border-radius: 9px;
+  padding: 7px 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 6px;
   transition: var(--transition);
   position: relative;
-  overflow: hidden;
-}
-.pay-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
-  transition: left 0.5s ease;
-}
-.pay-btn:hover::before {
-  left: 100%;
+  letter-spacing: 0.2px;
 }
 .pay-btn:hover {
-  border-color: var(--primary);
   color: var(--text-primary);
-  transform: translateY(-2px);
-  background: rgba(16, 185, 129, 0.08);
+  background: rgba(255,255,255,0.05);
 }
 .pay-btn.selected {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  border-color: transparent;
   color: white;
-  box-shadow: var(--shadow-primary);
+  box-shadow: 0 4px 12px rgba(16,185,129,0.35);
 }
-.pay-btn.selected::before {
-  display: none;
-}
-.pay-btn svg {
-  transition: var(--transition);
-  opacity: 0.8;
-}
-.pay-btn:hover svg {
-  opacity: 1;
-}
-.pay-btn.selected svg {
-  color: white;
-  opacity: 1;
-}
+.pay-btn svg { transition: var(--transition); }
+.pay-btn.selected svg { color: white; }
 
 /* ============================================
    DETALLE DE ORDEN
    ============================================ */
 .order-details {
   border-radius: var(--radius-lg);
-  background: rgba(10, 10, 15, 0.6);
+  background: rgba(10, 10, 18, 0.7);
   border: 1px solid var(--border);
-  padding: 20px;
-  margin: 20px 0;
+  padding: 12px 16px;
+  margin: 10px 0;
   transition: var(--transition);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
 }
 .order-details:hover {
   border-color: var(--border-hover);
@@ -277,15 +264,29 @@
 .order-head {
   font-weight: 700;
   color: var(--text-primary);
-  font-size: 18px;
-  margin-bottom: 16px;
-  padding-bottom: 14px;
-  border-bottom: 2px solid var(--border);
+  font-size: 15px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
+}
+.order-head b {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.order-head b::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 6px var(--primary);
 }
 
 .badge {
@@ -300,14 +301,15 @@
 }
 
 .order-items {
-  max-height: 400px;
+  max-height: 340px;
   overflow-y: auto;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  padding: 4px 0;
 }
-.order-items::-webkit-scrollbar { width: 5px; }
-.order-items::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 10px; }
-.order-items::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.3); border-radius: 10px; }
-.order-items::-webkit-scrollbar-thumb:hover { background: rgba(16,185,129,0.5); }
+.order-items::-webkit-scrollbar { width: 4px; }
+.order-items::-webkit-scrollbar-track { background: transparent; }
+.order-items::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.25); border-radius: 10px; }
+.order-items::-webkit-scrollbar-thumb:hover { background: rgba(16,185,129,0.45); }
 
 .section-title {
   font-weight: 600;
@@ -320,47 +322,67 @@
 
 .item-line {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 12px;
-  border-bottom: 1px solid var(--border-light);
-  transition: var(--transition);
-  gap: 12px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
+  transition: var(--transition);
+  gap: 8px;
   margin-bottom: 2px;
+  border-left: 2px solid transparent;
 }
+.item-line:nth-child(even) { background: rgba(255,255,255,0.015); }
 .item-line:hover {
   background: rgba(16, 185, 129, 0.06);
-  padding-left: 16px;
+  border-left-color: var(--primary);
 }
 .item-line input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
   accent-color: var(--primary);
   border-radius: 4px;
+  flex-shrink: 0;
 }
-.item-line input[type="checkbox"]:checked + span {
+.item-line input[type="checkbox"]:checked ~ .item-name {
   color: var(--primary);
 }
 .item-line input[type="checkbox"]:disabled {
   cursor: not-allowed;
   opacity: 0.4;
 }
-.item-line span {
+.item-qty {
+  flex-shrink: 0;
+  background: rgba(16,185,129,0.12);
+  color: #34d399;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 20px;
+  border: 1px solid rgba(16,185,129,0.2);
+  letter-spacing: 0.3px;
+  font-family: 'Courier New', monospace;
+}
+.item-name {
   flex: 1;
   color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
   transition: var(--transition);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.item-line:hover span {
+.item-line:hover .item-name {
   color: var(--text-primary);
 }
 .item-amt {
   font-weight: 700;
   color: var(--primary);
-  min-width: 80px;
+  min-width: 72px;
   text-align: right;
-  font-size: 14px;
+  font-size: 13px;
+  font-family: 'Courier New', monospace;
+  flex-shrink: 0;
 }
 
 .paid-badge {
@@ -378,43 +400,92 @@
    TOTALES DE LA ORDEN
    ============================================ */
 .totals-footer {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: var(--radius-md);
-  padding: 15px;
+  margin-top: 10px;
+  background: linear-gradient(160deg, rgba(10,10,20,0.9) 0%, rgba(6,6,14,0.95) 100%);
+  border: 1px solid rgba(16,185,129,0.14);
+  border-radius: 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  width: 100%;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
 }
 .sub-iva-total {
+  flex: 1;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  padding: 8px 12px;
-  font-size: 14px;
-  border-radius: var(--radius-sm);
-  transition: var(--transition);
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 12px;
+  border-right: 1px solid rgba(16,185,129,0.1);
+  min-width: 0;
 }
-.sub-iva-total:hover {
-  background: rgba(255, 255, 255, 0.02);
-}
+.sub-iva-total:last-child { border-right: none; }
 .sub-iva-total span:first-child {
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-size: 9px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
 }
 .sub-iva-total span:last-child {
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  text-align: center;
 }
-.sub-iva-total:last-child {
-  border-top: 1px solid var(--border);
-  margin-top: 8px;
-  padding-top: 12px;
-  background: rgba(16, 185, 129, 0.03);
-  border-radius: var(--radius-sm);
+.sub-iva-total.total-row {
+  background: rgba(16,185,129,0.08);
+  border-top: none;
+  margin-top: 0;
+  padding-top: 10px;
+  flex: 1.5;
+  border-right: none;
+  border-left: 1px solid rgba(16,185,129,0.2);
 }
-.sub-iva-total:last-child span:last-child {
-  color: var(--primary);
+.sub-iva-total.total-row span:first-child {
+  color: #34d399;
+  font-weight: 800;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+.sub-iva-total.total-row .total-amount {
+  color: #34d399;
   font-size: 20px;
   font-weight: 800;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 14px rgba(16,185,129,0.5);
+}
+.sub-iva-total.discount-row {
+  flex: 0 0 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  border-right: none;
+  border-bottom: 1px solid rgba(16,185,129,0.08);
+}
+.sub-iva-total.discount-row span:first-child {
+  color: #f59e0b;
+  text-align: left;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.sub-iva-total.discount-row span:last-child {
+  color: #10b981;
+  font-size: 11px;
+  text-align: right;
 }
 
 /* ============================================
@@ -422,65 +493,98 @@
    ============================================ */
 .metodo-pago-seleccion {
   display: flex;
-  gap: 12px;
-  margin: 20px 0;
+  gap: 8px;
+  margin: 16px 0;
   flex-wrap: wrap;
 }
 .metodo-pago-seleccion button {
   flex: 1;
-  padding: 12px 20px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--bg-input);
+  min-width: 70px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
   transition: var(--transition);
-  position: relative;
-  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  letter-spacing: 0.2px;
 }
-.metodo-pago-seleccion button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
-  transition: left 0.4s ease;
-}
-.metodo-pago-seleccion button:hover::before {
-  left: 100%;
+.metodo-pago-seleccion button svg {
+  opacity: 0.6;
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  transition: var(--transition);
 }
 .metodo-pago-seleccion button:hover {
-  border-color: var(--primary);
+  border-color: rgba(255,255,255,0.15);
   color: var(--text-primary);
-  background: rgba(16, 185, 129, 0.05);
+  background: rgba(255,255,255,0.06);
+  transform: translateY(-2px);
 }
+.metodo-pago-seleccion button:hover svg { opacity: 1; }
 .metodo-pago-seleccion button.selected {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  color: white;
-  border-color: transparent;
-  box-shadow: var(--shadow-primary);
+  background: linear-gradient(160deg, rgba(16,185,129,0.18) 0%, rgba(5,150,105,0.1) 100%);
+  color: #34d399;
+  border-color: rgba(16,185,129,0.4);
+  box-shadow: 0 4px 16px rgba(16,185,129,0.15), inset 0 1px 0 rgba(16,185,129,0.2);
+  transform: translateY(-2px);
 }
+.metodo-pago-seleccion button.selected svg { opacity: 1; color: #34d399; }
+
+/* colores individuales por método */
+.metodo-pago-seleccion button[data-method="card"].selected {
+  background: linear-gradient(160deg, rgba(139,92,246,0.18) 0%, rgba(109,40,217,0.1) 100%);
+  color: #a78bfa;
+  border-color: rgba(139,92,246,0.4);
+  box-shadow: 0 4px 16px rgba(139,92,246,0.15), inset 0 1px 0 rgba(139,92,246,0.2);
+}
+.metodo-pago-seleccion button[data-method="card"].selected svg { color: #a78bfa; }
+.metodo-pago-seleccion button[data-method="transfer"].selected {
+  background: linear-gradient(160deg, rgba(59,130,246,0.18) 0%, rgba(29,78,216,0.1) 100%);
+  color: #60a5fa;
+  border-color: rgba(59,130,246,0.4);
+  box-shadow: 0 4px 16px rgba(59,130,246,0.15), inset 0 1px 0 rgba(59,130,246,0.2);
+}
+.metodo-pago-seleccion button[data-method="transfer"].selected svg { color: #60a5fa; }
+.metodo-pago-seleccion button[data-method="mixto"].selected {
+  background: linear-gradient(160deg, rgba(245,158,11,0.18) 0%, rgba(180,83,9,0.1) 100%);
+  color: #fbbf24;
+  border-color: rgba(245,158,11,0.4);
+  box-shadow: 0 4px 16px rgba(245,158,11,0.15), inset 0 1px 0 rgba(245,158,11,0.2);
+}
+.metodo-pago-seleccion button[data-method="mixto"].selected svg { color: #fbbf24; }
+.metodo-pago-seleccion button[data-method="credit_note"].selected {
+  background: linear-gradient(160deg, rgba(236,72,153,0.18) 0%, rgba(190,24,93,0.1) 100%);
+  color: #f472b6;
+  border-color: rgba(236,72,153,0.4);
+  box-shadow: 0 4px 16px rgba(236,72,153,0.15), inset 0 1px 0 rgba(236,72,153,0.2);
+}
+.metodo-pago-seleccion button[data-method="credit_note"].selected svg { color: #f472b6; }
 
 /* ----- EFECTIVO (Recibido / Cambio) – todo en la misma línea ----- */
 .payment-cash-row {
   display: flex;
-  gap: 24px;
+  gap: 12px;
   flex-wrap: wrap;
-  margin: 20px 0;
-  padding: 20px;
-  background: rgba(16, 185, 129, 0.05);
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(16, 185, 129, 0.15);
+  margin: 10px 0;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(5,150,105,0.03) 100%);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(16, 185, 129, 0.18);
 }
 .payment-field {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 .payment-field label {
@@ -489,58 +593,59 @@
   gap: 6px;
   font-weight: 700;
   color: #34d399;
-  font-size: 14px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
   white-space: nowrap;
 }
 .payment-field input {
   flex: 1;
-  min-width: 140px;
-  padding: 12px 16px;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  min-width: 100px;
+  padding: 7px 12px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
   border-radius: var(--radius-md);
-  background: #0a0a12;
+  background: rgba(0,0,0,0.4);
   color: #34d399;
   font-size: 18px;
   font-weight: 700;
   text-align: right;
-  font-family: monospace;
+  font-family: 'Courier New', monospace;
   transition: var(--transition);
 }
 .payment-field input:focus {
   outline: none;
   border-color: #10b981;
   box-shadow: 0 0 0 3px var(--primary-glow);
-  background: #1a1a2a;
+  background: rgba(16,185,129,0.05);
   color: #fff;
 }
-.cambio-field {
-  flex: 0.8;
-}
+.cambio-field { flex: 0.7; }
 .cambio-amount {
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: rgba(245, 158, 11, 0.1);
-  padding: 12px 20px;
+  border: 1px solid rgba(245,158,11,0.2);
+  padding: 7px 14px;
   border-radius: var(--radius-md);
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
   color: #f59e0b;
-  font-family: monospace;
-  text-align: center;
-  min-width: 120px;
+  font-family: 'Courier New', monospace;
+  min-width: 90px;
+  text-shadow: 0 0 10px rgba(245,158,11,0.3);
 }
 
 /* ----- REFERENCIA (Tarjeta / Transferencia) ----- */
 .payment-reference-row {
-  margin: 20px 0;
-  padding: 20px;
+  margin: 10px 0;
+  padding: 10px 14px;
   background: rgba(18, 18, 28, 0.6);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   border: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 .payment-reference-row label {
@@ -739,20 +844,19 @@
    COMENSALES (CUENTA DIVIDIDA)
    ============================================ */
 .clientes-container {
-  margin-top: 24px;
-  border-top: 2px solid var(--border);
-  padding-top: 24px;
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
 }
 .clientes-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 .clientes-header span {
   font-weight: 700;
-  font-size: 18px;
-  color: var(--text-primary);
+  font-size: 14px;
   background: linear-gradient(135deg, var(--text-primary), var(--primary-light));
   -webkit-background-clip: text;
   background-clip: text;
@@ -763,48 +867,44 @@
   color: white;
   border: none;
   border-radius: var(--radius-md);
-  padding: 10px 20px;
+  padding: 7px 14px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   transition: var(--transition);
-  box-shadow: var(--shadow-sm);
 }
-.btn-add:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
+.btn-add:hover { opacity: 0.85; }
 .comensal-card {
-  background: rgba(18, 18, 28, 0.7);
+  background: rgba(15, 15, 22, 0.8);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  margin-bottom: 20px;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
   transition: var(--transition);
   backdrop-filter: blur(4px);
 }
 .comensal-card:hover {
   border-color: var(--border-hover);
-  box-shadow: var(--shadow-md);
-  background: rgba(18, 18, 28, 0.85);
-  transform: translateY(-2px);
 }
 .comensal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 .comensal-titulo {
   font-weight: 700;
-  font-size: 16px;
+  font-size: 12px;
   color: var(--primary);
   background: rgba(16, 185, 129, 0.1);
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 .btn-delete {
   background: rgba(239, 68, 68, 0.12);
@@ -822,6 +922,39 @@
   transform: translateY(-1px);
   border-color: var(--danger);
 }
+
+.comensal-factura-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(16,185,129,0.2);
+  background: rgba(16,185,129,0.05);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: var(--transition);
+  user-select: none;
+}
+.comensal-factura-toggle:hover {
+  border-color: rgba(16,185,129,0.4);
+  color: var(--text-secondary);
+}
+.comensal-factura-toggle input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  margin: 0;
+}
+.comensal-factura-toggle:has(input:checked) {
+  border-color: rgba(16,185,129,0.5);
+  background: rgba(16,185,129,0.12);
+  color: #34d399;
+}
+
 .comensal-sin-datos {
   margin-bottom: 16px;
   padding: 14px;
@@ -837,18 +970,18 @@
 }
 .comensal-datos {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 10px;
   flex-wrap: wrap;
 }
 .comensal-datos input {
   flex: 1;
-  padding: 10px 14px;
+  padding: 6px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-size: 14px;
+  font-size: 12px;
   transition: var(--transition);
-  min-width: 150px;
+  min-width: 120px;
   background: var(--bg-input);
   color: var(--text-primary);
 }
@@ -883,48 +1016,47 @@
    PRODUCTOS ASIGNADOS
    ============================================ */
 .productos-asignados {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 .productos-asignados > span {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--primary);
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
 }
 .producto-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 14px;
-  background: rgba(16, 185, 129, 0.06);
-  border-radius: var(--radius-md);
-  margin-bottom: 6px;
+  padding: 6px 10px;
+  background: rgba(16, 185, 129, 0.05);
+  border-radius: 7px;
+  margin-bottom: 4px;
   transition: var(--transition);
-  border: 1px solid rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.08);
+  font-size: 12px;
 }
 .producto-item:hover {
-  background: rgba(16, 185, 129, 0.12);
-  border-color: rgba(16, 185, 129, 0.25);
-  transform: translateX(4px);
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.2);
 }
 .btn-quitar {
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(239, 68, 68, 0.1);
   color: var(--danger);
   border: none;
-  border-radius: var(--radius-sm);
-  padding: 4px 12px;
+  border-radius: 5px;
+  padding: 3px 8px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  margin-left: 12px;
+  margin-left: 8px;
   transition: var(--transition);
 }
 .btn-quitar:hover {
-  background: rgba(239, 68, 68, 0.25);
-  transform: scale(1.02);
+  background: rgba(239, 68, 68, 0.22);
 }
 
 /* ============================================
@@ -981,58 +1113,63 @@
   justify-content: space-between;
   align-items: center;
   border-top: 1px solid var(--border);
-  padding-top: 16px;
-  gap: 16px;
+  padding-top: 10px;
+  margin-top: 8px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 .comensal-totales > div:first-child {
-  font-size: 13px;
-  color: var(--text-secondary);
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  gap: 10px;
 }
 .comensal-totales > div:first-child strong {
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 .total-valor {
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--primary);
-  text-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
 }
 .cambio-success {
-  color: var(--success);
-  font-size: 12px;
-  margin-top: 4px;
+  color: #34d399;
+  font-size: 11px;
   font-weight: 600;
 }
 .cambio-error {
   color: var(--danger);
-  font-size: 12px;
-  margin-top: 4px;
+  font-size: 11px;
   font-weight: 600;
 }
 .btn-cobrar {
-  background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
-  border-radius: var(--radius-md);
-  padding: 10px 20px;
-  margin-top: 10px;
+  border-radius: 8px;
+  padding: 8px 16px;
+  margin-top: 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
-  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
   transition: var(--transition);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 8px rgba(16,185,129,0.25);
 }
 .btn-cobrar:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(16,185,129,0.4);
 }
 .btn-cobrar:disabled {
-  background: var(--text-muted);
+  background: rgba(255,255,255,0.06);
+  color: var(--text-muted);
   cursor: not-allowed;
-  opacity: 0.5;
-  transform: none;
+  box-shadow: none;
 }
 
 /* ============================================
@@ -1130,72 +1267,108 @@
 }
 
 /* ============================================
+   BOTONES INLINE (al lado del bloque de pago)
+   ============================================ */
+.pay-inline-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
+}
+.pay-inline-actions .btn-guardar {
+  flex: unset;
+  padding: 12px 20px;
+  font-size: 12px;
+  border-radius: 10px;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+.pay-inline-actions .btn-cancelar {
+  justify-content: center;
+  padding: 10px 16px;
+  font-size: 11px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+/* btn-cobrar dentro de pay-inline-actions (modo dividido) */
+.pay-inline-actions .btn-cobrar {
+  margin-top: 0;
+  width: auto;
+  padding: 10px 18px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+
+/* ============================================
    BOTONES DE ACCIÓN
    ============================================ */
 .actions-row {
   display: flex;
-  gap: 16px;
-  justify-content: flex-end;
-  margin-top: 28px;
+  gap: 12px;
+  margin-top: 24px;
   flex-wrap: wrap;
 }
 .btn-guardar {
-  background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+  flex: 1;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: 800;
+  font-size: 15px;
   border: none;
-  border-radius: var(--radius-md);
-  padding: 14px 32px;
+  border-radius: 12px;
+  padding: 16px 32px;
   cursor: pointer;
   transition: var(--transition);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  box-shadow: var(--shadow-sm);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  box-shadow: 0 4px 20px rgba(16,185,129,0.35);
   position: relative;
   overflow: hidden;
 }
-.btn-guardar::before {
+.btn-guardar::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  transition: left 0.5s ease;
-}
-.btn-guardar:hover::before {
-  left: 100%;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+  pointer-events: none;
 }
 .btn-guardar:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-primary);
+  box-shadow: 0 8px 28px rgba(16,185,129,0.5);
+}
+.btn-guardar:active:not(:disabled) {
+  transform: translateY(0);
 }
 .btn-guardar:disabled {
-  background: var(--text-muted);
+  background: rgba(255,255,255,0.06);
+  color: var(--text-muted);
   cursor: not-allowed;
-  opacity: 0.5;
-  transform: none;
+  box-shadow: none;
 }
 .btn-cancelar {
-  background: rgba(239, 68, 68, 0.12);
-  color: var(--danger);
-  font-weight: 700;
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  border-radius: var(--radius-md);
-  padding: 14px 32px;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 13px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 16px 24px;
   cursor: pointer;
   transition: var(--transition);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  white-space: nowrap;
 }
 .btn-cancelar:hover {
-  background: rgba(239, 68, 68, 0.25);
-  transform: translateY(-2px);
-  border-color: var(--danger);
+  background: rgba(239,68,68,0.08);
+  color: #f87171;
+  border-color: rgba(239,68,68,0.25);
 }
 
 /* ============================================
@@ -1282,6 +1455,7 @@
   .comensal-datos { flex-direction: column; }
   .comensal-datos input { width: 100%; }
   .busqueda-container { width: 100%; }
+  .combobox { width: 130px; }
 }
 @media (max-width: 900px) {
   .payment-cash-row { flex-direction: column; }
@@ -1297,10 +1471,16 @@
 @media (max-width: 768px) {
   .checkout-modern-main { padding: 12px; }
   .checkout-modern-card { padding: 16px 20px; }
-  .cmbx-row { flex-direction: column; align-items: stretch; }
-  .combobox { width: 100%; }
-  .cliente-fields { flex-direction: column; }
-  .cliente-fields input { width: 100%; }
+  .payment-cash-row { flex-wrap: wrap; }
+  .payment-reference-row { flex-wrap: wrap; }
+  .pay-inline-actions { flex-direction: row; width: 100%; }
+  .pay-inline-actions .btn-guardar, .pay-inline-actions .btn-cancelar { flex: 1; }
+  .cmbx-row { flex-direction: column; align-items: stretch; flex-wrap: wrap; }
+  .combobox { width: 100%; flex: unset; }
+  .cliente-fields { flex-direction: column; flex-wrap: wrap; }
+  .cliente-fields .cf-cedula,
+  .cliente-fields .cf-nombre,
+  .cliente-fields .cf-email { flex: unset; width: 100%; }
   .pay-methods { flex-direction: column; }
   .pay-btn { width: 100%; }
   .metodo-pago-seleccion { flex-direction: column; }
@@ -1344,104 +1524,68 @@
 }
 
 /* ============================================
-   MEJORAS PARA PAGO MIXTO EN COMENSALES
+   COMENSAL CARD — PAGO COMPACTO
    ============================================ */
+.comensal-card .metodo-pago-seleccion {
+  gap: 6px;
+  margin: 8px 0;
+}
+.comensal-card .metodo-pago-seleccion button {
+  flex-direction: row;
+  padding: 7px 12px;
+  font-size: 11px;
+  gap: 5px;
+  border-radius: 8px;
+}
+.comensal-card .metodo-pago-seleccion button svg { width: 14px; height: 14px; }
 
-/* Asegurar que los campos mixtos dentro de comensal tengan el mismo ancho y alineación */
-.comensal-card .payment-mixed-row {
-  margin: 12px 0;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: var(--radius-md);
+.comensal-card .totals-footer {
+  margin-top: 8px;
+  margin-bottom: 0;
+  padding: 10px 14px;
+  min-width: 180px;
+}
+.comensal-card .sub-iva-total {
+  font-size: 10px;
+  gap: 20px;
+  padding: 3px 0;
+}
+.comensal-card .sub-iva-total span:first-child {
+  font-size: 9px;
+}
+.comensal-card .sub-iva-total span:last-child {
+  font-size: 11px;
+}
+.comensal-card .sub-iva-total.total-row .total-amount {
+  font-size: 15px;
 }
 
-.comensal-card .mixed-field {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+.comensal-card .payment-cash-row {
+  margin: 8px 0;
+  padding: 10px 12px;
+  gap: 10px;
 }
+.comensal-card .payment-field label { font-size: 10px; }
+.comensal-card .payment-field input { font-size: 15px; padding: 6px 10px; min-width: 100px; }
+.comensal-card .cambio-amount { font-size: 15px; padding: 6px 12px; min-width: 80px; }
 
-.comensal-card .mixed-field label {
-  font-size: 12px;
-  white-space: nowrap;
-  min-width: 80px;
-}
-
-.comensal-card .mixed-field input {
-  flex: 1;
-  min-width: 100px;
-  padding: 6px 10px;
-  font-size: 14px;
-}
-
-/* Referencia en comensal */
 .comensal-card .payment-reference-row {
   margin: 8px 0;
-  padding: 10px;
-  background: rgba(0, 0, 0, 0.2);
+  padding: 10px 12px;
+  gap: 8px;
 }
+.comensal-card .payment-reference-row label { font-size: 10px; }
+.comensal-card .payment-reference-row input { font-size: 12px; padding: 6px 10px; min-width: 140px; }
 
-.comensal-card .payment-reference-row label {
-  font-size: 12px;
-  min-width: 80px;
-}
-
-.comensal-card .payment-reference-row input {
-  font-size: 13px;
-  padding: 6px 10px;
-  min-width: 160px;
-}
-
-/* Efectivo en comensal */
-.comensal-card .payment-field {
+.comensal-card .payment-mixed-row {
   margin: 8px 0;
-  background: none;
-  padding: 0;
+  padding: 10px 12px;
+  gap: 10px;
 }
+.comensal-card .mixed-field { gap: 6px; }
+.comensal-card .mixed-field label { font-size: 10px; min-width: 70px; }
+.comensal-card .mixed-field input { font-size: 13px; padding: 5px 8px; min-width: 80px; }
 
-.comensal-card .payment-field label {
-  font-size: 12px;
-  white-space: normal;
-  min-width: 70px;
-}
-
-.comensal-card .payment-field input {
-  font-size: 15px;
-  padding: 6px 10px;
-  min-width: 120px;
-}
-
-/* Totales del comensal */
-.comensal-totales .cambio-success,
-.comensal-totales .cambio-error {
-  display: inline-block;
-  margin-top: 6px;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.2);
-  font-size: 12px;
-}
-
-.comensal-totales .cambio-success {
-  color: #10b981;
-  border-left: 2px solid #10b981;
-}
-
-.comensal-totales .cambio-error {
-  color: #ef4444;
-  border-left: 2px solid #ef4444;
-}
-
-/* Botón "Cobrar a este comensal" */
-.comensal-card .btn-cobrar {
-  background: linear-gradient(135deg, #059669, #047857);
-  font-size: 12px;
-  padding: 8px 12px;
-  margin-top: 8px;
-}
-
-.comensal-card .btn-cobrar:disabled {
-  background: #4b5563;
-}
+.comensal-card .mixed-total-row { padding: 8px 12px; margin-top: 8px; gap: 10px; }
+.comensal-card .mixed-total-item span { font-size: 11px; }
+.comensal-card .mixed-total-item strong { font-size: 14px; }

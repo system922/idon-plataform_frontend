@@ -20,3 +20,9 @@
 .admin-clientes-table tr:hover {
   background: #173831;
 }
+
+@media (max-width: 768px) {
+  .admin-clientes-table { display: block; overflow-x: auto; }
+  .admin-clientes-table th,
+  .admin-clientes-table td { padding: 8px 10px; font-size: 12px; white-space: nowrap; }
+}

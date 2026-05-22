@@ -601,8 +601,24 @@ button, input, select, textarea {
 @media (max-width: 768px) {
   .hide-mobile { display: none; }
   .page-container { padding: var(--spacing-md); }
-  
   .page-header h1 { font-size: var(--font-size-2xl); }
+
+  /* Tablas: scroll horizontal en móvil */
+  .table-container,
+  .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Flex headers que se parten */
+  .page-header,
+  .flex-between { flex-wrap: wrap; gap: var(--spacing-sm); }
+
+  /* Grids */
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+
+  /* Stat cards */
+  .stat-card { padding: var(--spacing-md); }
+  .stat-card-value { font-size: var(--font-size-2xl); }
 }
 
 @media (max-width: 480px) {

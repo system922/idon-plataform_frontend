@@ -59,3 +59,12 @@
   color: #7fccb9;
   text-align: center;
 }
+
+@media (max-width: 768px) {
+  .layout-main {
+    margin-left: 0 !important;
+  }
+  .layout-container {
+    padding: 10px 8px;
+  }
+}

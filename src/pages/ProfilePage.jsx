@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiUser, FiMail, FiPhone, FiShield, FiCheck, FiEdit2, FiEye, FiEyeOff } from 'react-icons/fi';
 import apiService from '../services/apiService';
+import '../styles/ProfilePage.css';
 
 const inp = {
   width: '100%', padding: '10px 13px', borderRadius: '8px', fontSize: '14px',
@@ -96,7 +97,8 @@ export default function ProfilePage({ user: userProp }) {
   const fullName = profile
     ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
     : '—';
-  const roleLabel = profile?.role_name || profile?.role || user?.role || user?.userType || '—';
+  const rawRoleLabel = profile?.role_name || profile?.role || user?.role || user?.userType || '—';
+  const roleLabel = rawRoleLabel.toLowerCase() === 'owner' ? 'Admin' : rawRoleLabel;
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
@@ -111,7 +113,7 @@ export default function ProfilePage({ user: userProp }) {
         <p className="admin-page-subtitle">Visualiza y edita tu información personal</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20, alignItems: 'start' }}>
+      <div className="profile-layout">
 
         {/* ── Tarjeta de identidad ── */}
         <div className="admin-card">
@@ -167,7 +169,7 @@ export default function ProfilePage({ user: userProp }) {
 
               {editMode ? (
                 <form onSubmit={handleSave}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div className="profile-form-grid">
                     <div className="admin-form-group">
                       <Lbl>Nombre *</Lbl>
                       <input style={inp} value={form.firstName}

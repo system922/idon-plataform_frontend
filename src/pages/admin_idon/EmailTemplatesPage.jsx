@@ -30,7 +30,6 @@ export default function EmailTemplatesPage() {
       const r = await adminApiService.get('/admin/email-templates');
       setTemplates(r.data || r || []);
     } catch (e) {
-      console.error(e);
     } finally {
       setLoading(false);
     }

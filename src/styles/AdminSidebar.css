@@ -254,3 +254,15 @@
 .admin-sidebar.collapsed .sidebar-subitems {
   display: none !important;
 }
+
+@media (max-width: 768px) {
+  .admin-sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    z-index: 300;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+  .admin-sidebar.mobile-open { transform: translateX(0); }
+}

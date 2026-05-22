@@ -278,3 +278,22 @@ body {
 .btn-secondary:hover {
   background: rgba(255,255,255,0.05);
 }
+@media (max-width: 768px) {
+  .page-header { flex-wrap: wrap; gap: 12px; }
+  .page-title   { font-size: 24px; }
+  .search-box   { width: 100%; }
+  .stats        { flex-wrap: wrap; gap: 10px; }
+  .stat-card    { flex: 1 1 calc(50% - 5px); }
+  .table-container { overflow-x: auto; }
+  .modal        { width: calc(100vw - 24px); max-width: 100%; padding: 18px 14px; }
+}
+
+@media (max-width: 480px) {
+  .page-title { font-size: 20px; }
+  .stat-card  { flex: 1 1 100%; }
+  .table th,
+  .table td   { padding: 9px 10px; font-size: 12px; }
+  .modal-title { font-size: 18px; }
+  .modal-footer { flex-direction: column; }
+  .modal-footer button { width: 100%; }
+}

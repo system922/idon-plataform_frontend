@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IDON — Estrategia de Marketing</title>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px;
+      gap: 20px;
+    }
+
+    .guide {
+      background: #1e1e1e;
+      color: #999;
+      border-left: 3px solid #f07f5a;
+      border-radius: 6px;
+      padding: 12px 18px;
+      width: 210mm;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+    .guide strong { color: #f07f5a; }
+
+    .download-bar {
+      display: flex;
+      gap: 10px;
+      width: 210mm;
+    }
+
+    .btn-download {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      transition: opacity 0.15s;
+    }
+    .btn-download:hover { opacity: 0.85; }
+    .btn-download:active { opacity: 0.7; }
+    .btn-svg  { background: #f07f5a; color: #fff; }
+    .btn-png  { background: #2d2d2d; color: #fff; }
+    .btn-print { background: #fff; color: #2d2d2d; border: 2px solid #e0e0e0; }
+    .btn-download svg {
+      width: 16px; height: 16px;
+      stroke: currentColor; stroke-width: 2.2; fill: none; flex-shrink: 0;
+    }
+
+    #status {
+      font-size: 11px; color: #666; text-align: center; min-height: 16px;
+    }
+
+    /* ══════════════════════════════
+       INFOGRAPHIC  210mm wide
+       ══════════════════════════════ */
+    .doc {
+      width: 210mm;
+      background: #ffffff;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    .hdr {
+      background: #032703;
+      padding: 22px 30px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hdr::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+    }
+    .hdr::after {
+      content: '';
+      position: absolute;
+      bottom: -30px; left: -30px;
+      width: 110px; height: 110px;
+      border-radius: 50%;
+      background: rgba(240,127,90,0.12);
+    }
+    .hdr-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 14px;
+    }
+    .logo-wrap {
+      display: inline-flex;
+      align-items: center;
+    }
+    .logo-img { height: 44px; width: auto; object-fit: contain; }
+    .logo-fallback {
+      font-size: 26px; font-weight: 900; letter-spacing: 5px; color: #fff; display: none;
+    }
+    .hdr-badge {
+      font-size: 8.5px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: rgba(255,255,255,0.65);
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 5px 12px; border-radius: 20px;
+    }
+    .hdr-title {
+      position: relative; z-index: 1;
+      font-size: 22px; font-weight: 900; color: #fff;
+      letter-spacing: -0.5px; line-height: 1.2;
+      margin-bottom: 8px;
+    }
+    .hdr-title span { color: #f07f5a; }
+    .hdr-sub {
+      position: relative; z-index: 1;
+      font-size: 12px; color: rgba(255,255,255,0.7);
+      font-weight: 500; line-height: 1.5;
+      max-width: 420px;
+    }
+
+    /* ── SECTION LABELS ── */
+    .sec-label {
+      font-size: 8.5px; font-weight: 800; letter-spacing: 2.5px;
+      text-transform: uppercase; color: #f07f5a;
+      margin-bottom: 10px;
+    }
+
+    /* ── PERSONAS ── */
+    .personas-block {
+      padding: 20px 30px;
+      background: #fff;
+    }
+    .personas-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .persona-card {
+      border: 1.5px solid #e8e8e8;
+      border-radius: 10px;
+      padding: 12px 13px;
+      position: relative;
+    }
+    .persona-card::before {
+      content: '';
+      display: block;
+      width: 28px; height: 3px;
+      border-radius: 2px;
+      background: #f07f5a;
+      margin-bottom: 8px;
+    }
+    .persona-name {
+      font-size: 10px; font-weight: 800; color: #032703;
+      margin-bottom: 2px; line-height: 1.3;
+    }
+    .persona-type {
+      font-size: 8.5px; color: #888; font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .persona-row {
+      display: flex; gap: 5px; align-items: flex-start;
+      margin-bottom: 4px;
+    }
+    .persona-row-label {
+      font-size: 8px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.8px; color: #aaa; min-width: 44px; padding-top: 1px;
+    }
+    .persona-row-val {
+      font-size: 9px; color: #333; font-weight: 600; line-height: 1.35;
+    }
+
+    /* ── POSITIONING ── */
+    .pos-block {
+      background: #f9f9f9;
+      padding: 20px 30px;
+    }
+    .pos-table {
+      width: 100%; border-collapse: collapse; margin-top: 4px;
+    }
+    .pos-table th {
+      font-size: 8.5px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 1px; color: #fff; background: #032703;
+      padding: 8px 10px; text-align: left;
+    }
+    .pos-table th:last-child { background: #f07f5a; }
+    .pos-table td {
+      font-size: 9.5px; color: #333; font-weight: 600;
+      padding: 7px 10px; border-bottom: 1px solid #eee;
+      vertical-align: top; line-height: 1.35;
+    }
+    .pos-table tr:last-child td { border-bottom: none; }
+    .pos-table tr:nth-child(even) td { background: rgba(3,39,3,0.03); }
+    .pos-table td:last-child { color: #032703; font-weight: 700; }
+
+    .pos-tag {
+      display: inline-block;
+      background: #032703; color: #fff;
+      font-size: 9px; font-weight: 700;
+      padding: 5px 12px; border-radius: 20px;
+      margin-top: 10px;
+    }
+    .pos-tag span { color: #f07f5a; }
+
+    /* ── CHANNELS ── */
+    .channels-block {
+      padding: 20px 30px;
+      background: #fff;
+    }
+    .channels-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .channel-card {
+      border: 1.5px solid #e8e8e8;
+      border-radius: 8px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .channel-num {
+      font-size: 18px; font-weight: 900; color: #f07f5a;
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+    .channel-name {
+      font-size: 8.5px; font-weight: 800; color: #032703;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 5px; line-height: 1.3;
+    }
+    .channel-desc {
+      font-size: 8px; color: #666; font-weight: 500; line-height: 1.35;
+    }
+
+    /* ── FUNNEL ── */
+    .funnel-block {
+      background: #032703;
+      padding: 20px 30px;
+    }
+    .funnel-block .sec-label { color: rgba(255,255,255,0.5); }
+    .funnel-steps {
+      display: flex;
+      gap: 0;
+      margin-top: 4px;
+    }
+    .funnel-step {
+      flex: 1;
+      position: relative;
+      text-align: center;
+    }
+    .funnel-step::after {
+      content: '▶';
+      position: absolute;
+      right: -8px; top: 50%;
+      transform: translateY(-50%);
+      color: #f07f5a; font-size: 10px;
+      z-index: 2;
+    }
+    .funnel-step:last-child::after { display: none; }
+    .funnel-box {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 10px 4px;
+      margin: 0 4px;
+    }
+    .funnel-icon {
+      font-size: 16px; margin-bottom: 4px;
+    }
+    .funnel-title {
+      font-size: 8.5px; font-weight: 800; color: #f07f5a;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+    .funnel-subs {
+      font-size: 7.5px; color: rgba(255,255,255,0.55);
+      line-height: 1.5;
+    }
+    .funnel-subs div { margin-bottom: 1px; }
+
+    /* ── KPIS ── */
+    .kpi-block {
+      background: #fff;
+      padding: 20px 30px;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .kpi-card {
+      background: #f9f9f9;
+      border: 1.5px solid #eee;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .kpi-val {
+      font-size: 20px; font-weight: 900; color: #032703;
+      line-height: 1; margin-bottom: 3px;
+    }
+    .kpi-val span { font-size: 13px; color: #f07f5a; }
+    .kpi-label {
+      font-size: 8px; font-weight: 700; color: #888;
+      text-transform: uppercase; letter-spacing: 0.8px; line-height: 1.3;
+    }
+
+    /* ── CONTENT CALENDAR ── */
+    .cal-block {
+      background: #f9f9f9;
+      padding: 20px 30px;
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .cal-day {
+      background: #fff;
+      border: 1.5px solid #eee;
+      border-radius: 8px;
+      padding: 9px 7px;
+      text-align: center;
+    }
+    .cal-day-name {
+      font-size: 8px; font-weight: 800; color: #f07f5a;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .cal-format {
+      font-size: 8.5px; font-weight: 800; color: #032703;
+      margin-bottom: 3px; line-height: 1.3;
+    }
+    .cal-theme {
+      font-size: 7.5px; color: #666; line-height: 1.35;
+    }
+
+    /* ── BUDGET ── */
+    .budget-block {
+      background: #fff;
+      padding: 20px 30px;
+    }
+    .budget-rows {
+      margin-top: 4px;
+    }
+    .budget-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-radius: 7px;
+      margin-bottom: 4px;
+    }
+    .budget-row:nth-child(odd) { background: #f9f9f9; }
+    .budget-row-label {
+      font-size: 10px; font-weight: 600; color: #333;
+    }
+    .budget-row-val {
+      font-size: 10px; font-weight: 800; color: #032703;
+    }
+    .budget-total {
+      background: #032703 !important;
+      margin-top: 6px;
+    }
+    .budget-total .budget-row-label { color: #fff; font-weight: 800; }
+    .budget-total .budget-row-val { color: #f07f5a; font-size: 13px; }
+    .budget-bar {
+      height: 4px; border-radius: 2px; background: #eee; margin-top: 3px;
+      overflow: hidden;
+    }
+    .budget-bar-fill {
+      height: 100%; background: #f07f5a; border-radius: 2px;
+    }
+
+    /* ── ROADMAP ── */
+    .roadmap-block {
+      background: #032703;
+      padding: 20px 30px;
+    }
+    .roadmap-block .sec-label { color: rgba(255,255,255,0.5); }
+    .roadmap-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .roadmap-col {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 13px 12px;
+    }
+    .roadmap-month {
+      font-size: 9px; font-weight: 800; color: #f07f5a;
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .roadmap-goal {
+      font-size: 8.5px; font-weight: 700; color: rgba(255,255,255,0.9);
+      margin-bottom: 9px; padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      line-height: 1.35;
+    }
+    .roadmap-item {
+      display: flex; align-items: flex-start; gap: 6px;
+      margin-bottom: 5px;
+    }
+    .roadmap-check {
+      width: 12px; height: 12px;
+      border: 1.5px solid rgba(240,127,90,0.5);
+      border-radius: 3px; flex-shrink: 0; margin-top: 1px;
+    }
+    .roadmap-text {
+      font-size: 8.5px; color: rgba(255,255,255,0.7);
+      font-weight: 600; line-height: 1.35;
+    }
+
+    /* ── FOOTER ── */
+    .footer-block {
+      background: #2d2d2d;
+      padding: 12px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-brand {
+      font-size: 12px; font-weight: 900; color: #fff; letter-spacing: 2px;
+    }
+    .footer-brand span { color: #f07f5a; }
+    .footer-url {
+      font-size: 9.5px; color: #888; font-weight: 600;
+    }
+    .footer-tag {
+      font-size: 9px; font-weight: 700; color: #f07f5a;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    /* ── DIVIDER ── */
+    .div-line {
+      height: 1px; background: #eee; margin: 0 30px;
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      .download-bar, #status, .guide { display: none; }
+      @page { size: A4 portrait; margin: 0; }
+      body { background: #fff; padding: 0; display: block; }
+      .doc { width: 210mm; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="download-bar">
+    <button class="btn-download btn-svg" onclick="descargarSVG()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Descargar SVG
+    </button>
+    <button class="btn-download btn-png" onclick="descargarPNG()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Descargar PNG
+    </button>
+    <button class="btn-download btn-print" onclick="window.print()">
+      <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Imprimir
+    </button>
+  </div>
+  <div id="status"></div>
+
+  <div class="guide">
+    <strong>Exportar:</strong> SVG conserva vectores · PNG abre ventana de impresión → "Guardar como PDF" → convertir en ilovepdf.com · Imprimir: A4 · Activar "Gráficos de fondo" en Chrome
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       DOCUMENTO
+       ═══════════════════════════════════════ -->
+  <div class="doc" id="doc">
+
+    <!-- HEADER -->
+    <div class="hdr">
+      <div class="hdr-row">
+        <div class="logo-wrap">
+          <img class="logo-img" src="IDON PRINCIPAL.png" alt="IDON"
+            onerror="this.style.display='none';document.getElementById('lf').style.display='block';">
+          <span id="lf" class="logo-fallback">IDON</span>
+        </div>
+        <div class="hdr-badge">Documento interno · 2025</div>
+      </div>
+      <div class="hdr-title">Estrategia de Marketing <span>Multinegocios</span></div>
+      <div class="hdr-sub">Un solo sistema para gestionar todo tu negocio — POS · Inventario · Empleados · Contabilidad · CRM · Facturación SRI</div>
+    </div>
+
+    <!-- PERSONAS -->
+    <div class="personas-block">
+      <div class="sec-label">01 · Público objetivo — Buyer Personas</div>
+      <div class="personas-grid">
+
+        <div class="persona-card">
+          <div class="persona-name">El Restaurantero Desbordado</div>
+          <div class="persona-type">Restaurante o cadena pequeña (1–5 locales)</div>
+          <div class="persona-row">
+            <div class="persona-row-label">Edad</div>
+            <div class="persona-row-val">30–50 años</div>
+          </div>
+          <div class="persona-row">
+            <div class="persona-row-label">Problema</div>
+            <div class="persona-row-val">Comandas en papel, inventario en Excel, nómina con contador externo</div>
+          </div>
+          <div class="persona-row">
+            <div class="persona-row-label">Quiere</div>
+            <div class="persona-row-val">Control en tiempo real, reducir errores, ver reportes rápido</div>
+          </div>
+          <div class="persona-row">
+            <div class="persona-row-label">Canal</div>
+            <div class="persona-row-val">Instagram · WhatsApp · Referidos</div>
+          </div>
+        </div>
+
+        <div class="persona-card">
+          <div class="persona-name">El Comerciante que Quiere Crecer</div>
+          <div class="persona-type">Retail · Farmacia · Minimarket · Boutique</div>
+          <div class="persona-row">
+            <div class="persona-row-label">Edad</div>
+            <div class="persona-row-val">28–45 años</div>
+          </div>
+          <div class="persona-row">
+            <div class="persona-row-label">Problema</div>
+            <div class="persona-row-val">Sin POS real, pierde stock, no sabe qué productos rinden</div>
+          </div>
+          <div class="persona-row">
+            <div class="persona-row-label">Quiere</div>
+            <div class="persona-row-val">Sistema de caja profesional, control de inventario, facturación</div>
+          </div>
+          <div class="persona-row">
+            <div class="persona-row-label">Canal</div>
+            <div class="persona-row-val">Facebook · Google Ads · Ferias</div>
+          </div>
+        </div>
+
+        <div class="persona-card">
+          <div class="persona-name">El Emprendedor de Servicios</div>
+          <div class="persona-type">Salón · Clínica · Taller · Servicio a domicilio</div>
+          <div class="persona-row">
+            <div class="persona-row-label">Edad</div>
+            <div class="persona-row-val">25–40 años</div>
+          </div>
+          <div class="persona-row">
+            <div class="persona-row-label">Problema</div>
+            <div class="persona-row-val">Agenda desordenada, cobros informales, sin historial de clientes</div>
+          </div>
+          <div class="persona-row">
+            <div class="persona-row-label">Quiere</div>
+            <div class="persona-row-val">Reservas, CRM simple, gestión de empleados</div>
+          </div>
+          <div class="persona-row">
+            <div class="persona-row-label">Canal</div>
+            <div class="persona-row-val">TikTok · Instagram Reels · Grupos Facebook</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="div-line"></div>
+
+    <!-- POSITIONING -->
+    <div class="pos-block">
+      <div class="sec-label">02 · Posicionamiento competitivo</div>
+      <table class="pos-table">
+        <thead>
+          <tr>
+            <th>Competidor</th>
+            <th>Debilidad</th>
+            <th>Ventaja IDON</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Sistemas locales (Legacy)</td>
+            <td>Sin app, sin nube</td>
+            <td>100% en la nube, acceso desde celular</td>
+          </tr>
+          <tr>
+            <td>Apps genéricas (Shopify, etc.)</td>
+            <td>No adaptadas a Ecuador/LATAM</td>
+            <td>Facturación SRI, idioma local, soporte local</td>
+          </tr>
+          <tr>
+            <td>Sistemas por módulo</td>
+            <td>Caro y fragmentado</td>
+            <td>Todo integrado en un solo precio</td>
+          </tr>
+          <tr>
+            <td>Excel / papel</td>
+            <td>Sin control, sin reportes</td>
+            <td>Reportes automáticos, tiempo real</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="pos-tag">IDON es el sistema todo-en-uno más completo, con <span>soporte local</span> y sin complicaciones técnicas</div>
+    </div>
+
+    <!-- CHANNELS -->
+    <div class="channels-block">
+      <div class="sec-label">03 · Canales de adquisición (por prioridad)</div>
+      <div class="channels-grid">
+        <div class="channel-card">
+          <div class="channel-num">01</div>
+          <div class="channel-name">Marketing de Contenido</div>
+          <div class="channel-desc">Blog SEO · Reels/TikToks · 3–5 posts/semana · Problemas reales + solución IDON</div>
+        </div>
+        <div class="channel-card">
+          <div class="channel-num">02</div>
+          <div class="channel-name">Red de Referidos</div>
+          <div class="channel-desc">Comisión al referidor · Descuento al referido · Clientes actuales como embajadores</div>
+        </div>
+        <div class="channel-card">
+          <div class="channel-num">03</div>
+          <div class="channel-name">WhatsApp Business</div>
+          <div class="channel-desc">Catálogo de planes · Demos en vivo · Secuencias automáticas de seguimiento</div>
+        </div>
+        <div class="channel-card">
+          <div class="channel-num">04</div>
+          <div class="channel-name">Google Ads Search</div>
+          <div class="channel-desc">"Sistema POS Ecuador" · "Software restaurante" · "Facturación electrónica SRI"</div>
+        </div>
+        <div class="channel-card">
+          <div class="channel-num">05</div>
+          <div class="channel-name">Alianzas Estratégicas</div>
+          <div class="channel-desc">Contadores · Proveedores hardware · Cámaras de comercio locales</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FUNNEL -->
+    <div class="funnel-block">
+      <div class="sec-label">04 · Embudo de ventas</div>
+      <div class="funnel-steps">
+        <div class="funnel-step">
+          <div class="funnel-box">
+            <div class="funnel-icon">📢</div>
+            <div class="funnel-title">Atracción</div>
+            <div class="funnel-subs">
+              <div>Redes sociales</div>
+              <div>Google</div>
+              <div>Referidos</div>
+            </div>
+          </div>
+        </div>
+        <div class="funnel-step">
+          <div class="funnel-box">
+            <div class="funnel-icon">👁</div>
+            <div class="funnel-title">Interés</div>
+            <div class="funnel-subs">
+              <div>Demo gratis</div>
+              <div>Email</div>
+              <div>WhatsApp</div>
+            </div>
+          </div>
+        </div>
+        <div class="funnel-step">
+          <div class="funnel-box">
+            <div class="funnel-icon">🔍</div>
+            <div class="funnel-title">Consideración</div>
+            <div class="funnel-subs">
+              <div>Trial 14 días</div>
+              <div>Comparar</div>
+              <div>Preguntas</div>
+            </div>
+          </div>
+        </div>
+        <div class="funnel-step">
+          <div class="funnel-box">
+            <div class="funnel-icon">💳</div>
+            <div class="funnel-title">Conversión</div>
+            <div class="funnel-subs">
+              <div>Pago</div>
+              <div>Onboarding</div>
+              <div>Contrato</div>
+            </div>
+          </div>
+        </div>
+        <div class="funnel-step">
+          <div class="funnel-box">
+            <div class="funnel-icon">🔄</div>
+            <div class="funnel-title">Retención</div>
+            <div class="funnel-subs">
+              <div>Soporte</div>
+              <div>Upsell</div>
+              <div>Renovar</div>
+            </div>
+          </div>
+        </div>
+        <div class="funnel-step">
+          <div class="funnel-box">
+            <div class="funnel-icon">⭐</div>
+            <div class="funnel-title">Embajador</div>
+            <div class="funnel-subs">
+              <div>Refiere</div>
+              <div>Testimonio</div>
+              <div>Comisión</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-block">
+      <div class="sec-label">05 · Métricas clave — KPIs (arranque mensual)</div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-val">100<span>+</span></div>
+          <div class="kpi-label">Leads generados</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val">30<span>+</span></div>
+          <div class="kpi-label">Demos agendadas</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val">20<span>+</span></div>
+          <div class="kpi-label">Trials activados</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val">30<span>%</span></div>
+          <div class="kpi-label">Conversión a pago</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val">&lt;5<span>%</span></div>
+          <div class="kpi-label">Churn mensual</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val">&lt;<span>$</span>50</div>
+          <div class="kpi-label">CAC objetivo</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val">&gt;<span>$</span>600</div>
+          <div class="kpi-label">LTV objetivo</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val">12<span>×</span></div>
+          <div class="kpi-label">LTV / CAC ratio</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="div-line"></div>
+
+    <!-- CONTENT CALENDAR -->
+    <div class="cal-block">
+      <div class="sec-label">06 · Ciclo de contenido semanal</div>
+      <div class="cal-grid">
+        <div class="cal-day">
+          <div class="cal-day-name">Lunes</div>
+          <div class="cal-format">Reel / TikTok</div>
+          <div class="cal-theme">Problema de negocio + solución rápida</div>
+        </div>
+        <div class="cal-day">
+          <div class="cal-day-name">Martes</div>
+          <div class="cal-format">Story</div>
+          <div class="cal-theme">Testimonio de cliente o dato curioso</div>
+        </div>
+        <div class="cal-day">
+          <div class="cal-day-name">Miércoles</div>
+          <div class="cal-format">Post Carrusel</div>
+          <div class="cal-theme">"5 errores que cometen los dueños de..."</div>
+        </div>
+        <div class="cal-day">
+          <div class="cal-day-name">Jueves</div>
+          <div class="cal-format">Email a lista</div>
+          <div class="cal-theme">Tip de gestión + CTA a demo</div>
+        </div>
+        <div class="cal-day">
+          <div class="cal-day-name">Viernes</div>
+          <div class="cal-format">Video corto</div>
+          <div class="cal-theme">Demo de una función de IDON</div>
+        </div>
+        <div class="cal-day">
+          <div class="cal-day-name">Sábado</div>
+          <div class="cal-format">Story Interactiva</div>
+          <div class="cal-theme">Encuesta o pregunta a la audiencia</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUDGET -->
+    <div class="budget-block">
+      <div class="sec-label">07 · Presupuesto sugerido (arranque mensual)</div>
+      <div class="budget-rows">
+        <div class="budget-row">
+          <div class="budget-row-label">Meta Ads (Facebook / Instagram)</div>
+          <div class="budget-row-val">$150 – $300</div>
+        </div>
+        <div class="budget-row">
+          <div class="budget-row-label">Google Ads (Search)</div>
+          <div class="budget-row-val">$100 – $200</div>
+        </div>
+        <div class="budget-row">
+          <div class="budget-row-label">Herramientas (email, CRM, diseño)</div>
+          <div class="budget-row-val">$50 – $100</div>
+        </div>
+        <div class="budget-row">
+          <div class="budget-row-label">Creación de contenido</div>
+          <div class="budget-row-val">$0 (inhouse) o $200</div>
+        </div>
+        <div class="budget-row budget-total">
+          <div class="budget-row-label">Total mínimo viable</div>
+          <div class="budget-row-val">$300 – $600 / mes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROADMAP -->
+    <div class="roadmap-block">
+      <div class="sec-label">08 · Hoja de ruta — Primeros 90 días</div>
+      <div class="roadmap-grid">
+
+        <div class="roadmap-col">
+          <div class="roadmap-month">Mes 1 — Construir base</div>
+          <div class="roadmap-goal">Establecer presencia digital y canales de comunicación operativos</div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">Perfil de Instagram y Facebook profesionales</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">WhatsApp Business con catálogo configurado</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">Landing page con formulario de demo</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">12 posts programados (contenido evergreen)</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">3 videos de demostración de la plataforma</div>
+          </div>
+        </div>
+
+        <div class="roadmap-col">
+          <div class="roadmap-month">Mes 2 — Activar adquisición</div>
+          <div class="roadmap-goal">Meta: 50 leads · 15 demos · 5 clientes</div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">Primera campaña de ads ($150 inicial)</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">Secuencia de emails de bienvenida (5 emails)</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">Programa de referidos activo</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">Seguimiento semanal de KPIs</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">A/B test en creativos de ads</div>
+          </div>
+        </div>
+
+        <div class="roadmap-col">
+          <div class="roadmap-month">Mes 3 — Escalar lo que funciona</div>
+          <div class="roadmap-goal">Meta: 100 leads · 30 demos · 15 clientes</div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">Doblar presupuesto en canal con mejor CPL</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">Testimonios en video de primeros clientes</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">Alianzas con 2 contadores / asesores</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">Revisión y ajuste de buyer personas</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-check"></div>
+            <div class="roadmap-text">Definir plan de upsell para clientes activos</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer-block">
+      <div class="footer-brand">IDON<span>.</span></div>
+      <div class="footer-url">idonplataform.site</div>
+      <div class="footer-tag">Gestión Multinegocios · Ecuador</div>
+    </div>
+
+  </div><!-- /doc -->
+
+  <script>
+    lucide.createIcons();
+
+    const doc    = document.getElementById('doc');
+    const status = document.getElementById('status');
+    function setStatus(msg) { status.textContent = msg; }
+
+    function getCSS() {
+      let css = '';
+      for (const sheet of document.styleSheets) {
+        try { for (const rule of sheet.cssRules) css += rule.cssText + '\n'; }
+        catch(_) {}
+      }
+      return css;
+    }
+
+    function descargarSVG() {
+      setStatus('Generando SVG…');
+      try {
+        const w   = doc.offsetWidth;
+        const h   = doc.offsetHeight;
+        const css = getCSS();
+        const xhtml = new XMLSerializer().serializeToString(doc);
+        const svgStr = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <defs><style><![CDATA[
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    ${css}
+  ]]></style></defs>
+  <foreignObject x="0" y="0" width="${w}" height="${h}">
+    ${xhtml}
+  </foreignObject>
+</svg>`;
+        const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.download = 'IDON-estrategia-marketing.svg';
+        a.href = url;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        setStatus('✓ SVG descargado — guárdalo en la misma carpeta que las imágenes');
+      } catch(e) {
+        setStatus('Error: ' + (e?.message || e));
+      }
+    }
+
+    function descargarPNG() {
+      const w = doc.offsetWidth;
+      const h = doc.offsetHeight;
+      const css = getCSS();
+      const html = doc.outerHTML;
+      const win = window.open('', '_blank', `width=${w+40},height=${h+40}`);
+      win.document.write(`<!DOCTYPE html><html><head>
+        <meta charset="UTF-8">
+        <style>
+          * { box-sizing:border-box; margin:0; padding:0; }
+          ${css}
+          @page { size: ${w}px ${h}px; margin: 0; }
+          body { background:#fff; display:flex; justify-content:center; }
+          .download-bar, .guide, #status { display:none !important; }
+        </style>
+        <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"><\/script>
+      </head><body>
+        ${html}
+        <script>
+          lucide.createIcons();
+          setTimeout(() => window.print(), 600);
+        <\/script>
+      </body></html>`);
+      win.document.close();
+      setStatus('✓ Ventana abierta — elige "Guardar como PDF" y convierte a PNG en ilovepdf.com');
+    }
+  </script>
+</body>
+</html>

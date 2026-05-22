@@ -41,7 +41,7 @@ IDON elimina el caos de usar 5 apps distintas. POS, inventario, empleados, conta
 | Sistemas por módulo (1 app = 1 cosa) | Caro y fragmentado | Todo integrado en un solo precio |
 | Excel / papel | Sin control, sin reportes | Reportes automáticos, tiempo real |
 
-**Posicionamiento:** *IDON es el sistema de gestión todo-en-uno más completo para negocios en LATAM, con soporte local y sin complicaciones técnicas.*
+**Posicionamiento:** *IDON es el sistema de gestión todo-en-uno más completo para negocios, con soporte local y sin complicaciones técnicas.*
 
 ---
 

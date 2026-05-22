@@ -18,19 +18,30 @@
   --pos-blue:      #3b82f6;
 }
 
+/* Wrapper que envuelve tabs + layout para que ocupen el espacio restante en móvil */
+.retail-pos-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .retail-pos-layout {
   display: flex;
   gap: 16px;
-  height: calc(100vh - 110px);
-  min-height: 620px;
+  height: calc(100vh - 90px);
+  min-height: 580px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* ═══════════════════════════════════════════════════════════
    PANEL IZQUIERDO — CATÁLOGO
 ═══════════════════════════════════════════════════════════ */
 .retail-catalog-panel {
-  flex: 0 0 380px;
-  min-width: 280px;
+  flex: 0 0 460px;
+  min-width: 300px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -108,11 +119,36 @@
   color: #fff;
 }
 
+/* ── Selector de categoría ───── */
+.retail-category-select {
+  width: 100%;
+  flex-shrink: 0;
+  background: var(--pos-card);
+  border: 1px solid var(--pos-border);
+  border-radius: 12px;
+  color: var(--pos-text);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 14px;
+  outline: none;
+  cursor: pointer;
+  appearance: auto;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.retail-category-select:focus {
+  border-color: var(--pos-green);
+  box-shadow: 0 0 0 3px var(--pos-green-dim);
+}
+.retail-category-select option {
+  background: #13131f;
+  color: var(--pos-text);
+}
+
 /* ── Grid de productos ───── */
 .retail-product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
   overflow-y: auto;
   flex: 1;
   padding-right: 4px;
@@ -126,16 +162,17 @@
   background: var(--pos-card);
   border: 1px solid var(--pos-border);
   border-radius: 12px;
-  padding: 14px 12px 12px;
+  padding: 14px 14px 12px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   cursor: pointer;
   text-align: left;
   transition: all 0.18s;
   position: relative;
   overflow: hidden;
   user-select: none;
+  min-height: 90px;
 }
 .retail-product-card:hover {
   border-color: var(--pos-green);
@@ -159,13 +196,14 @@
   letter-spacing: 0.3px;
 }
 .retail-product-price {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--pos-green);
-  margin-top: 4px;
+  margin-top: auto;
+  padding-top: 4px;
   letter-spacing: -0.3px;
 }
-.retail-product-stock { font-size: 10px; color: var(--pos-muted); }
+.retail-product-stock { font-size: 10px; color: var(--pos-muted); margin-top: 2px; }
 .retail-product-stock.low { color: var(--pos-amber); }
 .retail-product-stock.out { color: var(--pos-danger); }
 
@@ -219,7 +257,7 @@
   flex-direction: column;
   gap: 6px;
   flex-shrink: 0;
-  padding: 12px 20px 0;
+  padding: 10px 20px 0;
 }
 .rcp-cx-row { display: flex; gap: 6px; align-items: center; }
 .rcp-cx-doc { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
@@ -237,7 +275,9 @@
 }
 .rcp-input:focus { border-color: var(--pos-green); box-shadow: 0 0 0 3px var(--pos-green-dim); }
 .rcp-input::placeholder { color: #374151; }
-.rcp-cx-doc .rcp-input { width: 130px; flex-shrink: 0; font-size: 12px; }
+.rcp-cx-doc .rcp-input { width: 120px; flex-shrink: 0; font-size: 12px; }
+.rcp-cx-row-single { flex-wrap: nowrap; }
+.rcp-cx-row-single .rcp-input-flex { min-width: 0; }
 .rcp-input-flex { flex: 1; }
 .rcp-input-full { width: 100%; }
 
@@ -310,6 +350,29 @@
 }
 .rcp-item-code { font-size: 10px; color: #374151; font-family: monospace; }
 
+/* ── Badge de cantidad (nuevo) ───── */
+.rcp-item-qty-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  padding: 2px 7px;
+  background: rgba(16,185,129,0.12);
+  color: #34d399;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  flex-shrink: 0;
+  letter-spacing: 0.2px;
+}
+
+/* ── Controles qty +/qty/- (renombrado desde .rcp-item-qty) ───── */
+.rcp-item-controls {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  background: var(--pos-card); border-radius: 8px; padding: 2px 4px;
+}
+
 .rcp-item-qty {
   display: flex; align-items: center; gap: 6px; flex-shrink: 0;
   background: var(--pos-card); border-radius: 8px; padding: 2px 4px;
@@ -336,7 +399,8 @@
 .rcp-qty-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 
 .rcp-item-total {
-  font-size: 14px; font-weight: 700; color: var(--pos-green);
+  font-size: 13px; font-weight: 700; color: var(--pos-green);
+  font-family: 'Courier New', monospace;
   min-width: 60px; text-align: right; flex-shrink: 0; letter-spacing: -0.3px;
 }
 .rcp-remove-btn {
@@ -346,12 +410,58 @@
 }
 .rcp-remove-btn:hover { color: var(--pos-danger); background: rgba(239,68,68,0.1); }
 
-/* ── Sección descuentos / cupón ───── */
+/* ── Sección descuentos ───── */
 .rcp-discounts-section {
   padding: 10px 20px 0;
 }
-.rcp-coupon-section {
-  padding: 8px 20px 0;
+
+/* ── Cupón colapsable ───── */
+.rcp-coupon-collapse {
+  flex-shrink: 0;
+  padding: 6px 20px 0;
+}
+
+.rcp-coupon-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  background: rgba(59,130,246,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: var(--pos-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s;
+  text-align: left;
+}
+.rcp-coupon-toggle:hover {
+  border-color: var(--pos-blue);
+  color: var(--pos-blue);
+  background: rgba(59,130,246,0.08);
+}
+.rcp-coupon-toggle.open {
+  border-color: var(--pos-blue);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.rcp-coupon-toggle.applied {
+  border-color: var(--pos-green);
+  color: var(--pos-green);
+  background: rgba(16,185,129,0.07);
+}
+.rcp-coupon-toggle span:nth-child(2) { flex: 1; }
+.rcp-coupon-chevron { font-size: 9px; opacity: 0.6; }
+
+.rcp-coupon-body {
+  background: rgba(59,130,246,0.04);
+  border: 1px solid var(--pos-blue);
+  border-top: none;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  padding: 12px;
 }
 
 /* ── Totales ───── */
@@ -420,8 +530,9 @@
   background: var(--pos-panel);
   border: 1.5px solid var(--pos-border);
   border-radius: 10px;
-  color: var(--pos-text);
+  color: var(--pos-green);
   font-size: 18px; font-weight: 700;
+  font-family: 'Courier New', monospace;
   padding: 10px 12px;
   outline: none; width: 100%; box-sizing: border-box;
   transition: border-color 0.2s;
@@ -430,6 +541,22 @@
 .rcp-cash-field input:focus { border-color: var(--pos-green); box-shadow: 0 0 0 3px var(--pos-green-dim); }
 .cambio-pos  { font-size: 18px; font-weight: 700; color: var(--pos-green); letter-spacing: -0.3px; }
 .cambio-zero { font-size: 18px; font-weight: 700; color: #374151; letter-spacing: -0.3px; }
+
+/* ── Caja de cambio estilo ámbar ───── */
+.rcp-cambio-box {
+  display: inline-block;
+  font-size: 18px;
+  font-weight: 800;
+  font-family: 'Courier New', monospace;
+  color: var(--pos-amber);
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 10px;
+  padding: 8px 12px;
+  letter-spacing: -0.3px;
+  width: 100%;
+  box-sizing: border-box;
+}
 
 /* ── Referencia ───── */
 .rcp-ref { display: flex; flex-direction: column; gap: 5px; }
@@ -530,17 +657,193 @@
 }
 @keyframes rcp-spin { to { transform: rotate(360deg); } }
 
-/* ── Responsive ───── */
+/* ══════════════════════════════════════════════════════════
+   TAB BAR MÓVIL (oculto en desktop)
+══════════════════════════════════════════════════════════ */
+.retail-mobile-tabs { display: none; }
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — tablet ancha
+══════════════════════════════════════════════════════════ */
+@media (min-width: 1400px) {
+  .retail-catalog-panel { flex: 0 0 520px; }
+  .retail-product-grid  { grid-template-columns: repeat(4, 1fr); }
+}
+
 @media (max-width: 1024px) {
-  .retail-catalog-panel { flex: 0 0 300px; }
+  .retail-catalog-panel { flex: 0 0 360px; }
 }
-@media (max-width: 900px) {
-  .retail-pos-layout { flex-direction: column; height: auto; }
-  .retail-catalog-panel { flex: unset; min-width: unset; }
-  .retail-cart-panel { min-width: unset; }
-  .retail-product-grid { max-height: 380px; }
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — tablet / móvil (≤ 768px)
+══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Tab bar ── */
+  .retail-mobile-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--pos-card);
+    border: 1px solid var(--pos-border);
+    border-radius: 14px;
+    padding: 4px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .retail-mobile-tab {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    padding: 9px 8px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: var(--pos-muted);
+    font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.18s;
+    position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .retail-mobile-tab.active {
+    background: var(--pos-green);
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(16,185,129,0.35);
+  }
+  .retail-mobile-tab-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #fff;
+    color: var(--pos-green);
+    border-radius: 20px;
+    font-size: 10px; font-weight: 800;
+    padding: 1px 7px;
+    min-width: 18px;
+    line-height: 1.5;
+    margin-left: 2px;
+  }
+
+  /* ── Layout ── */
+  .retail-pos-layout {
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  /* Ocultar panel inactivo */
+  .retail-catalog-panel.mob-hidden,
+  .retail-cart-panel.mob-hidden   { display: none !important; }
+  .retail-catalog-panel.mob-active,
+  .retail-cart-panel.mob-active   { display: flex; flex: 1; min-height: 0; }
+
+  /* Catálogo */
+  .retail-catalog-panel {
+    flex: unset; min-width: unset; width: 100%;
+    height: auto;
+  }
+
+  /* Carrito */
+  .retail-cart-panel {
+    min-width: unset; width: 100%;
+    border-radius: 14px;
+    height: auto;
+    overflow: hidden;
+  }
+
+  /* ── Producto grid ── */
+  .retail-product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-height: unset;
+    flex: 1;
+  }
+
+  /* ── Header carrito ── */
+  .rcp-header { padding: 10px 12px 8px; gap: 8px; }
+  .rcp-title  { font-size: 13px; }
+  .rcp-count  { font-size: 10px; padding: 2px 8px; }
+
+  /* Botón abrir caja: icono solo en móvil */
+  .open-drawer-btn > button span,
+  .open-drawer-btn > button svg ~ * { }
+  .open-drawer-btn > button {
+    padding: 5px 10px;
+    font-size: 10px;
+  }
+
+  /* ── Cliente ── */
+  .rcp-customer { padding: 6px 12px 0; gap: 4px; flex-shrink: 0; height: auto; }
+  .rcp-cx-row-single {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  /* Cédula: ancho fijo pequeño */
+  .rcp-cx-doc { flex: 0 0 auto; }
+  .rcp-cx-doc .rcp-input { width: 110px; font-size: 11px; }
+  /* Nombre y email comparten la segunda línea */
+  .rcp-cx-row-single .rcp-input-flex {
+    flex: 1 1 120px;
+    min-width: 0;
+    font-size: 11px;
+    height: auto;
+  }
+  .rcp-input { padding: 3px 8px; font-size: 11px; border-radius: 7px; height: auto; }
+
+  /* ── Cupón ── */
+  .rcp-coupon-collapse { padding: 5px 12px 0; }
+
+  /* ── Items ── */
+  .retail-cart-items { padding: 7px 12px 0; gap: 3px; }
+  .rcp-item { padding: 7px 10px; gap: 8px; }
+  .rcp-item-name  { font-size: 12px; }
+  .rcp-item-total { font-size: 12px; min-width: 52px; }
+  .rcp-item-qty-badge { font-size: 10px; padding: 1px 6px; }
+
+  /* ── Totales ── */
+  .rcp-totals { padding: 8px 12px 6px; }
+  .rcp-total-row { font-size: 12px; }
+  .rcp-total-grand { font-size: 17px; padding-top: 8px; }
+
+  /* ── Pago ── */
+  .rcp-payment { padding: 8px 12px 12px; gap: 8px; }
+  .rcp-methods { grid-template-columns: repeat(2, 1fr); gap: 5px; }
+  .rcp-method-btn { padding: 9px 4px; font-size: 10px; }
+
+  /* Efectivo */
+  .rcp-cash { flex-wrap: wrap; gap: 8px; }
+  .rcp-cash-field  { flex: 1 1 calc(50% - 4px); min-width: 110px; }
+  .rcp-cash-cambio { flex: 1 1 calc(50% - 4px); min-width: 110px; }
+  .rcp-cash-field input { font-size: 16px; padding: 9px 10px; }
+  .rcp-cambio-box  { font-size: 16px; padding: 7px 10px; }
+
+  /* Acciones */
+  .rcp-actions { gap: 6px; }
+  .rcp-clear-btn  { padding: 11px 12px; font-size: 12px; }
+  .rcp-cobrar-btn { font-size: 14px; padding: 12px 14px; }
+
+  /* Descuentos */
+  .rcp-discounts-section { padding: 7px 12px 0; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — móvil pequeño (≤ 420px)
+══════════════════════════════════════════════════════════ */
+@media (max-width: 420px) {
+  .retail-product-grid { grid-template-columns: repeat(2, 1fr); gap: 5px; }
+  .retail-product-card { padding: 10px 8px 8px; }
+  .retail-product-name  { font-size: 11px; }
+  .retail-product-price { font-size: 13px; }
+
+  /* Cliente: columna completa en muy pequeño */
+  .rcp-cx-row-single { flex-direction: column; gap: 4px; align-items: stretch; }
+  .rcp-cx-doc { width: 100%; flex: none; }
+  .rcp-cx-doc .rcp-input { width: 100%; }
+  .rcp-cx-row-single .rcp-input-flex { width: 100%; flex: none; }
+  .rcp-input { padding: 3px 8px; font-size: 11px; height: auto; flex: none; }
+
   .rcp-methods { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 480px) {
-  .rcp-cx-doc .rcp-input { width: 108px; }
+  .rcp-total-grand { font-size: 15px; }
+  .rcp-cobrar-btn  { font-size: 13px; padding: 11px 12px; }
 }
