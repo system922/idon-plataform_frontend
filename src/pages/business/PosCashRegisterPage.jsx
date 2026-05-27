@@ -1,4 +1,4 @@
-// PosCashRegisterPage.jsx - Conteo físico SOLO para EFECTIVO
+// PosCashRegisterPage.jsx - Versión SIN precarga automática
 import React, { useState, useEffect, useRef } from 'react';
 import { useConfirm } from '../../context/ConfirmContext';
 import {
@@ -55,21 +55,20 @@ const DENOMINACIONES = {
   MONEDAS: [1, 0.50, 0.25, 0.10, 0.05, 0.01]
 };
 
-
 const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
   const { openDrawer } = useCashDrawer();
   const { print } = usePrinterService();
   const { showConfirm } = useConfirm();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [cerrando, setCerrando] = useState(false);
   const [conteoEfectivo, setConteoEfectivo] = useState({});
   
-  // Datos reales desde la API
+  // Datos reales desde la API o desde props
   const [summary, setSummary] = useState(null);
   const [opening, setOpening] = useState(null);
   const [closing, setClosing] = useState(null);
   
-  // CONTEO FISICO
+  // CONTEO FISICO - TODOS INICIAN EN 0
   const [efectivoFisico, setEfectivoFisico] = useState(0);
   const [transferFisico, setTransferFisico] = useState(0);
   const [tarjetaFisico, setTarjetaFisico] = useState(0);
@@ -88,7 +87,18 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
   });
 
   // ===============================
-  // CARGAR DATOS REALES DESDE LA API
+  // INICIALIZAR CONTEO DE DENOMINACIONES
+  // ===============================
+  const inicializarConteoEfectivo = () => {
+    const initialConteo = {};
+    [...DENOMINACIONES.BILLETES, ...DENOMINACIONES.MONEDAS].forEach(denom => {
+      initialConteo[denom] = 0;
+    });
+    setConteoEfectivo(initialConteo);
+  };
+
+  // ===============================
+  // CARGAR DATOS REALES DESDE LA API (FALLBACK)
   // ===============================
   const cargarDatosReales = async () => {
     setLoading(true);
@@ -102,52 +112,56 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
         fetchWithAuth(`/api/pos/cash-register/income-extra?date=${today}`)
       ]);
 
-      if (sumRes.ok) {
-        const sumData = await sumRes.json();
-        setSummary(sumData);
-      }
+      let sumData = {};
+      let openData = {};
+      let closeData = null;
+      let extrasData = [];
 
-      if (openRes.ok) {
-        const openData = await openRes.json();
-        setOpening(openData);
-      }
+      if (sumRes.ok) sumData = await sumRes.json();
+      if (openRes.ok) openData = await openRes.json();
+      if (closeRes.ok) closeData = await closeRes.json();
+      if (extrasRes.ok) extrasData = await extrasRes.json();
 
-      if (closeRes.ok) {
-        const c = await closeRes.json();
-        setClosing(c);
-        setEfectivoFisico(c.cash_counted || 0);
-        setTransferFisico(c.transfer_counted || 0);
-        setTarjetaFisico(c.card_counted || 0);
-        setPropinaFisico(c.tip_counted || 0);
-        setRemarks(c.remarks || '');
-        setConteoEfectivo(c.cash_denomination_count || {});
-      }
+      setSummary(sumData);
+      setOpening(openData);
+      setIncomeExtras(Array.isArray(extrasData) ? extrasData : []);
 
-      if (extrasRes.ok) {
-        const extrasData = await extrasRes.json();
-        setIncomeExtras(Array.isArray(extrasData) ? extrasData : []);
+      if (closeData) {
+        setClosing(closeData);
+        setEfectivoFisico(closeData.cash_counted || 0);
+        setTransferFisico(closeData.transfer_counted || 0);
+        setTarjetaFisico(closeData.card_counted || 0);
+        setPropinaFisico(closeData.tip_counted || 0);
+        setRemarks(closeData.remarks || '');
+        setConteoEfectivo(closeData.cash_denomination_count || {});
       }
-
     } catch (err) {
-
+      console.error('Error cargando datos del cierre:', err);
       setError('Error cargando datos del cierre');
     } finally {
       setLoading(false);
     }
   };
 
+  // ===============================
+  // EFFECT PRINCIPAL: Usar datos del padre o cargar desde API
+  // ===============================
   useEffect(() => {
-    cargarDatosReales();
-    inicializarConteoEfectivo();
+    console.log('🔍 CierreDeCajaPage - initialCajaData:', initialCajaData);
+    
+    if (initialCajaData && initialCajaData.summary) {
+      console.log('📦 Usando cajaData del padre');
+      setSummary(initialCajaData.summary);
+      setOpening(initialCajaData.opening || {});
+      setIncomeExtras(initialCajaData.incomes || []);
+      inicializarConteoEfectivo();
+      setLoading(false);
+    } else {
+      console.log('📦 No hay cajaData del padre, cargando desde API');
+      cargarDatosReales();
+      inicializarConteoEfectivo();
+    }
   }, []);
-
-  const inicializarConteoEfectivo = () => {
-    const initialConteo = {};
-    [...DENOMINACIONES.BILLETES, ...DENOMINACIONES.MONEDAS].forEach(denom => {
-      initialConteo[denom] = 0;
-    });
-    setConteoEfectivo(initialConteo);
-  };
 
   const actualizarConteo = (denominacion, value) => {
     const numValue = parseInt(value) || 0;
@@ -171,7 +185,7 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
   };
 
   // ===============================
-  // DATOS REALES DEL SISTEMA
+  // DATOS DEL SISTEMA (desde summary) - SOLO PARA MOSTRAR
   // ===============================
   const ventas = summary?.metodos || [];
   
@@ -186,7 +200,6 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
   const aperturaBanca = toNum(opening?.monto_banca);
   const aperturaTotal = aperturaEfectivo + aperturaBanca;
 
-  // Ingresos extras por método
   const extrasCash     = incomeExtras.filter(e => e.payment_method === 'cash')    .reduce((s, e) => s + toNum(e.amount), 0);
   const extrasCard     = incomeExtras.filter(e => e.payment_method === 'card')    .reduce((s, e) => s + toNum(e.amount), 0);
   const extrasTransfer = incomeExtras.filter(e => e.payment_method === 'transfer').reduce((s, e) => s + toNum(e.amount), 0);
@@ -195,42 +208,6 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
   const totalGeneralEsperado = aperturaTotal + totalVentas - gastos + totalExtras;
   const totalContadoGeneral = toNum(efectivoFisico) + toNum(transferFisico) + toNum(tarjetaFisico);
   const diferenciaGeneral = totalContadoGeneral - totalGeneralEsperado;
-
-  // 🔥 DATOS PARA IMPRESIÓN - INCLUYENDO PROPINA CORRECTAMENTE
-  const datosParaImpresion = {
-    aperturaEfectivo,
-    aperturaBanca,
-    aperturaTotal,
-    totalVentas,
-    gastos,
-    cajaTotal: totalGeneralEsperado,
-    totalContado: totalContadoGeneral,
-    diferencia: diferenciaGeneral,
-    ventas: ventas,
-    gastosList: summary?.gastos || [],
-    conteoDenominaciones: conteoEfectivo,
-    propina: propinaFisico,        // 🔥 Propina incluida
-    propinaExtra: propinaFisico,    // 🔥 Campo alternativo
-    remarks: remarks,
-    efectivoFisico: efectivoFisico,
-    transferFisico: transferFisico,
-    tarjetaFisico: tarjetaFisico,
-    // 🔥 Asegurar que los métodos de pago contados estén disponibles
-    metodosContados: {
-      efectivo: efectivoFisico,
-      transferencia: transferFisico,
-      tarjeta: tarjetaFisico,
-      propina: propinaFisico
-    }
-  };
-
-  // 🔥 Crear objeto closing completo para imprimir (incluyendo propina)
-  const closingConPropina = closing ? {
-    ...closing,
-    tip_counted: propinaFisico,
-    propina: propinaFisico,
-    remarks: remarks
-  } : null;
 
   // ===============================
   // GUARDAR CIERRE
@@ -264,7 +241,6 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
       }
 
       const closeData = await res.json();
-      // 🔥 Asegurar que la propina esté en el objeto closing
       const closeDataConPropina = {
         ...closeData,
         tip_counted: propinaFisico,
@@ -272,7 +248,6 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
       };
       setClosing(closeDataConPropina);
 
-      // Enviar PDF por email automáticamente (silencioso)
       generateCashClosePdfBase64(closeDataConPropina, opening, summary, incomeExtras)
         .then(pdfBase64 => fetchWithAuth('/api/pos/cash-register/send-close-email', {
           method: 'POST',
@@ -286,51 +261,12 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
         }))
         .catch(() => {});
 
-      // Auditoria
-      if (operador?.id) {
-        const diferenciaTexto = diferenciaGeneral === 0 
-          ? 'Sin diferencias' 
-          : diferenciaGeneral > 0 
-            ? `Sobrante de ${money(Math.abs(diferenciaGeneral))}`
-            : `Faltante de ${money(Math.abs(diferenciaGeneral))}`;
-
-        const auditPayload = {
-          user_id: operador.id,
-          table_name: "cash_drawer",
-          action: "cierre_caja_completado",
-          description: `Cierre de caja completado por ${userName}. Apertura Efectivo: ${money(aperturaEfectivo)}, Apertura Banca: ${money(aperturaBanca)}. Ventas: Efectivo ${money(ventasEfectivo)}, Tarjeta ${money(ventasTarjeta)}, Transferencia ${money(ventasTransferencia)}. Total Esperado: ${money(totalGeneralEsperado)}. Contado: Efectivo ${money(efectivoFisico)}, Transferencia ${money(transferFisico)}, Tarjeta ${money(tarjetaFisico)}. ${diferenciaTexto}. Propina extra: ${money(propinaFisico)}`,
-          new_values: {
-            apertura_efectivo: aperturaEfectivo,
-            apertura_banca: aperturaBanca,
-            ventas_efectivo: ventasEfectivo,
-            ventas_tarjeta: ventasTarjeta,
-            ventas_transferencia: ventasTransferencia,
-            total_gastos: gastos,
-            total_esperado: totalGeneralEsperado,
-            efectivo_contado: toNum(efectivoFisico),
-            transferencia_contada: toNum(transferFisico),
-            tarjeta_contada: toNum(tarjetaFisico),
-            propina_extra: toNum(propinaFisico),
-            total_contado: totalContadoGeneral,
-            diferencia: diferenciaGeneral,
-            conteo_denominaciones: conteoEfectivo
-          },
-          reason: "Cierre de Caja"
-        };
-
-        await fetchWithAuth('/api/audit-log', {
-          method: 'POST',
-          body: JSON.stringify(auditPayload)
-        }).catch(() => {});
-      }
-
       setResultadoCierre({
         success: true,
         message: 'Cierre de caja guardado exitosamente',
         cierreId: closeData.id
       });
 
-      // IMPRIMIR AUTOMÁTICAMENTE usando usePrinterService
       const bizInfo = getBusinessInfo();
       const printData = {
         bizInfo,
@@ -361,7 +297,6 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
       }, 4000);
 
     } catch (err) {
-
       setError(err.message || 'Error al guardar cierre');
       setResultadoCierre({
         success: false,
@@ -413,12 +348,12 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                       const bizInfo = getBusinessInfo();
                       print('printer_main', 'cash-close', {
                         bizInfo,
-                        close: closingConPropina || closing,
-                        summary: closingConPropina || closing,
-                        sales: { transaction_count: (closingConPropina || closing)?.orders_system, total: (closingConPropina || closing)?.total_system },
+                        close: closing,
+                        summary: closing,
+                        sales: { transaction_count: closing?.orders_system, total: closing?.total_system },
                         expenses: summary?.gastos || [],
                         cashFlow: { opening_float: aperturaEfectivo + aperturaBanca, extra_income: totalExtras, expected_cash: totalGeneralEsperado, counted_cash: totalContadoGeneral },
-                        totals: { system_total: (closingConPropina || closing)?.total_system, counted_total: (closingConPropina || closing)?.total_counted, total_diff: (closingConPropina || closing)?.diff_total },
+                        totals: { system_total: closing?.total_system, counted_total: closing?.total_counted, total_diff: closing?.diff_total },
                       }).catch(() => {});
                     }}
                   >
@@ -426,7 +361,7 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                   </button>
                   <PrintCashClosePdfButton
                     ref={pdfButtonRef}
-                    close={closingConPropina || closing}
+                    close={closing}
                     opening={opening}
                     summary={summary}
                     incomeExtras={incomeExtras}
@@ -442,38 +377,38 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
             {error && <div className="alert-error">{error}</div>}
             
             {closing && (
-            <div className="alert-info">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <FiLock size={14} />
-                <span>Ya existe un cierre registrado para hoy</span>
+              <div className="alert-info">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <FiLock size={14} />
+                  <span>Ya existe un cierre registrado para hoy</span>
+                </div>
+                <div className="print-buttons-group">
+                  <button
+                    className="btn-print-small-modern"
+                    onClick={() => {
+                      print('printer_main', 'cash-close', {
+                        bizInfo: getBusinessInfo(),
+                        close: closing,
+                        summary: closing,
+                        sales: { transaction_count: closing?.orders_system, total: closing?.total_system },
+                        expenses: summary?.gastos || [],
+                        cashFlow: { opening_float: aperturaEfectivo + aperturaBanca, extra_income: totalExtras, expected_cash: totalGeneralEsperado, counted_cash: totalContadoGeneral },
+                        totals: { system_total: closing?.total_system, counted_total: closing?.total_counted, total_diff: closing?.diff_total },
+                      }).catch(() => {});
+                    }}
+                  >
+                    <FiPrinter size={13} /> Imprimir
+                  </button>
+                  <PrintCashClosePdfButton
+                    close={closing}
+                    opening={opening}
+                    summary={summary}
+                    incomeExtras={incomeExtras}
+                    className="btn-pdf-small-modern"
+                  />
+                </div>
               </div>
-              <div className="print-buttons-group">
-                <button
-                  className="btn-print-small-modern"
-                  onClick={() => {
-                    print('printer_main', 'cash-close', {
-                      bizInfo: getBusinessInfo(),
-                      close: closingConPropina || closing,
-                      summary: closingConPropina || closing,
-                      sales: { transaction_count: (closingConPropina || closing)?.orders_system, total: (closingConPropina || closing)?.total_system },
-                      expenses: summary?.gastos || [],
-                      cashFlow: { opening_float: aperturaEfectivo + aperturaBanca, extra_income: totalExtras, expected_cash: totalGeneralEsperado, counted_cash: totalContadoGeneral },
-                      totals: { system_total: (closingConPropina || closing)?.total_system, counted_total: (closingConPropina || closing)?.total_counted, total_diff: (closingConPropina || closing)?.diff_total },
-                    }).catch(() => {});
-                  }}
-                >
-                  <FiPrinter size={13} /> Imprimir
-                </button>
-                <PrintCashClosePdfButton
-                  close={closingConPropina || closing}
-                  opening={opening}
-                  summary={summary}
-                  incomeExtras={incomeExtras}
-                  className="btn-pdf-small-modern"
-                />
-              </div>
-            </div>
-          )}
+            )}
 
             {/* 3 TARJETAS HORIZONTALES */}
             <div className="cards-row">
@@ -615,34 +550,45 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
               </div>
             </div>
 
-            {/* 2 COLUMNAS */}
+            {/* 2 COLUMNAS - CONTEO FISICO MANUAL */}
             <div className="two-columns-layout">
               <div className="left-column">
+                {/* OTROS METODOS DE PAGO - CAMPOS MANUALES (SIN PRECARGA) */}
                 <div className="metodos-card">
                   <div className="card-header">
                     <FiCreditCard className="card-icon" />
-                    <h3>OTROS METODOS DE PAGO</h3>
+                    <h3>CONTEO FISICO - OTROS MÉTODOS</h3>
                   </div>
                   <div className="metodos-grid">
                     <div className="metodo-input">
-                      <label><FiSmartphone size={12} /> Transferencia</label>
+                      <label>
+                        <FiSmartphone size={12} /> Transferencia
+                        <span style={{ fontSize: 11, color: '#a0a0b0', marginLeft: 8 }}>
+                          (Sistema: {money(ventasTransferencia)})
+                        </span>
+                      </label>
                       <input 
                         type="number" 
                         step="0.01" 
                         className="metodo-input-field"
-                        value={transferFisico} 
+                        value={transferFisico === 0 ? '' : transferFisico}
                         onChange={(e) => setTransferFisico(toNum(e.target.value))} 
                         disabled={!!closing} 
                         placeholder="0.00" 
                       />
                     </div>
                     <div className="metodo-input">
-                      <label><FiCreditCard size={12} /> Tarjeta</label>
+                      <label>
+                        <FiCreditCard size={12} /> Tarjeta
+                        <span style={{ fontSize: 11, color: '#a0a0b0', marginLeft: 8 }}>
+                          (Sistema: {money(ventasTarjeta)})
+                        </span>
+                      </label>
                       <input 
                         type="number" 
                         step="0.01" 
                         className="metodo-input-field"
-                        value={tarjetaFisico} 
+                        value={tarjetaFisico === 0 ? '' : tarjetaFisico}
                         onChange={(e) => setTarjetaFisico(toNum(e.target.value))} 
                         disabled={!!closing} 
                         placeholder="0.00" 
@@ -654,10 +600,9 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                 <div className="ingreso-card">
                   <div className="card-header">
                     <FiHeart className="card-icon" />
-                    <h3>INGRESOS EXTRAS</h3>
+                    <h3>INGRESOS EXTRAS & PROPINA</h3>
                   </div>
 
-                  {/* Ingresos extras del día — SÍ afectan cuadre */}
                   <div style={{ fontSize: 11, color: '#a0a0b0', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Extras del día <span style={{ color: '#10b981' }}>(afectan cuadre)</span>
                   </div>
@@ -683,7 +628,6 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                     </>
                   )}
 
-                  {/* Propina — no afecta cuadre */}
                   <div style={{ marginTop: 14, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 10 }}>
                     <div style={{ fontSize: 11, color: '#a0a0b0', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       Propina <span style={{ color: '#f39c12' }}>(sin cuadre)</span>
@@ -693,7 +637,7 @@ const CierreDeCajaPage = ({ onClose, cajaData: initialCajaData }) => {
                         type="number"
                         step="0.01"
                         className="ingreso-input-field"
-                        value={propinaFisico}
+                        value={propinaFisico === 0 ? '' : propinaFisico}
                         onChange={(e) => setPropinaFisico(toNum(e.target.value))}
                         disabled={!!closing}
                         placeholder="0.00"

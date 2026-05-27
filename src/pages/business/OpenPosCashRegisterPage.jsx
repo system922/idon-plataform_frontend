@@ -32,10 +32,48 @@ export default function CashRegisterClosePage() {
     Promise.all([
       fetchWithAuth(`/api/pos/cash-register/closing?date=${today}`)
         .then(r => r.json()).catch(() => null),
-      fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`)
+      // 🔥 MEJORA: Agregar parámetro status y consultar también órdenes
+      fetchWithAuth(`/api/pos/cash-register/summary?date=${today}&status=completed,paid`)
         .then(r => r.json()).catch(() => null),
-    ]).then(([closeRes, datosRes]) => {
+      fetchWithAuth(`/api/ordenes?date=${today}&limit=999`)
+        .then(r => r.json()).catch(() => null),
+    ]).then(([closeRes, datosRes, ordersRes]) => {
       setClose(closeRes && closeRes.id ? closeRes : null);
+      
+      // 🔥 NUEVO: Si summary está vacío, calcular desde orders
+      if (!datosRes || !datosRes.metodos || datosRes.metodos.length === 0) {
+        const allOrders = Array.isArray(ordersRes) ? ordersRes : (ordersRes?.orders || ordersRes?.data || []);
+        
+        if (allOrders.length > 0) {
+          const ordenesPagadas = allOrders.filter(o => 
+            o.status === 'completed' || 
+            o.status === 'paid' || 
+            o.status === 'partially_paid'
+          );
+
+          const groupByMethod = {};
+          ordenesPagadas.forEach(o => {
+            const method = o.payment_method || 'cash';
+            const total = Number(o.total) || 0;
+            if (!groupByMethod[method]) groupByMethod[method] = 0;
+            groupByMethod[method] += total;
+          });
+
+          const ventasPorMetodo = Object.entries(groupByMethod).map(([method, total]) => ({
+            payment_method: method,
+            total_cobrado: total
+          }));
+
+          datosRes = {
+            ...datosRes,
+            metodos: ventasPorMetodo,
+            ventasEfectivo: groupByMethod['cash'] || 0,
+            ventasTransferencia: groupByMethod['transfer'] || 0,
+            ventasTarjeta: groupByMethod['card'] || 0,
+          };
+        }
+      }
+      
       setDatos(datosRes || null);
     }).finally(() => setLoading(false));
   }, [schema, today]);

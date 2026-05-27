@@ -1,4 +1,4 @@
-// BusinessLayout.jsx - Modificado
+// BusinessLayout.jsx - Modificado (MEJORADO PARA CIERRE)
 import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
@@ -399,11 +399,14 @@ export default function BusinessLayout({ user, onLogout }) {
   useEffect(() => { checkApertura(); }, [checkApertura]);
 
   // ═══════════════════════════════════════════════════════
-  // CARGAR DATOS PARA CIERRE
+  // CARGAR DATOS PARA CIERRE - MEJORADO
   // ═══════════════════════════════════════════════════════
+  // BusinessLayout.jsx - SOLO LA PARTE CORREGIDA de cargarDatosCierre
   const cargarDatosCierre = async () => {
     try {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
+      
+      console.log('🔍 Cargando datos para cierre, fecha:', today);
       
       const [sumRes, openRes, incomesRes] = await Promise.all([
         fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`),
@@ -415,35 +418,38 @@ export default function BusinessLayout({ user, onLogout }) {
       let opening = {};
       let incomes = [];
 
-      if (sumRes.ok) summary = await sumRes.json();
-      if (openRes.ok) opening = await openRes.json();
-      if (incomesRes.ok) incomes = await incomesRes.json();
-
-      const ventasPorMetodo = summary?.metodos || [];
-      const totalVentas = ventasPorMetodo.reduce((a, b) => a + (Number(b.total_cobrado) || 0), 0);
-      const ventasEfectivo = ventasPorMetodo.find(m => m.payment_method === 'cash')?.total_cobrado || 0;
-      const ventasTarjeta = ventasPorMetodo.find(m => m.payment_method === 'card')?.total_cobrado || 0;
-      const ventasTransferencia = ventasPorMetodo.find(m => m.payment_method === 'transfer')?.total_cobrado || 0;
+      if (sumRes.ok) {
+        summary = await sumRes.json();
+        console.log('📊 SUMMARY recibido:', summary);
+      } else {
+        console.error('❌ Error en summary:', sumRes.status);
+      }
       
-      const gastos = (summary?.gastos || []).reduce((a, g) => a + (Number(g.monto) || 0), 0);
-      const ingresosExtras = incomes.reduce((a, i) => a + (Number(i.amount) || 0), 0);
+      if (openRes.ok) {
+        opening = await openRes.json();
+        console.log('📊 OPENING recibido:', opening);
+      } else {
+        console.error('❌ Error en opening:', openRes.status);
+      }
       
-      const aperturaInicial = (opening?.total_efectivo || 0) + (opening?.monto_banca || 0);
-      const totalTransacciones = summary?.total_transactions || 0;
+      if (incomesRes.ok) {
+        incomes = await incomesRes.json();
+        console.log('📊 INCOMES recibido:', incomes);
+      }
 
+      // Verificar que summary tenga metodos
+      if (!summary.metodos || summary.metodos.length === 0) {
+        console.warn('⚠️ No se encontraron métodos de pago en summary');
+      }
+
+      // Devolver los datos COMPLETOS
       return {
-        ventasDelDia: totalVentas,
-        totalTransacciones: totalTransacciones,
-        ventasEfectivo: ventasEfectivo,
-        ventasTarjeta: ventasTarjeta + ventasTransferencia,
-        gastosOperativos: gastos,
-        ingresosExtras: ingresosExtras,
-        aperturaInicial: aperturaInicial,
-        fechaApertura: opening?.created_at || new Date().toISOString(),
-        cajero: opening?.user_name || user?.nombre || 'N/A'
+        summary: summary,
+        opening: opening,
+        incomes: incomes
       };
     } catch (err) {
-
+      console.error('Error cargando datos cierre:', err);
       return null;
     }
   };
@@ -544,7 +550,10 @@ export default function BusinessLayout({ user, onLogout }) {
 
   const handleClickAbrirCaja = async () => {
     if (aperturaHecha) {
-      await alert.warning('Ya hay una apertura de caja activa para hoy');
+      // Usar alert del sistema si existe, si no, console.warn
+      if (window.alert) {
+        alert('Ya hay una apertura de caja activa para hoy');
+      }
       return;
     }
     
@@ -689,7 +698,7 @@ export default function BusinessLayout({ user, onLogout }) {
         />
       )}
 
-      {/* Formulario de cierre de caja */}
+      {/* Formulario de cierre de caja - MEJORADO: pasamos datos completos */}
       {mostrarCierreForm && datosCierre && (
         <CierreDeCajaPage
           cajaData={datosCierre}
