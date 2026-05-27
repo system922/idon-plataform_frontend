@@ -11,13 +11,14 @@ import { AiFillProduct } from "react-icons/ai";
 import { MdPublishedWithChanges } from "react-icons/md";
 import { FaEdit } from "react-icons/fa";
 import { VscGitPullRequestNewChanges } from "react-icons/vsc";
-import '../styles/ProductModal.css'; 
+import '../styles/ProductModal.css';
+import '../styles/PriceBreakdown.css'; 
 
 
 const ProductModal = ({ isOpen, product, onSave, onClose }) => {
   const [form, setForm] = useState({
     barcode: '', name: '', description: '', category_id: '',
-    pvp: '', unit_cost: '', stock: '0', min_stock: '0', is_taxable: true, is_active: true,
+    pvp: '', unit_cost: '', stock: '0', min_stock: '0', tax_rate: 15, is_active: true,
   });
   
   const [categories, setCategories] = useState([]);
@@ -54,7 +55,24 @@ const ProductModal = ({ isOpen, product, onSave, onClose }) => {
       return;
     }
     if (product) {
+      console.log('🔍 DEBUG ProductModal - Producto recibido:', {
+        name: product.name,
+        is_taxable: product.is_taxable,
+        tax_rate: product.tax_rate,
+        selling_price: product.selling_price,
+        fields_disponibles: Object.keys(product)
+      });
+      
       const pvp = toNumber(product.selling_price) + toNumber(product.tax_rate);
+      const ivaRate = toNumber(product.is_taxable) || 0;
+      
+      console.log('📋 ProductModal - Valores calculados:', {
+        selling_price_num: toNumber(product.selling_price),
+        tax_rate_num: toNumber(product.tax_rate),
+        pvp_calculado: pvp,
+        ivaRate_a_usar: ivaRate
+      });
+      
       setForm({
         barcode: toSafeString(product.barcode),
         name: toSafeString(product.name),
@@ -64,13 +82,18 @@ const ProductModal = ({ isOpen, product, onSave, onClose }) => {
         unit_cost: toNumber(product.unit_cost).toFixed(2),
         stock: toNumber(product.stock).toString(),
         min_stock: toNumber(product.min_stock).toString(),
-        is_taxable: toBoolean(product.is_taxable, true),
+        tax_rate: ivaRate,  // Usar is_taxable que contiene la tasa % (0, 5, 8, 12, 15)
         is_active: toBoolean(product.is_active, true),
+      });
+      
+      console.log('✅ ProductModal - Form seteado con:', {
+        pvp_en_form: pvp > 0 ? pvp.toFixed(2) : '',
+        tax_rate_en_form: ivaRate
       });
     } else {
       setForm({
         barcode: generateUniqueBarcode(), name: '', description: '', category_id: '',
-        pvp: '', unit_cost: '', stock: '0', min_stock: '0', is_taxable: true, is_active: true,
+        pvp: '', unit_cost: '', stock: '0', min_stock: '0', tax_rate: 15, is_active: true,
       });
     }
   }, [isOpen, product]);
@@ -78,14 +101,14 @@ const ProductModal = ({ isOpen, product, onSave, onClose }) => {
   const resetForm = () => {
     setForm({
       barcode: '', name: '', description: '', category_id: '',
-      pvp: '', unit_cost: '', stock: '0', min_stock: '0', is_taxable: true, is_active: true,
+      pvp: '', unit_cost: '', stock: '0', min_stock: '0', tax_rate: 15, is_active: true,
     });
     setErrors({});
   };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : (name === 'tax_rate' ? Number(value) : value) }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
@@ -115,21 +138,47 @@ const ProductModal = ({ isOpen, product, onSave, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    
+    // Calcular selling_price (SIN IVA) basado en tax_rate
+    const pvpValue = toNumber(form.pvp);
+    const taxRateValue = Number(form.tax_rate);
+    const sellingPrice = taxRateValue > 0 
+      ? Number((pvpValue / (1 + taxRateValue / 100)).toFixed(2))
+      : pvpValue;
+    
+    console.log('🔍 DEBUG ProductModal.handleSubmit:', {
+      'PVP ingresado': pvpValue,
+      'Tasa IVA %': taxRateValue,
+      'Precio sin IVA (calculado)': sellingPrice,
+      'Monto IVA': Number((pvpValue - sellingPrice).toFixed(2))
+    });
+    
     const payload = {
       barcode: toSafeString(form.barcode),
       name: toSafeString(form.name),
       description: toSafeString(form.description) || null,
       category_id: toNumber(form.category_id),
-      price: toNumber(form.pvp),
+      selling_price: sellingPrice,
+      price: pvpValue,  // 🔥 IMPORTANTE: Enviar PVP CON IVA, no sin IVA
       unit_cost: toNumber(form.unit_cost),
       stock: toNumber(form.stock),
       min_stock: toNumber(form.min_stock),
-      is_taxable: toBoolean(form.is_taxable),
+      tax_rate: taxRateValue,
+      is_taxable: taxRateValue,  // Guarda la tasa IVA (0, 5, 8, 12, 15)
       is_active: toBoolean(form.is_active),
     };
+    console.log('📤 Payload enviado:', payload);
     await onSave(payload);
     onClose();
   };
+
+  // Calcular desglose de precios en tiempo real
+  const pvpValue = toNumber(form.pvp);
+  const taxRateValue = Number(form.tax_rate);
+  const sellingPrice = taxRateValue > 0 
+    ? Number((pvpValue / (1 + taxRateValue / 100)).toFixed(2))
+    : pvpValue;
+  const taxAmount = Number((pvpValue - sellingPrice).toFixed(2));
 
   if (!isOpen) return null;
 
@@ -263,12 +312,53 @@ const ProductModal = ({ isOpen, product, onSave, onClose }) => {
                 </div>
               </div>
 
-              {/* ── CHECKBOXES ── */}
+              {/* ── IMPUESTOS ── */}
               <div className="full-width checkbox-group">
-                <label>
-                  <input type="checkbox" name="is_taxable" checked={form.is_taxable} onChange={handleChange} />
-                  <span>Aplica IVA</span>
-                </label>
+                <label>Tasa IVA</label>
+                <select name="tax_rate" value={String(form.tax_rate)} onChange={handleChange} style={{ width: '100%', marginBottom: 12 }}>
+                  <option value="0">Sin IVA (0%)</option>
+                  <option value="5">IVA 5%</option>
+                  <option value="8">IVA 8%</option>
+                  <option value="12">IVA 12%</option>
+                  <option value="15">IVA 15% (por defecto)</option>
+                </select>
+              </div>
+
+              {/* ── DESGLOSE DE PRECIOS ── */}
+              {pvpValue > 0 && (
+                <div className="full-width price-breakdown">
+                  {/* PVP - Precio Final (Con IVA) */}
+                  <div className="breakdown-row highlighted">
+                    <span className="breakdown-label">Precio Final (con IVA)</span>
+                    <span className="breakdown-value">${pvpValue.toFixed(2)}</span>
+                  </div>
+
+                  {/* Tasa IVA Seleccionada */}
+                  {taxRateValue > 0 && (
+                    <div className="breakdown-row iva-rate">
+                      <span className="breakdown-label">Tasa IVA</span>
+                      <span className="breakdown-value">{taxRateValue}%</span>
+                    </div>
+                  )}
+
+                  {/* Monto IVA */}
+                  {taxRateValue > 0 && (
+                    <div className="breakdown-row iva-amount">
+                      <span className="breakdown-label">Monto IVA</span>
+                      <span className="breakdown-value">${taxAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  {/* Precio Sin IVA (Base Imponible) */}
+                  <div className="breakdown-row base-price">
+                    <span className="breakdown-label">Precio sin IVA (base)</span>
+                    <span className="breakdown-value">${sellingPrice.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* ── ACTIVO ── */}
+              <div className="full-width checkbox-group">
                 <label>
                   <input type="checkbox" name="is_active" checked={form.is_active} onChange={handleChange} />
                   <span>{form.is_active ? 'Activo' : 'Inactivo'}</span>

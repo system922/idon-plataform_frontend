@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PageTemplate from '../../components/PageTemplate';
 import { FiCheck, FiRefreshCw, FiAlertCircle, FiSettings, FiMessageCircle } from 'react-icons/fi';
 import { adminApiService as apiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
@@ -59,17 +60,10 @@ export default function Settings() {
   };
 
   return (
-    <div className="admin-page-container">
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">Configuración</h1>
-        <p className="admin-page-subtitle">Parámetros fiscales del sistema — Ecuador SRI</p>
-      </div>
-
-      {error && <div className="admin-card" style={{ marginBottom: 16, borderLeft: '4px solid #ef4444' }}><div className="admin-card-body"><div style={{ display: 'flex', gap: 8, alignItems: 'center' }}><FiAlertCircle size={16} style={{ color: '#ef4444' }} /><p style={{ color: '#ef4444', margin: 0 }}>Error: {error}</p></div></div></div>}
-
+    <PageTemplate theme="admin" title="Configuración" subtitle="Parámetros fiscales del sistema — Ecuador SRI" loading={loading} error={error} onRetry={load}>
       {loading ? <div className="admin-loading"><div className="admin-spinner" />Cargando configuración...</div>
       : cfg && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        <div className="admin-col-2" style={{ gap: 20 }}>
 
           {/* IVA */}
           <div className="admin-card">
@@ -215,6 +209,6 @@ export default function Settings() {
           <FiCheck size={15} /> {saving ? 'Guardando...' : 'Guardar configuración'}
         </button>
       </div>
-    </div>
+    </PageTemplate>
   );
 }

@@ -3,6 +3,7 @@ import { useConfirm } from '../../context/ConfirmContext';
 import { useAlert } from '../../components/ConfirmContext';
 import { FiStar, FiPlus, FiEdit2, FiTrash2, FiCheck, FiFilter, FiRefreshCw } from 'react-icons/fi';
 import { adminApiService } from '../../services/apiService';
+import PageTemplate from '../../components/PageTemplate';
 import '../../styles/AdminPages.css';
 
 const inp = { width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px', background: 'var(--admin-bg-primary)', border: '1px solid var(--admin-border-light)', color: 'var(--admin-text-primary)' };
@@ -51,12 +52,20 @@ export default function Features() {
   const modMap = Object.fromEntries(modules.map(m => [m.id, m]));
 
   return (
-    <div className="admin-page-container">
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">Funcionalidades</h1>
-        <p className="admin-page-subtitle">Gestiona las funcionalidades de cada módulo del sistema</p>
-      </div>
-
+    <PageTemplate
+      theme="admin"
+      title="Funcionalidades"
+      subtitle="Gestiona las funcionalidades de cada módulo del sistema"
+      loading={loading}
+      error={error}
+      onRetry={load}
+      headerAction={
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /></button>
+          <button className="admin-btn admin-btn-primary" onClick={() => setModal('new')}><FiPlus size={15} /> Nueva</button>
+        </div>
+      }
+    >
       {error && <div className="admin-card" style={{ marginBottom: 16, borderLeft: '4px solid #ef4444' }}><div className="admin-card-body"><p style={{ color: '#ef4444', margin: 0 }}>Error: {error}</p></div></div>}
 
       {/* Filtro por módulo */}
@@ -78,14 +87,9 @@ export default function Features() {
       <div className="admin-card">
         <div className="admin-card-header">
           <h2>Funcionalidades ({filtered.length})</h2>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /></button>
-            <button className="admin-btn admin-btn-primary" onClick={() => setModal('new')}><FiPlus size={15} /> Nueva</button>
-          </div>
         </div>
         <div className="admin-card-body">
-          {loading ? <div className="admin-loading"><div className="admin-spinner" />Cargando...</div>
-          : filtered.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className="admin-empty">
               <div className="admin-empty-icon"><FiStar size={36} /></div>
               <p className="admin-empty-title">Sin funcionalidades</p>
@@ -127,7 +131,7 @@ export default function Features() {
       </div>
 
       {modal && <FeatureModal item={modal === 'new' ? null : modal} modules={modules} onClose={() => setModal(null)} onSaved={load} defaultModuleId={filterMod} />}
-    </div>
+    </PageTemplate>
   );
 }
 
@@ -159,14 +163,14 @@ function FeatureModal({ item, modules, onClose, onSaved, defaultModuleId }) {
 
   return (
     <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
+      <div className="admin-modal" style={{ maxWidth: 500, width: '95vw' }} onClick={e => e.stopPropagation()}>
         <div className="admin-modal-header">
           <h2><FiStar size={17} style={{ marginRight: 8, color: '#ff8c42' }} />{item ? 'Editar' : 'Nueva'} Funcionalidad</h2>
           <button className="admin-modal-close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="admin-modal-body">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div className="admin-col-2" style={{ gap: 14 }}>
               <div className="admin-form-group"><Lbl>Nombre *</Lbl><input style={inp} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></div>
               <div className="admin-form-group"><Lbl>Código *</Lbl><input style={inp} value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} required /></div>
             </div>

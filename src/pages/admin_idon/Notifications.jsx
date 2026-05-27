@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import PageTemplate from '../../components/PageTemplate';
 import {
   FiBell, FiRefreshCw, FiAlertCircle, FiClock,
   FiCreditCard, FiClipboard, FiXCircle, FiCheckCircle,
@@ -42,19 +43,14 @@ export default function Notifications() {
   const highCount = notifs.filter(n => n.priority === 'high').length;
 
   return (
-    <div className="admin-page-container">
-      <div className="admin-page-header">
-        <h1 className="admin-page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <FiBell size={24} style={{ color: '#ff8c42' }} /> Notificaciones del Sistema
-          {highCount > 0 && (
-            <span style={{ fontSize: 13, fontWeight: 700, background: '#ef4444', color: '#fff', padding: '2px 9px', borderRadius: 20 }}>{highCount} urgentes</span>
-          )}
-        </h1>
-        <p className="admin-page-subtitle">Alertas de pagos, solicitudes y estado de negocios — auto-actualiza cada 60 seg</p>
+    <PageTemplate theme="admin" title={`Notificaciones del Sistema${highCount > 0 ? ` (${highCount} urgentes)` : ''}`} subtitle="Alertas de pagos, solicitudes y estado de negocios — auto-actualiza cada 60 seg" loading={loading && !notifs.length} error={error} onRetry={load} headerAction={
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+        {lastLoad && <span style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Actualizado: {lastLoad.toLocaleTimeString('es-EC')}</span>}
+        <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /> Actualizar</button>
       </div>
-
+    }>
       {/* Tarjetas de conteos */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
+      <div className="admin-stats-4" style={{ gap: 12, marginBottom: 20 }}>
         {Object.entries(TYPE_CFG).map(([type, cfg]) => (
           <div key={type} className="admin-card"
             style={{ padding: '13px 16px', borderLeft: `3px solid ${cfg.color}`, cursor: 'pointer', transition: 'opacity .2s', opacity: filter!=='all'&&filter!==type?.5:1 }}
@@ -68,8 +64,6 @@ export default function Notifications() {
         ))}
       </div>
 
-      {error && <div className="admin-card" style={{ marginBottom: 16, borderLeft: '4px solid #ef4444' }}><div className="admin-card-body"><p style={{ color: '#ef4444', margin: 0 }}>Error: {error}</p></div></div>}
-
       {/* Filtros */}
       <div className="admin-filters" style={{ marginBottom: 16 }}>
         <button className={`admin-filter-btn ${filter==='all'?'active':''}`} onClick={() => setFilter('all')}>Todas ({notifs.length})</button>
@@ -79,10 +73,6 @@ export default function Notifications() {
             {v.label} {counts[k] > 0 && `(${counts[k]})`}
           </button>
         ))}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          {lastLoad && <span style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Actualizado: {lastLoad.toLocaleTimeString('es-EC')}</span>}
-          <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /> Actualizar</button>
-        </div>
       </div>
 
       {/* Lista */}
@@ -140,6 +130,6 @@ export default function Notifications() {
           )}
         </div>
       </div>
-    </div>
+    </PageTemplate>
   );
 }

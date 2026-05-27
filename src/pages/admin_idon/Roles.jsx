@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import PageTemplate from '../../components/PageTemplate';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAlert } from '../../components/ConfirmContext';
 import {
@@ -104,13 +105,7 @@ export default function Roles() {
   };
 
   return (
-    <div className="admin-page-container">
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">Roles de Negocio</h1>
-        <p className="admin-page-subtitle">
-          Gestiona los roles y permisos de módulos dentro del esquema de cada negocio
-        </p>
-      </div>
+    <PageTemplate theme="admin" title="Roles de Negocio" subtitle="Gestiona los roles y permisos de módulos dentro del esquema de cada negocio" loading={loadingBiz} error={error} onRetry={loadRoles}>
 
       {/* ── Selector de negocio ── */}
       <div className="admin-card" style={{ marginBottom: 16 }}>
@@ -238,7 +233,7 @@ export default function Roles() {
           onSaved={loadRoles}
         />
       )}
-    </div>
+    </PageTemplate>
   );
 }
 

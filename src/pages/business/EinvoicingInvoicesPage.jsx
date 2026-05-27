@@ -340,12 +340,12 @@ export default function EinvoicingInvoicesPage() {
                   </td>
                   <td className="einv-td einv-td-actions" data-label="Acciones" style={{ padding: '11px 10px' }}>
                     <div style={{ display: 'flex', gap: 5, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
-                      {inv.signed_xml && (
+                      {inv.has_signed_xml && (
                         <button onClick={() => handleDownloadPdf(inv)} title="Descargar RIDE (PDF)" style={btnStyle('#fff7ed', '#b45309', '#fcd34d')}>
                           <Download size={11} /> PDF
                         </button>
                       )}
-                      {inv.signed_xml && (
+                      {inv.has_signed_xml && (
                         <button onClick={() => handleDownloadXml(inv)} title="Descargar XML firmado" style={btnStyle('#fff', '#6842fe', '#dad2fa')}>
                           <Download size={11} /> XML
                         </button>

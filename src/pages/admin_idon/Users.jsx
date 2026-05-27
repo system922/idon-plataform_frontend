@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import PageTemplate from '../../components/PageTemplate';
 import { FiRefreshCw, FiSearch, FiUser, FiMail, FiPhone, FiCheck, FiX } from 'react-icons/fi';
 import { adminApiService as apiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
@@ -21,39 +22,19 @@ export default function UsersList() {
   );
 
   return (
-    <div className="admin-page-container">
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">Usuarios</h1>
-        <p className="admin-page-subtitle">Todos los usuarios registrados en el sistema</p>
+    <PageTemplate theme="admin" title="Usuarios" subtitle="Todos los usuarios registrados en el sistema" loading={loading} error={error} onRetry={load} headerAction={
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ position: 'relative' }}>
+          <FiSearch size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--admin-text-muted)' }} />
+          <input placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)}
+            style={{ padding: '7px 10px 7px 30px', borderRadius: 8, fontSize: 13, background: 'var(--admin-bg-primary)', border: '1px solid var(--admin-border-light)', color: 'var(--admin-text-primary)', width: '100%', maxWidth: 200, outline: 'none' }} />
+        </div>
+        <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /></button>
       </div>
-
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 20 }}>
-        {[
-          { l: 'Total usuarios',    v: users.length,                          c: '#ff8c42' },
-          { l: 'Activos',           v: users.filter(u => u.is_active).length,         c: '#22c55e' },
-          { l: 'Email verificado',  v: users.filter(u => u.email_verified).length,    c: '#3b82f6' },
-        ].map(s => (
-          <div key={s.l} className="admin-card" style={{ padding: '14px 18px' }}>
-            <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{s.l}</p>
-            <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: s.c }}>{s.v}</p>
-          </div>
-        ))}
-      </div>
-
-      {error && <div className="admin-card" style={{ marginBottom: 16, borderLeft: '4px solid #ef4444' }}><div className="admin-card-body"><p style={{ color: '#ef4444', margin: 0 }}>Error: {error}</p></div></div>}
-
+    }>
       <div className="admin-card">
         <div className="admin-card-header">
           <h2>Usuarios ({filtered.length})</h2>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{ position: 'relative' }}>
-              <FiSearch size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--admin-text-muted)' }} />
-              <input placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)}
-                style={{ padding: '7px 10px 7px 30px', borderRadius: 8, fontSize: 13, background: 'var(--admin-bg-primary)', border: '1px solid var(--admin-border-light)', color: 'var(--admin-text-primary)', width: 200, outline: 'none' }} />
-            </div>
-            <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /></button>
-          </div>
         </div>
         <div className="admin-card-body">
           {loading ? <div className="admin-loading"><div className="admin-spinner" />Cargando...</div>
@@ -95,6 +76,6 @@ export default function UsersList() {
           )}
         </div>
       </div>
-    </div>
+    </PageTemplate>
   );
 }

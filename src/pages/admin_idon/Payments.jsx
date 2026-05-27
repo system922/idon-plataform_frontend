@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PageTemplate from '../../components/PageTemplate';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAlert } from '../../components/ConfirmContext';
 import {
@@ -97,14 +98,11 @@ export default function Payments() {
   };
 
   return (
-    <div className="admin-page-container">
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">Pagos y Suscripciones</h1>
-        <p className="admin-page-subtitle">Control de facturación, fechas de pago y estado de negocios</p>
-      </div>
-
+    <PageTemplate theme="admin" title="Pagos y Suscripciones" subtitle="Control de facturación, fechas de pago y estado de negocios" loading={loading} error={error} onRetry={load} headerAction={
+      <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /> Actualizar</button>
+    }>
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12, marginBottom: 20 }}>
+      <div className="admin-stats-5" style={{ gap: 12, marginBottom: 20 }}>
         {[
           { l: 'Total negocios',   v: data.length,       c: '#ff8c42' },
           { l: 'Pagos vencidos',   v: counts.overdue,    c: '#ef4444' },
@@ -133,7 +131,6 @@ export default function Payments() {
         ].map(([k, l]) => (
           <button key={k} className={`admin-filter-btn ${filter===k?'active':''}`} onClick={() => setFilter(k)}>{l}</button>
         ))}
-        <button className="admin-btn admin-btn-secondary" onClick={load} style={{ marginLeft: 'auto' }}><FiRefreshCw size={14} /> Actualizar</button>
       </div>
 
       <div className="admin-card">
@@ -231,7 +228,7 @@ export default function Payments() {
 
       {payModal   && <PayModal   row={payModal}   onClose={() => setPayModal(null)}   onConfirm={handleMarkPaid} />}
       {emailModal && <EmailModal row={emailModal} onClose={() => setEmailModal(null)} />}
-    </div>
+    </PageTemplate>
   );
 }
 
@@ -275,7 +272,7 @@ function EmailModal({ row, onClose }) {
 
   return (
     <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+      <div className="admin-modal" style={{ maxWidth: 480, width: '95vw' }} onClick={e => e.stopPropagation()}>
         <div className="admin-modal-header">
           <h2><FiMail size={17} style={{ marginRight: 8, color: '#6366f1' }} /> Enviar Email</h2>
           <button className="admin-modal-close" onClick={onClose}>✕</button>
@@ -372,14 +369,14 @@ function PayModal({ row, onClose, onConfirm }) {
   const inp = { width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 13, background: 'var(--admin-bg-primary)', border: '1px solid var(--admin-border-light)', color: 'var(--admin-text-primary)' };
   return (
     <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
+      <div className="admin-modal" style={{ maxWidth: 440, width: '95vw' }} onClick={e => e.stopPropagation()}>
         <div className="admin-modal-header">
           <h2><FiCreditCard size={17} style={{ marginRight: 8, color: '#22c55e' }} /> Registrar Pago</h2>
           <button className="admin-modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="admin-modal-body">
           <p style={{ margin: '0 0 14px', fontSize: 14 }}><strong>{row.business_name}</strong></p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+          <div className="admin-col-2" style={{ gap: 10, marginBottom: 16 }}>
             <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(34,197,94,.08)', border: '1px solid rgba(34,197,94,.2)' }}>
               <p style={{ margin: '0 0 3px', fontSize: 10, color: '#8CB79B', textTransform: 'uppercase' }}>Monto</p>
               <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#22c55e' }}>${parseFloat(row.total_amount || 0).toFixed(2)}</p>

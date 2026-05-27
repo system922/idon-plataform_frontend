@@ -1,4 +1,5 @@
 import React from 'react';
+import PageTemplate from '../../components/PageTemplate';
 import { FiCreditCard } from 'react-icons/fi';
 import '../../styles/AdminPages.css';
 
@@ -10,12 +11,7 @@ export default function Plans() {
   ];
 
   return (
-    <div className="admin-page-container">
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">Planes de Suscripción</h1>
-        <p className="admin-page-subtitle">Gestiona los planes disponibles en el sistema</p>
-      </div>
-
+    <PageTemplate theme="admin" title="Planes de Suscripción" subtitle="Gestiona los planes disponibles en el sistema" loading={false} error={null}>
       <div className="admin-grid admin-grid-3">
         {plans.map((plan) => (
           <div key={plan.id} className="admin-card">
@@ -37,6 +33,6 @@ export default function Plans() {
           </div>
         ))}
       </div>
-    </div>
+    </PageTemplate>
   );
 }

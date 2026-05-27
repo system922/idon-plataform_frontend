@@ -98,7 +98,7 @@ const ProductosPage = () => {
         return (
           <div>
             <strong style={{ color: '#00c48c' }}>{formatCurrency(pvp)}</strong>
-            {row.is_taxable && iva > 0 && (
+            {toNumber(row.is_taxable) > 0 && iva > 0 && (
               <small style={{ display: 'block', fontSize: 10, color: '#fbbf24' }}>
                 IVA {formatCurrency(iva)}
               </small>

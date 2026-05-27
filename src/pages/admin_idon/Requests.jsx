@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   FiBox, FiShoppingCart, FiShoppingBag, FiClipboard, FiClock,
   FiCheck, FiX, FiRefreshCw, FiEye, FiPackage, FiStar,
@@ -94,7 +94,7 @@ const AdminSolicitudes = () => {
                  : [],
   }));
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     try {
       setLoading(true);
       const data    = await apiService.get('/admin/requests');
@@ -108,9 +108,9 @@ const AdminSolicitudes = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus]);
 
-  useEffect(() => { fetchRequests(); }, [filterStatus]);
+  useEffect(() => { fetchRequests(); }, [filterStatus, fetchRequests]);
 
   const getStatusBadge = (status) => {
     const norm  = status === 'pendiente' ? 'pending'
@@ -144,117 +144,103 @@ const AdminSolicitudes = () => {
     finally { await fetchRequests(); }
   };
 
+  const headerAction = (
+    <button className="admin-btn admin-btn-secondary" onClick={fetchRequests} style={{marginLeft:'auto'}}>
+      <FiRefreshCw size={15}/> Actualizar
+    </button>
+  );
+
   return (
-    <PageTemplate>
-      <div className="admin-page-container">
-
-        <div className="admin-page-header">
-          <h1 className="admin-page-title">Solicitudes de Registro</h1>
-          <p className="admin-page-subtitle">Revisa y aprueba nuevas solicitudes de registro</p>
-        </div>
-
-        {error && (
-          <div className="admin-card" style={{marginBottom:20,borderLeft:'4px solid #ef4444'}}>
-            <div className="admin-card-body">
-              <p style={{color:'#ef4444',margin:0,fontWeight:600}}>Error: {error}</p>
-            </div>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="admin-loading">
-            <div className="admin-spinner"></div>
-            Cargando solicitudes...
-          </div>
-        ) : (
-          <>
-            <div className="admin-filters">
-              {['todos','pendiente','aprobado','rechazado'].map(s => (
-                <button
-                  key={s}
-                  className={`admin-filter-btn ${filterStatus === s ? 'active' : ''}`}
-                  onClick={() => setFilterStatus(s)}
-                >
-                  {s === 'todos'     && `✓ TODOS (${allRequests.length})`}
-                  {s === 'pendiente' && `PENDIENTES (${allRequests.filter(r=>r.estado==='pendiente').length})`}
-                  {s === 'aprobado'  && `✓ APROBADOS (${allRequests.filter(r=>r.estado==='aprobado').length})`}
-                  {s === 'rechazado' && `✗ RECHAZADOS (${allRequests.filter(r=>r.estado==='rechazado').length})`}
-                </button>
-              ))}
-              <button className="admin-btn admin-btn-secondary" onClick={fetchRequests} style={{marginLeft:'auto'}}>
-                <FiRefreshCw size={15}/> Actualizar
-              </button>
-            </div>
-
-            <div className="admin-card">
-              <div className="admin-card-header">
-                <h2>Lista de Solicitudes</h2>
-                <span style={{fontSize:12,color:'var(--admin-text-muted)'}}>{requests.length} solicitudes</span>
-              </div>
-              <div className="admin-card-body">
-                {requests.length > 0 ? (
-                  <div className="admin-table-wrapper">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>Propietario</th><th>Empresa</th><th>Tipo</th>
-                          <th>Estado</th><th>Creado</th><th>Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {requests.map(req => (
-                          <tr key={req.id}>
-                            <td><strong>{req.propietario}</strong></td>
-                            <td>{req.empresa}</td>
-                            <td>{req.tipo || req.tipo_codigo || '—'}</td>
-                            <td>{getStatusBadge(req.status || req.estado)}</td>
-                            <td style={{fontSize:12}}>{req.creado}</td>
-                            <td>
-                              <div className="admin-table-actions">
-                                <button
-                                  className="admin-table-btn"
-                                  onClick={() => { setSelectedRequest(req); setShowDetailModal(true); }}
-                                >
-                                  <FiEye size={13}/> Ver
-                                </button>
-                                {req.estado === 'pendiente' && (
-                                  <>
-                                    <button className="admin-table-btn admin-table-btn-success" onClick={() => handleApprove(req.id)}>
-                                      <FiCheck size={13}/> Aprobar
-                                    </button>
-                                    <button className="admin-table-btn admin-table-btn-danger" onClick={() => handleReject(req.id)}>
-                                      <FiX size={13}/> Rechazar
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="admin-empty">
-                    <div className="admin-empty-icon"><FiClipboard size={48}/></div>
-                    <p className="admin-empty-title">No hay solicitudes</p>
-                    <p className="admin-empty-text">No hay solicitudes con el filtro seleccionado</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-
-        {showDetailModal && selectedRequest && (
-          <DetailModal
-            request={selectedRequest}
-            onClose={() => setShowDetailModal(false)}
-            onApprove={() => { handleApprove(selectedRequest.id); setShowDetailModal(false); }}
-            onReject={()  => { handleReject(selectedRequest.id);  setShowDetailModal(false); }}
-          />
-        )}
+    <PageTemplate
+      theme="admin"
+      title="Solicitudes de Registro"
+      subtitle="Revisa y aprueba nuevas solicitudes de registro"
+      loading={loading}
+      error={error}
+      onRetry={fetchRequests}
+      headerAction={headerAction}
+    >
+      <div className="admin-filters">
+        {['todos','pendiente','aprobado','rechazado'].map(s => (
+          <button
+            key={s}
+            className={`admin-filter-btn ${filterStatus === s ? 'active' : ''}`}
+            onClick={() => setFilterStatus(s)}
+          >
+            {s === 'todos'     && `✓ TODOS (${allRequests.length})`}
+            {s === 'pendiente' && `PENDIENTES (${allRequests.filter(r=>r.estado==='pendiente').length})`}
+            {s === 'aprobado'  && `✓ APROBADOS (${allRequests.filter(r=>r.estado==='aprobado').length})`}
+            {s === 'rechazado' && `✗ RECHAZADOS (${allRequests.filter(r=>r.estado==='rechazado').length})`}
+          </button>
+        ))}
       </div>
+
+      <div className="admin-card">
+        <div className="admin-card-header">
+          <h2>Lista de Solicitudes</h2>
+          <span style={{fontSize:12,color:'var(--admin-text-muted)'}}>{requests.length} solicitudes</span>
+        </div>
+        <div className="admin-card-body">
+          {requests.length > 0 ? (
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Propietario</th><th>Empresa</th><th>Tipo</th>
+                    <th>Estado</th><th>Creado</th><th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests.map(req => (
+                    <tr key={req.id}>
+                      <td data-label="Propietario"><strong>{req.propietario}</strong></td>
+                      <td data-label="Empresa">{req.empresa}</td>
+                      <td data-label="Tipo">{req.tipo || req.tipo_codigo || '—'}</td>
+                      <td data-label="Estado">{getStatusBadge(req.status || req.estado)}</td>
+                      <td data-label="Creado" style={{fontSize:12}}>{req.creado}</td>
+                      <td data-label="Acciones">
+                        <div className="admin-table-actions">
+                          <button
+                            className="admin-table-btn"
+                            onClick={() => { setSelectedRequest(req); setShowDetailModal(true); }}
+                          >
+                            <FiEye size={13}/> Ver
+                          </button>
+                          {req.estado === 'pendiente' && (
+                            <>
+                              <button className="admin-table-btn admin-table-btn-success" onClick={() => handleApprove(req.id)}>
+                                <FiCheck size={13}/> Aprobar
+                              </button>
+                              <button className="admin-table-btn admin-table-btn-danger" onClick={() => handleReject(req.id)}>
+                                <FiX size={13}/> Rechazar
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="admin-empty">
+              <div className="admin-empty-icon"><FiClipboard size={48}/></div>
+              <p className="admin-empty-title">No hay solicitudes</p>
+              <p className="admin-empty-text">No hay solicitudes con el filtro seleccionado</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showDetailModal && selectedRequest && (
+        <DetailModal
+          request={selectedRequest}
+          onClose={() => setShowDetailModal(false)}
+          onApprove={() => { handleApprove(selectedRequest.id); setShowDetailModal(false); }}
+          onReject={()  => { handleReject(selectedRequest.id);  setShowDetailModal(false); }}
+        />
+      )}
     </PageTemplate>
   );
 };
@@ -312,7 +298,7 @@ const DetailModal = ({ request, onClose, onApprove, onReject }) => {
       }
     };
     load();
-  }, [request.id]);
+  }, [request.id, request.status, request.business_id, request.modulos, request.features]);
 
   const toggleModule = (modId) => {
     const mod     = allModules.find(m => m.id === modId);
@@ -421,7 +407,7 @@ const DetailModal = ({ request, onClose, onApprove, onReject }) => {
         <div style={{overflowY:'auto', flex:1, padding:'20px 24px'}}>
 
           {/* Datos del solicitante */}
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px 24px', marginBottom:'20px'}}>
+          <div className="admin-col-2" style={{gap:'10px 24px', marginBottom:'20px'}}>
             <div><Lbl text="Empresa"/><p style={{margin:0,fontWeight:700,fontSize:'15px',color:'var(--admin-text-primary)'}}>{request.empresa}</p></div>
             <div><Lbl text="Propietario"/><p style={{margin:0,fontWeight:700,fontSize:'15px',color:'var(--admin-text-primary)'}}>{request.propietario}</p></div>
             <div><Lbl text="Email"/><p style={{margin:0,fontSize:'13px',color:'var(--admin-text-secondary)'}}>{request.email}</p></div>

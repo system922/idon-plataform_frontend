@@ -1,0 +1,139 @@
+/* =============================================================================
+   DESGLOSE DE PRECIOS - ProductModal.jsx
+   ============================================================================= */
+
+.price-breakdown {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Cada fila del desglose */
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+/* Label del desglose */
+.breakdown-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Valor del desglose */
+.breakdown-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2937;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+/* ─── PRECIO FINAL DESTACADO ─── */
+.breakdown-row.highlighted {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 10px 12px;
+}
+
+.breakdown-row.highlighted .breakdown-label {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 700;
+  font-size: 10px;
+}
+
+.breakdown-row.highlighted .breakdown-value {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* ─── PRECIO SIN IVA (BASE) ─── */
+.breakdown-row.base-price {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.breakdown-row.base-price .breakdown-label {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 10px;
+}
+
+.breakdown-row.base-price .breakdown-value {
+  color: #ffffff;
+  font-size: 13px;
+}
+
+/* ─── MONTO IVA ─── */
+.breakdown-row.iva-amount {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.breakdown-row.iva-amount .breakdown-label {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 10px;
+}
+
+.breakdown-row.iva-amount .breakdown-value {
+  color: #ffffff;
+  font-size: 13px;
+}
+
+/* ─── TASA IVA (DISCRETA) ─── */
+.breakdown-row.iva-rate {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  padding: 7px 12px;
+}
+
+.breakdown-row.iva-rate .breakdown-label {
+  color: #6b7280;
+  font-size: 10px;
+}
+
+.breakdown-row.iva-rate .breakdown-value {
+  color: #1f2937;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Hover effects */
+.breakdown-row.base-price:hover,
+.breakdown-row.iva-amount:hover,
+.breakdown-row.highlighted:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .price-breakdown {
+    padding: 12px;
+    gap: 6px;
+  }
+  
+  .breakdown-row {
+    padding: 7px 10px;
+  }
+  
+  .breakdown-value {
+    font-size: 12px;
+  }
+  
+  .breakdown-row.highlighted .breakdown-value {
+    font-size: 14px;
+  }
+}

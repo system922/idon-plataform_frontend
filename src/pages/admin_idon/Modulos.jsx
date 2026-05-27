@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PageTemplate from '../../components/PageTemplate';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAlert } from '../../components/ConfirmContext';
 import {
@@ -47,15 +48,17 @@ export default function AdminModulos() {
   const totalMens = modules.reduce((s, m) => s + parseFloat(m.price_monthly || 0), 0);
   const totalAnu  = modules.reduce((s, m) => s + parseFloat(m.price_annual  || 0), 0);
 
-  return (
-    <div className="admin-page-container">
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">Módulos</h1>
-        <p className="admin-page-subtitle">Gestiona los módulos del sistema y sus precios</p>
-      </div>
+  const headerAction = (
+    <div style={{ display: 'flex', gap: 8 }}>
+      <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /></button>
+      <button className="admin-btn admin-btn-primary" onClick={() => setModal('new')}><FiPlus size={15} /> Nuevo módulo</button>
+    </div>
+  );
 
+  return (
+    <PageTemplate theme="admin" title="Módulos" subtitle="Gestiona los módulos del sistema y sus precios" loading={loading} error={error} onRetry={load} headerAction={headerAction}>
       {/* Resumen de precios */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 20 }}>
+      <div className="admin-stats-3" style={{ gap: 12, marginBottom: 20 }}>
         {[
           { label: 'Total módulos',   val: modules.length,            color: '#ff8c42', fmt: v => v },
           { label: 'Precio total/mes',val: totalMens,                  color: '#22c55e', fmt: v => `$${v.toFixed(2)}` },
@@ -124,7 +127,7 @@ export default function AdminModulos() {
       </div>
 
       {modal && <ModuloModal item={modal === 'new' ? null : modal} onClose={() => setModal(null)} onSaved={load} />}
-    </div>
+    </PageTemplate>
   );
 }
 
@@ -157,14 +160,14 @@ function ModuloModal({ item, onClose, onSaved }) {
 
   return (
     <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal" style={{ maxWidth: 540 }} onClick={e => e.stopPropagation()}>
+      <div className="admin-modal" style={{ maxWidth: 540, width: '95vw' }} onClick={e => e.stopPropagation()}>
         <div className="admin-modal-header">
           <h2><FiSettings size={17} style={{ marginRight: 8, color: '#ff8c42' }} />{item ? 'Editar' : 'Nuevo'} Módulo</h2>
           <button className="admin-modal-close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="admin-modal-body">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div className="admin-col-2" style={{ gap: 14 }}>
               <div className="admin-form-group"><Lbl>Nombre *</Lbl><input style={inp} value={form.name} onChange={set('name')} required /></div>
               <div className="admin-form-group"><Lbl>Código *</Lbl><input style={inp} value={form.code} onChange={set('code')} disabled={!!item} required /></div>
               <div className="admin-form-group">

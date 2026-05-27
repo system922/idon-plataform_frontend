@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PageTemplate from '../../components/PageTemplate';
 import { FiFileText, FiRefreshCw } from 'react-icons/fi';
 import { adminApiService as apiService } from '../../services/apiService';
 import '../../styles/AdminPages.css';
@@ -62,15 +63,12 @@ export default function Audit() {
 
   const filtered = filter === 'all' ? logs : logs.filter(l => l.type === filter);
 
+  const headerAction = (
+    <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /> Actualizar</button>
+  );
+
   return (
-    <div className="admin-page-container">
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">Auditoría</h1>
-        <p className="admin-page-subtitle">Registro cronológico de actividades del sistema</p>
-      </div>
-
-      {error && <div className="admin-card" style={{ marginBottom: 16, borderLeft: '4px solid #ef4444' }}><div className="admin-card-body"><p style={{ color: '#ef4444', margin: 0 }}>Error: {error}</p></div></div>}
-
+    <PageTemplate theme="admin" title="Auditoría" subtitle="Registro cronológico de actividades del sistema" loading={loading} error={error} onRetry={load} headerAction={headerAction}>
       <div className="admin-filters" style={{ marginBottom: 16 }}>
         <button className={`admin-filter-btn ${filter==='all'?'active':''}`} onClick={() => setFilter('all')}>Todas ({logs.length})</button>
         {Object.entries(TYPE_CFG).map(([k, v]) => (
@@ -79,7 +77,6 @@ export default function Audit() {
             {v.label} ({logs.filter(l => l.type === k).length})
           </button>
         ))}
-        <button className="admin-btn admin-btn-secondary" onClick={load} style={{ marginLeft: 'auto' }}><FiRefreshCw size={14} /> Actualizar</button>
       </div>
 
       <div className="admin-card">
@@ -120,6 +117,6 @@ export default function Audit() {
           )}
         </div>
       </div>
-    </div>
+    </PageTemplate>
   );
 }

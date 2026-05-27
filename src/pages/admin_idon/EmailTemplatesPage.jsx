@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PageTemplate from '../../components/PageTemplate';
 import {
   FiMail, FiPlus, FiEdit2, FiTrash2, FiRefreshCw, FiEye, FiCode,
 } from 'react-icons/fi';
@@ -21,6 +22,7 @@ export default function EmailTemplatesPage() {
   const alert = useAlert();
   const [templates, setTemplates] = useState([]);
   const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState(null);
   const [editModal, setEditModal] = useState(null); // null | 'new' | template
   const [deleting,  setDeleting]  = useState(null);
 
@@ -29,7 +31,9 @@ export default function EmailTemplatesPage() {
       setLoading(true);
       const r = await adminApiService.get('/admin/email-templates');
       setTemplates(r.data || r || []);
+      setError(null);
     } catch (e) {
+      setError(e.message);
     } finally {
       setLoading(false);
     }
@@ -62,28 +66,20 @@ export default function EmailTemplatesPage() {
   };
 
   return (
-    <div className="admin-page-container">
-      <div className="admin-page-header">
-        <div>
-          <h1 className="admin-page-title">Plantillas de Email</h1>
-          <p className="admin-page-subtitle">
-            Edita y gestiona los correos enviados a dueños de negocios sobre pagos y suscripciones
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="admin-btn admin-btn-secondary" onClick={load}>
-            <FiRefreshCw size={14} /> Actualizar
-          </button>
-          <button
-            className="admin-btn admin-btn-primary"
-            onClick={() => setEditModal('new')}
-            style={{ background: 'linear-gradient(135deg,#818cf8,#6366f1)', color: '#fff', border: 'none' }}
-          >
-            <FiPlus size={14} /> Nueva plantilla
-          </button>
-        </div>
+    <PageTemplate theme="admin" title="Plantillas de Email" subtitle="Edita y gestiona los correos enviados a dueños de negocios sobre pagos y suscripciones" loading={loading} error={error} onRetry={load} headerAction={
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button className="admin-btn admin-btn-secondary" onClick={load}>
+          <FiRefreshCw size={14} /> Actualizar
+        </button>
+        <button
+          className="admin-btn admin-btn-primary"
+          onClick={() => setEditModal('new')}
+          style={{ background: 'linear-gradient(135deg,#818cf8,#6366f1)', color: '#fff', border: 'none' }}
+        >
+          <FiPlus size={14} /> Nueva plantilla
+        </button>
       </div>
-
+    }>
       <div className="admin-card">
         <div className="admin-card-header"><h2>Plantillas ({templates.length})</h2></div>
         <div className="admin-card-body">
@@ -192,7 +188,7 @@ export default function EmailTemplatesPage() {
           onSaved={() => { setEditModal(null); load(); }}
         />
       )}
-    </div>
+    </PageTemplate>
   );
 }
 
@@ -266,7 +262,7 @@ function EditModal({ tpl, onClose, onSaved }) {
         <div className="admin-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           {/* Row 1: type (solo nuevo) + label + estado */}
-          <div style={{ display: 'grid', gridTemplateColumns: isNew ? '1fr 1fr 140px' : '1fr 140px', gap: 12 }}>
+          <div className={isNew ? 'admin-col-3-140' : 'admin-col-1-140'} style={{ gap: 12 }}>
             {isNew && (
               <div>
                 <label style={lbl}>Tipo / clave única</label>

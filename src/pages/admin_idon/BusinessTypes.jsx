@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PageTemplate from '../../components/PageTemplate';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAlert } from '../../components/ConfirmContext';
 import {
@@ -55,15 +56,17 @@ export default function BusinessTypes() {
   const active   = types.filter(t => t.is_active !== false).length;
   const inactive = types.length - active;
 
-  return (
-    <div className="admin-page-container">
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">Tipos de Negocio</h1>
-        <p className="admin-page-subtitle">Gestiona las categorías de negocio disponibles en la plataforma</p>
-      </div>
+  const headerAction = (
+    <div style={{ display: 'flex', gap: 8 }}>
+      <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /></button>
+      <button className="admin-btn admin-btn-primary" onClick={() => setModal('new')}><FiPlus size={15} /> Nuevo tipo</button>
+    </div>
+  );
 
+  return (
+    <PageTemplate theme="admin" title="Tipos de Negocio" subtitle="Gestiona las categorías de negocio disponibles en la plataforma" loading={loading} error={error} onRetry={load} headerAction={headerAction}>
       {/* Resumen */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 20 }}>
+      <div className="admin-stats-3" style={{ gap: 12, marginBottom: 20 }}>
         {[
           { label: 'Total tipos',  val: types.length, color: '#ff8c42' },
           { label: 'Activos',      val: active,        color: '#22c55e' },
@@ -76,19 +79,9 @@ export default function BusinessTypes() {
         ))}
       </div>
 
-      {error && (
-        <div className="admin-card" style={{ marginBottom: 16, borderLeft: '4px solid #ef4444' }}>
-          <div className="admin-card-body"><p style={{ color: '#ef4444', margin: 0 }}>Error: {error}</p></div>
-        </div>
-      )}
-
       <div className="admin-card">
         <div className="admin-card-header">
           <h2>Tipos de Negocio ({types.length})</h2>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /></button>
-            <button className="admin-btn admin-btn-primary" onClick={() => setModal('new')}><FiPlus size={15} /> Nuevo tipo</button>
-          </div>
         </div>
         <div className="admin-card-body">
           {loading ? (
@@ -155,7 +148,7 @@ export default function BusinessTypes() {
           onSaved={load}
         />
       )}
-    </div>
+    </PageTemplate>
   );
 }
 
@@ -190,7 +183,7 @@ function BusinessTypeModal({ item, onClose, onSaved }) {
 
   return (
     <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
+      <div className="admin-modal" style={{ maxWidth: 500, width: '95vw' }} onClick={e => e.stopPropagation()}>
         <div className="admin-modal-header">
           <h2>
             <FiBriefcase size={17} style={{ marginRight: 8, color: '#ff8c42' }} />
@@ -200,7 +193,7 @@ function BusinessTypeModal({ item, onClose, onSaved }) {
         </div>
         <form onSubmit={handleSubmit}>
           <div className="admin-modal-body">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div className="admin-col-2" style={{ gap: 14 }}>
               <div className="admin-form-group">
                 <Lbl>Nombre *</Lbl>
                 <input style={inp} value={form.name} onChange={set('name')} required />

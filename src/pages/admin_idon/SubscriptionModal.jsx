@@ -7,6 +7,7 @@ import {
   FiThermometer, FiPercent, FiTag, FiLoader,
 } from 'react-icons/fi';
 import { adminApiService } from '../../services/apiService';
+import '../../styles/AdminPages.css';
 
 /* ─── Iconos por módulo ──────────────────────────────────── */
 const MOD_ICONS = {
@@ -170,7 +171,7 @@ export default function SubscriptionModal({ business, existingSubscription, onCl
         display:'flex', alignItems:'center', justifyContent:'center', zIndex:1200, padding:'16px' }}
         onClick={onClose}>
         <div style={{ background:'var(--admin-bg-secondary)', border:'1px solid var(--admin-border-light)',
-          borderRadius:'16px', maxWidth:'600px', width:'100%', padding:'40px', textAlign:'center' }}
+          borderRadius:'16px', maxWidth:'600px', width:'95vw', padding:'40px', textAlign:'center' }}
           onClick={e => e.stopPropagation()}>
           <FiLoader size={32} style={{ animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
           <p>Cargando datos de suscripción...</p>
@@ -184,7 +185,7 @@ export default function SubscriptionModal({ business, existingSubscription, onCl
       display:'flex', alignItems:'center', justifyContent:'center', zIndex:1200, padding:'16px' }}
       onClick={onClose}>
       <div style={{ background:'var(--admin-bg-secondary)', border:'1px solid var(--admin-border-light)',
-        borderRadius:'16px', maxWidth:'600px', width:'100%', maxHeight:'90vh',
+        borderRadius:'16px', maxWidth:'600px', width:'95vw', maxHeight:'90vh',
         display:'flex', flexDirection:'column', color:'var(--admin-text-primary)', overflow:'hidden',
         boxShadow:'0 24px 60px rgba(0,0,0,.5)' }}
         onClick={e => e.stopPropagation()}>
@@ -203,7 +204,7 @@ export default function SubscriptionModal({ business, existingSubscription, onCl
           {/* Negocio */}
           <div style={{ marginBottom:'20px', paddingBottom:'20px', borderBottom:'1px solid var(--admin-border-light)' }}>
             <Lbl>Negocio</Lbl>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginTop:'6px' }}>
+            <div className="admin-col-2" style={{ gap:'10px', marginTop:'6px' }}>
               <div><p style={{ margin:0, fontSize:'10px', color:'var(--admin-text-muted)', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:'3px' }}>Nombre</p>
                 <p style={{ margin:0, fontWeight:700, fontSize:'14px' }}>{business.business_name}</p></div>
               <div><p style={{ margin:0, fontSize:'10px', color:'var(--admin-text-muted)', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:'3px' }}>Tipo</p>
@@ -240,7 +241,7 @@ export default function SubscriptionModal({ business, existingSubscription, onCl
           {/* Período de facturación */}
           <div style={{ marginBottom:'20px', paddingBottom:'20px', borderBottom:'1px solid var(--admin-border-light)' }}>
             <Lbl>Período de facturación</Lbl>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginTop:'8px' }}>
+            <div className="admin-col-2" style={{ gap:'10px', marginTop:'8px' }}>
               {[
                 { value:'monthly', label:'Mensual', price:subtotalMens, unit:'mes' },
                 { value:'annual',  label:'Anual',   price:subtotalAnu,  unit:'año' },
@@ -267,7 +268,7 @@ export default function SubscriptionModal({ business, existingSubscription, onCl
           {/* Descuento */}
           <div style={{ marginBottom:'20px', paddingBottom:'20px', borderBottom:'1px solid var(--admin-border-light)' }}>
             <Lbl>Descuento</Lbl>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginTop:'8px', alignItems:'end' }}>
+            <div className="admin-col-2" style={{ gap:'12px', marginTop:'8px', alignItems:'end' }}>
               <div>
                 <p style={{ margin:'0 0 5px', fontSize:'11px', color:'var(--admin-text-muted)' }}>Porcentaje (%)</p>
                 <div style={{ position:'relative' }}>

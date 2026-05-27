@@ -13,6 +13,7 @@ import PageTemplate from '../../components/PageTemplate';
 import SubscriptionModal from './SubscriptionModal';
 import { adminApiService } from '../../services/apiService';
 import '../../styles/AdminDashboard.css';
+import '../../styles/AdminPages.css';
 
 const MOD_ICONS = {
   core: <FiSettings size={12}/>, pos: <FiShoppingCart size={12}/>,
@@ -148,7 +149,7 @@ const BusinessModulesModal = ({ business, onClose, onSaved }) => {
       display:'flex', alignItems:'center', justifyContent:'center', zIndex:1100, padding:'16px' }}
       onClick={onClose}>
       <div style={{ background:'var(--admin-bg-secondary)', border:'1px solid var(--admin-border-light)',
-        borderRadius:'16px', maxWidth:'700px', width:'100%', maxHeight:'88vh',
+        borderRadius:'16px', maxWidth:'700px', width:'95vw', maxHeight:'88vh',
         display:'flex', flexDirection:'column', color:'var(--admin-text-primary)', overflow:'hidden' }}
         onClick={e => e.stopPropagation()}>
 
@@ -322,13 +323,13 @@ const EditClientModal = ({ client, onClose, onSaved }) => {
       display:'flex', alignItems:'center', justifyContent:'center', zIndex:1100, padding:'16px' }}
       onClick={onClose}>
       <div style={{ background:'var(--admin-bg-secondary)', border:'1px solid var(--admin-border-light)',
-        borderRadius:'14px', padding:'28px', maxWidth:'500px', width:'100%', color:'var(--admin-text-primary)' }}
+        borderRadius:'14px', padding:'28px', maxWidth:'500px', width:'95vw', color:'var(--admin-text-primary)', maxHeight:'90vh', overflowY:'auto' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' }}>
           <h2 style={{ margin:0 }}><FiUser size={18} style={{ marginRight:8, color:'#ff8c42' }}/>Editar Cliente</h2>
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--admin-text-muted)', fontSize:'20px' }}><FiX/></button>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'20px' }}>
+        <div className="admin-col-2" style={{ gap:'12px', marginBottom:'20px' }}>
           <div><Lbl>Nombre</Lbl><input style={inputStyle} value={form.first_name} onChange={e => setForm({...form, first_name:e.target.value})}/></div>
           <div><Lbl>Apellido</Lbl><input style={inputStyle} value={form.last_name} onChange={e => setForm({...form, last_name:e.target.value})}/></div>
           <div style={{ gridColumn:'1/-1' }}><Lbl>Email</Lbl><input style={inputStyle} type="email" value={form.email} onChange={e => setForm({...form, email:e.target.value})}/></div>
@@ -370,7 +371,7 @@ const EditBusinessModal = ({ business, onClose, onSaved }) => {
       display:'flex', alignItems:'center', justifyContent:'center', zIndex:1100, padding:'16px' }}
       onClick={onClose}>
       <div style={{ background:'var(--admin-bg-secondary)', border:'1px solid var(--admin-border-light)',
-        borderRadius:'14px', padding:'28px', maxWidth:'460px', width:'100%', color:'var(--admin-text-primary)' }}
+        borderRadius:'14px', padding:'28px', maxWidth:'460px', width:'95vw', color:'var(--admin-text-primary)', maxHeight:'90vh', overflowY:'auto' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' }}>
           <h2 style={{ margin:0 }}><FiBriefcase size={18} style={{ marginRight:8, color:'#ff8c42' }}/>Editar Negocio</h2>

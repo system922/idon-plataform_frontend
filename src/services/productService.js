@@ -25,7 +25,7 @@ class ProductService {
       tax_rate: toNumber(p.tax_rate),
       unit_cost: toNumber(p.unit_cost),
       stock: toNumber(p.stock),
-      is_taxable: toBoolean(p.is_taxable),
+      is_taxable: toNumber(p.is_taxable),  // ✅ MANTENER COMO NÚMERO (0, 5, 8, 12, 15)
       is_active: toBoolean(p.is_active),
     }));
   }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PageTemplate from '../../components/PageTemplate';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAlert } from '../../components/ConfirmContext';
 import {
@@ -190,18 +191,11 @@ export default function AdminTemplatesPage() {
   }
 
   return (
-    <div className="admin-page-container">
-      <div className="admin-page-header">
-        <div>
-          <h1 className="admin-page-title">Plantillas por Tipo de Negocio</h1>
-          <p className="admin-page-subtitle">
-            Gestiona las plantillas de módulos y funcionalidades para cada tipo de negocio
-          </p>
-        </div>
-        <button className="admin-btn admin-btn-primary" onClick={openCreateModal}>
-          <FiPlus size={16} /> Nueva Plantilla
-        </button>
-      </div>
+    <PageTemplate theme="admin" title="Plantillas por Tipo de Negocio" subtitle="Gestiona las plantillas de módulos y funcionalidades para cada tipo de negocio" loading={loading} error={errorMsg || ''} onRetry={loadData} headerAction={
+      <button className="admin-btn admin-btn-primary" onClick={openCreateModal}>
+        <FiPlus size={16} /> Nueva Plantilla
+      </button>
+    }>
 
       {errorMsg && !showModal && (
         <div className="admin-error" style={{ marginBottom: 20 }}>
@@ -257,7 +251,7 @@ export default function AdminTemplatesPage() {
       {/* Modal de creación/edición */}
       {showModal && (
         <div className="admin-modal-overlay" onClick={() => !saving && setShowModal(false)}>
-          <div className="admin-modal admin-modal-large" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px' }}>
+          <div className="admin-modal admin-modal-large" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px', width: '95vw' }}>
             <div className="admin-modal-header">
               <h2>{editingTemplate ? 'Editar Plantilla' : 'Nueva Plantilla'}</h2>
               <button className="admin-modal-close" onClick={() => !saving && setShowModal(false)}>
@@ -442,6 +436,6 @@ export default function AdminTemplatesPage() {
           </div>
         </div>
       )}
-    </div>
+    </PageTemplate>
   );
 }

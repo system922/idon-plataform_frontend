@@ -697,12 +697,28 @@ export default function PosCheckoutPage() {
       const raw = await res.json();
       const todosActivos = Array.isArray(raw) ? raw.filter(o => o.status !== 'paid' && o.status !== 'cancelled') : [];
 
-      // Mapa product_id → category_id para enriquecer items
-      let productCategoryMap = {};
+      // Mapa product_id → {category_id, is_taxable} para enriquecer items
+      let productMap = {};
       if (prodRes.ok) {
         const prodData = await prodRes.json();
         (Array.isArray(prodData) ? prodData : []).forEach(p => {
-          if (p.id && p.category_id != null) productCategoryMap[String(p.id)] = p.category_id;
+          if (p.id) {
+            // Normalizar is_taxable: convertir booleano a número si es necesario
+            let taxableValue = 0;
+            if (typeof p.is_taxable === 'boolean') {
+              taxableValue = p.is_taxable ? 15 : 0;  // true → 15%, false → 0%
+            } else if (p.is_taxable != null) {
+              taxableValue = Number(Math.round(p.is_taxable));
+            }
+            // Validar que sea uno de los valores permitidos
+            const validRates = [0, 5, 8, 12, 15];
+            if (!validRates.includes(taxableValue)) taxableValue = 0;
+            
+            productMap[String(p.id)] = {
+              category_id: p.category_id,
+              is_taxable: taxableValue,
+            };
+          }
         });
       }
 
@@ -712,7 +728,8 @@ export default function PosCheckoutPage() {
             ...order,
             items: order.items.map(item => ({
               ...item,
-              category_id: item.category_id ?? productCategoryMap[String(item.product_id)] ?? null,
+              category_id: item.category_id ?? productMap[String(item.product_id)]?.category_id ?? null,
+              is_taxable: item.is_taxable ?? productMap[String(item.product_id)]?.is_taxable ?? 0,
             })),
           };
         }
@@ -1083,7 +1100,26 @@ export default function PosCheckoutPage() {
   const subtotalSinIVAMostrar = getSubtotalSinIVA();
   const ivaRateMostrar = getIvaRate();
   const nuevaBaseImponible = Math.max(0, subtotalSinIVAMostrar - discountAmount - couponDiscountAmount);
-  const nuevoIVAMostrar = Math.round(nuevaBaseImponible * (ivaRateMostrar / 100) * 100) / 100;
+  
+  // ✅ CÁLCULO DE IVA CON MÚLTIPLES TASAS: sumar IVA real de cada producto según su tasa individual
+  const nuevoIVAMostrar = (selectedOrder?.items || [])
+    .filter(item => !item.paid)
+    .reduce((sum, item) => {
+      const qty = Number(item.quantity) || 1;
+      const sellingPriceItem = Number(item.selling_price) || Number(item.unit_price) || 0;
+      const itemSubtotal = sellingPriceItem * qty;
+      
+      // Obtener tasa del item (es_taxable puede ser número % o falsy)
+      const itemTaxRate = Number(item.is_taxable) ?? 0;
+      
+      // Calcular el IVA del item basado en su tasa individual
+      if (itemTaxRate > 0) {
+        return sum + (itemSubtotal * (itemTaxRate / 100));
+      }
+      return sum;
+    }, 0);
+  
+  const nuevoIVAMostrarRedondeado = Math.round(nuevoIVAMostrar * 100) / 100;
 
   // Total de ítems aún NO pagados (para modo dividido)
   const itemsPendientes = (selectedOrder?.items || []).filter(item => !item.paid);
@@ -1248,9 +1284,15 @@ export default function PosCheckoutPage() {
     const itemsPayload = (order.items || []).map(item => {
       const qty = Number(item.quantity) || 1;
       const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
-      const ivaUnitario = Number(item.tax_rate) || 0;
       const itemSubtotal = precioSinIVA * qty;
-      const ivaItem = ivaUnitario * qty;
+      
+      // ✅ USAR TASA POR PRODUCTO: item.is_taxable (0, 5, 8, 12, 15)
+      const productTaxRate = Number(item.is_taxable) ?? 0;
+      
+      // ✅ CALCULAR IVA BASADO EN LA TASA DEL PRODUCTO (no usar tax_rate que es IVA en $)
+      const ivaItem = productTaxRate > 0 
+        ? Math.round(itemSubtotal * (productTaxRate / 100) * 100) / 100
+        : 0;
       
       subtotalOriginal += itemSubtotal;
       ivaSumado += ivaItem;
@@ -1262,8 +1304,9 @@ export default function PosCheckoutPage() {
         unit_price: precioSinIVA,
         subtotal: itemSubtotal,
         iva_amount: ivaItem,
-        category_id: item.category_id, // Agregamos category_id para identificar items por categoría
-        product_id: item.product_id    // Agregamos product_id para identificar items por producto
+        iva_rate_pct: productTaxRate,  // ✅ TASA DEL PRODUCTO (0, 5, 8, 12, 15)
+        category_id: item.category_id,
+        product_id: item.product_id
       };
     });
     
@@ -1292,7 +1335,9 @@ export default function PosCheckoutPage() {
       
       // Aplicar descuento solo a la categoría
       const subtotalCategoriaConDescuentoAplicado = Math.max(0, subtotalCategoriaConDescuento - descuentoTotal);
-      const ivaCategoriaConDescuentoAplicado = Math.round(subtotalCategoriaConDescuentoAplicado * (ivaRateGlobal / 100) * 100) / 100;
+      const taxableCatSubtotal = itemsCategoriaConDescuento.filter(i => i.iva_rate_pct > 0).reduce((s, i) => s + i.subtotal, 0);
+      const taxableCatFraction = subtotalCategoriaConDescuento > 0 ? taxableCatSubtotal / subtotalCategoriaConDescuento : 0;
+      const ivaCategoriaConDescuentoAplicado = Math.round(subtotalCategoriaConDescuentoAplicado * taxableCatFraction * (ivaRateGlobal / 100) * 100) / 100;
       
       nuevaBaseImponibleFact = subtotalCategoriaConDescuentoAplicado + subtotalOtrasCategoriass;
       nuevoIVAFact = ivaCategoriaConDescuentoAplicado + ivaOtrasCategoriass;
@@ -1308,14 +1353,18 @@ export default function PosCheckoutPage() {
       
       // Aplicar descuento solo al producto
       const subtotalProductoConDescuentoAplicado = Math.max(0, subtotalProductoConDescuento - descuentoTotal);
-      const ivaProductoConDescuentoAplicado = Math.round(subtotalProductoConDescuentoAplicado * (ivaRateGlobal / 100) * 100) / 100;
+      const taxableProdSubtotal = itemsProductoConDescuento.filter(i => i.iva_rate_pct > 0).reduce((s, i) => s + i.subtotal, 0);
+      const taxableProdFraction = subtotalProductoConDescuento > 0 ? taxableProdSubtotal / subtotalProductoConDescuento : 0;
+      const ivaProductoConDescuentoAplicado = Math.round(subtotalProductoConDescuentoAplicado * taxableProdFraction * (ivaRateGlobal / 100) * 100) / 100;
       
       nuevaBaseImponibleFact = subtotalProductoConDescuentoAplicado + subtotalOtrosProductos;
       nuevoIVAFact = ivaProductoConDescuentoAplicado + ivaOtrosProductos;
     } else {
       // Descuento por orden: aplica a todos los items
       nuevaBaseImponibleFact = Math.max(0, subtotalOriginal - descuentoTotal);
-      nuevoIVAFact = Math.round(nuevaBaseImponibleFact * (ivaRateGlobal / 100) * 100) / 100;
+      const taxableOriginal = itemsPayload.filter(i => i.iva_rate_pct > 0).reduce((s, i) => s + i.subtotal, 0);
+      const taxableFraction = subtotalOriginal > 0 ? taxableOriginal / subtotalOriginal : 0;
+      nuevoIVAFact = Math.round(nuevaBaseImponibleFact * taxableFraction * (ivaRateGlobal / 100) * 100) / 100;
     }
 
     const totalFactura = nuevaBaseImponibleFact + nuevoIVAFact;
@@ -1331,7 +1380,9 @@ export default function PosCheckoutPage() {
         if (subtotalCategoriaConDescuento > 0) {
           const ratioItem = item.subtotal / subtotalCategoriaConDescuento;
           itemSubtotalFinal = item.subtotal - (descuentoTotal * ratioItem);
-          itemIVAFinal = Math.round(itemSubtotalFinal * (ivaRateGlobal / 100) * 100) / 100;
+          itemIVAFinal = item.iva_rate_pct > 0
+            ? Math.round(itemSubtotalFinal * (item.iva_rate_pct / 100) * 100) / 100
+            : 0;
         }
       } else if (tipoDescuento === 'product' && productIdDescuento && item.product_id === productIdDescuento) {
         // Aplicar descuento proporcionalmente a este item
@@ -1339,14 +1390,18 @@ export default function PosCheckoutPage() {
         if (subtotalProductoConDescuento > 0) {
           const ratioItem = item.subtotal / subtotalProductoConDescuento;
           itemSubtotalFinal = item.subtotal - (descuentoTotal * ratioItem);
-          itemIVAFinal = Math.round(itemSubtotalFinal * (ivaRateGlobal / 100) * 100) / 100;
+          itemIVAFinal = item.iva_rate_pct > 0
+            ? Math.round(itemSubtotalFinal * (item.iva_rate_pct / 100) * 100) / 100
+            : 0;
         }
       } else if (tipoDescuento === 'order') {
         // Aplicar descuento proporcionalmente a todos los items
         if (subtotalOriginal > 0) {
           const ratioItem = item.subtotal / subtotalOriginal;
           itemSubtotalFinal = item.subtotal - (descuentoTotal * ratioItem);
-          itemIVAFinal = Math.round(itemSubtotalFinal * (ivaRateGlobal / 100) * 100) / 100;
+          itemIVAFinal = item.iva_rate_pct > 0
+            ? Math.round(itemSubtotalFinal * (item.iva_rate_pct / 100) * 100) / 100
+            : 0;
         }
       }
 
@@ -1356,9 +1411,14 @@ export default function PosCheckoutPage() {
         qty: item.qty,
         unit_price: item.unit_price,
         subtotal: itemSubtotalFinal.toFixed(2),
-        iva_amount: itemIVAFinal.toFixed(2)
+        iva_amount: itemIVAFinal.toFixed(2),
+        iva_rate_pct: item.iva_rate_pct
       };
     });
+
+    // 🔥 RECALCULAR TOTALES BASADO EN itemsConDescuento (respeta múltiples tasas IVA)
+    nuevaBaseImponibleFact = itemsConDescuento.reduce((sum, item) => sum + Number(item.subtotal), 0);
+    nuevoIVAFact = itemsConDescuento.reduce((sum, item) => sum + Number(item.iva_amount), 0);
 
     const payload = {
       order_id: order.id,
@@ -2191,7 +2251,7 @@ export default function PosCheckoutPage() {
                         </div>
                       ))}
                       <div className="sub-iva-total"><span>BASE IMPONIBLE</span><span>{fmt(nuevaBaseImponible)}</span></div>
-                      <div className="sub-iva-total"><span>IVA ({ivaRateMostrar}%)</span><span>{fmt(nuevoIVAMostrar)}</span></div>
+                      <div className="sub-iva-total"><span>I.V.A.</span><span>{fmt(nuevoIVAMostrarRedondeado)}</span></div>
                       <div className="sub-iva-total total-row"><span>TOTAL</span><span className="total-amount">{fmt(totalOrdenConDescuento)}</span></div>
                     </div>
                     <div className="metodo-pago-seleccion">
@@ -2577,7 +2637,7 @@ export default function PosCheckoutPage() {
                         </div>
                       )}
                       <div className="sub-iva-total"><span>BASE IMPONIBLE</span><span>{fmt(nuevaBaseImponible)}</span></div>
-                      <div className="sub-iva-total"><span>IVA ({ivaRateMostrar}%)</span><span>{fmt(nuevoIVAMostrar)}</span></div>
+                      <div className="sub-iva-total"><span>I.V.A.</span><span>{fmt(nuevoIVAMostrarRedondeado)}</span></div>
                       <div className="sub-iva-total total-row"><span>TOTAL</span><span className="total-amount">{fmt(totalOrdenConDescuento)}</span></div>
                     </div>
                   </div>

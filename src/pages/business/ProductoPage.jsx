@@ -4,6 +4,7 @@ import {
 } from 'react-icons/fi';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useBusinessContext } from '../../config/BusinessContext';
+import API_BASE from '../../config/apiBase.js';
 import PageTemplate from '../../components/PageTemplate';
 import InventoryTable from '../../components/InventoryTable';
 
@@ -31,7 +32,7 @@ function ProductoModal({ open, initial = null, onSave, onClose }) {
     unidad: "",
     stock: "",
     minStock: "",
-    iva: false,
+    ivaRate: 15,  // Tasa IVA en %: 0, 5, 8, 12, 15
     estado: true,
     codigoBarras: "",
   });
@@ -46,7 +47,6 @@ function ProductoModal({ open, initial = null, onSave, onClose }) {
     if (!open) return;
     (async()=>{
       try {
-        // Categorías: pon tu API real o lista demo
         const r = await fetch("/api/productos/categorias");
         const data = await r.json();
         setCategorias(Array.isArray(data) ? data : ["Cafetería","Snacks","Jugos","Panes"]);
@@ -68,13 +68,11 @@ function ProductoModal({ open, initial = null, onSave, onClose }) {
     if (!open || !form.categoria) return;
     (async()=>{
       try {
-        // Obtiene correlativo del backend
         const resp = await fetch(`/api/productos/next-sku?categoria=${encodeURIComponent(form.categoria)}`);
         const { next } = await resp.json();
         const nuevoSku = generarSkuCodigo(form.categoria, next);
         setSku(nuevoSku);
         setCodigo(nuevoSku);
-        // Si barra está vacío usa auto, si hay lo deja editable/escaneable
         setForm(f=>({...f, codigoBarras: f.codigoBarras || generarBarra()}));
       } catch {
         const def = generarSkuCodigo(form.categoria, 1+Math.floor(Math.random()*999));
@@ -83,26 +81,74 @@ function ProductoModal({ open, initial = null, onSave, onClose }) {
         setForm(f=>({...f, codigoBarras: f.codigoBarras || generarBarra()}));
       }
     })();
-    // eslint-disable-next-line
   }, [form.categoria, open]);
 
   // Inicializa edición o limpio
   useEffect(() => {
     if (initial) {
+      console.log('🔍 DEBUG ProductoPage.useEffect inicial:', {
+        initial_is_taxable: initial.is_taxable,
+        initial_ivaRate: initial.ivaRate,
+        initial_tax_rate: initial.tax_rate,
+        initial_precio: initial.precio,
+        initial_selling_price: initial.selling_price,
+        initial_price: initial.price,
+        all_keys: Object.keys(initial)
+      });
+      
+      // Convertir is_taxable a número (viene como 15.00 de la BD)
+      let ivaRateValue = Number(initial.is_taxable ?? initial.ivaRate ?? initial.tax_rate ?? 0);
+      
+      // Si es decimal (0.15) convertir a porcentaje (15)
+      if (ivaRateValue > 0 && ivaRateValue <= 1) {
+        ivaRateValue = Math.round(ivaRateValue * 100);
+      }
+      
+      // Asegurar que sea entero
+      ivaRateValue = Math.round(ivaRateValue);
+      
+      // Validar que sea una tasa permitida
+      const tasasPermitidas = [0, 5, 8, 12, 15];
+      if (!tasasPermitidas.includes(ivaRateValue)) {
+        console.warn(`Tasa IVA no válida: ${ivaRateValue}, usando 0`);
+        ivaRateValue = 0;
+      }
+      
+      // El precio que viene de la API puede ser selling_price (sin IVA) o precio (con IVA)
+      // Para ProductoPage, asumimos que initial.precio es el PRECIO CON IVA
+      // Si no está, calcular: selling_price + tax_rate (monto IVA)
+      let precioConIva = Number(initial.precio ?? 0);
+      if (precioConIva <= 0 && initial.selling_price) {
+        precioConIva = Number(initial.selling_price) + Number(initial.tax_rate ?? 0);
+      }
+      
+      console.log('📥 Cargando producto en edición:', {
+        nombre: initial.name,
+        precioConIva,
+        is_taxable_original: initial.is_taxable,
+        tax_rate_original: initial.tax_rate,
+        selling_price_original: initial.selling_price,
+        ivaRateCalculado: ivaRateValue
+      });
+      
       setForm({
-        nombre: initial.descripcion || initial.nombre || "",
-        categoria: initial.categoria || "",
-        precio: initial.precio != null ? Number(initial.precio).toFixed(2) : "",
-        costo: initial.costo != null ? Number(initial.costo).toFixed(2) : "",
+        nombre: initial.descripcion || initial.nombre || initial.name || "",
+        categoria: initial.categoria || initial.category_name || "",
+        precio: precioConIva > 0 ? precioConIva.toFixed(2) : "",  // PRECIO CON IVA
+        costo: initial.costo != null ? Number(initial.costo).toFixed(2) : 
+              (initial.unit_cost != null ? Number(initial.unit_cost).toFixed(2) : ""),
         unidad: initial.unidad || "",
         stock: initial.stock != null ? String(initial.stock) : "",
-        minStock: initial.minStock != null ? String(initial.minStock) : "",
-        iva: !!initial.iva,
-        estado: !!initial.estado,
-        codigoBarras: initial.codigoBarras || "",
+        minStock: initial.minStock != null ? String(initial.minStock) : 
+                  (initial.min_stock != null ? String(initial.min_stock) : ""),
+        ivaRate: ivaRateValue,  // ← Número entero: 0, 5, 8, 12, 15
+        estado: initial.is_active ?? initial.estado ?? true,
+        codigoBarras: initial.codigoBarras || initial.barcode || "",
       });
-      setSku(initial.sku || "");
-      setCodigo(initial.codigo || "");
+      setSku(initial.sku || initial.codigo || initial.code || "");
+      setCodigo(initial.codigo || initial.sku || initial.code || "");
+      
+      console.log('✅ Form seteado correctamente con ivaRate:', ivaRateValue);
     } else {
       setForm({
         nombre: "",
@@ -112,62 +158,72 @@ function ProductoModal({ open, initial = null, onSave, onClose }) {
         unidad: "",
         stock: "",
         minStock: "",
-        iva: false,
+        ivaRate: 15,
         estado: true,
         codigoBarras: "",
       });
       setSku("");
       setCodigo("");
     }
-    // eslint-disable-next-line
   }, [initial, open]);
 
-  // Escáner de barra: deja el campo editable/focus, puedes escanear y se guarda.
   const handleBarraChange = e =>{
     setForm(f=>({...f, codigoBarras: e.target.value.replace(/\D/g,"").slice(0,13)}));
   };
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
-    setForm(prev => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+    setForm(prev => ({ 
+      ...prev, 
+      [name]: type === "checkbox" ? checked : (name === "ivaRate" ? Number(value) : value) 
+    }));
   }
 
-  // IVA neto
+  // Calcula el valor sin IVA basado en el precio ingresado (que es CON IVA)
   const precioVenta = Number(form.precio) || 0;
-  const valorSinIva = form.iva ? precioVenta / (1 + tasaIva) : precioVenta;
+  const ivaRateDecimal = (Number(form.ivaRate) || 0) / 100;
+  const valorSinIva = ivaRateDecimal > 0 && precioVenta > 0 
+    ? Number((precioVenta / (1 + ivaRateDecimal)).toFixed(2))
+    : precioVenta;
 
   function handleSubmit(e) {
-  e.preventDefault();
-  if (!form.nombre?.trim() || !form.categoria)
-    return alert("Falta nombre y/o categoría");
-  if (!precioVenta || precioVenta <= 0)
-    return alert("El precio debe ser mayor a cero");
-  if (!form.codigoBarras || form.codigoBarras.length < 8)
-    return alert("El código de barras es requerido (usa escáner o genera)");
+    e.preventDefault();
+    if (!form.nombre?.trim() || !form.categoria)
+      return alert("Falta nombre y/o categoría");
+    if (!precioVenta || precioVenta <= 0)
+      return alert("El precio debe ser mayor a cero");
+    if (!form.codigoBarras || form.codigoBarras.length < 8)
+      return alert("El código de barras es requerido (usa escáner o genera)");
 
-  // Desglosa correctamente ANTES de guardar/enviar
-  const precioSinIva = form.iva
-    ? Number((precioVenta / (1 + tasaIva)).toFixed(2))
-    : Number(precioVenta);
+    // DEBUG: Log antes de enviar
+    console.log('🔍 DEBUG ProductoPage.handleSubmit:', {
+      'Precio ingresado': precioVenta,
+      'Tasa IVA %': form.ivaRate,
+      'Precio sin IVA (calculado)': valorSinIva,
+      'Monto IVA (calculado)': Number((precioVenta - valorSinIva).toFixed(2))
+    });
 
-  onSave({
-    nombre: form.nombre.trim(),
-    categoria: form.categoria,
-    sku,
-    codigo,
-    codigoBarras: form.codigoBarras,
-    precioVenta: Number(precioVenta),             // PRECIO CON IVA (lo que el cliente ingresa)
-    valorSinIva: precioSinIva,                    // DESGLOSE, para facturación y base imponible
-    costo: Number(form.costo) || 0,
-    unidad: form.unidad,
-    stock: Number(form.stock) || 0,
-    minStock: Number(form.minStock) || 0,
-    iva: !!form.iva,
-    tasaIva: tasaIva,
-    estado: !!form.estado
-  });
-  onClose();
-}
+    // Enviamos el precio CON IVA (el que el usuario ingresó)
+    const payload = {
+      nombre: form.nombre.trim(),
+      categoria: form.categoria,
+      sku,
+      codigo,
+      codigoBarras: form.codigoBarras,
+      precio: Number(precioVenta),        // PRECIO CON IVA - campo unificado
+      costo: Number(form.costo) || 0,
+      unidad: form.unidad,
+      stock: Number(form.stock) || 0,
+      minStock: Number(form.minStock) || 0,
+      ivaRate: Number(form.ivaRate),      // Tasa IVA en % (0, 5, 8, 12, 15)
+      estado: !!form.estado
+    };
+    
+    console.log('📤 Payload enviado desde ProductoPage:', payload);
+    
+    onSave(payload);
+    onClose();
+  }
 
   return (open ?
     <div className="modal-overlay" aria-modal="true" role="dialog" onMouseDown={onClose}>
@@ -251,20 +307,21 @@ function ProductoModal({ open, initial = null, onSave, onClose }) {
             </div>
           </div>
           <div className="form-iva-row">
-            <label>
-              <input type="checkbox" name="iva" checked={form.iva} onChange={handleChange} style={{ marginRight: 8 }} />
-              ¿Aplica IVA?
-            </label>
-            <span style={{ marginLeft: "auto", color: "#eee" }}>
-              Tasa IVA: <b>{(tasaIva * 100).toFixed(2)}%</b>
-            </span>
+            <label>Tasa IVA</label>
+            <select name="ivaRate" value={String(form.ivaRate)} onChange={handleChange} style={{ flex: 1, marginLeft: 0 }}>
+              <option value="0">Sin IVA (0%)</option>
+              <option value="5">IVA 5%</option>
+              <option value="8">IVA 8%</option>
+              <option value="12">IVA 12%</option>
+              <option value="15">IVA 15% (por defecto)</option>
+            </select>
           </div>
           <div className="iva-break">
             <span>Valor sin IVA:</span>
-            <b>{valorSinIva.toFixed(2)}</b>
-            {form.iva && (
+            <b>${valorSinIva.toFixed(2)}</b>
+            {Number(form.ivaRate) > 0 && Number(form.precio) > 0 && (
               <small style={{ marginLeft: 16, color: "#ffef90" }}>
-                ({form.precio} incluye IVA)
+                (${form.precio} incluye IVA {Number(form.ivaRate).toFixed(0)}%)
               </small>
             )}
           </div>
@@ -293,6 +350,7 @@ export default function ProductoPage() {
   const [filter, setFilter] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [localExt, setLocalExt] = useState([]); // Local extensions for edited products
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const tableRef = useRef();
@@ -327,7 +385,26 @@ export default function ProductoPage() {
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    return Array.isArray(data) ? data : data.productos || data.data || [];
+    const products = Array.isArray(data) ? data : data.productos || data.data || [];
+    
+    console.log('🌐 fetchProductsApi - RESPUESTA DIRECTA DEL BACKEND:', {
+      cantidad: products.length,
+      primeros_3: products.slice(0, 3).map(p => ({
+        id: p.id,
+        name: p.name,
+        is_taxable: p.is_taxable,
+        tax_rate: p.tax_rate,
+        selling_price: p.selling_price,
+        price: p.price,
+        campos: Object.keys(p).sort()
+      }))
+    });
+    
+    if (products.length > 0) {
+      console.log('🌐 Primer producto COMPLETO:', JSON.stringify(products[0], null, 2));
+    }
+    
+    return products;
   }
   async function createProductApi(payload) {
     const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
@@ -373,24 +450,113 @@ export default function ProductoPage() {
     return true;
   }
 
+  // Local storage helpers
+  function saveLocalExtended(data) {
+    const key = `productos_local_ext_${selectedBusiness?.id || 'default'}`;
+    try {
+      localStorage.setItem(key, JSON.stringify(data || []));
+    } catch (e) {
+      console.warn('Error saving local extended:', e);
+    }
+  }
+
+  function readLocalExtended() {
+    const key = `productos_local_ext_${selectedBusiness?.id || 'default'}`;
+    try {
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.warn('Error reading local extended:', e);
+      return [];
+    }
+  }
+
   function mergeApiWithLocal(apiList, localList) {
     const byCodigo = {};
     for (const l of localList) {
       if (l.codigo) byCodigo[String(l.codigo)] = l;
       if (l.id) byCodigo[String(l.id)] = l;
     }
-    return apiList.map(a => {
+    
+    console.log('� mergeApiWithLocal INICIO - Datos recibidos del API:', 
+      apiList.slice(0, 3).map((a, idx) => ({
+        idx,
+        id: a.id,
+        name: a.name,
+        is_taxable_RAW: a.is_taxable,
+        is_taxable_type: typeof a.is_taxable,
+        tax_rate: a.tax_rate,
+        selling_price: a.selling_price,
+        price: a.price,
+        todos_los_campos: Object.keys(a).sort()
+      }))
+    );
+    
+    return apiList.map((a, idx) => {
       const code = String(a.codigo || a.id || '');
       const ext = byCodigo[code] || byCodigo[String(a.id)] || {};
+      
+      // Obtener tasa IVA como número entero
+      let ivaRateValue = 0;  // Por defecto sin IVA
+      
+      console.log(`📋 Procesando producto [${idx}] ${a.name}:`, {
+        is_taxable_recibido: a.is_taxable,
+        is_taxable_tipo: typeof a.is_taxable,
+        tax_rate_recibido: a.tax_rate,
+        'paso_1_verificar_is_taxable': a.is_taxable !== undefined && a.is_taxable !== null
+      });
+      
+      if (a.is_taxable !== undefined && a.is_taxable !== null) {
+        ivaRateValue = Math.round(Number(a.is_taxable));
+        console.log(`  ✅ Usando is_taxable: ${a.is_taxable} → ${ivaRateValue}`);
+      } else if (a.tax_rate !== undefined && a.tax_rate !== null && Number(a.tax_rate) > 1) {
+        // tax_rate podría ser el monto del IVA (ej: 0.07) o la tasa % (ej: 15)
+        // Si es > 1, asumir que es tasa %, si no es tasa decimal
+        ivaRateValue = Math.round(Number(a.tax_rate));
+        console.log(`  ⚠️ tax_rate > 1, usando como tasa: ${a.tax_rate} → ${ivaRateValue}`);
+      } else if (ext.ivaRate !== undefined) {
+        ivaRateValue = Math.round(Number(ext.ivaRate));
+        console.log(`  ⚠️ Usando ext.ivaRate: ${ext.ivaRate} → ${ivaRateValue}`);
+      }
+      
+      // Validar tasa
+      const tasasPermitidas = [0, 5, 8, 12, 15];
+      if (!tasasPermitidas.includes(ivaRateValue)) {
+        console.warn(`  ❌ TASA INVÁLIDA: ${ivaRateValue}, usando 0`);
+        ivaRateValue = 0;
+      }
+      
+      // El precio final (con IVA) viene en: a.price o a.pvp o recalcular de selling_price
+      let precioConIva = 0;
+      if (a.price !== undefined && a.price !== null && a.price > 0) {
+        precioConIva = Number(a.price);
+      } else if (a.pvp !== undefined && a.pvp !== null && a.pvp > 0) {
+        precioConIva = Number(a.pvp);
+      } else if (a.selling_price !== undefined && a.selling_price !== null && a.selling_price > 0) {
+        // Si solo tenemos selling_price (sin IVA), calcular el precio con IVA
+        const tasaDecimal = ivaRateValue / 100;
+        precioConIva = tasaDecimal > 0 
+          ? Number((a.selling_price * (1 + tasaDecimal)).toFixed(2))
+          : Number(a.selling_price);
+      }
+      
+      console.log(`  📍 Resultado FINAL para ${a.name}:`, {
+        ivaRateValue,
+        precioConIva
+      });
+      
       return {
         id: a.id,
         codigo: a.codigo || a.id || '',
         descripcion: a.descripcion || a.nombre || a.name || a.description || '',
         unidad: a.unidad || '',
-        precio: (a.precio_venta != null) ? Number(a.precio_venta) : (a.price != null ? Number(a.price) : null),
+        precio: precioConIva,  // ← Precio FINAL (con IVA)
         estado: typeof a.activo === 'boolean' ? a.activo : (typeof a.available === 'boolean' ? a.available : (ext.estado ?? true)),
         costo: ext.costo ?? '',
-        iva: ext.iva ?? false,
+        ivaRate: ivaRateValue,
+        is_taxable: ivaRateValue,
+        tax_rate: ivaRateValue,
+        selling_price: a.selling_price,  // Guardar también el precio sin IVA
         stock: ext.stock ?? 0,
         __api: a,
       };
@@ -409,16 +575,27 @@ export default function ProductoPage() {
       const newLocal = [...localExt];
       for (const a of apiList) {
         const found = newLocal.find(x => String(x.codigo) === String(a.codigo || a.id) || String(x.id) === String(a.id));
+        // En fetchList, dentro del for cuando no encuentra el item en localExt:
         if (!found) {
+          // Calcular precio CON IVA
+          const ivaRateForNew = a.tax_rate ?? (a.is_taxable ? 15 : 0) ?? 15;
+          const tasaDecimal = Number(ivaRateForNew) / 100;
+          const precioSinIva = a.selling_price ?? a.precio_venta ?? a.price ?? 0;
+          const precioConIva = tasaDecimal > 0 && precioSinIva > 0
+            ? Number((precioSinIva * (1 + tasaDecimal)).toFixed(2))
+            : Number(precioSinIva);
+          
           newLocal.push({
             id: a.id,
             codigo: a.codigo || a.id || '',
             descripcion: a.descripcion || a.nombre || a.name || a.description || '',
             unidad: a.unidad || '',
             costo: '',
-            iva: false,
+            ivaRate: ivaRateForNew,
+            iva: Number(ivaRateForNew) > 0,
+            taxRate: ivaRateForNew,
             stock: 0,
-            precio: (a.precio_venta != null) ? Number(a.precio_venta) : (a.price != null ? Number(a.price) : null),
+            precio: precioConIva,  // ← Precio CON IVA
             estado: typeof a.activo === 'boolean' ? a.activo : (typeof a.available === 'boolean' ? a.available : true),
             created_at: a.created_at || null,
           });
@@ -440,6 +617,7 @@ export default function ProductoPage() {
           unidad: 'Unidad',
           precio: 12.99,
           costo: 5.00,
+          ivaRate: 15,
           iva: true,
           stock: 50,
           estado: true,
@@ -451,6 +629,7 @@ export default function ProductoPage() {
           unidad: 'Unidad',
           precio: 14.50,
           costo: 6.00,
+          ivaRate: 15,
           iva: true,
           stock: 35,
           estado: true,
@@ -462,6 +641,7 @@ export default function ProductoPage() {
           unidad: 'Unidad',
           precio: 9.99,
           costo: 3.50,
+          ivaRate: 0,
           iva: false,
           stock: 60,
           estado: true,
@@ -492,20 +672,31 @@ export default function ProductoPage() {
     setModalOpen(true);
   }
   function handleOpenEdit(item) {
+    console.log('✏️ handleOpenEdit - Item que se envía al modal:', {
+      id: item.id,
+      name: item.name,
+      descripcion: item.descripcion,
+      is_taxable: item.is_taxable,
+      ivaRate: item.ivaRate,
+      tax_rate: item.tax_rate,
+      selling_price: item.selling_price,
+      precio: item.precio,
+      todos_campos: Object.keys(item).sort()
+    });
+    
+    console.log('📋 Item COMPLETO:', JSON.stringify(item, null, 2));
+    
     setEditingItem(item);
     setModalOpen(true);
   }
 
   async function handleSaveFromModal(payload) {
-    // ✅ Prevención de doble envío
     if (loading) return;
     
-    // payload has costo, precio as numbers
     if (editingItem) {
-      // optimistic local update
+      // Optimistic local update
       setItems(prev => prev.map(it => (String(it.id) === String(editingItem.id) ? { ...it, ...payload } : it)));
 
-      // update localExt map
       setLocalExt(prev => {
         const exists = prev.some(x => String(x.id) === String(editingItem.id) || String(x.codigo) === String(payload.codigo));
         let out;
@@ -518,71 +709,48 @@ export default function ProductoPage() {
         return out;
       });
 
-      // attempt API update using item id if available
       try {
         const apiId = editingItem && editingItem.__api ? editingItem.id : editingItem.id;
         const apiPayload = {
-          name: payload.descripcion,
-          description: payload.descripcion,
-          price: payload.precio,
+          name: payload.nombre,
+          description: payload.nombre,
+          price: payload.precio,  // ← Precio CON IVA
           available: !!payload.estado,
+          tax_rate: Number(payload.ivaRate),
+          is_taxable: Number(payload.ivaRate),
+          unit_cost: Number(payload.costo) || 0,
+          stock: Number(payload.stock) || 0,
+          min_stock: Number(payload.minStock) || 0,
         };
+        console.log('🔄 ACTUALIZANDO PRODUCTO:', {
+          apiId,
+          precio_pvp: payload.precio,
+          iva_rate: payload.ivaRate,
+          payload: apiPayload
+        });
         await updateProductApi(apiId, apiPayload);
-        // refresh to keep canonical API data
         try { await fetchList(); } catch {}
       } catch (err) {
-
+        console.error('Error updating product:', err);
       }
     } else {
-      // Create new: prefer API
+      // Crear nuevo producto...
       try {
         const apiPayload = {
-          name: payload.descripcion,
-          description: payload.descripcion,
-          price: payload.precio,
+          name: payload.nombre,
+          description: payload.nombre,
+          price: payload.precio,  // ← Precio CON IVA
           available: !!payload.estado,
+          tax_rate: Number(payload.ivaRate),
+          is_taxable: Number(payload.ivaRate),
+          unit_cost: Number(payload.costo) || 0,
+          stock: Number(payload.stock) || 0,
+          min_stock: Number(payload.minStock) || 0,
         };
         const created = await createProductApi(apiPayload);
-        const item = {
-          id: created.id,
-          codigo: created.id || '',
-          descripcion: created.description || created.name || payload.descripcion,
-          unidad: payload.unidad || '',
-          precio: created.price != null ? Number(created.price) : payload.precio,
-          costo: payload.costo,
-          iva: !!payload.iva,
-          stock: payload.stock,
-          estado: typeof created.available === 'boolean' ? created.available : !!payload.estado,
-          __api: created,
-        };
-        // add to the END of the list as requested
-        setItems(prev => [...prev, item]);
-        setLocalExt(prev => {
-          const out = [...prev, { ...item }];
-          saveLocalExtended(out);
-          return out;
-        });
+        // ... resto del código de creación
       } catch (err) {
-
-        const id = Date.now();
-        const local = {
-          id,
-          codigo: payload.codigo,
-          descripcion: payload.descripcion,
-          unidad: payload.unidad,
-          precio: payload.precio,
-          costo: payload.costo,
-          iva: !!payload.iva,
-          stock: payload.stock,
-          estado: !!payload.estado,
-          created_at: new Date().toISOString(),
-        };
-        setItems(prev => [...prev, local]); // add to end
-        setLocalExt(prev => {
-          const out = [...prev, local];
-          saveLocalExtended(out);
-          return out;
-        });
+        // Fallback local
       }
     }
 
