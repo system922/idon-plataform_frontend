@@ -697,7 +697,7 @@ export default function PosCheckoutPage() {
       const raw = await res.json();
       const todosActivos = Array.isArray(raw) ? raw.filter(o => o.status !== 'paid' && o.status !== 'cancelled') : [];
 
-      // Mapa product_id → {category_id, is_taxable} para enriquecer items
+      // Mapa product_id → {code, category_id, is_taxable} para enriquecer items
       let productMap = {};
       if (prodRes.ok) {
         const prodData = await prodRes.json();
@@ -715,6 +715,7 @@ export default function PosCheckoutPage() {
             if (!validRates.includes(taxableValue)) taxableValue = 0;
             
             productMap[String(p.id)] = {
+              code: p.code || p.sku || 'PROD',  // ← 🔥 AGREGAR CÓDIGO DEL PRODUCTO
               category_id: p.category_id,
               is_taxable: taxableValue,
             };
@@ -728,6 +729,7 @@ export default function PosCheckoutPage() {
             ...order,
             items: order.items.map(item => ({
               ...item,
+              code: item.code || productMap[String(item.product_id)]?.code || 'PROD',  // ← 🔥 AGREGAR CÓDIGO AL ITEM
               category_id: item.category_id ?? productMap[String(item.product_id)]?.category_id ?? null,
               is_taxable: item.is_taxable ?? productMap[String(item.product_id)]?.is_taxable ?? 0,
             })),
@@ -776,7 +778,7 @@ export default function PosCheckoutPage() {
       setBizInfo(bizData);
 
     } catch (err) {
-
+      console.error('Error loading orders:', err);
     }
   };
 
@@ -1286,10 +1288,10 @@ export default function PosCheckoutPage() {
       const precioSinIVA = Number(item.selling_price) || Number(item.unit_price) || 0;
       const itemSubtotal = precioSinIVA * qty;
       
-      // ✅ USAR TASA POR PRODUCTO: item.is_taxable (0, 5, 8, 12, 15)
-      const productTaxRate = Number(item.is_taxable) ?? 0;
+      // ✅ USAR EL CÓDIGO REAL DEL PRODUCTO (ahora viene del order.items)
+      const productCode = item.code || item.product_code || 'PROD';
       
-      // ✅ CALCULAR IVA BASADO EN LA TASA DEL PRODUCTO (no usar tax_rate que es IVA en $)
+      const productTaxRate = Number(item.is_taxable) ?? 0;
       const ivaItem = productTaxRate > 0 
         ? Math.round(itemSubtotal * (productTaxRate / 100) * 100) / 100
         : 0;
@@ -1297,14 +1299,16 @@ export default function PosCheckoutPage() {
       subtotalOriginal += itemSubtotal;
       ivaSumado += ivaItem;
       
+      console.log(`📦 Producto: ${item.product_name}, Código: ${productCode}, Tasa IVA: ${productTaxRate}%`);
+      
       return {
-        code: item.code || 'PROD',
+        code: productCode,
         description: item.product_name || 'Producto',
         qty,
         unit_price: precioSinIVA,
         subtotal: itemSubtotal,
         iva_amount: ivaItem,
-        iva_rate_pct: productTaxRate,  // ✅ TASA DEL PRODUCTO (0, 5, 8, 12, 15)
+        iva_rate_pct: productTaxRate,
         category_id: item.category_id,
         product_id: item.product_id
       };
