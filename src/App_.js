@@ -1,4 +1,3 @@
-// App.js
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
@@ -37,13 +36,6 @@ import { DrawerProvider } from './context/DrawerContext';
 import GlobalExpenseBubble from './components/GlobalExpenseBubble';
 import { ConfirmProvider } from './components/ConfirmContext';
 
-// ========== NUEVO: Verificación de estado del negocio ==========
-import { BusinessStatusGuard } from './components/BusinessStatusGuard';
-import PaymentPendingPage from './pages/business/PaymentPendingPage';
-
-// ========== NUEVO: fetchWithAuth ==========
-import { fetchWithAuth } from './config/apiBase';
-
 function RegisterPageWrapper({ setUser }) {
   const navigate = useNavigate();
   return (
@@ -57,105 +49,9 @@ function RegisterPageWrapper({ setUser }) {
   );
 }
 
-// =============================================
-// WRAPPER PARA VERIFICAR ESTADO DEL NEGOCIO
-// =============================================
-function AppRoutesWrapper({ user, handleLogout }) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [showPaymentPage, setShowPaymentPage] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [statusChecked, setStatusChecked] = useState(false);
-
-  useEffect(() => {
-    const checkStatus = async () => {
-      // Si ya estamos en la página de pago o suspendido, no verificar
-      if (location.pathname.includes('/app/payment-pending') || 
-          location.pathname.includes('/app/suspended')) {
-        setLoading(false);
-        setStatusChecked(true);
-        return;
-      }
-
-      try {
-        const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
-        if (!token) {
-          setLoading(false);
-          setStatusChecked(true);
-          return;
-        }
-
-        const res = await fetchWithAuth('/api/business-status/my-status');
-        
-        if (res.ok) {
-          const data = await res.json();
-          
-          // Si está suspendido o tiene pago pendiente
-          if (data.status === 'suspended' || data.isSuspended === true) {
-            setShowPaymentPage(true);
-            if (!localStorage.getItem('pendingPaymentMessage')) {
-              localStorage.setItem('pendingPaymentMessage', data.message || 'Tu negocio está suspendido. Por favor realiza el pago.');
-            }
-            // Si no está en la página de pago, redirigir
-            if (!location.pathname.includes('/app/payment-pending')) {
-              navigate('/app/payment-pending', { replace: true });
-            }
-          } else {
-            setShowPaymentPage(false);
-          }
-        } else if (res.status === 401 || res.status === 403) {
-          // Token inválido, redirigir a login
-          localStorage.clear();
-          navigate('/login', { replace: true });
-        }
-      } catch (error) {
-        console.error('Error verificando estado del negocio:', error);
-      } finally {
-        setLoading(false);
-        setStatusChecked(true);
-      }
-    };
-
-    checkStatus();
-  }, [location.pathname, navigate]);
-
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#080810',
-        color: '#fff'
-      }}>
-        <div className="spinner"></div>
-      </div>
-    );
-  }
-
-  // Si está en la página de pago, mostrarla
-  if (location.pathname.includes('/app/payment-pending')) {
-    return <PaymentPendingPage onLogout={handleLogout} />;
-  }
-
-  // Si el negocio está suspendido y el usuario intenta acceder a otra ruta, redirigir a payment-pending
-  if (showPaymentPage) {
-    return <Navigate to="/app/payment-pending" replace />;
-  }
-
-  // Si todo está bien, mostrar el BusinessLayout con el guard
-  return (
-    <BusinessStatusGuard>
-      <BusinessLayout user={user} onLogout={handleLogout} />
-    </BusinessStatusGuard>
-  );
-}
-
 function AppRoutes({ user, setUser, handleLogout }) {
   return (
     <Routes>
-      {/* Rutas públicas de autenticación */}
       <Route
         path="/login"
         element={
@@ -196,7 +92,7 @@ function AppRoutes({ user, setUser, handleLogout }) {
         }
       />
 
-      {/* RUTA PRINCIPAL */}
+      {/* RUTA PRINCIPAL - SIMPLIFICADA */}
       <Route
         path="/"
         element={
@@ -210,7 +106,7 @@ function AppRoutes({ user, setUser, handleLogout }) {
         }
       />
 
-      {/* ADMIN ROUTES - SOLO PARA ADMIN_IDON */}
+      {/* ADMIN ROUTES */}
       {user?.userType === 'admin_idon' && (
         <Route path="/admin/*" element={
           <AdminLayout user={user} onLogout={handleLogout}>
@@ -235,7 +131,7 @@ function AppRoutes({ user, setUser, handleLogout }) {
         } />
       )}
 
-      {/* DASHBOARD ROUTE - REDIRECCIÓN */}
+      {/* DASHBOARD ROUTE - SIMPLIFICADA */}
       <Route
         path="/dashboard"
         element={
@@ -249,22 +145,19 @@ function AppRoutes({ user, setUser, handleLogout }) {
         }
       />
 
-      {/* APP ROUTES - BUSINESS PANEL CON WRAPPER PARA VERIFICAR ESTADO */}
+      {/* APP ROUTES - BUSINESS PANEL */}
       <Route
         path="/app/*"
         element={
           user ? (
-            user?.userType === 'admin_idon' ? (
-              <Navigate to="/admin/dashboard" replace />
-            ) : (
-              <AppRoutesWrapper user={user} handleLogout={handleLogout} />
-            )
+            user?.userType === 'admin_idon'
+              ? <Navigate to="/admin/dashboard" replace />
+              : <BusinessLayout user={user} onLogout={handleLogout} />
           ) : (
             <Navigate to="/login" replace />
           )
         }
       >
-        {/* Las rutas de negocio se renderizan dentro del wrapper */}
         {businessRoutes}
       </Route>
 
@@ -297,12 +190,7 @@ function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const PUBLIC_PATHS = [
-    '/terms-and-conditions', 
-    '/privacy-policy', 
-    '/login', 
-    '/register'
-  ];
+  const PUBLIC_PATHS = ['/terms-and-conditions', '/privacy-policy', '/login', '/register'];
 
   useEffect(() => {
     const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
@@ -326,8 +214,6 @@ function AppContent() {
     localStorage.removeItem('token');
     localStorage.removeItem('selectedBusiness');
     localStorage.removeItem('lastPath');
-    localStorage.removeItem('pendingPaymentMessage');
-    localStorage.removeItem('pendingPaymentEmail');
     navigate('/login', { replace: true });
   }
 

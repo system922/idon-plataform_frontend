@@ -163,15 +163,12 @@ export default function LoginPage({ onLogin }) {
 
   useEffect(() => {
     const id = setInterval(() => {
-      // Fade out más suave (1000ms en lugar de inmediato)
       setLogoOpacity(0);
       setTimeout(() => {
-        // Cambiar logo a mitad de la transición
         setLogoIndex(prev => (prev + 1) % logos.length);
-        // Fade in suave
         setLogoOpacity(1);
-      }, 800); // Esperar más tiempo para transición suave
-    }, 5500); // Aumentado de 4000 a 5500 para dar más tiempo
+      }, 800);
+    }, 5500);
     return () => clearInterval(id);
   }, []);
 
@@ -370,7 +367,7 @@ export default function LoginPage({ onLogin }) {
     
     if (onLogin) onLogin(userToStore);
     
-    // 🔥 REDIRECCIÓN DIRECTA - SIN VERIFICAR NADA
+    // REDIRECCIÓN DIRECTA - SIN VERIFICAR NADA
     const redirectRoute = (backendType === 'admin_idon' || backendType === 'admin') 
       ? '/admin/dashboard' 
       : '/app/dashboard';
@@ -409,6 +406,16 @@ export default function LoginPage({ onLogin }) {
       if (!res.ok) {
         setLoading(false);
         
+        // 🔥 CAPTURAR ERROR 403 - NEGOCIO SUSPENDIDO
+        if (res.status === 403) {
+          const errorMessage = data.message || data.error || 'Tu negocio está suspendido. Por favor realiza el pago.';
+          localStorage.setItem('pendingPaymentEmail', email);
+          localStorage.setItem('pendingPaymentMessage', errorMessage);
+          // ✅ REDIRIGIR CON WINDOW.LOCATION
+          window.location.href = '/app/payment-pending';
+          return;
+        }
+        
         if (res.status === 401) {
           const errorMessage = data.message || data.error || 'Credenciales inválidas';
           
@@ -424,8 +431,6 @@ export default function LoginPage({ onLogin }) {
           } else {
             showError(`❌ ${errorMessage}`, 'general');
           }
-        } else if (res.status === 403) {
-          showError('⛔ Acceso denegado. Tu cuenta podría estar inactiva o requerir aprobación.', 'general');
         } else if (res.status === 429) {
           showError('⏳ Demasiados intentos. Por favor espera unos minutos.', 'general');
         } else {
@@ -437,6 +442,28 @@ export default function LoginPage({ onLogin }) {
       const payload = data.data;
       setLoading(false);
 
+      // 🔥 VERIFICAR SI EL NEGOCIO ESTÁ SUSPENDIDO EN LA RESPUESTA
+      if (payload.businessStatus === 'suspended' || payload.user?.businessStatus === 'suspended') {
+        localStorage.setItem('pendingPaymentEmail', email);
+        localStorage.setItem('pendingPaymentMessage', payload.message || 'Tu negocio está suspendido. Por favor realiza el pago.');
+        localStorage.setItem('idonToken', payload.token);
+        localStorage.setItem('idonUser', JSON.stringify(payload.user));
+        // ✅ REDIRIGIR CON WINDOW.LOCATION
+        window.location.href = '/app/payment-pending';
+        return;
+      }
+
+      if (payload.businessStatus === 'payment_pending' || payload.user?.businessStatus === 'payment_pending') {
+        localStorage.setItem('pendingPaymentEmail', email);
+        localStorage.setItem('pendingPaymentMessage', payload.message || 'Tienes pagos pendientes. Por favor realiza el pago.');
+        localStorage.setItem('idonToken', payload.token);
+        localStorage.setItem('idonUser', JSON.stringify(payload.user));
+        // ✅ REDIRIGIR CON WINDOW.LOCATION
+        window.location.href = '/app/payment-pending';
+        return;
+      }
+
+      // Login normal - negocio activo
       if (payload.requiresBusinessSelection && payload.businesses?.length > 1) {
         setPendingToken(payload.token);
         setPendingUser(payload.user);

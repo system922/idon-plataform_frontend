@@ -3,7 +3,7 @@
  * Ubicación: src/pages/business/SuspendedSubscriptionPage.css
  */
 
-/* Contenedor principal */
+/* Contenedor principal - Ocupa todo el ancho */
 .suspended-container {
   position: fixed;
   top: 0;
@@ -12,25 +12,28 @@
   bottom: 0;
   background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 9999;
-  padding: 20px;
+  padding: 40px 20px;
   overflow-y: auto;
+  min-height: 100vh;
+  width: 100%;
 }
 
-/* Tarjeta principal */
+/* Tarjeta principal - Ocupa casi todo el ancho */
 .suspended-card {
-  max-width: 700px;
+  max-width: 900px;
   width: 100%;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 24px;
-  padding: 40px 32px;
+  padding: 40px 48px;
   text-align: center;
   backdrop-filter: blur(10px);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   animation: fadeInUp 0.5s ease-out;
+  margin: 0 auto;
 }
 
 @keyframes fadeInUp {
@@ -82,17 +85,150 @@
 /* Títulos y textos */
 .suspended-title {
   color: #fff;
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 800;
-  margin: 0 0 16px 0;
+  margin: 0 0 8px 0;
   letter-spacing: -0.5px;
+}
+
+/* Badge de estado */
+.status-badge {
+  display: inline-block;
+  padding: 6px 20px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  margin-bottom: 16px;
+}
+
+/* Mensaje personalizado del backend */
+.suspended-message-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin: 12px 0 20px 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  text-align: left;
+  position: relative;
+}
+
+.suspended-message-box span {
+  flex: 1;
+}
+
+.message-close-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.message-close-btn:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Tarjeta de información del negocio y pago - OCUPA TODO EL ANCHO */
+.business-payment-card {
+  background: linear-gradient(135deg, rgba(255, 140, 66, 0.08), rgba(245, 158, 11, 0.05));
+  border: 1px solid rgba(255, 140, 66, 0.15);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  text-align: left;
+  width: 100%;
+}
+
+.business-payment-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 14px;
+}
+
+.business-payment-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+.business-payment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.business-payment-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.business-payment-value {
+  font-size: 15px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.business-payment-value.amount {
+  color: #ff8c42;
+  font-size: 22px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.business-payment-value.amount svg {
+  color: #ff8c42;
+}
+
+.amount-highlight {
+  color: #ff8c42;
+  font-size: 18px;
+}
+
+/* Email del usuario */
+.suspended-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 6px 16px 6px 12px;
+  border-radius: 20px;
+  margin-top: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.suspended-email svg {
+  color: #f97316;
 }
 
 .suspended-message {
   color: rgba(255, 255, 255, 0.7);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.7;
-  margin: 0 0 32px 0;
+  margin: 0 0 8px 0;
 }
 
 .suspended-message strong {
@@ -107,6 +243,7 @@
   padding: 18px 20px;
   margin-bottom: 28px;
   text-align: left;
+  width: 100%;
 }
 
 .owner-info-title {
@@ -123,8 +260,9 @@
 
 .owner-info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 12px;
+  width: 100%;
 }
 
 .owner-info-item {
@@ -136,23 +274,24 @@
 
 .owner-info-label {
   color: rgba(255, 255, 255, 0.4);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .owner-info-value {
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
-/* Sección de bancos */
+/* Sección de bancos - OCUPA TODO EL ANCHO */
 .banks-section {
   margin-bottom: 28px;
   text-align: left;
+  width: 100%;
 }
 
 .banks-title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.4);
   text-transform: uppercase;
@@ -164,9 +303,10 @@
 }
 
 .banks-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  width: 100%;
 }
 
 /* Tarjeta de cada banco */
@@ -176,6 +316,7 @@
   border-radius: 16px;
   padding: 18px;
   transition: all 0.2s ease;
+  width: 100%;
 }
 
 .bank-card:hover {
@@ -232,29 +373,29 @@
 
 .bank-body {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
 }
 
 .bank-holder {
-  font-size: 11px;
+  font-size: 12px;
   color: rgba(255, 255, 255, 0.5);
 }
 
 .bank-number-wrapper {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
+  width: 100%;
 }
 
 .bank-number {
   font-size: 16px;
   font-weight: 700;
   color: #ff8c42;
-  font-family: 'Monaco', 'Menlo', monospace;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
   letter-spacing: 0.5px;
 }
 
@@ -272,6 +413,7 @@
   font-size: 12px;
   font-weight: 600;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .copy-btn:hover {
@@ -296,9 +438,10 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 12px;
+  font-size: 13px;
   color: rgba(255, 255, 255, 0.5);
   text-align: left;
+  width: 100%;
 }
 
 .note-card svg {
@@ -322,7 +465,7 @@
   border: 1px solid rgba(239, 68, 68, 0.3);
   background: rgba(239, 68, 68, 0.08);
   color: #ef4444;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -339,31 +482,77 @@
 }
 
 /* Responsive */
-@media (max-width: 640px) {
+@media (max-width: 1024px) {
   .suspended-card {
-    padding: 28px 20px;
+    padding: 32px 28px;
+  }
+  
+  .banks-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .suspended-container {
+    padding: 20px 12px;
+  }
+  
+  .suspended-card {
+    padding: 24px 16px;
   }
 
   .suspended-title {
     font-size: 24px;
   }
+  
+  .business-payment-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .banks-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .bank-number-wrapper {
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  
+  .owner-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .suspended-message-box {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
 
+  .business-payment-value.amount {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .business-payment-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .business-payment-item:last-child {
+    grid-column: span 1;
+  }
+  
   .bank-body {
     flex-direction: column;
     align-items: flex-start;
   }
-
+  
   .bank-number-wrapper {
     width: 100%;
     justify-content: space-between;
   }
-
+  
   .bank-number {
     font-size: 14px;
-  }
-
-  .owner-info-grid {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -384,4 +573,24 @@
 
 .suspended-container::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 140, 66, 0.5);
+}
+
+/* Animación de entrada para las tarjetas de banco */
+.bank-card {
+  animation: slideIn 0.4s ease-out both;
+}
+
+.bank-card:nth-child(1) { animation-delay: 0.1s; }
+.bank-card:nth-child(2) { animation-delay: 0.2s; }
+.bank-card:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
