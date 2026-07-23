@@ -317,8 +317,11 @@ function formatComandaTicket(data, width = 32) {
   };
 
   const mesaRaw = String(table ?? '').trim();
-  const mesa = mesaRaw && /^\d+$/.test(mesaRaw) ? `MESA ${mesaRaw}` : (mesaRaw || 'LLEVAR');
-  const ordenNum = String(comanda?.number || 'N/A').trim();
+  const mesa = mesaRaw && /^\d+$/.test(mesaRaw) ? `MESA #${mesaRaw}` : (mesaRaw || 'LLEVAR');
+  const ordenNumRaw = String(comanda?.number || 'N/A').trim();
+  const ordenNum = ordenNumRaw.includes('-') 
+    ? ordenNumRaw.split('-').pop() 
+    : ordenNumRaw;
   const hora = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
   const notasPedido = String(notes || '').trim();
   const itemsArr = Array.isArray(items) ? items : [];
@@ -417,6 +420,13 @@ function formatComandaModTicket(data, width = 32) {
 
   const hora = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
 
+  // 🔥 MODIFICACIÓN: Obtener solo el número de orden sin el prefijo de fecha
+  const ordenNumRaw = String(orden || 'N/A').trim();
+  // Si tiene formato "260722-007", tomar solo la parte después del guión
+  const ordenNum = ordenNumRaw.includes('-') 
+    ? ordenNumRaw.split('-').pop() 
+    : ordenNumRaw;
+
   let out = '';
   out += line() + '\n';
   out += center('**** COMANDA MODIFICADA ****') + '\n';
@@ -425,7 +435,7 @@ function formatComandaModTicket(data, width = 32) {
     out += center(`MESA ${mesa}`) + '\n';
     out += sep() + '\n';
   }
-  out += center(`ORDEN ${orden || 'N/A'}`) + '\n';
+  out += center(`ORDEN ${ordenNum}`) + '\n';
   out += sep() + '\n';
   out += center(`${tipoOrden} - ${hora}`) + '\n';
   out += line() + '\n';
@@ -846,18 +856,18 @@ function formatCashCloseTicket(data, width = 48) {
   }
   
   t += line + '\n';
-  t += padCenter('*** C I E R R E   D E   C A J A ***', width) + '\n';
+  t += padCenter('*** CIERRE DE CAJA ***', width) + '\n';
   t += doubleLine + '\n\n';
 
   // ============ DATOS DE LA SESIÓN ============
-  t += padCenter('DATOS DE LA SESIÓN', width) + '\n';
+  t += padCenter('DATOS DE LA SESION', width) + '\n';
   t += sep + '\n';
   
   if (close?.cash_register_id) {
     t += `  ${padRight('Caja No.:', 18)} ${close.cash_register_id}\n`;
   }
   if (close?.session_id) {
-    t += `  ${padRight('Sesión ID:', 18)} ${close.session_id}\n`;
+    t += `  ${padRight('Sesionn ID:', 18)} ${close.session_id}\n`;
   }
   if (close?.opening_user) {
     t += `  ${padRight('Apertura por:', 18)} ${close.opening_user}\n`;
@@ -996,7 +1006,7 @@ function formatCashCloseTicket(data, width = 48) {
 
   // ============ OBSERVACIONES ============
   if (close?.remarks && close.remarks.trim()) {
-    t += '\n' + padCenter('📝 O B S E R V A C I O N E S', width) + '\n';
+    t += '\n' + padCenter('OBSERVACIONES', width) + '\n';
     t += dotted + '\n';
     wrap(close.remarks, width).forEach(l => (t += l + '\n'));
     t += dotted + '\n';
@@ -1019,8 +1029,8 @@ function formatCashCloseTicket(data, width = 48) {
 
   // ============ PIE DE PÁGINA ============
   t += dotted + '\n';
-  t += padCenter(`🕐 Impreso: ${formatDateTime()}`, width) + '\n';
-  t += padCenter(`👤 Usuario: ${getOperatorName()}`, width) + '\n';
+  t += padCenter(`Impreso: ${formatDateTime()}`, width) + '\n';
+  t += padCenter(`Usuario: ${getOperatorName()}`, width) + '\n';
   
   if (printerFooter) {
     t += padCenter(printerFooter, width) + '\n';
@@ -1084,7 +1094,7 @@ function formatPayrollTicket(data, width = 48) {
   }
   
   ticket += line + '\n';
-  ticket += padCenter('R E C I B O   D E   N Ó M I N A', width) + '\n';
+  ticket += padCenter('RECIBO DE NÓMINA', width) + '\n';
   ticket += doubleLine + '\n\n';
 
   // ============ DATOS DEL EMPLEADO ============
@@ -1168,12 +1178,12 @@ function formatPayrollTicket(data, width = 48) {
   ticket += subline + '\n';
   
   const paymentIcons = {
-    'CASH': '💵',
-    'EFECTIVO': '💵',
-    'CARD': '💳',
-    'TARJETA': '💳',
-    'TRANSFER': '🏦',
-    'TRANSFERENCIA': '🏦',
+    'CASH': '',
+    'EFECTIVO': '',
+    'CARD': '',
+    'TARJETA': '',
+    'TRANSFER': '',
+    'TRANSFERENCIA': '',
     
   };
   
