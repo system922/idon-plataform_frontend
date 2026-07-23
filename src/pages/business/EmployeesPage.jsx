@@ -66,11 +66,27 @@ function EmployeeModal({ employee, onClose, onSave, saving }) {
     document_number: employee?.document_number || '',
     salary: employee?.salary || '',
     hired_at: formatDate(employee?.hired_at),
-    status: employee?.status || 'active' // 🔥 FIX
+    status: employee?.status || 'active'
   });
-
+  const [errors, setErrors] = useState({});
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!form.full_name.trim()) newErrors.full_name = 'Nombre es requerido';
+    if (!form.email.trim()) newErrors.email = 'Correo es requerido';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = 'Correo inválido';
+    if (!form.position.trim()) newErrors.position = 'Cargo es requerido';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSaveClick = () => {
+    if (validateForm()) {
+      onSave(form);
+    }
+  };
 
   return (
     <div className="emp-overlay">
@@ -82,56 +98,110 @@ function EmployeeModal({ employee, onClose, onSave, saving }) {
         </div>
 
         <div className="emp-modal-grid">
-          <input className="emp-input" placeholder="Nombre"
-            value={form.full_name}
-            onChange={e => set('full_name', e.target.value)}
-          />
+          {/* Nombre */}
+          <div className="emp-form-group">
+            <label className="emp-label">Nombre completo *</label>
+            <input 
+              className={`emp-input ${errors.full_name ? 'emp-input-error' : ''}`}
+              placeholder="Ej: Juan Pérez"
+              value={form.full_name}
+              onChange={e => set('full_name', e.target.value)}
+            />
+            {errors.full_name && <p className="emp-error-text">{errors.full_name}</p>}
+          </div>
 
-          <input className="emp-input" placeholder="Correo"
-            value={form.email}
-            onChange={e => set('email', e.target.value)}
-          />
+          {/* Correo */}
+          <div className="emp-form-group">
+            <label className="emp-label">Correo electrónico *</label>
+            <input 
+              className={`emp-input ${errors.email ? 'emp-input-error' : ''}`}
+              placeholder="ejemplo@correo.com"
+              value={form.email}
+              onChange={e => set('email', e.target.value)}
+            />
+            {errors.email && <p className="emp-error-text">{errors.email}</p>}
+          </div>
 
-          <input className="emp-input" placeholder="Teléfono"
-            value={form.phone}
-            onChange={e => set('phone', e.target.value)}
-          />
+          {/* Teléfono */}
+          <div className="emp-form-group">
+            <label className="emp-label">Teléfono</label>
+            <input 
+              className="emp-input" 
+              placeholder="+56 9 1234 5678"
+              value={form.phone}
+              onChange={e => set('phone', e.target.value)}
+            />
+          </div>
 
-          <input className="emp-input" placeholder="Cargo"
-            value={form.position}
-            onChange={e => set('position', e.target.value)}
-          />
+          {/* Cargo */}
+          <div className="emp-form-group">
+            <label className="emp-label">Cargo *</label>
+            <input 
+              className={`emp-input ${errors.position ? 'emp-input-error' : ''}`}
+              placeholder="Ej: Desarrollador Senior"
+              value={form.position}
+              onChange={e => set('position', e.target.value)}
+            />
+            {errors.position && <p className="emp-error-text">{errors.position}</p>}
+          </div>
 
-          <input className="emp-input" placeholder="Departamento"
-            value={form.department}
-            onChange={e => set('department', e.target.value)}
-          />
+          {/* Departamento */}
+          <div className="emp-form-group">
+            <label className="emp-label">Departamento</label>
+            <input 
+              className="emp-input" 
+              placeholder="Ej: Tecnología"
+              value={form.department}
+              onChange={e => set('department', e.target.value)}
+            />
+          </div>
 
-          <input className="emp-input" placeholder="Documento"
-            value={form.document_number}
-            onChange={e => set('document_number', e.target.value)}
-          />
+          {/* Documento */}
+          <div className="emp-form-group">
+            <label className="emp-label">No. Cédula</label>
+            <input 
+              className="emp-input" 
+              placeholder="Ej: 0123456789"
+              value={form.document_number}
+              onChange={e => set('document_number', e.target.value)}
+            />
+          </div>
 
-          <input className="emp-input" type="number" placeholder="Salario"
-            value={form.salary}
-            onChange={e => set('salary', e.target.value)}
-          />
+          {/* Salario */}
+          <div className="emp-form-group">
+            <label className="emp-label">Salario</label>
+            <input 
+              className="emp-input" 
+              type="number" 
+              placeholder="0"
+              value={form.salary}
+              onChange={e => set('salary', e.target.value)}
+            />
+          </div>
 
-          <input
-            className="emp-input"
-            type="date"
-            value={form.hired_at}
-            onChange={e => set('hired_at', e.target.value)}
-          />
+          {/* Fecha de contratación */}
+          <div className="emp-form-group">
+            <label className="emp-label">F. contratación</label>
+            <input
+              className="emp-input"
+              type="date"
+              value={form.hired_at}
+              onChange={e => set('hired_at', e.target.value)}
+            />
+          </div>
 
-          <select
-            className="emp-input"
-            value={form.status}
-            onChange={e => set('status', e.target.value)}
-          >
-            <option value="active">Activo</option>
-            <option value="inactive">Inactivo</option>
-          </select>
+          {/* Estado */}
+          <div className="emp-form-group">
+            <label className="emp-label">Estado</label>
+            <select
+              className="emp-input"
+              value={form.status}
+              onChange={e => set('status', e.target.value)}
+            >
+              <option value="active">Activo</option>
+              <option value="inactive">Inactivo</option>
+            </select>
+          </div>
         </div>
 
         <div className="emp-modal-footer">
@@ -141,7 +211,7 @@ function EmployeeModal({ employee, onClose, onSave, saving }) {
 
           <button
             className="emp-btn-primary"
-            onClick={() => onSave(form)}
+            onClick={handleSaveClick}
             disabled={saving}
           >
             {saving ? 'Guardando...' : 'Guardar'}
@@ -152,7 +222,6 @@ function EmployeeModal({ employee, onClose, onSave, saving }) {
     </div>
   );
 }
-
 
 /* ================= PAGE ================= */
 export default function EmployeesManagePage() {
@@ -194,7 +263,7 @@ export default function EmployeesManagePage() {
 
   /* ===== SAVE (CREATE / UPDATE) ===== */
   async function handleSave(form) {
-    if (saving) return; // ✅ Prevención de doble envío
+    if (saving) return;
     try {
       setSaving(true);
 
@@ -204,14 +273,17 @@ export default function EmployeesManagePage() {
 
       const res = await fetchWithAuth(url, { method, body: JSON.stringify(form) });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || data.errors?.join(', ') || 'Error guardando');
+      }
 
       setShowModal(false);
       setEditing(null);
       fetchEmployees();
 
-    } catch {
-      await alert.error('Error guardando');
+    } catch (error) {
+      await alert.error(error.message || 'Error guardando');
     } finally {
       setSaving(false);
     }
