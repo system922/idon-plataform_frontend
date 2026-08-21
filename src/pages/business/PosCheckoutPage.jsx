@@ -11,6 +11,7 @@ import { BsCashCoin } from "react-icons/bs";
 import { CiCreditCard1 } from "react-icons/ci";
 import { SlScreenSmartphone } from "react-icons/sl";
 
+import Modal from '../../components/General/Modal';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 
 // Componentes
@@ -1503,6 +1504,7 @@ export default function PosCheckoutPage() {
       }
     }
   }, [orders, setDraftOrder]);
+  
 
   // ─── Render ────────────────────────────────────────────────────
 

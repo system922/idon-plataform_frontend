@@ -224,7 +224,25 @@ export default function OrdersHistoryPage() {
     try {
       const res = await fetchWithAuth(`/products?businessId=${businessId}`);
       const data = await res.json();
-      setProductos(Array.isArray(data) ? data : data?.productos ?? data?.data ?? []);
+      const productosList = Array.isArray(data) ? data : data?.productos ?? data?.data ?? [];
+
+      // Transformar productos igual que en TakeOrderPageNew
+      const productosTransformados = productosList.map(p => {
+        const precioSinIva = Number(p.selling_price) || 0;
+        const ivaPorcentaje = Number(p.is_taxable) || 0;          
+        const ivaPorUnidad = Number(p.tax_rate); 
+        const precioConIva = Number(p.precioSinIva + p.ivaPorUnidad);
+        return {
+          ...p,
+          selling_price: precioSinIva,
+          is_taxable: ivaPorcentaje,
+          tax_rate: ivaPorUnidad,
+          tax_percent: ivaPorcentaje,
+          price: precioConIva,
+        };
+      });
+
+      setProductos(productosTransformados);
     } catch (err) {
       setError('Error al cargar productos');
       setTimeout(() => setError(''), 3000);
@@ -256,7 +274,7 @@ export default function OrdersHistoryPage() {
 
   useRealtimeSync('orders', loadOrders);
 
-  // ── Enriquecer items con precios ─────────────────────────────────────────
+  // ── Enriquecer items con precios, is_taxable ─────────────────────────────
   const enrichOrderItemsWithPrices = async (order) => {
     if (!order || !order.items) return order;
 
@@ -270,6 +288,7 @@ export default function OrdersHistoryPage() {
           selling_price: Number(producto.selling_price) || Number(producto.price) || 0,
           price: Number(producto.selling_price) || Number(producto.price) || 0,
           tax_rate: Number(producto.tax_rate) || 0,
+          is_taxable: Number(producto.is_taxable) || 0,
           extras: item.extras || [],
         };
       }
@@ -282,6 +301,7 @@ export default function OrdersHistoryPage() {
           selling_price: price,
           price: price,
           tax_rate: item.tax_rate || 0,
+          is_taxable: item.is_taxable || 0,
           extras: item.extras || [],
         };
       } catch {
@@ -291,6 +311,7 @@ export default function OrdersHistoryPage() {
           selling_price: item.selling_price || item.unit_price || 0,
           price: item.selling_price || item.unit_price || 0,
           tax_rate: item.tax_rate || 0,
+          is_taxable: item.is_taxable || 0,
           extras: item.extras || [],
         };
       }
@@ -324,8 +345,9 @@ export default function OrdersHistoryPage() {
     }
   };
 
-  // ── Editar orden ─────────────────────────────────────────────────────────
+  // ── Editar orden ─── SIN RECALCULAR (usar valores guardados) ──────────────
   const handleEditOrder = async (order) => {
+    console.log('handleEditOrder iniciado para orden:', order.id);
     let fresh = order;
     try {
       const res = await fetchWithAuth(`/ordenes/${order.id}?businessId=${businessId}`);
@@ -344,25 +366,68 @@ export default function OrdersHistoryPage() {
       const notes = dbItem.notes || dbItem.notas || '';
       if (notes.startsWith('__EXT__:')) {
         if (grouped.length > 0) {
+          // Extra: tomar valores tal como vienen, sin recalcular
+          const extraPrice = Number(dbItem.selling_price) || Number(dbItem.unit_price) || 0;
+          const extraTaxRate = Number(dbItem.tax_rate) || 0; // monto (solo referencia)
+          const extraQty = dbItem.quantity || 1;
+          const extraSubtotal = Number(dbItem.subtotal_base) || Math.round((extraPrice * extraQty) * 100) / 100;
+          const extraIva = Number(dbItem.iva_amount) || Math.round((extraPrice * (extraTaxRate / 100) * extraQty) * 100) / 100;
+          const extraLineTotal = Number(dbItem.line_total) || Math.round((extraSubtotal + extraIva) * 100) / 100;
+
+          console.log(`📦 Extra procesado: ${dbItem.product_name} | subtotal_base: ${extraSubtotal}, iva_amount: ${extraIva}, line_total: ${extraLineTotal}`);
+
           grouped[grouped.length - 1].extras.push({
             id: dbItem.product_id,
             product_id: dbItem.product_id,
             name: dbItem.product_name,
-            selling_price: Number(dbItem.selling_price) || 0,
-            tax_rate: Number(dbItem.tax_rate) || 0,
-            price: Number(dbItem.selling_price) || 0,
+            selling_price: extraPrice,
+            tax_rate: extraTaxRate,
+            is_taxable: Number(dbItem.is_taxable) || extraTaxRate,
+            subtotal_base: extraSubtotal,
+            iva_amount: extraIva,
+            line_total: extraLineTotal,
+            price: extraPrice,
           });
         }
       } else {
+        // Ítem principal: usar valores guardados, solo calcular si vienen nulos
+        const quantity = dbItem.quantity || 1;
+        const unitPrice = Number(dbItem.selling_price) || Number(dbItem.unit_price) || 0;
+        const taxRate = Number(dbItem.tax_rate) || 0; // monto (no usado para cálculo)
+        const taxPercent = Number(dbItem.is_taxable) || 0; // porcentaje (para cálculos si faltan campos)
+        let subtotalBase = Number(dbItem.subtotal_base);
+        let ivaAmount = Number(dbItem.iva_amount);
+        let lineTotal = Number(dbItem.line_total);
+
+        // Si falta algún campo, calcularlo (por si acaso)
+        if (isNaN(subtotalBase) || subtotalBase === 0) {
+          subtotalBase = Math.round((unitPrice * quantity) * 100) / 100;
+        }
+        if (isNaN(ivaAmount) || ivaAmount === 0) {
+          const ivaUnit = Math.round((unitPrice * (taxPercent / 100)) * 100) / 100;
+          ivaAmount = Math.round((ivaUnit * quantity) * 100) / 100;
+        }
+        if (isNaN(lineTotal) || lineTotal === 0) {
+          lineTotal = Math.round((subtotalBase + ivaAmount) * 100) / 100;
+        }
+
+        console.log(`📦 Ítem principal: ${dbItem.product_name} | subtotal_base: ${subtotalBase}, iva_amount: ${ivaAmount}, line_total: ${lineTotal}`);
+
         grouped.push({
           id: dbItem.id || (Date.now() + Math.random()),
           nombre: dbItem.product_name,
           product_name: dbItem.product_name,
           product_id: dbItem.product_id,
-          cantidad: dbItem.quantity || 1,
-          quantity: dbItem.quantity || 1,
-          selling_price: Number(dbItem.selling_price) || 0,
-          tax_rate: Number(dbItem.tax_rate) || 0,
+          cantidad: quantity,
+          quantity: quantity,
+          selling_price: unitPrice,
+          tax_rate: taxRate,
+          is_taxable: taxPercent,
+          subtotal_base: subtotalBase,
+          iva_amount: ivaAmount,
+          line_total: lineTotal,
+          iva: ivaAmount,
+          total: lineTotal,
           notas: notes,
           extras: [],
         });
@@ -470,17 +535,24 @@ export default function OrdersHistoryPage() {
       if (item._remove) return;
       const cantidad = item.cantidad || item.quantity || 1;
       if (cantidad > 1) {
-        const precioUnitario = item.precio || item.unit_price || 0;
+        const precioUnitario = item.selling_price || 0;
+        const taxRate = item.tax_rate || 0;
+        const subtotalUnit = Math.round((precioUnitario * 1) * 100) / 100;
+        const ivaUnit = Math.round((precioUnitario * (taxRate / 100)) * 100) / 100;
+        const ivaTotal = Math.round((ivaUnit * 1) * 100) / 100;
+        const lineTotal = Math.round((subtotalUnit + ivaTotal) * 100) / 100;
         for (let i = 0; i < cantidad; i++) {
           nuevosItems.push({
             ...item,
             id: Date.now() + i + Math.random(),
             cantidad: 1,
             quantity: 1,
-            subtotal: precioUnitario,
-            line_total: precioUnitario,
+            subtotal: subtotalUnit,
+            line_total: lineTotal,
             precio: precioUnitario,
             unit_price: precioUnitario,
+            subtotal_base: subtotalUnit,
+            iva_amount: ivaTotal,
             _separado: true,
           });
         }
@@ -500,6 +572,7 @@ export default function OrdersHistoryPage() {
     setShowSplitModal(true);
   };
 
+  // 🔹 Usa valores precalculados
   const confirmarDivision = async (selectedItemIds) => {
     if (!selectedItemIds || selectedItemIds.length === 0) {
       setError('Selecciona al menos un producto para la nueva orden');
@@ -526,18 +599,15 @@ export default function OrdersHistoryPage() {
 
       const toItems = (list) => list.flatMap(item => {
         const quantity = item.quantity || item.cantidad || 1;
-        const unitPrice = Number(item.selling_price) || 0;
-        const taxRate = Number(item.tax_rate) || 0;
-        const productName = item.nombre || item.product_name || 'Producto';
-
         const base = {
           product_id: item.product_id,
-          product_name: productName,
+          product_name: item.nombre || item.product_name || 'Producto',
           quantity: quantity,
-          unit_price: unitPrice,
-          tax_rate: taxRate,
-          iva_amount: taxRate * quantity,
-          line_total: (unitPrice + taxRate) * quantity,
+          unit_price: item.selling_price || 0,
+          tax_rate: item.tax_rate || 0,
+          subtotal_base: item.subtotal_base || 0,
+          iva_amount: item.iva_amount || 0,
+          line_total: item.line_total || 0,
           notes: item.notas || null,
         };
 
@@ -545,10 +615,11 @@ export default function OrdersHistoryPage() {
           product_id: e.id || e.product_id,
           product_name: e.name || 'Extra',
           quantity: quantity,
-          unit_price: Number(e.selling_price) || Number(e.price) || 0,
-          tax_rate: Number(e.tax_rate) || 0,
-          iva_amount: (Number(e.tax_rate) || 0) * quantity,
-          line_total: ((Number(e.selling_price) || Number(e.price) || 0) + (Number(e.tax_rate) || 0)) * quantity,
+          unit_price: e.selling_price || 0,
+          tax_rate: e.tax_rate || 0,
+          subtotal_base: e.subtotal_base || 0,
+          iva_amount: e.iva_amount || 0,
+          line_total: e.line_total || 0,
           notes: `__EXT__: + ${e.name}${e.nota ? ': ' + e.nota : ''}`,
         }));
 
@@ -556,24 +627,8 @@ export default function OrdersHistoryPage() {
       });
 
       const calcTotals = (list) => {
-        const subtotal = list.reduce((s, i) => {
-          const qty = i.cantidad || i.quantity || 1;
-          const base = (Number(i.selling_price) || 0) * qty;
-          const extrasBase = (i.extras || []).reduce((es, e) =>
-            es + (Number(e.selling_price) || Number(e.price) || 0), 0
-          ) * qty;
-          return s + base + extrasBase;
-        }, 0);
-
-        const iva = list.reduce((s, i) => {
-          const qty = i.cantidad || i.quantity || 1;
-          const iva = (Number(i.tax_rate) || 0) * qty;
-          const extrasIva = (i.extras || []).reduce((es, e) =>
-            es + (Number(e.tax_rate) || 0), 0
-          ) * qty;
-          return s + iva + extrasIva;
-        }, 0);
-
+        const subtotal = list.reduce((s, i) => s + (i.subtotal_base || 0), 0);
+        const iva = list.reduce((s, i) => s + (i.iva_amount || 0), 0);
         return { subtotal, iva, total: subtotal + iva };
       };
 
@@ -628,20 +683,42 @@ export default function OrdersHistoryPage() {
 
   // ── Editar item ──────────────────────────────────────────────────────────
   const abrirEditarItem = (item) => {
+    console.log('✏️ Abriendo edición de item:', item);
     setItemEditando(item);
-    setProductoSeleccionado({
-      id: item.product_id,
-      name: item.nombre || item.product_name,
-      selling_price: item.selling_price || 0,
-      price: item.selling_price || 0,
-      tax_rate: item.tax_rate || 0,
-    });
+    // Cargar producto seleccionado con sus datos (sin recalcular)
+    const producto = productos.find(p => p.id === item.product_id);
+    if (producto) {
+      setProductoSeleccionado({
+        ...producto,
+        selling_price: Number(producto.selling_price) || 0,
+        tax_rate: Number(producto.tax_rate) || 0,
+        is_taxable: Number(producto.is_taxable) || 0,
+      });
+    } else {
+      setProductoSeleccionado({
+        id: item.product_id,
+        name: item.nombre || item.product_name,
+        selling_price: item.selling_price || 0,
+        price: item.selling_price || 0,
+        tax_rate: item.tax_rate || 0,
+        is_taxable: item.tax_rate || 0,
+      });
+    }
     setCantidadItem(item.cantidad || item.quantity || 1);
     setNotasItem(item.notas || '');
-    setExtrasItem(item.extras || []);
+    setExtrasItem((item.extras || []).map(e => ({
+      ...e,
+      selling_price: Number(e.selling_price) || 0,
+      tax_rate: Number(e.tax_rate) || 0,
+      is_taxable: Number(e.is_taxable) || Number(e.tax_rate) || 0,
+      subtotal_base: Number(e.subtotal_base) || 0,
+      iva_amount: Number(e.iva_amount) || 0,
+      line_total: Number(e.line_total) || 0,
+    })));
     setShowEditItemModal(true);
   };
 
+  // ── Guardar edición de item ─────────────────────────────────────────────
   const guardarEdicionItem = () => {
     if (guardando) return;
     if (!productoSeleccionado || cantidadItem <= 0) {
@@ -650,8 +727,41 @@ export default function OrdersHistoryPage() {
       return;
     }
     const sellingPrice = Number(productoSeleccionado.selling_price || productoSeleccionado.price) || 0;
-    const taxRate = Number(productoSeleccionado.tax_rate) || 0;
+    const taxRate = Number(productoSeleccionado.is_taxable) || 0; // porcentaje
     const cantidad = parseInt(cantidadItem, 10);
+
+    // Calcular subtotal, IVA y total (como en TakeOrderPageNew)
+    const subtotalBase = Math.round((sellingPrice * cantidad) * 100) / 100;
+    const ivaUnit = Math.round((sellingPrice * (taxRate / 100)) * 100) / 100;
+    const ivaTotal = Math.round((ivaUnit * cantidad) * 100) / 100;
+    const lineTotal = Math.round((subtotalBase + ivaTotal) * 100) / 100;
+
+    const extrasConFormato = extrasItem.map(e => {
+      const price = Number(e.selling_price) || 0;
+      const percent = Number(e.is_taxable) || Number(e.tax_rate) || 0;
+      const extraIvaUnit = Math.round((price * (percent / 100)) * 100) / 100;
+      const extraSubtotal = Math.round((price * cantidad) * 100) / 100;
+      const extraIvaTotal = Math.round((extraIvaUnit * cantidad) * 100) / 100;
+      const extraLineTotal = Math.round((extraSubtotal + extraIvaTotal) * 100) / 100;
+      return {
+        ...e,
+        selling_price: price,
+        tax_rate: percent,
+        is_taxable: percent,
+        subtotal_base: extraSubtotal,
+        iva_amount: extraIvaTotal,
+        line_total: extraLineTotal,
+      };
+    });
+
+    console.log('💾 Guardando edición de item:', {
+      nombre: productoSeleccionado.name,
+      cantidad,
+      subtotalBase,
+      ivaTotal,
+      lineTotal,
+      extras: extrasConFormato
+    });
 
     setEditItems(prev => prev.map(item => item.id === itemEditando.id ? {
       ...itemEditando,
@@ -662,8 +772,13 @@ export default function OrdersHistoryPage() {
       quantity: cantidad,
       selling_price: sellingPrice,
       tax_rate: taxRate,
+      subtotal_base: subtotalBase,
+      iva_amount: ivaTotal,
+      line_total: lineTotal,
+      iva: ivaTotal,
+      total: lineTotal,
       notas: notasItem,
-      extras: extrasItem,
+      extras: extrasConFormato,
       _modified: true,
     } : item));
 
@@ -685,8 +800,40 @@ export default function OrdersHistoryPage() {
       return;
     }
     const sellingPrice = Number(productoSeleccionado.selling_price || productoSeleccionado.price) || 0;
-    const taxRate = Number(productoSeleccionado.tax_rate) || 0;
+    const taxRate = Number(productoSeleccionado.is_taxable) || 0;
     const cantidad = parseInt(cantidadItem, 10);
+
+    const subtotalBase = Math.round((sellingPrice * cantidad) * 100) / 100;
+    const ivaUnit = Math.round((sellingPrice * (taxRate / 100)) * 100) / 100;
+    const ivaTotal = Math.round((ivaUnit * cantidad) * 100) / 100;
+    const lineTotal = Math.round((subtotalBase + ivaTotal) * 100) / 100;
+
+    const extrasConFormato = extrasItem.map(e => {
+      const price = Number(e.selling_price) || 0;
+      const percent = Number(e.is_taxable) || Number(e.tax_rate) || 0;
+      const extraIvaUnit = Math.round((price * (percent / 100)) * 100) / 100;
+      const extraSubtotal = Math.round((price * cantidad) * 100) / 100;
+      const extraIvaTotal = Math.round((extraIvaUnit * cantidad) * 100) / 100;
+      const extraLineTotal = Math.round((extraSubtotal + extraIvaTotal) * 100) / 100;
+      return {
+        ...e,
+        selling_price: price,
+        tax_rate: percent,
+        is_taxable: percent,
+        subtotal_base: extraSubtotal,
+        iva_amount: extraIvaTotal,
+        line_total: extraLineTotal,
+      };
+    });
+
+    console.log('➕ Agregando item:', {
+      nombre: productoSeleccionado.name,
+      cantidad,
+      subtotalBase,
+      ivaTotal,
+      lineTotal,
+      extras: extrasConFormato
+    });
 
     setEditItems(prev => [...prev, {
       id: Date.now(),
@@ -697,8 +844,13 @@ export default function OrdersHistoryPage() {
       quantity: cantidad,
       selling_price: sellingPrice,
       tax_rate: taxRate,
+      subtotal_base: subtotalBase,
+      iva_amount: ivaTotal,
+      line_total: lineTotal,
+      iva: ivaTotal,
+      total: lineTotal,
       notas: notasItem,
-      extras: extrasItem,
+      extras: extrasConFormato,
       _added: true,
     }]);
 
@@ -738,18 +890,15 @@ export default function OrdersHistoryPage() {
 
       const itemsToSend = remainingItems.flatMap(item => {
         const quantity = item.quantity || item.cantidad || 1;
-        const unitPrice = Number(item.selling_price) || 0;
-        const taxRate = Number(item.tax_rate) || 0;
-        const productName = item.nombre || item.product_name || 'Producto';
-
         const base = {
           product_id: item.product_id,
-          product_name: productName,
+          product_name: item.nombre || item.product_name || 'Producto',
           quantity: quantity,
-          unit_price: unitPrice,
-          tax_rate: taxRate,
-          iva_amount: taxRate * quantity,
-          line_total: (unitPrice + taxRate) * quantity,
+          unit_price: item.selling_price || 0,
+          tax_rate: item.tax_rate || 0,
+          subtotal_base: item.subtotal_base || 0,
+          iva_amount: item.iva_amount || 0,
+          line_total: item.line_total || 0,
           notes: item.notas || null,
         };
 
@@ -757,31 +906,36 @@ export default function OrdersHistoryPage() {
           product_id: e.id || e.product_id,
           product_name: e.name || 'Extra',
           quantity: quantity,
-          unit_price: Number(e.selling_price) || Number(e.price) || 0,
-          tax_rate: Number(e.tax_rate) || 0,
-          iva_amount: (Number(e.tax_rate) || 0) * quantity,
-          line_total: ((Number(e.selling_price) || Number(e.price) || 0) + (Number(e.tax_rate) || 0)) * quantity,
+          unit_price: e.selling_price || 0,
+          tax_rate: e.tax_rate || 0,
+          subtotal_base: e.subtotal_base || 0,
+          iva_amount: e.iva_amount || 0,
+          line_total: e.line_total || 0,
           notes: `__EXT__: + ${e.name}${e.nota ? ': ' + e.nota : ''}`,
         }));
 
         return [base, ...extras];
       });
 
+      // Usar los valores precalculados
       const editSubtotal = remainingItems.reduce((s, item) => {
-        const qty = item.cantidad || item.quantity || 1;
-        const base = (Number(item.selling_price) || 0) * qty;
-        const extrasBase = (item.extras || []).reduce((es, e) => es + (Number(e.selling_price) || Number(e.price) || 0), 0) * qty;
-        return s + base + extrasBase;
+        let total = s + (item.subtotal_base || 0);
+        if (item.extras && item.extras.length > 0) {
+          total += item.extras.reduce((es, e) => es + (e.subtotal_base || 0), 0);
+        }
+        return total;
       }, 0);
 
       const editIva = remainingItems.reduce((s, item) => {
-        const qty = item.cantidad || item.quantity || 1;
-        const iva = (Number(item.tax_rate) || 0) * qty;
-        const extrasIva = (item.extras || []).reduce((es, e) => es + (Number(e.tax_rate) || 0), 0) * qty;
-        return s + iva + extrasIva;
+        let total = s + (item.iva_amount || 0);
+        if (item.extras && item.extras.length > 0) {
+          total += item.extras.reduce((es, e) => es + (e.iva_amount || 0), 0);
+        }
+        return total;
       }, 0);
-
       const editTotal = editSubtotal + editIva;
+
+      console.log('💾 Guardando cambios editados:', { editSubtotal, editIva, editTotal, itemsToSend });
 
       const res = await fetchWithAuth(`/ordenes/${selectedOrder.id}?businessId=${businessId}`, {
         method: 'PATCH',
@@ -795,7 +949,6 @@ export default function OrdersHistoryPage() {
 
       if (!res.ok) throw new Error('Error al actualizar orden');
 
-      const resData = await res.json();
       const orderSnapshot = { ...selectedOrder };
 
       setEditMode(false);
@@ -839,21 +992,27 @@ export default function OrdersHistoryPage() {
   // ── Totales editados ──────────────────────────────────────────────────────
   const activeEditItems = editItems.filter(i => !i._remove);
   const editSubtotal = useMemo(() => {
-    return activeEditItems.reduce((s, item) => {
-      const qty = item.cantidad || item.quantity || 1;
-      const base = (Number(item.selling_price) || 0) * qty;
-      const extrasBase = (item.extras || []).reduce((es, e) => es + (Number(e.selling_price) || Number(e.price) || 0), 0) * qty;
-      return s + base + extrasBase;
+    const total = activeEditItems.reduce((s, item) => {
+      let total = s + (item.subtotal_base || 0);
+      if (item.extras && item.extras.length > 0) {
+        total += item.extras.reduce((es, e) => es + (e.subtotal_base || 0), 0);
+      }
+      return total;
     }, 0);
+    console.log('🧮 editSubtotal calculado:', total, 'activeEditItems:', activeEditItems);
+    return total;
   }, [activeEditItems]);
 
   const editIva = useMemo(() => {
-    return activeEditItems.reduce((s, item) => {
-      const qty = item.cantidad || item.quantity || 1;
-      const iva = (Number(item.tax_rate) || 0) * qty;
-      const extrasIva = (item.extras || []).reduce((es, e) => es + (Number(e.tax_rate) || 0), 0) * qty;
-      return s + iva + extrasIva;
+    const total = activeEditItems.reduce((s, item) => {
+      let total = s + (item.iva_amount || 0);
+      if (item.extras && item.extras.length > 0) {
+        total += item.extras.reduce((es, e) => es + (e.iva_amount || 0), 0);
+      }
+      return total;
     }, 0);
+    console.log('🧮 editIva calculado:', total, 'activeEditItems:', activeEditItems);
+    return total;
   }, [activeEditItems]);
 
   const editTotal = editSubtotal + editIva;
@@ -1013,10 +1172,9 @@ export default function OrdersHistoryPage() {
   // ── Render personalizado para cada item del checklist ──────────────────
   const renderSplitItem = (item) => {
     const originalItem = item._item;
-    const qty = originalItem.cantidad || originalItem.quantity || 1;
-    const price = Number(originalItem.selling_price) || 0;
-    const tax = Number(originalItem.tax_rate) || 0;
-    const subtotal = (price + tax) * qty;
+    const subtotal = originalItem.subtotal_base || 0;
+    const iva = originalItem.iva_amount || 0;
+    const total = subtotal + iva;
     const hasExtras = (originalItem.extras || []).length > 0;
 
     return (
@@ -1024,7 +1182,7 @@ export default function OrdersHistoryPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <span style={{ fontWeight: 500 }}>{item.label}</span>
           <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
-            {fmt(subtotal)}
+            {fmt(total)}
           </span>
         </div>
         {hasExtras && (
@@ -1047,10 +1205,9 @@ export default function OrdersHistoryPage() {
       selectedSplitItems.includes(item.id)
     );
     return selectedItems.reduce((sum, item) => {
-      const qty = item.cantidad || item.quantity || 1;
-      const price = Number(item.selling_price) || 0;
-      const tax = Number(item.tax_rate) || 0;
-      return sum + (price + tax) * qty;
+      const subtotal = item.subtotal_base || 0;
+      const iva = item.iva_amount || 0;
+      return sum + subtotal + iva;
     }, 0);
   }, [selectedSplitItems, activeEditItems]);
 
