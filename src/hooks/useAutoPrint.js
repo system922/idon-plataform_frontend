@@ -1,17 +1,22 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
+import { useSession } from '../context/SessionContext';   
 import { usePrinterService } from '../services/usePrinterService';
-import { fetchWithAuth } from '../config/apiBase';
+import { fetchWithAuth } from '../config/api';            
 import qz from 'qz-tray';
-import API_BASE from '../config/apiBase';
+import { API_BASE } from '../config/api';
 
 const POLL_INTERVAL = 3000;
 
-export function useAutoPrint({ businessId, enabled = true }) {
-  const { print }      = usePrinterService();
-  const printRef       = useRef(print);
-  const printingRef    = useRef(false);
-  const printedIdsRef  = useRef(new Set()); // IDs ya impresos en esta sesión
+export function useAutoPrint({ businessId: propBusinessId, enabled = true }) {
+  
+  const { user } = useSession();
+  const businessId = propBusinessId || user?.businessId;    
+
+  const { print } = usePrinterService();
+  const printRef = useRef(print);
+  const printingRef = useRef(false);
+  const printedIdsRef = useRef(new Set());
 
   useEffect(() => { printRef.current = print; }, [print]);
 
@@ -21,41 +26,37 @@ export function useAutoPrint({ businessId, enabled = true }) {
     await printRef.current('printer_ticket', 'comanda', {
       comanda: { number: order.order_number || order.numero_pedido || order.id || 'N/A' },
       table:   order.mesa_numero ?? order.numero_mesa,
-      items,   // pasar directos: formatComandaTicket ya maneja todos los nombres de campo
+      items,
       notes:   order.notas || order.notes || '',
     });
   }, []);
 
-  // ── Intentar imprimir un pedido (socket o poll) — sin duplicados ────────
+  // ── Intentar imprimir un pedido ──────────────────────
   const tryPrint = useCallback(async (order) => {
     if (!order?.id) return false;
-    if (printedIdsRef.current.has(order.id)) return false; // ya procesado en esta pestaña
+    if (printedIdsRef.current.has(order.id)) return false;
     if (!qz.websocket.isActive()) return false;
 
-    // Bloquear otras llamadas concurrentes en esta misma pestaña
     printedIdsRef.current.add(order.id);
 
     try {
-      // Claim atómico en el servidor: solo el primer cliente que llame a mark-printed
-      // con printed=FALSE gana; el resto recibe claimed_ids vacío y no imprime
-      const claimRes = await fetchWithAuth('/api/ordenes/mark-printed', {
+      const claimRes = await fetchWithAuth('/ordenes/mark-printed', {
         method: 'POST',
         body: JSON.stringify({ order_ids: [order.id] }),
       });
       if (claimRes.ok) {
         const claimData = await claimRes.json();
         const claimed = claimData.claimed_ids ?? [];
-        if (!claimed.includes(order.id)) return false; // otro cliente ya imprimió
+        if (!claimed.includes(order.id)) return false;
       }
 
-      // Si los ítems llegaron sin product_name, buscar orden completa
       let orderToprint = order;
       const sinNombre = !Array.isArray(order.items) || order.items.length === 0 ||
         !order.items.some(i => i.product_name || i.nombre || i.name || i.descripcion || i.producto);
 
       if (sinNombre) {
         try {
-          const res = await fetchWithAuth(`/api/ordenes/${order.id}`);
+          const res = await fetchWithAuth(`/ordenes/${order.id}`);
           if (res.ok) {
             const full = await res.json();
             orderToprint = { ...order, ...full, items: full.items || full.pedido?.items || [] };
@@ -66,13 +67,12 @@ export function useAutoPrint({ businessId, enabled = true }) {
       await printOrder(orderToprint);
       return true;
     } catch (err) {
-      // Si falla la impresión, quitar del set para que el próximo poll reintente
       printedIdsRef.current.delete(order.id);
       throw err;
     }
   }, [printOrder]);
 
-  // ── Polling ─────────────────────────────────────────────────────────────
+  // ── Polling ─────────────────────────────────────────────
   useEffect(() => {
     if (!enabled || !businessId) return;
 
@@ -82,7 +82,7 @@ export function useAutoPrint({ businessId, enabled = true }) {
 
       try {
         printingRef.current = true;
-        const res = await fetchWithAuth('/api/ordenes/unprinted');
+        const res = await fetchWithAuth('/ordenes/unprinted');
         if (!res.ok) return;
 
         const orders = await res.json();
@@ -91,13 +91,9 @@ export function useAutoPrint({ businessId, enabled = true }) {
         for (const order of orders) {
           try {
             await tryPrint(order);
-          } catch (err) {
-
-          }
+          } catch { }
         }
-      } catch (err) {
-
-      } finally {
+      } catch { } finally {
         printingRef.current = false;
       }
     };
@@ -107,11 +103,11 @@ export function useAutoPrint({ businessId, enabled = true }) {
     return () => clearInterval(interval);
   }, [enabled, businessId, tryPrint]);
 
-  // ── Socket ──────────────────────────────────────────────────────────────
+  // ── Socket ──────────────────────────────────────────────
   useEffect(() => {
     if (!enabled || !businessId) return;
 
-    const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
+    const token = sessionStorage.getItem('auth_token') || localStorage.getItem('idonToken') || localStorage.getItem('token');
     const socket = io(API_BASE, {
       auth: { token, businessId },
       transports: ['websocket', 'polling'],
@@ -119,19 +115,18 @@ export function useAutoPrint({ businessId, enabled = true }) {
       reconnectionDelay: 3000,
     });
 
-    socket.on('connect', () => {});
-
     socket.on('new_order', async (data) => {
       try {
         const pedido = data?.pedido || data;
         const items  = data?.items ?? pedido?.items ?? [];
         const order  = { ...pedido, items };
         await tryPrint(order);
-      } catch (err) {
-
-      }
+      } catch { }
     });
 
-    return () => socket.disconnect();
+    return () => {
+      socket.removeAllListeners();
+      socket.disconnect();
+    };
   }, [enabled, businessId, tryPrint]);
 }

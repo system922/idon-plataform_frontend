@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw, Search, Grid, List, Clock, X, ChevronRight, CheckCircle } from 'react-feather';
 import PageTemplate from '../../components/PageTemplate';
-import { fetchWithAuth } from '../../config/apiBase';
+import { fetchWithAuth } from '../../config/apiBase_';
 import '../../styles/OrdersTablesPage.css';
 
 // ── Configuración de estados ──────────────────────────────────────────────────

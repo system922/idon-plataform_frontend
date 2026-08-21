@@ -1,105 +1,189 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FiPlus, FiRefreshCw, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { FiPlus, FiRefreshCw } from 'react-icons/fi';
+import { Edit2, Trash2 } from 'react-feather';
+import { useSession } from '../../context/SessionContext';
 import PageTemplate from '../../components/PageTemplate';
-import DataTable from '../../components/DataTable';
+import Table from '../../components/General/Table';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import SearchInput from '../../components/General/SearchInput';
 import ProductModal from '../../components/ProductModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import { useToast } from '../../components/Toast';
-import { productService } from '../../services/productService';
-import { useAsyncOperation } from '../../hooks/useAsyncOperation';
+import { fetchWithAuth } from '../../config/api';
 import { formatCurrency, calculatePVP, toNumber } from '../../utils/productUtils';
 import { ERROR_MESSAGES } from '../../constants/inventoryConstants';
 import { useRealtimeSync } from '../../hooks/useRealtimeSync';
-import '../../styles/DataTable.css';
-import '../../styles/ProductosPage.css';
 
 const ProductosPage = () => {
+  const { user } = useSession();
+
   const [products, setProducts] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
+  const [editing, setEditing] = useState(null); // null = nuevo, objeto = editar
   const [confirmDelete, setConfirmDelete] = useState(null);
-  
-  const { execute: loadProductsAsync, isLoading: loading, error: loadError } = useAsyncOperation();
-  const { execute: saveProductAsync, isLoading: saving } = useAsyncOperation();
-  const { execute: deleteProductAsync, isLoading: deleting } = useAsyncOperation();
-  const { showToast, ToastContainer } = useToast();
-  
-  const isMounted = useRef(true);
+  const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
-  // En ProductosPage.jsx, dentro de loadProducts o en el useEffect
+  const { showToast, ToastContainer } = useToast();
+
+  // ── Carga de productos ──────────────────────────────────────────
   const loadProducts = useCallback(async () => {
+    setRefreshing(true);
+    setLoading(true);
+    setLoadError('');
+
     try {
-      const data = await loadProductsAsync(
-        (signal) => productService.getAll(signal),
-        (result) => {
-          if (isMounted.current) {
-            setProducts(result);
-          }
-        }
-      );
-      return data;
+      const res = await fetchWithAuth('/products?all=1');
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Error al cargar productos');
+      }
+
+      const data = await res.json();
+      const list = Array.isArray(data)
+        ? data
+        : data?.productos ?? data?.products ?? data?.data ?? [];
+
+      setProducts(list);
     } catch (error) {
-      if (isMounted.current) showToast(ERROR_MESSAGES.LOAD_PRODUCTS, 'error');
+      console.error('Error cargando productos:', error);
+      setLoadError(error.message || 'Error al cargar productos');
+      showToast(ERROR_MESSAGES.LOAD_PRODUCTS, 'error');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  }, [loadProductsAsync, showToast]);
-  
+  }, [showToast]);
+
   useEffect(() => {
     loadProducts();
   }, []);
 
-  useRealtimeSync(['products', 'categories', 'inventory'], loadProducts);
+  useRealtimeSync('products', loadProducts);
 
-  // Guardar producto
+  // ── Guardar producto ────────────────────────────────────────────────────
   const handleSaveProduct = useCallback(async (payload) => {
+    if (saving) return;
+    
+    setSaving(true);
     try {
-      if (editing) {
-        await saveProductAsync(() => productService.update(editing.id, payload));
-        showToast('Producto actualizado', 'success');
-      } else {
-        await saveProductAsync(() => productService.create(payload));
-        showToast('Producto creado', 'success');
+      const url = editing ? `/products/${editing.id}` : '/products';
+      const method = editing ? 'PUT' : 'POST';
+      
+      const res = await fetchWithAuth(url, {
+        method,
+        body: JSON.stringify(payload),
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Error al guardar producto');
       }
+      
+      showToast(editing ? 'Producto actualizado' : 'Producto creado', 'success');
       await loadProducts();
       setModalOpen(false);
       setEditing(null);
     } catch (error) {
-      showToast(ERROR_MESSAGES.SAVE_PRODUCT, 'error');
+      showToast(error.message || ERROR_MESSAGES.SAVE_PRODUCT, 'error');
+    } finally {
+      setSaving(false);
     }
-  }, [editing, saveProductAsync, loadProducts, showToast]);
+  }, [editing, loadProducts, showToast, saving]);
 
-  // Eliminar producto
+  // ── Eliminar producto ──────────────────────────────────────────────────
   const handleDeleteProduct = useCallback(async () => {
     if (!confirmDelete) return;
+    setDeleting(true);
     try {
-      await deleteProductAsync(() => productService.delete(confirmDelete.id));
+      const res = await fetchWithAuth(`/products/${confirmDelete.id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Error al eliminar producto');
+      }
+      
       showToast('Producto eliminado', 'success');
       await loadProducts();
       setConfirmDelete(null);
     } catch (error) {
-      showToast(ERROR_MESSAGES.DELETE_PRODUCT, 'error');
+      showToast(error.message || ERROR_MESSAGES.DELETE_PRODUCT, 'error');
+    } finally {
+      setDeleting(false);
     }
-  }, [confirmDelete, deleteProductAsync, loadProducts, showToast]);
+  }, [confirmDelete, loadProducts, showToast]);
 
-  // Configuración de columnas
+  // ── Handlers para abrir/cerrar modal ──────────────────────────────────
+  const handleOpenCreate = () => {
+    setEditing(null);  // ⚠️ Asegurar que editing sea null para nuevo
+    setModalOpen(true);
+  };
+
+  const handleOpenEdit = (item) => {
+    setEditing(item);  // ⚠️ Pasar el objeto completo para edición
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    // ⚠️ No resetear editing inmediatamente, esperar a que el modal se cierre
+    setTimeout(() => setEditing(null), 300);
+  };
+
+  // ── Filtrado por búsqueda ──────────────────────────────────────────────
+  const filteredProducts = useMemo(() => {
+    let result = products.filter(p => {
+      const q = search.toLowerCase();
+      return (p.code?.toLowerCase() || '').includes(q) ||
+             (p.barcode?.toLowerCase() || '').includes(q) ||
+             (p.name?.toLowerCase() || '').includes(q) ||
+             (p.category_name?.toLowerCase() || '').includes(q);
+    });
+    
+    result = [...result].sort((a, b) => {
+      if (a.is_active && !b.is_active) return -1;
+      if (!a.is_active && b.is_active) return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+    
+    return result;
+  }, [products, search]);
+
+  // ── Columnas ──────────────────────────────────────────────────────────
   const columns = [
-    { key: 'code', label: 'CÓDIGO', sortable: true },
-    { key: 'sku', label: 'SKU', sortable: true },
-    { key: 'barcode', label: 'CÓD. BARRAS' },
-    { key: 'name', label: 'DESCRIPCIÓN', sortable: true },
-    { key: 'category_name', label: 'CATEGORÍA', sortable: true },
-    { 
-      key: 'pvp', 
-      label: 'PVP', 
-      align: 'right',
-      sortable: true,
-      render: (_, row) => {
-        const pvp = calculatePVP(row);
-        const iva = toNumber(row.tax_rate);
+    {
+      accessor: 'barcode',
+      label: 'CÓD. BARRAS',
+      render: (item) => <span>{item.barcode || '—'}</span>
+    },
+    {
+      accessor: 'name',
+      label: 'DESCRIPCIÓN',
+      render: (item) => <span>{item.name}</span>
+    },
+    {
+      accessor: 'category_name',
+      label: 'CATEGORÍA',
+      render: (item) => <span>{item.category_name || '—'}</span>
+    },
+    {
+      accessor: 'pvp',
+      label: 'PVP',
+      render: (item) => {
+        const pvp = calculatePVP(item);
+        const iva = toNumber(item.tax_rate);
         return (
           <div>
-            <strong style={{ color: '#00c48c' }}>{formatCurrency(pvp)}</strong>
-            {toNumber(row.is_taxable) > 0 && iva > 0 && (
-              <small style={{ display: 'block', fontSize: 10, color: '#fbbf24' }}>
+            <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(pvp)}</strong>
+            {toNumber(item.is_taxable) > 0 && iva > 0 && (
+              <small style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)' }}>
                 IVA {formatCurrency(iva)}
               </small>
             )}
@@ -107,80 +191,147 @@ const ProductosPage = () => {
         );
       }
     },
-    { 
-      key: 'unit_cost', 
-      label: 'COSTO', 
-      align: 'right',
-      render: (val) => toNumber(val) > 0 ? formatCurrency(toNumber(val)) : '—'
+    {
+      accessor: 'unit_cost',
+      label: 'COSTO',
+      render: (item) => toNumber(item.unit_cost) > 0 ? formatCurrency(item.unit_cost) : '—'
     },
-    { key: 'stock', label: 'STOCK', align: 'right', sortable: true },
-    { 
-      key: 'is_active', 
+    {
+      accessor: 'stock',
+      label: 'STOCK',
+      render: (item) => <span>{item.stock ?? 0}</span>
+    },
+    {
+      accessor: 'is_active',
       label: 'ESTADO',
-      render: (val) => (
-        <span className={`status-badge ${val ? 'status-active' : 'status-inactive'}`}>
-          {val ? 'Activo' : 'Inactivo'}
+      render: (item) => (
+        <span className={`${item.is_active ? 'status-active' : 'status-inactive'}`}>
+          {item.is_active ? 'Activo' : 'Inactivo'}
         </span>
       )
-    },
+    }, 
   ];
 
-  // Acciones por fila
-  const rowActions = [
-    {
-      icon: <FiEdit2 size={16} />,
-      title: 'Editar producto',
-      onClick: (row) => { setEditing(row); setModalOpen(true); }
-    },
-    {
-      icon: <FiTrash2 size={16} />,
-      title: 'Eliminar producto',
-      color: '#ef4444',
-      onClick: (row) => setConfirmDelete({ id: row.id, name: row.name })
-    }
-  ];
+  // ── Render de fila con acciones ──────────────────────────────────────
+  const renderRow = (item) => (
+    <tr key={item.id} className={`table-row ${!item.is_active ? 'users-row-inactive' : ''}`}>
+      {columns.map((col, idx) => (
+        <td key={idx} className="table-cell" data-label={col.label}>
+          {col.render ? col.render(item) : item[col.accessor]}
+        </td>
+      ))}
+      <td className="table-cell table-actions-cell">
+        <ButtonGroup>
+          <IconTextButton
+            variant="blue"
+            size="sm"
+            inline={true}
+            icon={<Edit2 size={12} />}
+            onClick={() => handleOpenEdit(item)}  // ← Usar handleOpenEdit
+            title="Editar producto"
+          >
+            Editar
+          </IconTextButton>
+          <IconTextButton
+            variant="danger"
+            size="sm"
+            inline={true}
+            icon={<Trash2 size={12} />}
+            onClick={() => setConfirmDelete({ id: item.id, name: item.name })}
+            title="Eliminar producto"
+          >
+            Eliminar
+          </IconTextButton>
+        </ButtonGroup>
+      </td>
+    </tr>
+  );
 
-  const isLoading = loading || saving || deleting;
+  // ── Toolbar ────────────────────────────────────────────────────
+  const toolbar = (
+    <div className="users-toolbar">
+      <SearchInput
+        value={search}
+        onChange={setSearch}
+        placeholder="Buscar productos..."
+        size="md"
+        variant="bordered"
+        className="users-search-input"
+        onClear={() => setSearch('')}
+        autoFocus={false}
+      />
+      <ButtonGroup>
+        <IconTextButton
+          variant="success"
+          size="md"
+          icon={<FiPlus size={13} />}
+          onClick={handleOpenCreate}  // ← Usar handleOpenCreate
+          disabled={saving || deleting}
+          loading={saving || deleting}
+        >
+          Nuevo Producto
+        </IconTextButton>
+      </ButtonGroup>
+    </div>
+  );
+
+  // ── Botón de refrescar ──────────────────────────────────────────────────
+  const refreshButton = (
+    <button
+      onClick={loadProducts}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
+  const isLoading = loading;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   return (
     <PageTemplate
-      title=" Gestión de Productos"
-      subtitle="Gestión de inventario"
-      theme="business"
+      title="Gestión de Productos"
+      subtitle="Administra los productos, incluyendo códigos, SKU, precios y stock."
       loading={isLoading}
       error={loadError}
       onRetry={loadProducts}
-      headerAction={
-        <div className="page-actions">
-          <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true); }}>
-            <FiPlus size={18} /> Nuevo Producto
-          </button>
-          <button className="btn-icon" onClick={loadProducts} title="Recargar">
-            <FiRefreshCw size={18} />
-          </button>
-        </div>
-      }
+      headerAction={refreshButton}
+      theme="business"
     >
       <div className="productos-page">
         <ToastContainer />
-        
-        <DataTable
-          data={products}
+
+        <Table
+          data={filteredProducts}
           columns={columns}
-          actions={rowActions}
+          keyField="id"
+          renderRow={renderRow}
+          title="Listado de productos"
+          subtitle={`${filteredProducts.length} ${filteredProducts.length === 1 ? 'producto' : 'productos'} registrados`}
+          toolbar={toolbar}
+          searchable={false}
+          pagination={true}
+          itemsPerPage={itemsPerPage}
+          itemsPerPageOptions={[10, 15]}
+          onItemsPerPageChange={(newPerPage) => setItemsPerPage(newPerPage)}
           loading={isLoading}
-          enableSearch={true}
-          enablePagination={true}
-          pageSize={10}
-          searchPlaceholder="Buscar por código, SKU, nombre o categoría..."
-          emptyMessage="No hay productos registrados"
+          emptyMessage={search ? 'No hay resultados para esa búsqueda' : 'No hay productos registrados'}
+          striped={true}
+          hoverable={true}
+          bordered={false}
+          compact={false}
         />
 
+        {/* ⚠️ PASAR editing CORRECTAMENTE */}
         <ProductModal
           isOpen={modalOpen}
-          product={editing}
+          product={editing}  // ← editing es null para nuevo, objeto para editar
           onSave={handleSaveProduct}
-          onClose={() => { setModalOpen(false); setEditing(null); }}
+          onClose={handleCloseModal}
+          isSaving={saving}
         />
 
         <ConfirmModal

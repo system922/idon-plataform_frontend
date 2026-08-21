@@ -1,17 +1,13 @@
-/**
- * SidebarModern.jsx
- * Ubicación: src/components/SidebarModern.jsx
- */
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   FiChevronDown, FiLogOut, FiUser, FiAlertCircle,
   FiGrid, FiBarChart2, FiBriefcase, FiLayers,
-  FiCreditCard, FiUsers, FiSettings, FiChevronUp,
-  FiShield, FiMenu, FiLock, FiUnlock,
+  FiCreditCard, FiUsers, FiSettings, FiChevronUp, 
+  FiMenu, FiLock, FiUnlock,
 } from 'react-icons/fi';
-import '../styles/SidebarModern.css';
+import {IconTextButton, ButtonGroup } from './General/Button';
+
 
 /* ── Mapeo de íconos (adminMenu.js usa strings) ── */
 const ICON_MAP = {
@@ -154,14 +150,6 @@ function UserCard({ user, onLogout, isCollapsed, onMobileClose }) {
             <FiUser size={15} />
             Ver perfil
           </button>
-
-          <button className="user-dropdown-item" onClick={() => goTo(profilePath)}>
-            <FiShield size={15} />
-            Cambiar contraseña
-          </button>
-
-          <div className="user-dropdown-divider" />
-
           <button
             className="user-dropdown-item danger"
             onClick={() => { setOpen(false); onLogout(); }}
@@ -259,7 +247,7 @@ export default function SidebarModern({
           <div className="sidebar-logo-icon">
             {!logoError ? (
               <img
-                src="/IDON_2.svg"
+                src="/IDON_1.svg"
                 alt="IDON"
                 className="sidebar-logo-img"
                 onError={() => setLogoError(true)}
@@ -272,7 +260,7 @@ export default function SidebarModern({
           {!isCollapsed && (
             <div className="sidebar-logo-text">
               <h2><span className="logo-white">ID</span><span className="logo-orange">ON</span></h2>
-              <span className="logo-subtitle">GESTIÓN MULTINEGOCIOS</span>
+              <span className="logo-subtitle">Simplemente eficiente</span>
             </div>
           )}
         </div>
@@ -315,26 +303,35 @@ export default function SidebarModern({
 
         {/* ── BOTÓN ABRIR CAJA (solo si no hay apertura) ── */}
         {!aperturaHecha && onAbrirCaja && (
-          <div
-            className="menu-item sidebar-caja-abrir"
-            onClick={handleAbrirCajaClick}
-            title={isCollapsed ? 'Abrir Caja' : ''}
-          >
-            <span className="menu-icon"><FiUnlock size={17} /></span>
-            {!isCollapsed && <span className="menu-label">Abrir Caja</span>}
-          </div>
+          <ButtonGroup>
+            <IconTextButton
+              variant="success"
+              size="md"
+              onClick={handleAbrirCajaClick}
+              block
+              title={isCollapsed ? 'Abrir Caja' : ''}
+            >
+              <FiUnlock size={17} />
+              {!isCollapsed && <span>Cuadrar Caja</span>}
+            </IconTextButton>
+          </ButtonGroup>
         )}
 
         {/* ── BOTÓN CERRAR CAJA (solo si hay apertura) ── */}
         {aperturaHecha && onCerrarCaja && (
-          <div
-            className="menu-item sidebar-caja-cerrar"
-            onClick={handleCerrarCajaClick}
-            title={isCollapsed ? 'Cerrar Caja' : ''}
-          >
-            <span className="menu-icon"><FiLock size={17} /></span>
-            {!isCollapsed && <span className="menu-label">Cuadrar Caja</span>}
-          </div>
+          <ButtonGroup>
+            <IconTextButton
+              variant="success"
+              size="md"
+              onClick={handleCerrarCajaClick}
+              block
+              className="sidebar-caja-btn"
+              title={isCollapsed ? 'Cuadrar Caja' : ''}
+            >
+              <FiLock size={17} />
+              {!isCollapsed && <span>Cuadrar Caja</span>}
+            </IconTextButton>
+          </ButtonGroup>
         )}
       </div>
 

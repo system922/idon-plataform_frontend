@@ -6,44 +6,41 @@
  * y guarda módulos/features en localStorage al seleccionar.
  */
 import React, { useState, useEffect } from 'react';
+import { useSession } from '../context/SessionContext';
 import { FiChevronDown, FiHome, FiMapPin, FiMail, FiPhone, FiArrowRight } from 'react-icons/fi';
-import API_BASE from '../config/apiBase';
-
-const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
-
-async function apiFetch(path) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Authorization': `Bearer ${getToken()}` },
-  });
-  if (!res.ok) throw new Error(`Error ${res.status}`);
-  return res.json();
-}
+import { api } from '../config/api';
 
 export default function DashboardBusinessSelector({ onBusinessChange }) {
-  const [businesses,       setBusinesses]       = useState([]);
-  const [selectedBusiness, setSelectedBusiness] = useState(null);
+  const { businesses: sessionBusinesses, selectedBusiness: sessionSelectedBusiness, selectBusiness } = useSession();
+  const [businesses,       setBusinesses]       = useState(sessionBusinesses || []);
+  const [selectedBusiness, setSelectedBusiness] = useState(sessionSelectedBusiness || null);
   const [isOpen,           setIsOpen]           = useState(false);
   const [loading,          setLoading]          = useState(false);
   const [switching,        setSwitching]        = useState(false);
 
   // Cargar negocios desde API y restaurar selección desde localStorage
   useEffect(() => {
-    const stored = localStorage.getItem('selectedBusiness');
-    if (stored) {
-      try { setSelectedBusiness(JSON.parse(stored)); } catch {}
-    }
-
     const loadBusinesses = async () => {
       try {
         setLoading(true);
-        const data = await apiFetch('/api/businesses');
-        const list = Array.isArray(data) ? data : (data?.data || []);
+        // Preferir la lista en sesión si existe
+        let list = [];
+        try {
+          const response = await api.get('/api/businesses');
+          const data = response.data;
+          list = Array.isArray(data) ? data : (data?.data || []);
+        } catch (e) {
+          // fallback to session businesses
+          list = sessionBusinesses || [];
+        }
         setBusinesses(list);
 
-        // Si no hay seleccionado, usar el primero
-        if (!stored && list.length > 0) {
+        // Si no hay seleccionado en sesión, usar el primero
+        if (!sessionSelectedBusiness && list.length > 0) {
           setSelectedBusiness(list[0]);
-          localStorage.setItem('selectedBusiness', JSON.stringify(list[0]));
+          // NOTA: no guardar en localStorage; propagar al contexto si es necesario
+        } else if (sessionSelectedBusiness) {
+          setSelectedBusiness(sessionSelectedBusiness);
         }
       } catch (e) {
 
@@ -62,61 +59,43 @@ export default function DashboardBusinessSelector({ onBusinessChange }) {
 
   // Cargar módulos y features del negocio seleccionado
   async function loadModulesAndFeatures(businessId) {
-    try {
+      try {
+        const response = await api.get(`/api/business/${businessId}/modules-and-features`);
+        const data = response.data?.data || response.data;
+        if (!data) return;
+        const modules  = data.module_codes  || [];
+        const features = data.feature_codes || [];
 
-      const data = await apiFetch(`/api/business/${businessId}/modules-and-features`);
+        // Store modules/features in memory via session or a global state if needed
+        // For now keep them in memory by setting local variables or calling a setter
+        // Avoid localStorage per request of the user
+        // If other parts require these, we should expose a context to store them globally
+        // TODO: implement a modules/features context if persistent access required
 
-      if (!data) {
-        localStorage.setItem('activeModules',  JSON.stringify([]));
-        localStorage.setItem('activeFeatures', JSON.stringify([]));
-        return;
+      } catch (e) {
+        console.error('Error loading modules and features:', e);
       }
-
-      const modules  = data.module_codes  || [];
-      const features = data.feature_codes || [];
-
-      localStorage.setItem('activeModules',    JSON.stringify(modules));
-      localStorage.setItem('activeFeatures',   JSON.stringify(features));
-      localStorage.setItem('businessTemplate', JSON.stringify(data.template || {}));
-
-
-    } catch (e) {
-
-      localStorage.setItem('activeModules',  JSON.stringify([]));
-      localStorage.setItem('activeFeatures', JSON.stringify([]));
-    }
   }
 
   const handleSelectBusiness = async (business) => {
     setSwitching(true);
     setIsOpen(false);
 
-    // Guardar negocio seleccionado
+    // Delegar la selección al SessionContext (realiza POST /auth/select-business)
     setSelectedBusiness(business);
-    localStorage.setItem('selectedBusiness', JSON.stringify(business));
-    localStorage.setItem('dbName', business.schemaName || business.slug || '');
+    const result = await selectBusiness(business.id);
 
-    // Actualizar idonUser con datos del negocio
-    try {
-      const user = JSON.parse(localStorage.getItem('idonUser') || '{}');
-      localStorage.setItem('idonUser', JSON.stringify({
-        ...user,
-        businessId:     business.id,
-        businessName:   business.name,
-        businessType:   business.type,
-        schemaName:     business.schemaName,
-        currencyCode:   business.currencyCode   || business.currency_code,
-        currencySymbol: business.currencySymbol || '$',
-      }));
-    } catch {}
-
-    // Cargar módulos y features
+    // Cargar módulos y features en background (no usar localStorage)
     await loadModulesAndFeatures(business.id);
 
     setSwitching(false);
 
-    if (onBusinessChange) onBusinessChange(business);
-    else window.location.reload(); // Recargar para refrescar todos los datos
+    if (result.success) {
+      if (onBusinessChange) onBusinessChange(business);
+      else window.location.reload(); // todavía recarga para refrescar toda la app
+    } else {
+      console.error('Error selecting business from SessionContext:', result.error);
+    }
   };
 
   // No mostrar si solo hay 1 negocio

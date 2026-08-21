@@ -1,0 +1,162 @@
+/* ============================================================
+   ODONTOGRAMA - ESTILOS CON IMAGEN DE FONDO (sin controles)
+   ============================================================ */
+
+.odontograma-wrapper {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.odontograma-container {
+  position: relative;
+  width: 100%;
+  padding: 0px 0 0px 0;
+  background: #141920;
+  border-radius: 12px;
+  overflow: visible;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.odontograma-background {
+  width: 100%;
+  height: 430px;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  border-radius: 8px;
+}
+
+/* Dientes */
+.odont-diente {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-weight: 600;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  overflow: visible;
+  transition: all 0.2s ease;
+  user-select: none;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.odont-diente:hover {
+  transform: scale(1.05);
+  z-index: 5;
+  box-shadow: 0 0 12px rgba(104, 66, 254, 0.3);
+}
+
+.odont-diente.selected {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px #ef4444, 0 0 20px rgba(239, 68, 68, 0.3);
+  z-index: 10;
+}
+
+/* Selector de caras (círculo SVG) */
+.odont-cara-selector {
+  width: 100%;
+  height: 100%;
+}
+
+.odont-cara-selector svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.odont-cara-selector path,
+.odont-cara-selector circle {
+  transition: fill 0.15s ease;
+  cursor: pointer;
+}
+
+.odont-cara-selector path:hover,
+.odont-cara-selector circle:hover {
+  fill: #f0f0f0 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .odontograma-wrapper {
+    max-width: 100%;
+    padding: 0 8px;
+  }
+
+  .odont-cara-selector {
+    width: 22px;
+    height: 22px;
+  }
+
+  .odont-diente {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .odont-cara-selector {
+    width: 18px;
+    height: 18px;
+  }
+
+  .odont-diente {
+    font-size: 7px;
+  }
+}
+
+/* ============================================================
+   ESTILOS FORZADOS PARA MODAL HALLAZGO
+   ============================================================ */
+
+/* ✅ FORZAR color de los labels del modal */
+.odonto-modal-body .form-group label,
+.odonto-modal-body label,
+.odonto-modal label,
+.odonto-modal .form-group label,
+.odonto-modal-body label[style] {
+  color: #1a1f2a !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ✅ FORZAR que los textos de los labels sean visibles */
+.odonto-modal-body .form-group label span,
+.odonto-modal-body label span {
+  color: #1a1f2a !important;
+}
+
+/* ✅ FORZAR el color del texto "Selecciona el tipo de hallazgo" */
+.odonto-modal-body .form-group label:first-child {
+  color: #1a1f2a !important;
+}
+
+/* ✅ FORZAR el color del asterisco rojo */
+.odonto-modal-body .form-group label span[style*="color: #ef4444"] {
+  color: #ef4444 !important;
+}
+
+/* ✅ FORZAR el color del texto "(Selecciona al menos una)" */
+.odonto-modal-body .form-group label span[style*="color: #6b7280"] {
+  color: #6b7280 !important;
+}
+
+/* ✅ FORZAR el color del label "Observaciones" */
+.odonto-modal-body .form-group:last-of-type label {
+  color: #1a1f2a !important;
+}
+
+/* ✅ Asegurar que el texto no sea blanco */
+.odonto-modal-body * {
+  color: inherit;
+}
+
+.odonto-modal-body .form-group label,
+.odonto-modal-body .form-group label * {
+  color: #1a1f2a !important;
+}

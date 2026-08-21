@@ -1,0 +1,231 @@
+/* ============================================================
+   FOOTER.CSS - IDON SaaS Footer
+   Usa variables de general-variables.css
+   ============================================================ */
+
+.saas-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4, 16px);
+  padding: var(--space-3, 11px) var(--space-6, 24px);
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  font-family: var(--font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+.saas-footer--dark {
+  background: var(--bg-tertiary);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.saas-footer--light {
+  background: transparent;
+  border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+}
+
+/* ── Brand ── */
+.saas-footer__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 10px);
+  flex-shrink: 0;
+}
+
+.saas-footer__logo {
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-extrabold, 800);
+  letter-spacing: -0.3px;
+  line-height: 1;
+}
+
+.saas-footer__logo-id {
+  color: var(--text-muted, #1A202C);
+}
+
+.saas-footer--dark .saas-footer__logo-id {
+  color: var(--text-white, #ffffff);
+}
+.saas-footer--light .saas-footer__logo-id {
+  color: var(--text-primary, #1A202C);
+}
+
+.saas-footer__logo-on {
+  color: var(--primary, #f97316);
+}
+
+.saas-footer__version {
+  font-size: var(--font-size-xs, 10px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-muted, rgba(255, 255, 255, 0.22));
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+
+.saas-footer--light .saas-footer__version {
+  color: var(--text-dim, rgba(0, 0, 0, 0.3));
+  background: var(--bg-tertiary, rgba(0, 0, 0, 0.05));
+}
+
+.saas-footer__divider {
+  width: 1px;
+  height: var(--space-3, 12px);
+  background: rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.saas-footer--light .saas-footer__divider {
+  background: var(--border-color, rgba(0, 0, 0, 0.12));
+}
+
+.saas-footer__copy {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-muted, rgba(255, 255, 255, 0.3));
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.saas-footer--light .saas-footer__copy {
+  color: var(--text-muted, rgba(0, 0, 0, 0.4));
+}
+
+/* ── Links ── */
+.saas-footer__links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  flex-shrink: 0;
+}
+
+.saas-footer__sep {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-dim, rgba(255, 255, 255, 0.12));
+  user-select: none;
+}
+
+.saas-footer--light .saas-footer__sep {
+  color: var(--text-dim, rgba(0, 0, 0, 0.15));
+}
+
+.saas-footer__link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: var(--font-size-xs, 11px);
+  cursor: pointer;
+  color: var(--text-muted, rgba(255, 255, 255, 0.3));
+  transition: color var(--transition-fast, 0.15s ease);
+  text-decoration: none;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1, 4px);
+}
+
+.saas-footer--light .saas-footer__link {
+  color: var(--text-muted, rgba(0, 0, 0, 0.4));
+}
+
+.saas-footer__link:hover {
+  color: var(--text-primary, rgba(255, 255, 255, 0.75));
+}
+
+.saas-footer--light .saas-footer__link:hover {
+  color: var(--text-primary, rgba(0, 0, 0, 0.75));
+}
+
+/* WhatsApp dot */
+.saas-footer__wa-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success, #25d366);
+  box-shadow: 0 0 5px var(--success-bg, rgba(37, 211, 102, 0.55));
+  flex-shrink: 0;
+}
+
+.saas-footer__link--whatsapp:hover {
+  color: var(--success, #25d366) !important;
+}
+
+/* ============================================================
+   ✅ RESPONSIVE - TODO EN UNA SOLA FILA
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .saas-footer {
+    flex-direction: row;  /* ← Mantener en fila */
+    flex-wrap: wrap;      /* ← Permitir wrap si es necesario */
+    justify-content: center;
+    gap: 6px 14px;        /* ← Espacio reducido */
+    padding: 10px 12px;
+  }
+
+  .saas-footer__brand {
+    gap: 6px;
+  }
+
+  .saas-footer__logo {
+    font-size: 12px;
+  }
+
+  .saas-footer__version {
+    font-size: 8px;
+    padding: 1px 5px;
+  }
+
+  .saas-footer__copy {
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .saas-footer__divider {
+    height: 10px;
+  }
+
+  .saas-footer__links {
+    gap: 4px;
+  }
+
+  .saas-footer__link {
+    font-size: 10px;
+  }
+
+  .saas-footer__sep {
+    font-size: 10px;
+  }
+
+  .saas-footer__wa-dot {
+    width: 5px;
+    height: 5px;
+  }
+}
+
+/* ─── Móviles muy pequeños ─── */
+@media (max-width: 480px) {
+  .saas-footer {
+    gap: 4px 10px;
+    padding: 8px 8px;
+  }
+
+  .saas-footer__logo {
+    font-size: 11px;
+  }
+
+  .saas-footer__copy {
+    font-size: 9px;
+  }
+
+  .saas-footer__link {
+    font-size: 9px;
+  }
+
+  .saas-footer__divider {
+    height: 8px;
+  }
+}

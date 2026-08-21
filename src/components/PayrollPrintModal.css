@@ -1,0 +1,133 @@
+/* ============================================================================
+   PAYROLL PRINT MODAL - ESTILOS ADICIONALES
+   ============================================================================ */
+   
+/* Contenedor del contenido del modal */
+.payroll-print-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ============================================================================
+   TARJETA DE INFORMACIÓN
+   ============================================================================ */
+
+.payroll-print-info-card {
+  padding: 4px 0;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 12px;
+  color: #111827;
+  font-weight: 600;
+}
+
+/* ============================================================================
+   TARJETA DE DETALLE DEL PAGO
+   ============================================================================ */
+
+.payroll-print-detail-card {
+  padding: 16px 0;
+  margin-top: 4px;
+}
+
+.payroll-print-detail-card h3 {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.detail-row.highlight {
+  color: #f59e0b;
+}
+
+.detail-row.total {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding-top: 8px;
+  border-top: 1px dashed rgba(16, 185, 129, 0.3);
+}
+
+.detail-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 8px 0;
+}
+
+/* ============================================================================
+   MENSAJES DE ERROR Y ÉXITO
+   ============================================================================ */
+
+.payroll-print-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.payroll-print-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  color: #16a34a;
+  font-size: 13px;
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+
+@media (max-width: 600px) {
+  .info-row,
+  .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .info-value {
+    margin-top: 2px;
+  }
+  
+  .detail-row.total {
+    align-items: center;
+  }
+}

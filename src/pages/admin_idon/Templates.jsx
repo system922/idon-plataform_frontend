@@ -6,8 +6,7 @@ import {
   FiPlus, FiEdit, FiTrash2, FiX, FiCheck, FiLoader,
   FiBox, FiStar, FiAlertCircle
 } from 'react-icons/fi';
-import { adminApiService } from '../../services/apiService';
-import '../../styles/AdminPages.css';
+import { adminApi } from '../../config/api';
 
 export default function AdminTemplatesPage() {
   const { showConfirm } = useConfirm();
@@ -38,15 +37,14 @@ export default function AdminTemplatesPage() {
       setLoading(true);
       setErrorMsg('');
       
-      const templatesRes = await adminApiService.get('/admin/templates');
-      const businessTypesRes = await adminApiService.get('/admin/business-types');
-      const modulesRes = await adminApiService.get('/admin/modules');
+      const templatesRes = await adminApi.get('/admin/templates');
+      const businessTypesRes = await adminApi.get('/admin/business-types');
+      const modulesRes = await adminApi.get('/admin/modules');
       
       setTemplates(templatesRes.data?.data || templatesRes.data || []);
       setBusinessTypes(businessTypesRes.data?.data || businessTypesRes.data || []);
       setAllModules(modulesRes.data?.data || modulesRes.data || []);
     } catch (error) {
-
       setErrorMsg('Error al cargar los datos: ' + (error.message || 'Desconocido'));
     } finally {
       setLoading(false);
@@ -156,14 +154,13 @@ export default function AdminTemplatesPage() {
     
     try {
       if (editingTemplate) {
-        await adminApiService.put(`/admin/templates/${editingTemplate.id}`, formData);
+        await adminApi.put(`/admin/templates/${editingTemplate.id}`, formData);
       } else {
-        await adminApiService.post('/admin/templates', formData);
+        await adminApi.post('/admin/templates', formData);
       }
       setShowModal(false);
       loadData();
     } catch (error) {
-
       setErrorMsg(error.response?.data?.message || error.message || 'Error al guardar la plantilla');
     } finally {
       setSaving(false);
@@ -173,10 +170,9 @@ export default function AdminTemplatesPage() {
   const handleDelete = async (id) => {
     if (!await showConfirm('¿Estás seguro de eliminar esta plantilla? Esta acción no se puede deshacer.')) return;
     try {
-      await adminApiService.delete(`/admin/templates/${id}`);
+      await adminApi.delete(`/admin/templates/${id}`);
       loadData();
     } catch (error) {
-
       await alert.error('Error al eliminar la plantilla');
     }
   };
@@ -248,7 +244,6 @@ export default function AdminTemplatesPage() {
         </div>
       )}
 
-      {/* Modal de creación/edición */}
       {showModal && (
         <div className="admin-modal-overlay" onClick={() => !saving && setShowModal(false)}>
           <div className="admin-modal admin-modal-large" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px', width: '95vw' }}>

@@ -1,258 +1,490 @@
-import { useState, useEffect, useCallback } from 'react';
+// src/pages/inventory/InventoryCategoriesPage.jsx
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { useConfirm } from '../../context/ConfirmContext';
-import { Plus, Edit2, Trash2, Tag, X, Search, RefreshCw } from 'react-feather';
-import { fetchWithAuth } from '../../config/apiBase';
+import { useSession } from '../../context/SessionContext'; // ✅ AGREGADO
+import { useConfirm, useAlert } from '../../context/ConfirmContext';
+import { 
+  Plus, Edit2, Trash2, Tag, X, RefreshCw, Save,
+  Box, Clock, Calendar
+} from 'react-feather';
+import { fetchWithAuth } from '../../config/api';
 import { useRealtimeSync } from '../../hooks/useRealtimeSync';
-import '../../styles/InventoryCategoriesPage.css';
 
-const EMPTY_CATEGORY = { name: '', description: '' };
-
-function CategoryModal({ category, onClose, onSave, saving }) {
-  const [form, setForm] = useState(category ? { ...category } : { ...EMPTY_CATEGORY });
-
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
-  return (
-    <div className="invcat-modal-overlay" style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 14,
-    }}>
-      <div className="invcat-modal" style={{
-        background: '#fff', borderRadius: 14, boxShadow: '0 12px 40px #0002',
-        border: '1px solid #f1f1f1', minWidth: 330, maxWidth: 400,
-        width: '100%', padding: 0, display: 'flex', flexDirection: 'column'
-      }}>
-        {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          borderBottom: '1px solid #f3f3f3', padding: '17px 22px 9px 22px'
-        }}>
-          <span style={{
-            background: 'var(--color-primary,#ff8c42)', color: '#fff', padding: 8, borderRadius: '50%'
-          }}>
-            <Tag size={15} />
-          </span>
-          <h3 style={{ margin: 0, fontWeight: 800, fontSize: 17, color: '#111' }}>
-            {category ? 'Editar categoría' : 'Nueva categoría'}
-          </h3>
-          <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#aaa', cursor: 'pointer', padding: 4 }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div style={{ padding: '17px 22px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <label style={labelStyle}>Nombre *</label>
-          <input
-            value={form.name} onChange={e => set('name', e.target.value)}
-            placeholder="Ej: Cafetería"
-            style={inputStyle}
-            maxLength={30}
-          />
-          <label style={labelStyle}>Descripción</label>
-          <textarea
-            value={form.description} onChange={e => set('description', e.target.value)}
-            placeholder="Ej: Productos de café y bebidas calientes" maxLength={80}
-            rows={3} style={{ ...inputStyle, resize: 'vertical', height: 'auto' }}
-          />
-        </div>
-
-        {/* Footer */}
-        <div style={{padding:'14px 18px', borderTop:'1px solid #f3f3f3', display:'flex', gap:10, justifyContent:'flex-end'}}>
-          <button onClick={onClose} disabled={saving} style={btnSecondary}>Cancelar</button>
-          <button
-            onClick={() => onSave(form)}
-            disabled={saving || !form.name}
-            style={btnPrimary}
-          >
-            {saving ? 'Guardando...' : category ? 'Guardar cambios' : 'Crear'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const labelStyle = {
-  fontSize: 11.5, fontWeight: 600, color: '#555',
-  textTransform: 'uppercase', marginBottom: 2
-};
-const inputStyle = {
-  width: '100%', padding: '9px 13px', borderRadius: 8,
-  border: '1px solid #eee', background: 'rgb(250,250,252)',
-  marginBottom: 0, fontSize: 13, color: '#232323'
-};
-const btnPrimary = {
-  padding: '8px 21px', background: 'var(--color-primary,#ff8c42)',
-  color: '#fff', border: 'none', borderRadius: 7,
-  fontWeight: 700, fontSize: 14, cursor: 'pointer'
-};
-const btnSecondary = {
-  padding: '8px 16px', background: 'transparent', color: '#666',
-  border: '1px solid #e3e3e3', borderRadius: 7,
-  fontWeight: 700, fontSize: 14, cursor: 'pointer'
-};
+// ── Componentes reutilizables ──
+import Table from '../../components/General/Table';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import Modal from '../../components/General/Modal';
+import Input from '../../components/General/Input';
 
 export default function InventoryCategoriesPage() {
+  const { user } = useSession(); // ✅ AGREGADO
   const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingCat, setEditingCat] = useState(null);
   const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
+  // ── Formulario ──
+  const [form, setForm] = useState({ 
+    name: '', 
+    description: '',
+    is_active: true 
+  });
+
+  const setFormField = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  // ── Carga de datos ──
   const load = useCallback(async () => {
     try {
-      setLoading(true); setError('');
-      const res = await fetchWithAuth('/api/categories');
-      if (!res.ok) throw new Error((await res.json()).error || 'Error al cargar categorías');
-      setCategories(await res.json());
+      setLoading(true);
+      setError('');
+      
+      // Cargar categorías
+      const catRes = await fetchWithAuth('/categories'); // ✅ SIN /api
+      if (!catRes.ok) throw new Error((await catRes.json()).error || 'Error al cargar categorías');
+      const catData = await catRes.json();
+      const categoriesList = Array.isArray(catData) ? catData : [];
+      
+      // Cargar productos para contar por categoría
+      const prodRes = await fetchWithAuth('/products'); // ✅ SIN /api
+      const prodData = await prodRes.json();
+      const productsList = Array.isArray(prodData) ? prodData : prodData?.productos ?? prodData?.data ?? [];
+      setProducts(productsList);
+      
+      // Calcular conteo de productos por categoría
+      const categoriesWithCount = categoriesList.map(cat => {
+        const catId = String(cat.id);
+        const productCount = productsList.filter(p => {
+          const productCatId = p.category_id !== undefined ? String(p.category_id) : 
+                              p.category !== undefined ? String(p.category) : 
+                              null;
+          return productCatId === catId;
+        }).length;
+        
+        return {
+          ...cat,
+          product_count: productCount,
+          is_active: cat.is_active === true || cat.is_active === 'true' || cat.is_active === 1
+        };
+      });
+      
+      setCategories(categoriesWithCount);
     } catch (e) {
       setError(e.message);
+      setCategories([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
+
   useRealtimeSync('categories', load);
 
-  const openCreate = () => { setEditingCat(null); setShowModal(true); };
-  const openEdit = (cat) => { setEditingCat(cat); setShowModal(true); };
-  const handleDelete = async (cat) => {
-    if (!await showConfirm(`¿Eliminar categoría "${cat.name}"?`)) return;
+  // ── Formateador de fechas ──
+  const formatDate = (dateString) => {
+    if (!dateString) return '—';
     try {
-      const res = await fetchWithAuth(`/api/categories/${cat.id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error((await res.json()).error || 'Error al eliminar');
-      await load();
-    } catch (e) {
-      alert(e.message);
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return '—';
     }
   };
 
-  const handleSave = async (form) => {
-    if (saving) return; // ✅ Prevención de doble envío
+  // ── Abrir modal ──
+  const openCreate = () => {
+    setEditingCat(null);
+    setForm({ name: '', description: '', is_active: true });
+    setShowModal(true);
+  };
+
+  const openEdit = (cat) => {
+    setEditingCat(cat);
+    setForm({ 
+      name: cat.name || '', 
+      description: cat.description || '',
+      is_active: cat.is_active ?? true
+    });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingCat(null);
+    setForm({ name: '', description: '', is_active: true });
+  };
+
+  // ── Guardar ──
+  const handleSave = async (values) => {
+    if (saving) return;
+    
+    // Validar nombre
+    if (!values.name || !values.name.trim()) {
+      await alert.error('El nombre de la categoría es requerido', 'Campo requerido');
+      return;
+    }
+
     try {
       setSaving(true);
-      const url = editingCat ? `/api/categories/${editingCat.id}` : `/api/categories`;
+      const url = editingCat ? `/categories/${editingCat.id}` : '/categories'; // ✅ SIN /api
       const method = editingCat ? 'PUT' : 'POST';
-      const res = await fetchWithAuth(url, { method, body: JSON.stringify(form) });
-      if (!res.ok) throw new Error((await res.json()).error || 'Error al guardar');
+      const res = await fetchWithAuth(url, { 
+        method, 
+        body: JSON.stringify(values) 
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Error al guardar');
+      }
+      
       await load();
-      setShowModal(false);
+      closeModal();
+      
+      // Mostrar mensaje de éxito con useAlert
+      await alert.success(
+        editingCat ? 'Categoría actualizada exitosamente' : 'Categoría creada exitosamente',
+        editingCat ? 'Categoría actualizada' : 'Categoría creada'
+      );
     } catch (e) {
-      alert(e.message);
+      await alert.error(e.message || 'Error al guardar la categoría', '❌ Error');
     } finally {
       setSaving(false);
     }
   };
 
-  const filtered = categories.filter(c =>
-    (c.name || '').toLowerCase().includes(search.toLowerCase())
+  // ── Eliminar ──
+  const handleDelete = async (cat) => {
+    // Verificar si tiene productos asociados
+    if (cat.product_count > 0) {
+      await alert.error(
+        `No se puede eliminar la categoría "${cat.name}" porque tiene ${cat.product_count} ${cat.product_count === 1 ? 'producto' : 'productos'} asociados.`,
+        'No se puede eliminar'
+      );
+      return;
+    }
+
+    // Confirmar eliminación con showConfirm
+    const confirmed = await showConfirm({
+      title: 'Eliminar categoría',
+      message: `¿Estás seguro de eliminar la categoría "${cat.name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      danger: true,
+    });
+
+    if (!confirmed) return;
+
+    try {
+      const res = await fetchWithAuth(`/categories/${cat.id}`, { method: 'DELETE' }); // ✅ SIN /api
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Error al eliminar');
+      }
+      
+      await load();
+      
+      // Mostrar mensaje de éxito con useAlert
+      await alert.success(
+        `Categoría "${cat.name}" eliminada exitosamente`,
+        'Categoría eliminada'
+      );
+    } catch (e) {
+      await alert.error(e.message || 'Error al eliminar la categoría', '❌ Error');
+    }
+  };
+
+  // ── Refresh ──
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+    await alert.info('Datos actualizados correctamente', '🔄 Actualizado');
+  };
+
+  // ── Filtro ──
+  const filteredCategories = useMemo(() => {
+    let result = categories.filter(c =>
+      (c.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (c.description || '').toLowerCase().includes(search.toLowerCase())
+    );
+    
+    // Ordenar: primero activas, luego inactivas
+    result = [...result].sort((a, b) => {
+      if (a.is_active && !b.is_active) return -1;
+      if (!a.is_active && b.is_active) return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+    
+    return result;
+  }, [categories, search]);
+
+  // ── Columnas de la tabla ──
+  const columns = [
+    {
+      accessor: 'name',
+      label: 'Nombre',
+      render: (item) => (
+        <div className="category-name-cell">
+          <div className="category-name-info">
+            <span className="category-name" style={{
+              color: item.is_active ? 'var(--text-primary)' : 'var(--text-muted)',
+              textDecoration: item.is_active ? 'none' : 'line-through'
+            }}>
+              {item.name}
+            </span>
+            {!item.is_active && (
+              <span className="category-status-badge"> INACTIVO</span>
+            )}
+            {item.description && (
+              <span className="category-description">{item.description}</span>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessor: 'product_count',
+      label: 'Productos',
+      render: (item) => (
+        <div className="category-product-count">
+          <span>{item.product_count || 0}</span>
+          {item.product_count > 0 && (
+            <span className="category-product-label">
+              {item.product_count === 1 ? ' producto' : ' productos'}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessor: 'created_at',
+      label: 'Creado',
+      render: (item) => (
+        <div className="category-date">
+          <span>{formatDate(item.created_at)}</span>
+        </div>
+      ),
+    },
+    {
+      accessor: 'updated_at',
+      label: 'Modificado',
+      render: (item) => (
+        <div className="category-date">
+          <span>{formatDate(item.updated_at)}</span>
+        </div>
+      ),
+    },
+    {
+      accessor: 'actions',
+      label: 'Acciones',
+      align: 'left',
+      render: (item) => (
+        <ButtonGroup>
+          <IconTextButton
+            variant="info"
+            size="sm"
+            icon={<Edit2 size={13} />}
+            onClick={() => openEdit(item)}
+            title="Editar categoría"
+          >
+            Editar
+          </IconTextButton>
+          <IconTextButton
+            variant="danger"
+            size="sm"
+            icon={<Trash2 size={13} />}
+            onClick={() => handleDelete(item)}
+            title={item.product_count > 0 ? `Tiene ${item.product_count} productos asociados` : "Eliminar categoría"}
+            disabled={item.product_count > 0}
+          >
+            Eliminar
+          </IconTextButton>
+        </ButtonGroup>
+      ),
+    },
+  ];
+
+  // ── Render row personalizado ──
+  const renderRow = (item) => (
+    <tr key={item.id} className="table-row" style={{ 
+      opacity: item.is_active ? 1 : 0.6,
+      background: !item.is_active ? 'var(--bg-secondary)' : undefined
+    }}>
+      {columns.map((column, colIndex) => (
+        <td key={colIndex} className="table-cell" data-label={column.label}>
+          {column.render ? column.render(item) : item[column.accessor]}
+        </td>
+      ))}
+    </tr>
   );
 
-  const headerAction = (
-    <div className="invcat-header-actions" style={{ display: 'flex', gap: 9 }}>
-      <div className="invcat-search-wrapper" style={{ position: 'relative' }}>
-        <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#ccc' }} />
-        <input
-          className="invcat-search-input"
-          type="text"
-          value={search}
-          placeholder="Buscar categoría..."
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            padding: '8px 12px 8px 30px', border: '1.2px solid var(--color-border,#eee)',
-            borderRadius: 6, fontSize: 14, background: 'var(--color-bg-secondary,#f8fafc)',
-            color: 'var(--color-text,#333)', minWidth: 140
-          }}
-        />
-      </div>
-      <button onClick={load} title="Recargar" style={{
-        background: 'none', border: '1px solid #ddd', borderRadius: 6, padding: '7px 10px', color: '#888', cursor: 'pointer'
-      }}>
-        <RefreshCw size={14} />
-      </button>
-      <button onClick={openCreate} style={{
-        display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px',
-        background: 'var(--color-primary,#ff8c42)', color: 'white',
-        border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600
-      }}>
-        <Plus size={14} /> Nueva categoría
-      </button>
+  // ── Toolbar estilo ReportsProductsPage ──
+  const toolbar = (
+    <div className="users-toolbar">
+      <ButtonGroup>
+        <IconTextButton
+          variant="success"
+          size="md"
+          icon={<Plus size={13} />}
+          onClick={openCreate}
+          disabled={saving}
+          loading={saving}
+        >
+          Nueva Categoría
+        </IconTextButton>
+      </ButtonGroup>
     </div>
   );
 
+  // ── Header action (refresh) ──
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <RefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
+  // ── Estadísticas ──
+  const activeCategories = categories.filter(c => c.is_active).length;
+  const inactiveCategories = categories.length - activeCategories;
+  const totalProducts = categories.reduce((acc, cat) => acc + (cat.product_count || 0), 0);
+
+  const isLoading = loading || saving;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   return (
     <PageTemplate
-      title="Categorías de Productos"
-      subtitle="Clasificación de productos en almacén"
-      headerAction={headerAction}
-      loading={loading}
+      title="CATEGORÍAS DE PRODUCTOS"
+      subtitle={`${activeCategories} activas · ${inactiveCategories} inactivas · ${totalProducts} productos en total`}
+      loading={isLoading}
       error={error}
-      onRetry={load}
+      onRetry={handleRefresh}
       theme="business"
+      headerAction={refreshButton}
     >
-      <div className="invcat-grid" style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px,1fr))', gap: 16, marginTop: 10
-      }}>
-        {filtered.length === 0 && (
-          <div style={{ color: '#888', padding: 28, gridColumn: '1/-1' }}>Sin categorías registradas</div>
-        )}
-        {filtered.map(cat => (
-          <div key={cat.id} style={{
-            background: 'var(--color-card,#fff)',
-            border: '1px solid var(--color-border,#eee)', borderRadius: 8,
-            padding: 19, color: 'var(--color-text,#333)', display: 'flex', flexDirection: 'column',
-            minHeight: 140, boxShadow: '0 2px 14px #eee1'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 10 }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: '50%',
-                background: 'var(--color-primary,#ff8c42)', color: '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15
-              }}>
-                <Tag size={15} />
-              </div>
-              <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{cat.name}</h4>
-            </div>
-            <div style={{ fontSize: 12, color: '#888', marginBottom: 11, minHeight: 22 }}>
-              {cat.description}
-            </div>
-            <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
-              <button onClick={() => openEdit(cat)} style={{
-                flex: 1, padding: '7px 0', borderRadius: 4,
-                background: 'var(--color-primary,#ff8c42)', color: '#fff', border: 'none',
-                fontSize: 12, fontWeight: 500, cursor: 'pointer', display: 'flex',
-                alignItems: 'center', justifyContent: 'center', gap: 5
-              }}>
-                <Edit2 size={12} /> Editar
-              </button>
-              <button
-                onClick={() => handleDelete(cat)}
-                style={{
-                  flex: 1, padding: '7px 0', borderRadius: 4,
-                  background: '#e53838', color: '#fff', border: 'none',
-                  fontSize: 12, fontWeight: 500, cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', gap: 5
-                }}>
-                <Trash2 size={12} /> Eliminar
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-      {showModal &&
-        <CategoryModal
-          category={editingCat}
-          onClose={() => setShowModal(false)}
-          onSave={handleSave}
-          saving={saving}
+      <div className="categories-page-wrapper">
+        <Table
+          data={filteredCategories}
+          columns={columns}
+          keyField="id"
+          renderRow={renderRow}
+          title="Lista de categorías"
+          subtitle={`${filteredCategories.length} ${filteredCategories.length === 1 ? 'categoría' : 'categorías'} registradas`}
+          toolbar={toolbar}
+          searchPlaceholder='Ej: Categoría A'
+          searchable={true}
+          pagination={true}
+          itemsPerPage={itemsPerPage}
+          itemsPerPageOptions={[10, 15]}
+          onItemsPerPageChange={(newPerPage) => setItemsPerPage(newPerPage)}
+          loading={isLoading}
+          emptyMessage={
+            search ? 'No hay resultados para esa búsqueda' : 'No hay categorías registradas'
+          }
+          striped={true}
+          hoverable={true}
+          bordered={false}
+          compact={false}
         />
-      }
+      </div>
+
+      {/* Modal de creación/edición */}
+      <Modal
+        isOpen={showModal}
+        onClose={closeModal}
+        title={editingCat ? 'Editar categoría' : 'Nueva categoría'}
+        size="sm"
+        footer={
+          <div className="modal-footer-actions">
+            <ButtonGroup>
+              <IconTextButton
+                variant=""
+                size="md"
+                icon={<X size={14} />}
+                onClick={closeModal}
+                disabled={saving}
+              >
+                Cancelar
+              </IconTextButton>
+              <IconTextButton
+                variant="success"
+                size="md"
+                icon={<Save size={14} />}
+                onClick={() => handleSave(form)}
+                disabled={saving || !form.name.trim()}
+                loading={saving}
+              >
+                {editingCat ? 'Modificar' : 'Guardar'}
+              </IconTextButton>
+            </ButtonGroup>
+          </div>
+        }
+      >
+        <div className="modal-form-container">
+          <div className="form-group">
+            <label className="form-label">
+              Nombre *
+            </label>
+            <Input
+              value={form.name}
+              onChange={(val) => setFormField('name', val)}
+              placeholder="Ej: Cafetería"
+              size="md"
+              required
+              autoFocus
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              Descripción
+            </label>
+            <Input
+              type="textarea"
+              value={form.description}
+              onChange={(val) => setFormField('description', val)}
+              placeholder="Ej: Productos de café y bebidas calientes"
+              size="md"
+              rows={3}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label checkbox-label">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(e) => setFormField('is_active', e.target.checked)}
+              />
+              Categoría activa
+            </label>
+            <small className="form-hint">
+              Las categorías inactivas no aparecerán en las listas de selección
+            </small>
+          </div>
+        </div>
+      </Modal>
     </PageTemplate>
   );
 }

@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 Panel de Impresiones - QZ Tray</title>
+    
+    <!-- Cargar QZ Tray -->
+    <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.1.0/dist/qz-tray.js"></script>
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* ===== ESTILOS GLOBALES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0a0e17;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* ===== HEADER ===== */
+        .app-header {
+            max-width: 1400px;
+            margin: 0 auto 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 16px 24px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 16px;
+        }
+
+        .app-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a78bfa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .app-header .subtitle {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* ===== BADGES ===== */
+        .badge {
+            font-size: 11px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .badge-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.15);
+        }
+        .badge-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.15);
+        }
+        .badge-warning {
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+            border-color: rgba(251, 191, 36, 0.15);
+        }
+        .badge-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.15);
+        }
+
+        /* ===== BOTONES ===== */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+            text-decoration: none;
+        }
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #7c5cff, #4f46e5);
+            color: #fff;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(104, 66, 254, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+        }
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+        }
+        .btn-warning:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+        }
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-outline {
+            background: rgba(255,255,255,0.05);
+            color: #94a3b8;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .btn-outline:hover:not(:disabled) {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 12px;
+            border-radius: 8px;
+        }
+
+        .btn-lg {
+            padding: 14px 28px;
+            font-size: 16px;
+        }
+
+        /* ===== LAYOUT ===== */
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+        }
+
+        .card:hover {
+            border-color: rgba(255,255,255,0.08);
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title .icon {
+            font-size: 16px;
+        }
+
+        /* ===== STATUS BAR ===== */
+        .status-bar {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        .dot.offline { background: #ef4444; }
+        .dot.online {
+            background: #10b981;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        .dot.loading {
+            background: #fbbf24;
+            animation: pulse 0.8s ease-in-out infinite;
+        }
+        .dot.error {
+            background: #ef4444;
+            animation: pulse 0.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
+        }
+
+        .status-text {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .status-text.offline { color: #ef4444; }
+        .status-text.online { color: #10b981; }
+        .status-text.loading { color: #fbbf24; }
+        .status-text.error { color: #ef4444; }
+
+        /* ===== FORMULARIOS ===== */
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(8,12,20,0.6);
+            color: #e2e8f0;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            min-height: 120px;
+            margin: 8px 0;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: rgba(104,66,254,0.3);
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(8,12,20,0.6);
+            color: #e2e8f0;
+            font-size: 13px;
+            font-family: inherit;
+            margin: 4px 0;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: rgba(104,66,254,0.3);
+        }
+        select option {
+            background: #131926;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        /* ===== PRINT TYPES ===== */
+        .print-type-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .print-type-btn {
+            padding: 12px 16px;
+            border: 2px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.02);
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+        .print-type-btn:hover:not(.active) {
+            border-color: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.7);
+        }
+        .print-type-btn.active {
+            border-color: rgba(104,66,254,0.4);
+            background: rgba(104,66,254,0.08);
+            color: #fff;
+        }
+        .print-type-btn .icon {
+            font-size: 24px;
+        }
+        .print-type-btn .label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        /* ===== LOGS ===== */
+        .log-container {
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #94a3b8;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+        .log-line {
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+        .log-line.error { color: #ef4444; }
+        .log-line.success { color: #10b981; }
+        .log-line.warning { color: #fbbf24; }
+        .log-line.info { color: #60a5fa; }
+
+        /* ===== PRINTERS LIST ===== */
+        .printers-list {
+            font-size: 13px;
+            color: #94a3b8;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .printers-list .item {
+            padding: 4px 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .printers-list .item:last-child { border-bottom: none; }
+        .printers-list .item .selected {
+            color: #10b981;
+        }
+
+        /* ===== MESSAGES ===== */
+        .message {
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin: 10px 0;
+            display: none;
+        }
+        .message.show {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .message-error {
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.12);
+            color: #ef4444;
+        }
+        .message-success {
+            background: rgba(16,185,129,0.08);
+            border: 1px solid rgba(16,185,129,0.12);
+            color: #10b981;
+        }
+        .message-info {
+            background: rgba(59,130,246,0.08);
+            border: 1px solid rgba(59,130,246,0.12);
+            color: #60a5fa;
+        }
+        .message-warning {
+            background: rgba(251,191,36,0.08);
+            border: 1px solid rgba(251,191,36,0.12);
+            color: #fbbf24;
+        }
+
+        /* ===== MODAL DE IMPRESIÓN ===== */
+        .print-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+        .print-modal-overlay.show { display: flex; }
+        .print-modal {
+            background: #13131f;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 32px 28px;
+            max-width: 340px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        }
+        .print-modal .icon { font-size: 44px; margin-bottom: 12px; }
+        .print-modal h3 {
+            color: #f1f5f9;
+            margin: 0 0 8px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .print-modal p {
+            color: #64748b;
+            font-size: 13px;
+            margin: 0 0 24px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 992px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .grid-3 { grid-template-columns: 1fr 1fr; }
+            .grid-4 { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 600px) {
+            .grid-3 { grid-template-columns: 1fr; }
+            .grid-4 { grid-template-columns: 1fr; }
+            .app-header { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- ===== HEADER ===== -->
+        <header class="app-header">
+            <div>
+                <h1><i class="fas fa-print"></i> Panel de Impresiones</h1>
+                <span class="subtitle">QZ Tray - Prueba de formatos</span>
+            </div>
+            <div class="header-actions">
+                <span class="badge badge-info" id="envBadge">
+                    <i class="fas fa-plug"></i> localhost:8182
+                </span>
+                <button class="btn btn-primary btn-sm" onclick="connectQZ()">
+                    <i class="fas fa-plug"></i> Conectar
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="disconnectQZ()" id="disconnectBtn" disabled>
+                    <i class="fas fa-power-off"></i> Desconectar
+                </button>
+            </div>
+        </header>
+
+        <!-- ===== STATUS BAR ===== -->
+        <div class="status-bar">
+            <div class="status-indicator">
+                <span class="dot offline" id="statusDot"></span>
+                <span class="status-text offline" id="statusText">Desconectado</span>
+                <span style="font-size:12px;color:#64748b;" id="attemptsText"></span>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn-success btn-sm" onclick="imprimirTicket()" id="printBtn" disabled>
+                    <i class="fas fa-receipt"></i> Ticket
+                </button>
+                <button class="btn btn-success btn-sm" onclick="imprimirFactura()" id="printBtn2" disabled>
+                    <i class="fas fa-file-invoice"></i> Factura
+                </button>
+                <button class="btn btn-warning btn-sm" onclick="openDrawer()" id="drawerBtn" disabled>
+                    <i class="fas fa-cash-register"></i> Cajón
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== MESSAGES ===== -->
+        <div id="messageArea"></div>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <div class="grid-2">
+            <!-- COLUMNA IZQUIERDA -->
+            <div>
+                <!-- TIPOS DE IMPRESIÓN -->
+                <div class="card">
+                    <div class="card-title">
+                        <span class="icon"><i class="fas fa-print"></i></span>
+                        Formato de Impresión
+                    </div>
+                    <div class="print-type-grid" id="printTypeGrid">
+                        <button class="print-type-btn active" data-type="ticket-simple" onclick="selectPrintType('ticket-simple')">
+                            <span class="icon"><i class="fas fa-receipt"></i></span>
+                            <span class="label">Ticket Simple</span>
+                        </button>
+                        <button class="print-type-btn" data-type="invoice" onclick="selectPrintType('invoice')">
+                            <span class="icon"><i class="fas fa-file-invoice"></i></span>
+                            <span class="label">Factura</span>
+                        </button>
+                        <button class="print-type-btn" data-type="comanda" onclick="selectPrintType('comanda')">
+                            <span class="icon"><i class="fas fa-utensils"></i></span>
+                            <span class="label">Comanda</span>
+                        </button>
+                        <button class="print-type-btn" data-type="cash-close" onclick="selectPrintType('cash-close')">
+                            <span class="icon"><i class="fas fa-cash-register"></i></span>
+                            <span class="label">Cierre de Caja</span>
+                        </button>
+                        <button class="print-type-btn" data-type="payroll" onclick="selectPrintType('payroll')">
+                            <span class="icon"><i class="fas fa-user-tie"></i></span>
+                            <span class="label">Rol de Pago</span>
+                        </button>
+                        <button class="print-type-btn" data-type="credit-note" onclick="selectPrintType('credit-note')">
+                            <span class="icon"><i class="fas fa-file-invoice"></i></span>
+                            <span class="label">Nota de Crédito</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CONTENIDO DEL TICKET -->
+                <div class="card">
+                    <div class="card-title">
+                        <span class="icon"><i class="fas fa-edit"></i></span>
+                        Contenido del Ticket
+                        <button class="btn btn-outline btn-sm" onclick="resetContent()" style="margin-left:auto;">
+                            <i class="fas fa-undo"></i> Reset
+                        </button>
+                        <button class="btn btn-outline btn-sm" onclick="previewPrint()">
+                            <i class="fas fa-eye"></i> Vista previa
+                        </button>
+                    </div>
+                    <textarea id="printContent"></textarea>
+                    <div id="previewArea" style="display:none; background:rgba(0,0,0,0.3); padding:12px; border-radius:8px; font-family:'Courier New', monospace; font-size:12px; color:#94a3b8; white-space:pre-wrap; max-height:200px; overflow-y:auto; margin:8px 0;"></div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+                        <button class="btn btn-success" onclick="imprimirSeleccionado()" id="printBtn3" disabled>
+                            <i class="fas fa-print"></i> Imprimir
+                        </button>
+                        <button class="btn btn-warning" onclick="openDrawer()" id="drawerBtn2" disabled>
+                            <i class="fas fa-cash-register"></i> Abrir Cajón
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMNA DERECHA -->
+            <div>
+                <!-- CONFIGURACIÓN -->
+                <div class="card">
+                    <div class="card-title">
+                        <span class="icon"><i class="fas fa-cog"></i></span>
+                        Configuración
+                    </div>
+                    <div class="grid-2">
+                        <div>
+                            <label><i class="fas fa-link"></i> API Base URL</label>
+                            <input type="text" id="apiBase" value="http://localhost:3000">
+                        </div>
+                        <div>
+                            <label><i class="fas fa-server"></i> WebSocket Host</label>
+                            <input type="text" id="wsHost" value="localhost">
+                        </div>
+                        <div>
+                            <label><i class="fas fa-plug"></i> WebSocket Port</label>
+                            <input type="number" id="wsPort" value="8182">
+                        </div>
+                        <div>
+                            <label><i class="fas fa-print"></i> Impresora</label>
+                            <input type="text" id="printerName" value="POS-58">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+                        <button class="btn btn-outline btn-sm" onclick="saveConfig()">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                        <button class="btn btn-outline btn-sm" onclick="loadConfigFromServer()">
+                            <i class="fas fa-cloud-download-alt"></i> Cargar del Servidor
+                        </button>
+                        <button class="btn btn-outline btn-sm" onclick="resetConfig()">
+                            <i class="fas fa-undo"></i> Resetear
+                        </button>
+                    </div>
+                </div>
+
+                <!-- IMPRESORAS DISPONIBLES -->
+                <div class="card">
+                    <div class="card-title">
+                        <span class="icon"><i class="fas fa-print"></i></span>
+                        Impresoras Disponibles
+                        <button class="btn btn-outline btn-sm" onclick="refreshPrinters()" style="margin-left:auto;">
+                            <i class="fas fa-sync"></i> Refrescar
+                        </button>
+                    </div>
+                    <div class="printers-list" id="printersList">
+                        <span style="color:#64748b;">Conéctate para ver las impresoras</span>
+                    </div>
+                </div>
+
+                <!-- LOGS -->
+                <div class="card">
+                    <div class="card-title">
+                        <span class="icon"><i class="fas fa-terminal"></i></span>
+                        Logs
+                        <button class="btn btn-outline btn-sm" onclick="clearLogs()" style="margin-left:auto;">
+                            <i class="fas fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                    <div class="log-container" id="logContainer">
+                        <div class="log-line info"><i class="fas fa-hourglass-start"></i> Inicializando...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL DE IMPRESIÓN ===== -->
+    <div class="print-modal-overlay" id="printModal">
+        <div class="print-modal">
+            <div class="icon">🧾</div>
+            <h3>¿Imprimir comprobante?</h3>
+            <p>El ticket fue generado exitosamente.</p>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button onclick="handlePrintDecision(true)" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; border-radius:10px; padding:11px 24px; cursor:pointer; font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-check"></i> Sí, imprimir
+                </button>
+                <button onclick="handlePrintDecision(false)" style="background:rgba(255,255,255,0.06); color:#94a3b8; border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:11px 24px; cursor:pointer; font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-times"></i> No
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- JAVASCRIPT -->
+    <!-- ============================================================ -->
+    <script>
+        // ═══════════════════════════════════════════════════════════════════
+        // CONFIGURACIÓN
+        // ═══════════════════════════════════════════════════════════════════
+
+        let config = {
+            apiBase: localStorage.getItem('qzApiBase') || 'http://localhost:3000',
+            wsHost: localStorage.getItem('qzWsHost') || 'localhost',
+            wsPort: parseInt(localStorage.getItem('qzWsPort')) || 8182,
+            printerName: localStorage.getItem('qzPrinterName') || 'POS-58',
+            timeout: parseInt(localStorage.getItem('qzTimeout')) || 15,
+        };
+
+        let printerConnected = false;
+        let connectionAttempts = 0;
+        let reconnectTimer = null;
+        let isConnecting = false;
+        let printResolveRef = null;
+        let selectedPrintType = 'ticket-simple';
+
+        // ═══════════════════════════════════════════════════════════════════
+        // DATA PARA EJEMPLOS
+        // ═══════════════════════════════════════════════════════════════════
+
+        const CONTENT_TEMPLATES = {
+            'ticket-simple': `=== CONSULTORIO DENTAL ===
+Dr. Jefferson Cagua
+RUC: 1234567890001
+Tel: 0999123456
+
+=== TICKET DE PRUEBA ===
+Fecha: {fecha}
+Hora: {hora}
+─────────────────────
+1x  Limpieza Dental   $50.00
+2x  Resina            $30.00
+─────────────────────
+SUBTOTAL:  $80.00
+IVA 0%:    $0.00
+TOTAL:     $80.00
+─────────────────────
+PAGO:     EFECTIVO
+RECIBIDO: $100.00
+CAMBIO:   $20.00
+─────────────────────
+¡Gracias por su visita!`,
+
+            'invoice': `=== CONSULTORIO DENTAL ===
+Dr. Jefferson Cagua
+RUC: 1234567890001
+Tel: 0999123456
+
+FACTURA No. 001-001-0001
+AUT. SRI: 1234567890
+F. AUT.: 15/07/2024
+
+CLIENTE: Juan Pérez
+RUC/CI: 1234567890
+F. Emisión: {fecha}
+
+CANT DESC                P.UNT   TOTAL
+─────────────────────────────────────
+1    Limpieza Dental     50.00   50.00
+2    Resina              30.00   60.00
+─────────────────────────────────────
+SUBTOTAL 0%:                     $80.00
+TOTAL:                           $80.00
+─────────────────────────────────────
+FORMA DE PAGO
+  Efectivo:                      $80.00
+─────────────────────────────────────
+VALOR TOTAL                     $80.00
+
+¡Gracias por su visita!`,
+
+            'comanda': `=== COMANDA ===
+MESA 5
+ORDEN #123
+LOCAL - 14:30
+
+1x  HAMBURGUESA DOBLE
+      + Queso extra
+      + Sin cebolla
+─────────────────────
+2x  PAPAS FRITAS
+      + Salsa de queso
+─────────────────────
+1x  REFRESCO
+─────────────────────
+NOTA: Sin sal en las papas
+═══════════════════════════════`,
+
+            'cash-close': `=== CIERRE DE CAJA ===
+Caja No.: 001
+Sesión ID: 2024-07-15-001
+Apertura por: Jefferson Cagua
+Cierre por: Jefferson Cagua
+Fecha apertura: 15/07/2024 08:00:00
+Fecha cierre: 15/07/2024 18:00:00
+─────────────────────
+RESUMEN DE VENTAS
+Transacciones: 45
+No. de comandas: 45
+─────────────────────
+TOTAL VENTAS: $3,450.00
+─────────────────────
+FORMAS DE PAGO
+  EFECTIVO
+    Sistema:    $2,100.00
+    Contado:    $2,100.00
+    Diferencia: $0.00
+─────────────────────
+  TARJETA
+    Sistema:    $850.00
+    Contado:    $850.00
+    Diferencia: $0.00
+─────────────────────
+  TRANSFERENCIA
+    Sistema:    $500.00
+    Contado:    $500.00
+    Diferencia: $0.00
+─────────────────────
+GASTOS DEL DÍA
+  📝 Papel térmico   $15.00
+  📝 Café           $10.00
+─────────────────────
+TOTAL GASTOS: $25.00
+─────────────────────
+MOVIMIENTO DE CAJA
+Fondo inicial:      $100.00
+Total gastos:       $25.00
+─────────────────────
+Efectivo esperado:  $2,175.00
+Efectivo contado:   $2,175.00
+✅ CUADRADO (+):    $0.00
+─────────────────────
+TOTALES GENERALES
+Total sistema:      $3,450.00
+Total contado:      $3,450.00
+✅ CUADRADO (+):    $0.00
+═══════════════════════════════
+FIRMA DEL RESPONSABLE
+_________________________
+Jefferson Cagua
+─────────────────────
+¡Gracias por su trabajo!
+Cierre #1721056800000`,
+
+            'payroll': `=== RECIBO DE NÓMINA ===
+═══════════════════════════════
+DATOS DEL EMPLEADO
+  Nombre:          María González
+  Cédula:          0987654321
+  Cargo:           Asistente Dental
+  Departamento:    Odontología
+─────────────────────
+Período:          Julio 2024
+Días trabajados:  22
+Sueldo diario:    $45.00
+Fecha emisión:    {fecha}
+─────────────────────
+INGRESOS
+  Sueldo por 22 días   $990.00
+  Bono de asistencia   $50.00
+─────────────────────
+TOTAL INGRESOS:        $1,040.00
+─────────────────────
+DEDUCCIONES
+  IESS (9.45%)        $98.28
+  Aporte personal      $15.00
+─────────────────────
+TOTAL DEDUCCIONES:     $113.28
+═══════════════════════════════
+TOTAL A PAGAR
+  NETO:               $926.72
+  Monto en letras:    NOVECIENTOS VEINTISEIS DÓLARES
+─────────────────────
+FORMA DE PAGO
+  💵 EFECTIVO
+─────────────────────
+FIRMAS DE CONFORMIDAD
+_________________________  _________________________
+Firma del empleado        Firma del empleador
+─────────────────────
+Impreso: {fecha} {hora}
+Usuario: Jefferson Cagua
+═══════════════════════════════
+¡Gracias por tu trabajo!`,
+
+            'credit-note': `=== NOTA DE CREDITO ===
+No. NC-001-001-0001
+─────────────────────
+CLIENTE: Juan Pérez
+RUC/CI: 1234567890
+Fac. ref: 001-001-0001
+Fecha: {fecha}
+─────────────────────
+MOTIVO:
+Devolución de producto por
+defecto de fabricación.
+─────────────────────
+CANT DESC                P.UNT   TOTAL
+─────────────────────────────────────
+1    Resina             30.00   30.00
+─────────────────────────────────────
+SUBTOTAL:                        $30.00
+IVA 15%:                         $0.00
+═══════════════════════════════
+TOTAL A ACREDITAR:               $30.00
+═══════════════════════════════
+Original: Adquirente / Copia: Emisor`,
+
+            'receipt': `=== RECIBO ===
+#REC-001
+─────────────────────
+Operador: Jefferson Cagua
+Fecha: {fecha} {hora}
+─────────────────────
+DESCRIPCIÓN          MONTO
+─────────────────────
+Pago de tratamiento   $80.00
+─────────────────────
+SUBTOTAL:            $80.00
+TOTAL:               $80.00
+Pago: EFECTIVO
+═══════════════════════════════
+¡Gracias por su pago!`
+        };
+
+        // ═══════════════════════════════════════════════════════════════════
+        // UI HELPERS
+        // ═══════════════════════════════════════════════════════════════════
+
+        function addLog(text, type = 'info') {
+            const container = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.className = `log-line ${type}`;
+            line.textContent = `[${timestamp}] ${text}`;
+            container.appendChild(line);
+            while (container.children.length > 50) container.removeChild(container.firstChild);
+            container.scrollTop = container.scrollHeight;
+            console.log(`[QZ] ${text}`);
+        }
+
+        function showMessage(text, type = 'info') {
+            const area = document.getElementById('messageArea');
+            const types = {
+                error: 'message-error',
+                success: 'message-success',
+                info: 'message-info',
+                warning: 'message-warning',
+            };
+            area.innerHTML = `<div class="message show ${types[type] || 'message-info'}">${text}</div>`;
+            setTimeout(() => {
+                if (area.firstChild) area.firstChild.remove();
+            }, 6000);
+        }
+
+        function updateStatus(status, text) {
+            const dot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const attemptsText = document.getElementById('attemptsText');
+            const btns = ['printBtn', 'printBtn2', 'printBtn3', 'drawerBtn', 'drawerBtn2', 'disconnectBtn'];
+
+            dot.className = 'dot';
+            statusText.className = 'status-text';
+
+            if (status === 'online') {
+                dot.classList.add('online');
+                statusText.classList.add('online');
+                statusText.textContent = text || 'Conectado ✅';
+                attemptsText.textContent = '';
+                btns.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.disabled = false;
+                });
+                isConnecting = false;
+            } else if (status === 'loading') {
+                dot.classList.add('loading');
+                statusText.classList.add('loading');
+                statusText.textContent = text || 'Conectando...';
+                btns.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.disabled = true;
+                });
+                isConnecting = true;
+            } else if (status === 'error') {
+                dot.classList.add('error');
+                statusText.classList.add('error');
+                statusText.textContent = text || 'Error ❌';
+                btns.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.disabled = true;
+                });
+                isConnecting = false;
+            } else {
+                dot.classList.add('offline');
+                statusText.classList.add('offline');
+                statusText.textContent = text || 'Desconectado';
+                if (connectionAttempts > 0) attemptsText.textContent = `Intento ${connectionAttempts}/12`;
+                btns.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.disabled = true;
+                });
+                isConnecting = false;
+            }
+            printerConnected = status === 'online';
+        }
+
+        function loadConfig() {
+            document.getElementById('apiBase').value = config.apiBase;
+            document.getElementById('wsHost').value = config.wsHost;
+            document.getElementById('wsPort').value = config.wsPort;
+            document.getElementById('printerName').value = config.printerName;
+            document.getElementById('envBadge').textContent = `🌐 ${config.wsHost}:${config.wsPort}`;
+        }
+
+        function saveConfig() {
+            config.apiBase = document.getElementById('apiBase').value.trim() || 'http://localhost:3000';
+            config.wsHost = document.getElementById('wsHost').value.trim() || 'localhost';
+            config.wsPort = parseInt(document.getElementById('wsPort').value) || 8182;
+            config.printerName = document.getElementById('printerName').value.trim() || 'POS-58';
+            localStorage.setItem('qzApiBase', config.apiBase);
+            localStorage.setItem('qzWsHost', config.wsHost);
+            localStorage.setItem('qzWsPort', config.wsPort);
+            localStorage.setItem('qzPrinterName', config.printerName);
+            document.getElementById('envBadge').textContent = `🌐 ${config.wsHost}:${config.wsPort}`;
+            addLog('✅ Configuración guardada', 'success');
+            showMessage('Configuración guardada', 'success');
+        }
+
+        function resetConfig() {
+            ['qzApiBase', 'qzWsHost', 'qzWsPort', 'qzPrinterName'].forEach(k => localStorage.removeItem(k));
+            config.apiBase = 'http://localhost:3000';
+            config.wsHost = 'localhost';
+            config.wsPort = 8182;
+            config.printerName = 'POS-58';
+            loadConfig();
+            showMessage('Configuración reseteada', 'info');
+            addLog('🔄 Configuración reseteada', 'info');
+        }
+
+        async function loadConfigFromServer() {
+            try {
+                const response = await fetch(`${config.apiBase}/api/print/config`);
+                if (response.ok) {
+                    const serverConfig = await response.json();
+                    config.wsHost = serverConfig.websocket_host || 'localhost';
+                    config.wsPort = serverConfig.websocket_port || 8182;
+                    config.printerName = serverConfig.printer_name || config.printerName;
+                    document.getElementById('wsHost').value = config.wsHost;
+                    document.getElementById('wsPort').value = config.wsPort;
+                    document.getElementById('printerName').value = config.printerName;
+                    localStorage.setItem('qzWsHost', config.wsHost);
+                    localStorage.setItem('qzWsPort', config.wsPort);
+                    localStorage.setItem('qzPrinterName', config.printerName);
+                    document.getElementById('envBadge').textContent = `🌐 ${config.wsHost}:${config.wsPort}`;
+                    addLog('✅ Configuración cargada del servidor', 'success');
+                    showMessage('Configuración cargada del servidor', 'success');
+                }
+            } catch (err) {
+                addLog(`⚠️ No se pudo cargar configuración: ${err.message}`, 'warning');
+            }
+        }
+
+        loadConfig();
+
+        // ═══════════════════════════════════════════════════════════════════
+        // SELECTOR DE TIPO DE IMPRESIÓN
+        // ═══════════════════════════════════════════════════════════════════
+
+        function selectPrintType(type) {
+            selectedPrintType = type;
+            document.querySelectorAll('.print-type-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === type);
+            });
+            loadContentForType(type);
+            addLog(`📋 Formato seleccionado: ${type}`, 'info');
+        }
+
+        function loadContentForType(type) {
+            const textarea = document.getElementById('printContent');
+            const template = CONTENT_TEMPLATES[type] || CONTENT_TEMPLATES['ticket-simple'];
+            const now = new Date();
+            const fecha = now.toLocaleDateString('es-EC');
+            const hora = now.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+            textarea.value = template.replace(/{fecha}/g, fecha).replace(/{hora}/g, hora);
+            document.getElementById('previewArea').style.display = 'none';
+        }
+
+        function resetContent() {
+            loadContentForType(selectedPrintType);
+            showMessage('Contenido reseteado', 'info');
+        }
+
+        function previewPrint() {
+            const content = document.getElementById('printContent').value || 'Sin contenido';
+            const preview = document.getElementById('previewArea');
+            preview.textContent = content;
+            preview.style.display = 'block';
+            showMessage('👁️ Vista previa generada', 'info');
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // CARGA DE QZ TRAY
+        // ═══════════════════════════════════════════════════════════════════
+
+        function loadQZTray() {
+            return new Promise((resolve) => {
+                if (typeof qz !== 'undefined' && qz.websocket) {
+                    addLog('✅ QZ Tray JS ya está cargado', 'success');
+                    resolve(true);
+                    return;
+                }
+                addLog('📂 Cargando qz-tray.js...', 'info');
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/qz-tray@2.1.0/dist/qz-tray.js';
+                script.onload = () => {
+                    addLog('✅ QZ Tray JS cargado desde CDN', 'success');
+                    resolve(true);
+                };
+                script.onerror = () => {
+                    addLog('❌ Error cargando QZ Tray JS', 'error');
+                    resolve(false);
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // CONEXIÓN - USANDO ENDPOINTS /api/print/cert Y /api/print/sign
+        // ═══════════════════════════════════════════════════════════════════
+
+        async function connectQZ() {
+            if (isConnecting) {
+                addLog('⚠️ Ya hay una conexión en progreso', 'warning');
+                return;
+            }
+
+            const loaded = await loadQZTray();
+            if (!loaded) {
+                showMessage('❌ No se pudo cargar QZ Tray', 'error');
+                return;
+            }
+
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+            }
+
+            const connect = async () => {
+                try {
+                    connectionAttempts++;
+                    updateStatus('loading', `Conectando... (${connectionAttempts})`);
+                    addLog(`🔄 Conectando (intento ${connectionAttempts})...`);
+
+                    const apiBase = config.apiBase;
+
+                    // 1. Obtener certificado
+                    addLog(`📡 Obteniendo certificado de ${apiBase}/api/print/cert`);
+                    const certRes = await fetch(`${apiBase}/api/print/cert`);
+                    if (!certRes.ok) {
+                        throw new Error(`HTTP ${certRes.status}: ${certRes.statusText}`);
+                    }
+                    const certData = await certRes.text();
+                    if (!certData || certData.trim().length < 50) {
+                        throw new Error('Certificado inválido');
+                    }
+                    addLog(`✅ Certificado recibido (${certData.length} bytes)`, 'success');
+
+                    // 2. Configurar certificado
+                    qz.security.setCertificatePromise(async () => certData);
+
+                    // 3. Configurar firma
+                    qz.security.setSignaturePromise(async (toSign) => {
+                        addLog('🔐 Solicitando firma...');
+                        const signRes = await fetch(`${apiBase}/api/print/sign`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ data: toSign }),
+                        });
+                        if (!signRes.ok) {
+                            throw new Error(`Firma HTTP ${signRes.status}`);
+                        }
+                        const { signature } = await signRes.json();
+                        if (!signature) {
+                            throw new Error('No se recibió firma');
+                        }
+                        addLog('✅ Firma recibida', 'success');
+                        return signature;
+                    });
+
+                    // 4. Conectar WebSocket
+                    if (!qz.websocket.isActive()) {
+                        addLog(`🔌 Conectando WebSocket a ws://${config.wsHost}:${config.wsPort}...`);
+                        const timeoutPromise = new Promise((_, reject) => {
+                            setTimeout(() => reject(new Error(`Timeout (${config.timeout}s) conectando a QZ Tray`)), config.timeout * 1000);
+                        });
+                        const connectPromise = qz.websocket.connect({
+                            host: config.wsHost,
+                            port: config.wsPort,
+                        });
+                        await Promise.race([connectPromise, timeoutPromise]);
+                        addLog('✅ WebSocket conectado', 'success');
+                    } else {
+                        addLog('✅ WebSocket ya estaba conectado', 'success');
+                    }
+
+                    // 5. Obtener impresoras
+                    const printers = await qz.printers.find();
+                    const list = document.getElementById('printersList');
+
+                    if (printers.length === 0) {
+                        list.innerHTML = '<span style="color:#64748b;">No se encontraron impresoras</span>';
+                        addLog('⚠️ No se encontraron impresoras', 'warning');
+                    } else {
+                        list.innerHTML = printers.map(p =>
+                            `<div class="item">
+                                <span>${p.name === config.printerName ? '✅' : '🖨️'} ${p.name}</span>
+                                <span class="badge badge-info">${p.description || 'Impresora'}</span>
+                            </div>`
+                        ).join('');
+                        addLog(`✅ ${printers.length} impresora(s) encontradas`, 'success');
+
+                        // Buscar impresora recomendada
+                        let recommended = printers.find(p =>
+                            p.name.toLowerCase().includes('thermal') ||
+                            p.name.toLowerCase().includes('receipt') ||
+                            p.name.toLowerCase().includes('pos')
+                        );
+                        if (recommended) {
+                            addLog(`💡 Impresora recomendada: ${recommended.name}`, 'info');
+                            document.getElementById('printerName').value = recommended.name;
+                            config.printerName = recommended.name;
+                            localStorage.setItem('qzPrinterName', recommended.name);
+                        }
+                    }
+
+                    connectionAttempts = 0;
+                    updateStatus('online', 'Conectado ✅');
+                    showMessage('✅ QZ Tray conectado correctamente en puerto ' + config.wsPort, 'success');
+
+                } catch (err) {
+                    console.error('Error:', err);
+                    addLog(`❌ Error: ${err.message}`, 'error');
+                    updateStatus('error', 'Error');
+
+                    if (connectionAttempts < 12) {
+                        showMessage(`⚠️ Reintentando (${connectionAttempts}/12)...`, 'warning');
+                        reconnectTimer = setTimeout(connect, 5000);
+                    } else {
+                        showMessage(`❌ No se pudo conectar: ${err.message}`, 'error');
+                        addLog(`❌ Falló después de 12 intentos`, 'error');
+                        updateStatus('offline', 'Desconectado');
+                    }
+                }
+            };
+
+            connect();
+        }
+
+        async function disconnectQZ() {
+            try {
+                if (qz && qz.websocket && qz.websocket.isActive()) {
+                    await qz.websocket.disconnect();
+                    addLog('🔌 Desconectado manualmente', 'warning');
+                }
+            } catch (err) {
+                addLog(`⚠️ Error al desconectar: ${err.message}`, 'warning');
+            }
+            if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+            connectionAttempts = 0;
+            updateStatus('offline', 'Desconectado');
+            document.getElementById('printersList').innerHTML = '<span style="color:#64748b;">Desconectado</span>';
+            showMessage('Desconectado', 'warning');
+        }
+
+        async function refreshPrinters() {
+            if (!printerConnected) {
+                showMessage('⚠️ Conecta QZ Tray primero', 'warning');
+                return;
+            }
+            try {
+                const printers = await qz.printers.find();
+                const list = document.getElementById('printersList');
+                if (printers.length === 0) {
+                    list.innerHTML = '<span style="color:#64748b;">No se encontraron impresoras</span>';
+                } else {
+                    list.innerHTML = printers.map(p =>
+                        `<div class="item">
+                            <span>${p.name === config.printerName ? '✅' : '🖨️'} ${p.name}</span>
+                            <span class="badge badge-info">${p.description || 'Impresora'}</span>
+                        </div>`
+                    ).join('');
+                }
+                addLog(`🔄 Impresoras refrescadas: ${printers.length} encontradas`, 'info');
+            } catch (err) {
+                addLog(`❌ Error refrescando: ${err.message}`, 'error');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // FUNCIÓN AWAIT PARA IMPRESIÓN
+        // ═══════════════════════════════════════════════════════════════════
+
+        function awaitPrintDecision() {
+            return new Promise((resolve) => {
+                printResolveRef = resolve;
+                document.getElementById('printModal').classList.add('show');
+            });
+        }
+
+        function handlePrintDecision(decision) {
+            document.getElementById('printModal').classList.remove('show');
+            if (printResolveRef) {
+                printResolveRef(decision);
+                printResolveRef = null;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // IMPRESIÓN
+        // ═══════════════════════════════════════════════════════════════════
+
+        async function printRaw(printerName, content, openDrawer = false) {
+            if (!printerConnected || !qz.websocket.isActive()) {
+                showMessage('⚠️ QZ Tray no está conectado', 'error');
+                return false;
+            }
+
+            try {
+                const configQZ = qz.configs.create(printerName);
+                const commands = [
+                    '\x1B\x40', // Reset
+                    content,
+                    '\n\n\n',
+                    ...(openDrawer ? ['\x1B\x70\x00\x19\xFA'] : []),
+                    '\x1B\x69', // Corte de papel
+                ];
+                await qz.print(configQZ, commands);
+                addLog('✅ Impresión enviada a ' + printerName, 'success');
+                return true;
+            } catch (err) {
+                addLog(`❌ Error al imprimir: ${err.message}`, 'error');
+                showMessage(`❌ Error al imprimir: ${err.message}`, 'error');
+                return false;
+            }
+        }
+
+        // ── Imprimir según el tipo seleccionado ──────────────────────────
+
+        async function imprimirSeleccionado() {
+            if (!printerConnected) {
+                showMessage('⚠️ Conecta QZ Tray primero', 'warning');
+                return;
+            }
+
+            try {
+                const content = document.getElementById('printContent').value || 'Sin contenido';
+                const printerName = document.getElementById('printerName').value.trim() || 'POS-58';
+
+                // Mostrar modal (igual que en CobroModal)
+                const shouldPrint = await awaitPrintDecision();
+
+                if (shouldPrint) {
+                    const success = await printRaw(printerName, content, false);
+                    if (success) {
+                        showMessage('✅ Ticket impreso correctamente', 'success');
+                    }
+                } else {
+                    showMessage('ℹ️ Impresión cancelada', 'info');
+                }
+
+            } catch (err) {
+                console.error('❌ Error:', err);
+                showMessage('❌ Error: ' + err.message, 'error');
+            }
+        }
+
+        // ── Imprimir Ticket Simple ──────────────────────────────────────
+
+        async function imprimirTicket() {
+            if (!printerConnected) {
+                showMessage('⚠️ Conecta QZ Tray primero', 'warning');
+                return;
+            }
+
+            try {
+                const now = new Date();
+                const fecha = now.toLocaleDateString('es-EC');
+                const hora = now.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+
+                const content = `=== CONSULTORIO DENTAL ===
+        Dr. Jefferson Cagua
+        RUC: 1234567890001
+        Tel: 0999123456
+
+        === TICKET DE PRUEBA ===
+        Fecha: ${fecha}
+        Hora: ${hora}
+        ─────────────────────
+        1x  Limpieza Dental   $50.00
+        2x  Resina            $30.00
+        ─────────────────────
+        SUBTOTAL:  $80.00
+        IVA 0%:    $0.00
+        TOTAL:     $80.00
+        ─────────────────────
+        PAGO:     EFECTIVO
+        RECIBIDO: $100.00
+        CAMBIO:   $20.00
+        ─────────────────────
+        ¡Gracias por su visita!`;
+
+                const printerName = document.getElementById('printerName').value.trim() || 'POS-58';
+
+                const shouldPrint = await awaitPrintDecision();
+                if (shouldPrint) {
+                    await printRaw(printerName, content, false);
+                }
+
+            } catch (err) {
+                showMessage('❌ Error: ' + err.message, 'error');
+            }
+        }
+
+        // ── Imprimir Factura ─────────────────────────────────────────────
+
+        async function imprimirFactura() {
+            if (!printerConnected) {
+                showMessage('⚠️ Conecta QZ Tray primero', 'warning');
+                return;
+            }
+
+            try {
+                const now = new Date();
+                const fecha = now.toLocaleDateString('es-EC');
+                const hora = now.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+
+                const content = `=== CONSULTORIO DENTAL ===
+        Dr. Jefferson Cagua
+        RUC: 1234567890001
+        Tel: 0999123456
+
+        FACTURA No. 001-001-0001
+        AUT. SRI: 1234567890
+        F. AUT.: ${fecha}
+
+        CLIENTE: Juan Pérez
+        RUC/CI: 1234567890
+        F. Emisión: ${fecha}
+
+        CANT DESC                P.UNT   TOTAL
+        ─────────────────────────────────────
+        1    Limpieza Dental     50.00   50.00
+        2    Resina              30.00   60.00
+        ─────────────────────────────────────
+        SUBTOTAL 0%:                     $80.00
+        TOTAL:                           $80.00
+        ─────────────────────────────────────
+        FORMA DE PAGO
+          Efectivo:                      $80.00
+        ─────────────────────────────────────
+        VALOR TOTAL                     $80.00
+
+        ¡Gracias por su visita!`;
+
+                const printerName = document.getElementById('printerName').value.trim() || 'POS-58';
+
+                const shouldPrint = await awaitPrintDecision();
+                if (shouldPrint) {
+                    await printRaw(printerName, content, false);
+                }
+
+            } catch (err) {
+                showMessage('❌ Error: ' + err.message, 'error');
+            }
+        }
+
+        // ── Abrir Cajón ──────────────────────────────────────────────────
+
+        async function openDrawer() {
+            if (!printerConnected) {
+                showMessage('⚠️ Conecta QZ Tray primero', 'warning');
+                return;
+            }
+
+            try {
+                const printers = await qz.printers.find();
+                const target = printers.find(p =>
+                    p.name.toLowerCase().includes('thermal') ||
+                    p.name.toLowerCase().includes('receipt') ||
+                    p.name.toLowerCase().includes('pos')
+                ) || printers[0];
+
+                if (!target) {
+                    showMessage('❌ No se encontró impresora', 'error');
+                    return;
+                }
+
+                const configQZ = qz.configs.create(target.name);
+                await qz.print(configQZ, ['\x1B\x40', '\x1B\x70\x00\x19\xFA', '\x1B\x64\x02']);
+                showMessage('💰 Cajón abierto', 'success');
+                addLog('💰 Cajón abierto en ' + target.name, 'success');
+
+            } catch (err) {
+                showMessage('❌ Error al abrir cajón: ' + err.message, 'error');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // LIMPIAR LOGS
+        // ═══════════════════════════════════════════════════════════════════
+
+        function clearLogs() {
+            document.getElementById('logContainer').innerHTML = '<div class="log-line info">🧹 Logs limpiados</div>';
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // INICIALIZACIÓN
+        // ═══════════════════════════════════════════════════════════════════
+
+        async function init() {
+            addLog('🚀 Inicializando Panel de Impresiones...', 'info');
+            addLog(`🔌 Conectando a ${config.wsHost}:${config.wsPort}`, 'info');
+
+            // Cargar contenido inicial
+            loadContentForType('ticket-simple');
+
+            // Intentar conectar automáticamente
+            setTimeout(connectQZ, 1500);
+        }
+
+        if (document.readyState === 'complete') {
+            init();
+        } else {
+            window.addEventListener('load', init);
+        }
+
+        // Cerrar modal con ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('printModal');
+                if (modal.classList.contains('show')) {
+                    handlePrintDecision(false);
+                }
+            }
+        });
+
+        // Cerrar modal al hacer clic fuera
+        document.getElementById('printModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                handlePrintDecision(false);
+            }
+        });
+
+        console.log('📋 Panel de Impresiones cargado');
+        console.log(`🔌 WebSocket: ${config.wsHost}:${config.wsPort}`);
+        console.log(`🖨️ Impresora: ${config.printerName}`);
+    </script>
+
+</body>
+</html>

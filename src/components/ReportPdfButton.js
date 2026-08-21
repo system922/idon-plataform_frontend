@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { FiFileText, FiDownload, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { fetchWithAuth } from '../config/apiBase';
+import { fetchWithAuth } from '../config/apiBase_';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmtCurrency = (n) => `$${Number(n || 0).toFixed(2)}`;
@@ -151,7 +151,7 @@ export default function ReportPdfButton({ customConfig, dateRange, groupBy, titl
     setSuccess('');
 
     try {
-      const settingsRes = await fetchWithAuth('/api/settings');
+      const settingsRes = await fetchWithAuth('/settings');
       const settingsRaw = settingsRes.ok ? await settingsRes.json() : {};
       const settings = settingsRaw?.data ?? settingsRaw ?? {};
 
@@ -303,7 +303,7 @@ export default function ReportPdfButton({ customConfig, dateRange, groupBy, titl
         }}
       >
         <FiFileText size={15} />
-        {generating ? 'Generando PDF...' : 'Exportar PDF'}
+        {generating ? 'Generando PDF...' : 'PDF'}
         <FiDownload size={14} />
       </button>
       {error && (

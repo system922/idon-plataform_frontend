@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FiFileText, FiAlertCircle, FiCheckCircle, FiDownload } from 'react-icons/fi';
 import jsPDF from "jspdf";
-import { fetchWithAuth } from '../config/apiBase';
+import { fetchWithAuth } from '../config/apiBase_';
 
 // Función para obtener el usuario operador del localStorage
 function getOperatorUser() {

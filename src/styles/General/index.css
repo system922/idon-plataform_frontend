@@ -1,0 +1,89 @@
+@import './Variablen/general_variables.css';
+
+@import './Layouts/SidebarModern.css';
+@import './Layouts/Footer.css';
+@import './Layouts/PageTemplate.css';
+
+@import './Components/SpinnerLoader.css';
+@import './Components/Buttons.css';
+@import './Components/Table.css';
+@import './Components/Modal.css';
+@import './Components/ConfirmModal.css';
+@import './Components/Input.css';
+@import './Components/SearchInput.css';
+@import './Components/Checklist.css';
+@import './Components/GlobalExpenseBubble.css';
+
+
+
+@import './Pages/LegalPages.css';
+@import './Pages/LoginPage.css';
+@import './Pages/PendingApprovalPage.css';
+@import './Pages/PaymentPendingPage.css';
+
+
+@import './Components/BusinessHome.css';
+@import './Pages/AccessDeniedPage.css';
+
+
+@import './Pages/AdminDashboardPage.css';
+@import './Pages/AdminRequestsPage.css';
+@import './Pages/AdminClientsPage.css';
+@import './Pages/AdminBusinessTypes.css';
+@import './Pages/AdminModulosPage.css';
+@import './Pages/AdminPayments.css';
+@import './Pages/AdminEmailTemplatesPage.css';
+@import './Pages/AdminUsersPage.css';
+@import './Pages/AdminRolesPage.css';
+@import './Pages/AdminSettingsPage.css';
+
+
+@import './Pages/AperturaCajaPage.css';
+@import './Pages/ProfilePage.css';
+
+
+@import './Pages/SettingsPage.css';
+@import './Pages/DashboardPage.css';
+@import './Pages/RetailDashboard.css';
+@import './Pages/UsersPage.css';
+@import './Pages/RolesPage.css';
+
+
+@import './Pages/PosCashRegisterHistoryPage.css';
+@import './Pages/PosDiscounts.css';
+@import './Pages/PosCheckoutPage.css';
+@import './Pages/PosRetailPage.css';
+
+@import './Pages/InventoryAdjustments.css'; 
+@import './Pages/InventoryCategoriesPage.css'; 
+@import './Pages/InventoryProductsPage.css';
+@import './Pages/InventoryPhysicalPage.css';
+
+
+@import './Pages/ReportsAdvancedPage.css';
+@import './Pages/ReportsProductsPage.css';
+@import './Pages/ReportsSalesPage.css';
+
+
+@import './Pages/AccountingBalancePage.css';
+@import './Pages/AccountingClosingPage.css';
+@import './Pages/AccountingTaxPage.css';
+@import './Pages/AccountingReceivablePage.css';
+@import './Pages/AccountingPayablePage.css';
+@import './Pages/AccountingSriPage.css';
+
+@import './Pages/OrderPage.css';
+@import './Pages/OrdersKitchenScreen.css';
+
+@import './Pages/SuppliersOrdersPage.css';
+@import './Pages/PurchasesOrdersPage.css';
+
+@import './Pages/ExpensesHistory.css';
+
+@import './Pages/AttendancePage.css';
+
+
+
+
+
+

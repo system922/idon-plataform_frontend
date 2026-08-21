@@ -13,7 +13,6 @@
 
 import React from 'react';
 import { FiAlertCircle, FiRotateCcw } from 'react-icons/fi';
-import '../styles/PageTemplate.css';
 
 /**
  * PageTemplate - Componente Universal

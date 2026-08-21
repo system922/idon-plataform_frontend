@@ -1,0 +1,455 @@
+/* ============================================================
+   ODONTO-AGENDA.CSS - Estilos para la agenda odontológica
+   ============================================================ */
+
+/* ============================================================
+   CONTENEDOR PRINCIPAL DE LA AGENDA
+   ============================================================ */
+.odonto-agenda-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  overflow: auto;
+  box-shadow: var(--shadow);
+  margin-top: 0;
+  width: 100%;
+  max-height: 650px;
+}
+
+/* ============================================================
+   GRID DE LA AGENDA
+   ============================================================ */
+.odonto-agenda-grid {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  min-width: 800px;
+  font-size: 13px;
+  width: 100%;
+}
+
+/* ============================================================
+   HEADERS (días y hora)
+   ============================================================ */
+.odonto-agenda-header {
+  padding: 10px 8px;
+  text-align: center;
+  font-weight: 600;
+  background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+}
+
+.odonto-agenda-header.today {
+  background: var(--primary-bg);
+  border-bottom: 2px solid var(--primary);
+}
+
+.odonto-agenda-header.today .day-name {
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+
+.odonto-agenda-header.today .day-number {
+  color: var(--primary-dark);
+  font-weight: 800;
+}
+
+.odonto-agenda-corner {
+  background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  min-height: 50px;
+}
+
+.odonto-agenda-header .day-name {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.odonto-agenda-header .day-number {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+/* ============================================================
+   FILA DE HORAS
+   ============================================================ */
+.odonto-agenda-hour {
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+
+/* ============================================================
+   SLOTS DE LA AGENDA
+   ============================================================ */
+.odonto-agenda-slot {
+  padding: 4px;
+  border-bottom: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  min-height: 44px;
+  background: var(--bg-card);
+  transition: background 0.15s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.odonto-agenda-slot:hover {
+  background: var(--bg-hover);
+}
+
+/* ============================================================
+   BLOQUE DE CITA EN EL SLOT
+   ============================================================ */
+.odonto-agenda-cita {
+  animation: odonto-fadeIn 0.2s ease;
+  background: rgba(59, 130, 246, 0.08);
+  border-left: 4px solid #3b82f6;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.odonto-agenda-cita:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 5;
+}
+
+.odonto-agenda-cita .odonto-btn-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 0;
+}
+
+.odonto-agenda-cita .odonto-btn-icon:hover {
+  background: rgba(0, 0, 0, 0.06);
+  transform: scale(1.05);
+}
+
+.odonto-agenda-cita .odonto-btn-icon.delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+/* ============================================================
+   FILTROS DE AGENDA
+   ============================================================ */
+.odonto-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  background: var(--bg-card);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.odonto-agenda-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.odonto-agenda-nav .odonto-btn-icon {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.odonto-agenda-nav .odonto-btn-icon:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.odonto-agenda-nav .odonto-agenda-week-label {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-primary);
+  margin-left: 8px;
+  min-width: 180px;
+}
+
+.odonto-agenda-nav .odonto-btn-secondary {
+  font-size: 13px;
+  padding: 4px 12px;
+}
+
+/* ============================================================
+   MODAL DE LLAMADA
+   ============================================================ */
+.odonto-modal-llamada {
+  max-width: 400px !important;
+  background: linear-gradient(135deg, #1a1f2a 0%, #0f172a 100%) !important;
+  border: 1px solid rgba(74, 222, 128, 0.2) !important;
+}
+
+.odonto-modal-llamada .odonto-modal-header {
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+.odonto-modal-llamada .odonto-modal-body {
+  background: transparent !important;
+}
+
+.odonto-modal-llamada .odonto-modal-close {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.odonto-modal-llamada .odonto-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+/* ============================================================
+   MODAL DE CONFIGURACIÓN
+   ============================================================ */
+.odonto-modal-config {
+  max-width: 1000px !important;
+  width: 90vw !important;
+  max-height: 90vh !important;
+}
+
+/* ============================================================
+   ESTADOS DE CITAS
+   ============================================================ */
+.odonto-agenda-status-scheduled {
+  border-left-color: #facc15;
+}
+
+.odonto-agenda-status-confirmed {
+  border-left-color: #4ade80;
+}
+
+.odonto-agenda-status-in_progress {
+  border-left-color: #3b82f6;
+}
+
+.odonto-agenda-status-completed {
+  border-left-color: #9ca3af;
+}
+
+.odonto-agenda-status-cancelled {
+  border-left-color: #ef4444;
+}
+
+.odonto-agenda-status-no_show {
+  border-left-color: #f59e0b;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1024px) {
+  .odonto-agenda-grid {
+    font-size: 12px;
+    min-width: 700px;
+  }
+
+  .odonto-agenda-header {
+    min-height: 44px;
+    padding: 8px 4px;
+  }
+
+  .odonto-agenda-header .day-number {
+    font-size: 15px;
+  }
+
+  .odonto-agenda-hour {
+    min-height: 38px;
+    font-size: 10px;
+  }
+
+  .odonto-agenda-slot {
+    min-height: 38px;
+    padding: 3px;
+  }
+}
+
+@media (max-width: 768px) {
+  .odonto-agenda-container {
+    border-radius: var(--radius-sm);
+  }
+
+  .odonto-agenda-grid {
+    min-width: 600px;
+    font-size: 11px;
+  }
+
+  .odonto-agenda-header {
+    min-height: 40px;
+    padding: 6px 2px;
+  }
+
+  .odonto-agenda-header .day-name {
+    font-size: 9px;
+  }
+
+  .odonto-agenda-header .day-number {
+    font-size: 13px;
+  }
+
+  .odonto-agenda-hour {
+    min-height: 34px;
+    font-size: 9px;
+    padding: 4px 2px;
+  }
+
+  .odonto-agenda-slot {
+    min-height: 34px;
+    padding: 2px;
+  }
+
+  .odonto-filters-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+
+  .odonto-agenda-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .odonto-agenda-nav .odonto-agenda-week-label {
+    font-size: 13px;
+    min-width: auto;
+    text-align: center;
+    width: 100%;
+    margin: 4px 0;
+  }
+
+  .odonto-agenda-cita {
+    font-size: 10px !important;
+    padding: 4px 6px !important;
+  }
+
+  .odonto-agenda-cita .odonto-btn-icon {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .odonto-modal-llamada {
+    max-width: 90vw !important;
+  }
+
+  .odonto-modal-llamada .odonto-modal-body h3 {
+    font-size: 18px !important;
+  }
+
+  .odonto-modal-llamada .odonto-modal-body p {
+    font-size: 24px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .odonto-agenda-grid {
+    min-width: 500px;
+    font-size: 10px;
+  }
+
+  .odonto-agenda-header {
+    min-height: 36px;
+    padding: 4px 2px;
+  }
+
+  .odonto-agenda-header .day-name {
+    font-size: 8px;
+  }
+
+  .odonto-agenda-header .day-number {
+    font-size: 12px;
+  }
+
+  .odonto-agenda-hour {
+    min-height: 30px;
+    font-size: 8px;
+  }
+
+  .odonto-agenda-slot {
+    min-height: 30px;
+    padding: 2px;
+  }
+
+  .odonto-agenda-cita {
+    font-size: 9px !important;
+    padding: 3px 4px !important;
+  }
+
+  .odonto-agenda-cita .odonto-btn-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+}
+
+/* ============================================================
+   SCROLLBAR PERSONALIZADA
+   ============================================================ */
+.odonto-agenda-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.odonto-agenda-container::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+.odonto-agenda-container::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.odonto-agenda-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}

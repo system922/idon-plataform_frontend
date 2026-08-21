@@ -4,12 +4,15 @@ import {
   FiBarChart2, FiDollarSign, FiBriefcase, FiTruck, FiGrid,
   FiCalendar, FiStar, FiShoppingBag, FiUsers, FiUserCheck,
   FiMap, FiMapPin, FiList, FiGlobe, FiBell, FiFileText,
-  FiThermometer, FiPercent, FiTag, FiLoader,
+  FiThermometer, FiPercent, FiTag, FiLoader, FiPackage,
+  FiAlertCircle, FiClock
 } from 'react-icons/fi';
-import { adminApiService } from '../../services/apiService';
-import '../../styles/AdminPages.css';
+import { useAlert } from '../../context/ConfirmContext';
+import Modal from '../../components/General/Modal';
+import CustomCombobox from '../../components/General/CustomCombobox';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import { adminApi } from '../../config/api';
 
-/* ─── Iconos por módulo ──────────────────────────────────── */
 const MOD_ICONS = {
   core:          <FiSettings   size={13}/>,
   pos:           <FiShoppingCart size={13}/>,
@@ -36,102 +39,163 @@ const MOD_ICONS = {
   einvoicing:    <FiFileText   size={13}/>,
 };
 
+const MOD_ICON_LG = {
+  core:          <FiSettings   size={16}/>,
+  pos:           <FiShoppingCart size={16}/>,
+  inventory:     <FiBox        size={16}/>,
+  reports:       <FiBarChart2  size={16}/>,
+  payments:      <FiCreditCard size={16}/>,
+  accounting:    <FiDollarSign size={16}/>,
+  orders:        <FiBriefcase  size={16}/>,
+  kitchen:       <FiThermometer size={16}/>,
+  delivery:      <FiTruck      size={16}/>,
+  tables:        <FiGrid       size={16}/>,
+  reservations:  <FiCalendar   size={16}/>,
+  loyalty:       <FiStar       size={16}/>,
+  suppliers:     <FiTruck      size={16}/>,
+  purchases:     <FiShoppingBag size={16}/>,
+  appointments:  <FiCalendar   size={16}/>,
+  employees:     <FiUsers      size={16}/>,
+  crm:           <FiUserCheck  size={16}/>,
+  routes:        <FiMap        size={16}/>,
+  tracking:      <FiMapPin     size={16}/>,
+  queue:         <FiList       size={16}/>,
+  ecommerce:     <FiGlobe      size={16}/>,
+  notifications: <FiBell       size={16}/>,
+  einvoicing:    <FiFileText   size={16}/>,
+};
+
 const Lbl = ({ children }) => (
-  <label style={{
-    display: 'block', marginBottom: '5px', fontSize: '10px',
-    color: '#8CB79B', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.6px',
-  }}>
+  <label className="subscription-label">
     {children}
   </label>
 );
 
 const Row = ({ label, value, highlight, muted, large }) => (
-  <div style={{
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '10px 16px',
-  }}>
-    <span style={{ fontSize: large ? '15px' : '13px', fontWeight: large ? 700 : 500,
-      color: muted ? 'var(--admin-text-muted)' : 'var(--admin-text-primary)' }}>
+  <div className={`subscription-row ${large ? 'large' : ''}`}>
+    <span className={`subscription-row-label ${muted ? 'muted' : ''}`}>
       {label}
     </span>
-    <span style={{ fontSize: large ? '22px' : '14px', fontWeight: large ? 800 : 600,
-      color: highlight || 'var(--admin-text-primary)' }}>
+    <span className={`subscription-row-value ${highlight ? 'highlight' : ''}`}>
       {value}
     </span>
   </div>
 );
 
-/* ═══════════════════════════════════════════════════════════
-   SUBSCRIPTION MODAL (CREAR / EDITAR)
-   Props:
-     business              — { id, business_name, business_type_name, modules: [] }
-     existingSubscription  — objeto de suscripción existente (opcional)
-     apiFetch              — función async para llamar al backend
-     onClose               — cerrar modal
-     onSaved               — callback tras éxito
-═══════════════════════════════════════════════════════════ */
 export default function SubscriptionModal({ business, existingSubscription, onClose, onSaved }) {
-  const [loading, setLoading] = useState(!existingSubscription);
+  const alert = useAlert();
+  const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('monthly');
-  const [discount, setDiscount] = useState('');
+  const [discountInput, setDiscountInput] = useState('');
   const [billingDay, setBillingDay] = useState('1');
   const [status, setStatus] = useState('active');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
   const [existingSub, setExistingSub] = useState(existingSubscription || null);
+  const [subscriptionItems, setSubscriptionItems] = useState([]);
 
   const modules = business.modules || [];
 
-  // Si se pasó existingSubscription como prop, cargar los datos inmediatamente
-  useEffect(() => {
-    if (existingSubscription) {
-      setExistingSub(existingSubscription);
-      setPeriod(existingSubscription.billing_period || 'monthly');
-      setBillingDay(String(existingSubscription.billing_day || 1));
-      setStatus(existingSubscription.status || 'active');
-      if (existingSubscription.discount_percentage) {
-        setDiscount(String(existingSubscription.discount_percentage));
-      }
-      setLoading(false);
-    } else {
-      // Cargar suscripción existente desde la API si no se pasó
-      const loadExistingSubscription = async () => {
-        try {
-          const subRes = await adminApiService.get(`/admin/businesses/${business.id}/subscription`);
-          if (subRes.data) {
-            setExistingSub(subRes.data);
-            setPeriod(subRes.data.billing_period || 'monthly');
-            setBillingDay(String(subRes.data.billing_day || 1));
-            setStatus(subRes.data.status || 'active');
-            if (subRes.data.discount_percentage) {
-              setDiscount(String(subRes.data.discount_percentage));
-            }
-          }
-        } catch (e) {
+  const statusOptions = [
+    { value: 'active', label: 'Activa' },
+    { value: 'suspended', label: 'Suspendida' },
+    { value: 'cancelled', label: 'Cancelada' },
+    { value: 'expired', label: 'Expirada' },
+  ];
 
-        } finally {
-          setLoading(false);
+  useEffect(() => {
+    const loadSubscriptionData = async () => {
+      try {
+        const subRes = await adminApi.get(`/admin/businesses/${business.id}/subscription`);
+        
+        if (subRes.data && subRes.data.id) {
+          setExistingSub(subRes.data);
+          setPeriod(subRes.data.billing_period || 'monthly');
+          setBillingDay(String(subRes.data.billing_day || 1));
+          setStatus(subRes.data.status || 'active');
+          
+          const discountValue = subRes.data.discount_percentage !== undefined 
+            ? Number(subRes.data.discount_percentage) 
+            : 0;
+          setDiscountInput(String(discountValue));
+          
+          try {
+            const itemsRes = await adminApi.get(`/admin/subscriptions/${subRes.data.id}/items`);
+            if (itemsRes.data) {
+              setSubscriptionItems(itemsRes.data);
+            }
+          } catch (e) {}
+        } else if (existingSubscription && existingSubscription.id) {
+          setExistingSub(existingSubscription);
+          setPeriod(existingSubscription.billing_period || 'monthly');
+          setBillingDay(String(existingSubscription.billing_day || 1));
+          setStatus(existingSubscription.status || 'active');
+          
+          const discountValue = existingSubscription.discount_percentage !== undefined 
+            ? Number(existingSubscription.discount_percentage) 
+            : 0;
+          setDiscountInput(String(discountValue));
+          
+          if (existingSubscription.id) {
+            try {
+              const itemsRes = await adminApi.get(`/admin/subscriptions/${existingSubscription.id}/items`);
+              if (itemsRes.data) {
+                setSubscriptionItems(itemsRes.data);
+              }
+            } catch (e) {}
+          }
         }
-      };
-      loadExistingSubscription();
-    }
+      } catch (e) {
+        console.error('Error cargando suscripción:', e);
+        if (existingSubscription && existingSubscription.id) {
+          setExistingSub(existingSubscription);
+          setPeriod(existingSubscription.billing_period || 'monthly');
+          setBillingDay(String(existingSubscription.billing_day || 1));
+          setStatus(existingSubscription.status || 'active');
+          
+          const discountValue = existingSubscription.discount_percentage !== undefined 
+            ? Number(existingSubscription.discount_percentage) 
+            : 0;
+          setDiscountInput(String(discountValue));
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSubscriptionData();
   }, [business.id, existingSubscription]);
 
-  /* ── Cálculos ── */
+  const savedMonthlyTotal = Number(existingSub?.amount_monthly) || 0;
+  const savedAnnualTotal = Number(existingSub?.amount_annual) || 0;
+  const savedDiscount = Number(existingSub?.discount_percentage) || 0;
+  
+  const discPct = discountInput !== '' ? parseFloat(discountInput) : savedDiscount;
+  
   const subtotalMens = modules.reduce((s, m) => s + parseFloat(m.price_monthly || 0), 0);
   const subtotalAnu  = modules.reduce((s, m) => s + parseFloat(m.price_annual  || 0), 0);
-  const subtotal     = period === 'monthly' ? subtotalMens : subtotalAnu;
+  
+  const discountAmount = parseFloat((subtotalMens * discPct / 100).toFixed(2));
+  const totalWithDiscount = parseFloat((subtotalMens - discountAmount).toFixed(2));
 
-  const discPct      = Math.min(Math.max(parseFloat(discount) || 0, 0), 100);
-  const discountAmt  = parseFloat((subtotal * discPct / 100).toFixed(2));
-  const total        = parseFloat((subtotal - discountAmt).toFixed(2));
-  const savingAnu    = parseFloat((subtotalMens * 12 - subtotalAnu).toFixed(2));
+  const isEdit = !!existingSub && !!existingSub.id;
 
-  const isEdit = !!existingSub;
+  const formatDate = (date) => {
+    if (!date) return '—';
+    return new Date(date).toLocaleDateString('es-EC', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-  /* ── Guardar suscripción (CREAR o ACTUALIZAR) ── */
   const handleSave = async () => {
-    if (modules.length === 0 && !isEdit) return;
+    if (modules.length === 0 && !isEdit) {
+      alert.warning('El negocio no tiene módulos activos. Configura módulos primero.');
+      return;
+    }
     setSaving(true);
     setMsg(null);
     try {
@@ -143,202 +207,279 @@ export default function SubscriptionModal({ business, existingSubscription, onCl
 
       if (isEdit) {
         payload.status = status;
-        await adminApiService.put(`/admin/businesses/${business.id}/subscription/${existingSub.id}`, payload);
+        await adminApi.put(`/admin/businesses/${business.id}/subscription/${existingSub.id}`, payload);
+        alert.success('Suscripción actualizada correctamente', 'Actualización Exitosa');
       } else {
-        await adminApiService.post(`/admin/businesses/${business.id}/subscribe`, payload);
+        await adminApi.post(`/admin/businesses/${business.id}/subscribe`, payload);
+        alert.success('Suscripción creada correctamente', '✅ Suscripción Creada');
       }
       setMsg({ ok: true, text: isEdit ? '✅ Suscripción actualizada correctamente' : '✅ Suscripción creada correctamente' });
       onSaved();
       setTimeout(onClose, 1600);
     } catch (e) {
       setMsg({ ok: false, text: '❌ ' + e.message });
+      alert.error(e.message || 'Error al guardar la suscripción');
     } finally {
       setSaving(false);
     }
   };
 
-  const inp = {
-    width: '100%', padding: '9px 12px',
-    background: 'var(--admin-bg-primary)',
-    border: '1px solid var(--admin-border-light)',
-    borderRadius: '8px', color: 'var(--admin-text-primary)', fontSize: '13px',
-    outline: 'none',
-  };
+  const footer = (
+    <>
+      {msg && (
+        <div className={`subscription-msg ${msg.ok ? 'success' : 'error'}`}>
+          {msg.text}
+        </div>
+      )}
+      <ButtonGroup>
+        <IconTextButton
+          variant=""
+          size="md"
+          onClick={onClose}
+          disabled={saving}
+        >
+          Cancelar
+        </IconTextButton>
+        <IconTextButton
+          variant="success"
+          size="md"
+          icon={<FiCreditCard size={15} />}
+          onClick={handleSave}
+          disabled={saving || (modules.length === 0 && !isEdit)}
+          loading={saving}
+        >
+          {saving ? (isEdit ? 'Actualizando...' : 'Creando...') : (isEdit ? 'Actualizar Suscripción' : 'Crear Suscripción')}
+        </IconTextButton>
+      </ButtonGroup>
+    </>
+  );
 
   if (loading) {
     return (
-      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.78)',
-        display:'flex', alignItems:'center', justifyContent:'center', zIndex:1200, padding:'16px' }}
-        onClick={onClose}>
-        <div style={{ background:'var(--admin-bg-secondary)', border:'1px solid var(--admin-border-light)',
-          borderRadius:'16px', maxWidth:'600px', width:'95vw', padding:'40px', textAlign:'center' }}
-          onClick={e => e.stopPropagation()}>
-          <FiLoader size={32} style={{ animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
-          <p>Cargando datos de suscripción...</p>
+      <Modal
+        isOpen={true}
+        onClose={onClose}
+        title="Cargando Suscripción"
+        size="md"
+        className="subscription-modal"
+      >
+        <div className="subscription-loading">
+          <FiLoader size={32} className="spinning" />
+          <span>Cargando datos de suscripción...</span>
         </div>
-      </div>
+      </Modal>
     );
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.78)',
-      display:'flex', alignItems:'center', justifyContent:'center', zIndex:1200, padding:'16px' }}
-      onClick={onClose}>
-      <div style={{ background:'var(--admin-bg-secondary)', border:'1px solid var(--admin-border-light)',
-        borderRadius:'16px', maxWidth:'600px', width:'95vw', maxHeight:'90vh',
-        display:'flex', flexDirection:'column', color:'var(--admin-text-primary)', overflow:'hidden',
-        boxShadow:'0 24px 60px rgba(0,0,0,.5)' }}
-        onClick={e => e.stopPropagation()}>
-        
-        <div style={{ padding:'20px 24px 16px', flexShrink:0, borderBottom:'1px solid var(--admin-border-light)',
-          display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <h2 style={{ margin:0, fontSize:'17px', display:'flex', alignItems:'center', gap:'9px' }}>
-            <FiCreditCard size={19} style={{ color:'#ff8c42' }}/>
-            {isEdit ? 'Editar Suscripción' : 'Nueva Suscripción'}
-          </h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer',
-            color:'var(--admin-text-muted)', fontSize:'20px', lineHeight:1 }}><FiX/></button>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={isEdit ? 'Editar Suscripción' : 'Nueva Suscripción'}
+      size="md"
+      className="subscription-modal"
+      footer={footer}
+    >
+      <div className="subscription-body">
+        <div className="subscription-section">
+          <Lbl>Negocio</Lbl>
+          <div className="subscription-business-grid">
+            <div>
+              <p className="subscription-business-label">Nombre</p>
+              <p className="subscription-business-value">{business.business_name}</p>
+            </div>
+            <div>
+              <p className="subscription-business-label">Tipo</p>
+              <p className="subscription-business-value">{business.business_type_name}</p>
+            </div>
+          </div>
         </div>
 
-        <div style={{ overflowY:'auto', flex:1, padding:'20px 24px' }}>
-          {/* Negocio */}
-          <div style={{ marginBottom:'20px', paddingBottom:'20px', borderBottom:'1px solid var(--admin-border-light)' }}>
-            <Lbl>Negocio</Lbl>
-            <div className="admin-col-2" style={{ gap:'10px', marginTop:'6px' }}>
-              <div><p style={{ margin:0, fontSize:'10px', color:'var(--admin-text-muted)', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:'3px' }}>Nombre</p>
-                <p style={{ margin:0, fontWeight:700, fontSize:'14px' }}>{business.business_name}</p></div>
-              <div><p style={{ margin:0, fontSize:'10px', color:'var(--admin-text-muted)', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:'3px' }}>Tipo</p>
-                <p style={{ margin:0, fontSize:'13px', color:'var(--admin-text-secondary)' }}>{business.business_type_name}</p></div>
-            </div>
-          </div>
-
-          {/* Módulos */}
-          <div style={{ marginBottom:'20px', paddingBottom:'20px', borderBottom:'1px solid var(--admin-border-light)' }}>
-            <Lbl>Módulos activos ({modules.length})</Lbl>
-            {modules.length === 0 ? (
-              <p style={{ margin:'8px 0 0', color:'var(--admin-text-muted)', fontSize:'13px' }}>
-                Sin módulos activos. Configura módulos desde la sección de módulos del negocio.
-              </p>
-            ) : (
-              <div style={{ display:'flex', flexDirection:'column', gap:'5px', marginTop:'8px' }}>
-                {modules.map(m => (
-                  <div key={m.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
-                    padding:'7px 12px', borderRadius:'8px', background:'rgba(255,140,66,.05)', border:'1px solid rgba(255,140,66,.15)' }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                      <span style={{ color:'#ff8c42' }}>{MOD_ICONS[m.code] || <FiBox size={13}/>}</span>
-                      <span style={{ fontSize:'13px', fontWeight:600 }}>{m.name}</span>
-                    </div>
-                    <div style={{ display:'flex', gap:'14px', fontSize:'11px' }}>
-                      <span style={{ color:'var(--admin-text-muted)' }}>${parseFloat(m.price_monthly || 0).toFixed(2)}<span style={{ opacity:.6 }}>/mes</span></span>
-                      <span style={{ color:'#ff8c42', fontWeight:700 }}>${parseFloat(m.price_annual || 0).toFixed(2)}<span style={{ fontWeight:400, opacity:.6 }}>/año</span></span>
-                    </div>
-                  </div>
-                ))}
+        {isEdit && (
+          <div className="subscription-section subscription-info-section">
+            <Lbl>Información de la Suscripción</Lbl>
+            <div className="subscription-info-grid">
+              <div className="subscription-info-item">
+                <span className="subscription-info-label"><FiCalendar size={12} /> Fecha de activación</span>
+                <span className="subscription-info-value">{formatDate(existingSub?.activated_at)}</span>
               </div>
-            )}
-          </div>
-
-          {/* Período de facturación */}
-          <div style={{ marginBottom:'20px', paddingBottom:'20px', borderBottom:'1px solid var(--admin-border-light)' }}>
-            <Lbl>Período de facturación</Lbl>
-            <div className="admin-col-2" style={{ gap:'10px', marginTop:'8px' }}>
-              {[
-                { value:'monthly', label:'Mensual', price:subtotalMens, unit:'mes' },
-                { value:'annual',  label:'Anual',   price:subtotalAnu,  unit:'año' },
-              ].map(opt => (
-                <div key={opt.value} onClick={() => setPeriod(opt.value)} style={{
-                  padding:'14px', borderRadius:'10px', cursor:'pointer',
-                  border:`2px solid ${period === opt.value ? '#ff8c42' : 'var(--admin-border-light)'}`,
-                  background: period === opt.value ? 'rgba(255,140,66,.08)' : 'transparent'
+              <div className="subscription-info-item">
+                <span className="subscription-info-label"><FiClock size={12} /> Próximo cobro</span>
+                <span className="subscription-info-value">{formatDate(existingSub?.next_billing_at)}</span>
+              </div>
+              <div className="subscription-info-item">
+                <span className="subscription-info-label"><FiCreditCard size={12} /> Última actualización</span>
+                <span className="subscription-info-value">{formatDate(existingSub?.updated_at) || '—'}</span>
+              </div>
+              <div className="subscription-info-item">
+                <span className="subscription-info-label"><FiPackage size={12} /> Estado</span>
+                <span className="subscription-info-value" style={{ 
+                  color: status === 'active' ? 'var(--text-primary)' : 
+                         status === 'suspended' ? 'var(--text-primary)' : 
+                         status === 'cancelled' ? 'var(--text-primary)' : 'var(--text-primary)',
+                  fontWeight: 600
                 }}>
-                  <div style={{ fontWeight:700, fontSize:'13px', marginBottom:'6px' }}>{opt.label}</div>
-                  <div style={{ fontSize:'20px', fontWeight:800, color:'#ff8c42' }}>
-                    ${opt.price.toFixed(2)}<span style={{ fontSize:'11px', fontWeight:400, color:'var(--admin-text-muted)', marginLeft:'3px' }}>/{opt.unit}</span>
+                  {status === 'active' ? 'Activa' : 
+                   status === 'suspended' ? 'Suspendida' : 
+                   status === 'cancelled' ? 'Cancelada' : 'Expirada'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="subscription-section">
+          <Lbl>Módulos activos ({modules.length})</Lbl>
+          {modules.length === 0 ? (
+            <p className="subscription-no-modules">
+              Sin módulos activos. Configura módulos desde la sección de módulos del negocio.
+            </p>
+          ) : (
+            <div className="subscription-modules-list">
+              {modules.map(m => {
+                const savedItem = subscriptionItems.find(item => item.module_id === m.id);
+                
+                let displayPrice = 0;
+                let displayPriceAnnual = 0;
+                
+                if (savedItem && savedItem.unit_price !== null && savedItem.unit_price !== undefined) {
+                  displayPrice = Number(savedItem.unit_price) || 0;
+                  displayPriceAnnual = Number(savedItem.unit_price) * 12 || 0;
+                } else {
+                  displayPrice = Number(m.price_monthly) || 0;
+                  displayPriceAnnual = Number(m.price_annual) || 0;
+                }
+                
+                return (
+                  <div key={m.id} className="subscription-module-item">
+                    <div className="subscription-module-info">
+                      <span className="subscription-module-icon">{MOD_ICON_LG[m.code] || <FiBox size={16}/>}</span>
+                      <span className="subscription-module-name">{m.name}</span>
+                    </div>
+                    <div className="subscription-module-prices">
+                      <span className="subscription-module-price">
+                        ${displayPrice.toFixed(2)}
+                        <span className="subscription-module-period">/mes</span>
+                      </span>
+                      <span className="subscription-module-price-annual">
+                        ${displayPriceAnnual.toFixed(2)}
+                        <span className="subscription-module-period">/año</span>
+                      </span>
+                    </div>
                   </div>
-                  {opt.value === 'annual' && savingAnu > 0 && <div style={{ fontSize:'11px', color:'#22c55e', marginTop:'4px' }}>Ahorro: ${savingAnu.toFixed(2)}</div>}
-                </div>
-              ))}
-            </div>
-            <div style={{ marginTop:'14px' }}>
-              <Lbl>Día de facturación del mes (1-28)</Lbl>
-              <input type="number" min="1" max="28" value={billingDay} onChange={e => setBillingDay(e.target.value)} style={inp}/>
-            </div>
-          </div>
-
-          {/* Descuento */}
-          <div style={{ marginBottom:'20px', paddingBottom:'20px', borderBottom:'1px solid var(--admin-border-light)' }}>
-            <Lbl>Descuento</Lbl>
-            <div className="admin-col-2" style={{ gap:'12px', marginTop:'8px', alignItems:'end' }}>
-              <div>
-                <p style={{ margin:'0 0 5px', fontSize:'11px', color:'var(--admin-text-muted)' }}>Porcentaje (%)</p>
-                <div style={{ position:'relative' }}>
-                  <input type="number" min="0" max="100" step="0.5" value={discount}
-                    onChange={e => setDiscount(e.target.value)} placeholder="0"
-                    style={{ ...inp, paddingRight:'36px' }}/>
-                  <span style={{ position:'absolute', right:'11px', top:'50%', transform:'translateY(-50%)',
-                    color:'#ff8c42', fontSize:'14px', pointerEvents:'none' }}><FiPercent size={14}/></span>
-                </div>
-              </div>
-              <div style={{ padding:'10px 14px', borderRadius:'9px', textAlign:'right',
-                background: discountAmt > 0 ? 'rgba(140,183,155,.1)' : 'rgba(255,255,255,.03)',
-                border: `1px solid ${discountAmt > 0 ? 'rgba(140,183,155,.25)' : 'var(--admin-border-light)'}` }}>
-                <p style={{ margin:0, fontSize:'11px', color:'var(--admin-text-muted)', marginBottom:'3px' }}>
-                  <FiTag size={10} style={{ marginRight:4 }}/>Ahorro con descuento
-                </p>
-                <p style={{ margin:0, fontSize:'18px', fontWeight:800, color: discountAmt > 0 ? '#8CB79B' : 'var(--admin-text-muted)' }}>
-                  {discountAmt > 0 ? `- $${discountAmt.toFixed(2)}` : '—'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Estado de la suscripción (solo en edición) */}
-          {isEdit && (
-            <div style={{ marginBottom:'20px', paddingBottom:'20px', borderBottom:'1px solid var(--admin-border-light)' }}>
-              <Lbl>Estado de la suscripción</Lbl>
-              <select value={status} onChange={e => setStatus(e.target.value)} style={inp}>
-                <option value="active">Activa</option><option value="suspended">Suspendida</option>
-                <option value="cancelled">Cancelada</option><option value="expired">Expirada</option>
-              </select>
+                );
+              })}
             </div>
           )}
+        </div>
 
-          {/* Resumen total */}
-          <div style={{ borderRadius:'12px', overflow:'hidden', border:'1px solid rgba(255,140,66,.2)' }}>
-            <Row label="Subtotal" value={`$${subtotal.toFixed(2)}`} muted/>
-            {discountAmt > 0 && <div style={{ borderTop:'1px solid rgba(255,140,66,.1)' }}>
-              <Row label={`Descuento (${discPct}%)`} value={`- $${discountAmt.toFixed(2)}`} highlight="#8CB79B"/>
-            </div>}
-            <div style={{ borderTop:'1px solid rgba(255,140,66,.15)', background:'rgba(255,140,66,.07)' }}>
-              <Row label={`Total ${period === 'monthly' ? 'mensual' : 'anual'}`}
-                value={`$${total.toFixed(2)} / ${period === 'monthly' ? 'mes' : 'año'}`} highlight="#ff8c42" large/>
+        <div className="subscription-section">
+          <Lbl>Período de facturación</Lbl>
+          <div className="subscription-period-grid">
+            <div 
+              className={`subscription-period-card ${period === 'monthly' ? 'selected' : ''}`}
+              onClick={() => setPeriod('monthly')}
+            >
+              <div className="subscription-period-label">Mensual</div>
+              <div className="subscription-period-price">
+                ${subtotalMens.toFixed(2)} <span className="subscription-period-unit">/mes</span>
+              </div>
+            </div>
+            <div 
+              className={`subscription-period-card ${period === 'annual' ? 'selected' : ''}`}
+              onClick={() => setPeriod('annual')}
+            >
+              <div className="subscription-period-label">Anual</div>
+              <div className="subscription-period-price">
+                ${subtotalAnu.toFixed(2)} <span className="subscription-period-unit">/año</span>
+              </div>
+            </div>
+          </div>
+          <div className="subscription-billing-day">
+            <Lbl>Día de facturación del mes (1-28)</Lbl>
+            <input 
+              type="number" 
+              min="1" 
+              max="28" 
+              value={billingDay} 
+              onChange={e => setBillingDay(e.target.value)} 
+              className="subscription-input"
+            />
+          </div>
+        </div>
+
+        <div className="subscription-section">
+          <Lbl>Descuento</Lbl>
+          <div className="subscription-discount-grid">
+            <div>
+              <p className="subscription-discount-label">Porcentaje (%)</p>
+              <div className="subscription-discount-input-wrapper">
+                <input 
+                  type="number" 
+                  min="0" 
+                  max="100" 
+                  step="0.5" 
+                  value={discountInput}
+                  onChange={(e) => setDiscountInput(e.target.value)} 
+                  placeholder="0"
+                  className="subscription-input"
+                />
+                <span className="subscription-discount-icon"><FiPercent size={14}/></span>
+              </div>
+            </div>
+            <div className={`subscription-discount-savings ${discountAmount > 0 ? 'active' : ''}`}>
+              <p className="subscription-discount-savings-label">
+                <FiTag size={10} /> Ahorro con descuento
+              </p>
+              <p className="subscription-discount-savings-value">
+                {discountAmount > 0 ? `- $${discountAmount.toFixed(2)}` : '—'}
+              </p>
             </div>
           </div>
         </div>
 
-        <div style={{ padding:'14px 24px', flexShrink:0, borderTop:'1px solid var(--admin-border-light)',
-          display:'flex', flexDirection:'column', gap:'10px' }}>
-          {msg && <div style={{ padding:'9px 13px', borderRadius:'8px', fontSize:'13px', fontWeight:600,
-            background: msg.ok ? 'rgba(34,197,94,.1)' : 'rgba(239,68,68,.1)',
-            color: msg.ok ? '#22c55e' : '#ef4444',
-            border: `1px solid ${msg.ok ? 'rgba(34,197,94,.3)' : 'rgba(239,68,68,.3)'}` }}>
-            {msg.text}
-          </div>}
-          <div style={{ display:'flex', gap:'10px' }}>
-            <button className="admin-btn admin-btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
-            <button onClick={handleSave} disabled={saving || (modules.length === 0 && !isEdit)}
-              style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:'7px',
-                padding:'10px 20px', borderRadius:'8px', fontWeight:700, fontSize:'13px',
-                border:'none', cursor: (modules.length === 0 && !isEdit) ? 'not-allowed' : 'pointer',
-                background: (modules.length === 0 && !isEdit) ? 'rgba(255,255,255,.08)' : 'linear-gradient(135deg,#ff9d55,#e87030)',
-                color: (modules.length === 0 && !isEdit) ? 'var(--admin-text-muted)' : '#fff',
-                opacity: saving ? .7 : 1 }}>
-              <FiCreditCard size={15}/>
-              {saving ? (isEdit ? 'Actualizando...' : 'Creando...') : (isEdit ? 'Actualizar Suscripción' : 'Crear Suscripción')}
-            </button>
+        {isEdit && (
+          <div className="subscription-section">
+            <Lbl>Estado de la suscripción</Lbl>
+            <CustomCombobox
+              options={statusOptions}
+              value={status}
+              onChange={setStatus}
+              placeholder="Seleccionar estado"
+              filterable={false}
+              size="md"
+              className="subscription-status-combobox"
+            />
+          </div>
+        )}
+
+        <div className="subscription-summary">
+          <Row 
+            label="Subtotal (sin descuento)" 
+            value={`$${subtotalMens.toFixed(2)}`} 
+            muted
+          />
+          
+          {discountAmount > 0 && (
+            <div className="subscription-summary-discount">
+              <Row 
+                label={`Descuento (${discPct}%)`} 
+                value={`- $${discountAmount.toFixed(2)}`} 
+                highlight="#8CB79B"
+              />
+            </div>
+          )}
+          
+          <div className="subscription-summary-total">
+            <Row 
+              label="Total mensual (con descuento)"
+              value={`$${totalWithDiscount.toFixed(2)}`} 
+              highlight="#ff8c42" 
+              large
+            />
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

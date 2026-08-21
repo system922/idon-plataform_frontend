@@ -1,23 +1,73 @@
-import React, { useState, useEffect, useCallback } from "react";
-import ExcelJS from 'exceljs';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useSession } from '../../context/SessionContext';
 import {
-  FiBarChart2, FiPackage, FiSearch, FiDownload, FiCalendar,
+  FiBarChart2, FiPackage, FiDownload, FiCalendar,
   FiChevronDown, FiRefreshCw, FiAlertCircle, FiTrendingUp,
-  FiDollarSign, FiShoppingCart, FiGrid, FiLoader, FiInfo
+  FiDollarSign, FiShoppingCart, FiX
 } from "react-icons/fi";
 import PageTemplate from '../../components/PageTemplate';
-import ReportPdfButton from '../../components/ReportPdfButton';
-import { useBusinessContext } from '../../admin/config/BusinessContext';
-import { fetchWithAuth } from '../../config/apiBase';
-import "../../styles/ReportsProductsPage.css";
+import ReportPdfButton from '../../components/ReportPdfGenerator';
+import ReportExcelButton from '../../components/ReportExcelGenerator';
+import { fetchWithAuth } from '../../config/api';
+import Table from '../../components/General/Table';
+import { ButtonGroup } from '../../components/General/Button';
+import CustomCombobox from '../../components/General/CustomCombobox';
+import Modal from '../../components/General/Modal';
 
-// ─── Componente de tarjeta de resumen ─────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────
+const fmtCurrency = (n) => `$${Number(n || 0).toFixed(2)}`;
+
+const getDateRangeFromPeriod = (period, customStart, customEnd) => {
+  const now = new Date();
+  let from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (period === 'all') {
+    from = new Date(2020, 0, 1);
+    to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if (period === 'day') {
+    // hoy
+  } else if (period === 'week') {
+    from = new Date(now);
+    from.setDate(now.getDate() - 6);
+    to = new Date(now);
+  } else if (period === 'month') {
+    from = new Date(now.getFullYear(), now.getMonth(), 1);
+    to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  } else if (period === 'quarter') {
+    const quarter = Math.floor(now.getMonth() / 3);
+    from = new Date(now.getFullYear(), quarter * 3, 1);
+    to = new Date(now.getFullYear(), quarter * 3 + 3, 0);
+  } else if (period === 'year') {
+    from = new Date(now.getFullYear(), 0, 1);
+    to = new Date(now.getFullYear(), 11, 31);
+  } else if (period === 'custom') {
+    if (customStart && customEnd) {
+      from = new Date(customStart);
+      to = new Date(customEnd);
+    } else {
+      return { from: null, to: null };
+    }
+  }
+
+  const formatDate = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  return {
+    from: formatDate(from),
+    to: formatDate(to)
+  };
+};
+
+// ─── Componente de tarjeta de resumen ─────────────────────────────────────
 function SummaryCard({ title, value, icon, color, subtitle, loading }) {
   return (
     <div className="report-product-card">
-      <div className="report-product-card-icon" style={{ color }}>
-        {icon}
-      </div>
+      <div className="report-product-card-icon" style={{ color }}>{icon}</div>
       <div className="report-product-card-content">
         <div className="report-product-card-title">{title}</div>
         {loading ? (
@@ -31,85 +81,13 @@ function SummaryCard({ title, value, icon, color, subtitle, loading }) {
   );
 }
 
-// ─── Modal de filtros avanzados ───────────────────────────────────────────────
-function FiltersModal({ open, filters, categories, onApply, onClose, loadingCategories }) {
-  const [localFilters, setLocalFilters] = useState(filters);
-
-  useEffect(() => {
-    setLocalFilters(filters);
-  }, [filters]);
-
-  if (!open) return null;
-
-  return (
-    <div className="report-modal-overlay" onClick={onClose}>
-      <div className="report-modal-box" onClick={e => e.stopPropagation()}>
-        <div className="report-modal-header">
-          <h2>Filtros avanzados</h2>
-          <button type="button" onClick={onClose} className="report-modal-close">×</button>
-        </div>
-        <div className="report-modal-body">
-          <div className="report-filter-group">
-            <label>Categoría</label>
-            {loadingCategories ? (
-              <div className="report-loading-small">Cargando categorías...</div>
-            ) : (
-              <select
-                value={localFilters.category || ''}
-                onChange={e => setLocalFilters({ ...localFilters, category: e.target.value || null })}
-              >
-                <option value="">Todas las categorías</option>
-                {categories.map(cat => (
-                  <option key={cat.id || cat} value={cat.id || cat}>
-                    {cat.name || cat}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-          <div className="report-filter-group">
-            <label>Ordenar por</label>
-            <select
-              value={localFilters.orderBy || 'quantity'}
-              onChange={e => setLocalFilters({ ...localFilters, orderBy: e.target.value })}
-            >
-              <option value="quantity">Mayor cantidad vendida</option>
-              <option value="total">Mayor total vendido</option>
-              <option value="name">Nombre (A-Z)</option>
-            </select>
-          </div>
-          <div className="report-filter-group">
-            <label>Límite de resultados</label>
-            <select
-              value={localFilters.limit || 50}
-              onChange={e => setLocalFilters({ ...localFilters, limit: Number(e.target.value) })}
-            >
-              <option value={10}>10 productos</option>
-              <option value={25}>25 productos</option>
-              <option value={50}>50 productos</option>
-              <option value={100}>100 productos</option>
-              <option value={9999}>Todos</option>
-            </select>
-          </div>
-        </div>
-        <div className="report-modal-footer">
-          <button className="report-btn-cancel" onClick={onClose}>Cancelar</button>
-          <button className="report-btn-apply" onClick={() => onApply(localFilters)}>Aplicar filtros</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Componente de selector de fechas personalizadas ─────────────────────────
+// ─── Componente de selector de fechas personalizadas ──────────────────────
 function DateRangePicker({ startDate, endDate, onApply, onClose }) {
   const [localStart, setLocalStart] = useState(startDate || '');
   const [localEnd, setLocalEnd] = useState(endDate || '');
 
   const handleApply = () => {
-    if (localStart && localEnd) {
-      onApply(localStart, localEnd);
-    }
+    if (localStart && localEnd) onApply(localStart, localEnd);
   };
 
   return (
@@ -139,247 +117,172 @@ function DateRangePicker({ startDate, endDate, onApply, onClose }) {
   );
 }
 
-// ─── Página principal ─────────────────────────────────────────────────────────
+// ─── Página principal ──────────────────────────────────────────────────────
 export default function ReportsProductsPage() {
-  const { selectedBusiness } = useBusinessContext();
+  const { user } = useSession(); // ✅ Solo usamos useSession
+
+  // ─── Estados ──────────────────────────────────────────────────────────────
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState('month');
-  const [showDateDropdown, setShowDateDropdown] = useState(false);
-  const [showFiltersModal, setShowFiltersModal] = useState(false);
-  const [showCustomDate, setShowCustomDate] = useState(false);
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  const [showCustomDate, setShowCustomDate] = useState(false);
+
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
-  const [loadingStats, setLoadingStats] = useState(false);
-  const [applyingFilters, setApplyingFilters] = useState(false);
-  const [dataSource, setDataSource] = useState(null);
+  const [filterCategory, setFilterCategory] = useState(null);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // ─── Estadísticas ─────────────────────────────────────────────────────────
   const [stats, setStats] = useState({
     total_productos_vendidos: 0,
     total_ventas: 0,
     productos_distintos: 0,
-    ticket_promedio: 0
+    ticket_promedio: 0,
+    total_costo: 0,
+    ganancia_bruta: 0,
+    margen_bruto: 0
   });
 
-  // Filtros con valores primitivos para evitar re-renders
-  const [filterCategory, setFilterCategory] = useState(null);
-  const [filterOrderBy, setFilterOrderBy] = useState('quantity');
-  const [filterLimit, setFilterLimit] = useState(50);
-
-  // Opciones de período
-  const dateOptions = [
+  // ─── Opciones de fecha ──────────────────────────────────────────────────
+  const dateOptions = useMemo(() => ([
+    { value: 'all', label: 'Todas las fechas' },
     { value: 'day', label: 'Hoy' },
     { value: 'week', label: 'Esta semana' },
     { value: 'month', label: 'Este mes' },
     { value: 'quarter', label: 'Este trimestre' },
     { value: 'year', label: 'Este año' },
     { value: 'custom', label: 'Personalizado' }
-  ];
+  ]), []);
 
-  // Cargar categorías
+  // ─── Cargar categorías ──────────────────────────────────────────────────
   useEffect(() => {
-    if (!selectedBusiness?.id) return;
-    loadCategories();
-  }, [selectedBusiness]);
-
-  const loadCategories = async () => {
-    if (loadingCategories) return;
-    try {
-      setLoadingCategories(true);
-
-      const res = await fetchWithAuth('/api/reports/products/categories');
-      
-      if (!res.ok) {
-        throw new Error(`Error HTTP: ${res.status}`);
-      }
-      
-      const data = await res.json();
-
-      if (data.success) {
-        setCategories(Array.isArray(data.data) ? data.data : []);
-      } else {
-
+    const loadCategories = async () => {
+      if (loadingCategories) return;
+      try {
+        setLoadingCategories(true);
+        const res = await fetchWithAuth('/reports/products/categories');
+        if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+        const data = await res.json();
+        if (data.success) {
+          setCategories(Array.isArray(data.data) ? data.data : []);
+        } else {
+          setCategories([]);
+        }
+      } catch (err) {
         setCategories([]);
+      } finally {
+        setLoadingCategories(false);
       }
-    } catch (err) {
+    };
+    loadCategories();
+  }, []);
 
-      setCategories([]);
-    } finally {
-      setLoadingCategories(false);
-    }
-  };
-
-  // Cargar estadísticas
-  const loadStats = useCallback(async () => {
-    if (!selectedBusiness?.id) return;
-    
-    try {
-      setLoadingStats(true);
-      let url = `/api/reports/products-stats?periodo=${dateRange}`;
-      
-      if (dateRange === 'custom' && customStartDate && customEndDate) {
-        url = `/api/reports/products-stats?startDate=${customStartDate}&endDate=${customEndDate}`;
-      }
-      
-
-      const res = await fetchWithAuth(url);
-      
-      if (!res.ok) {
-        throw new Error(`Error HTTP: ${res.status}`);
-      }
-      
-      const data = await res.json();
-
-      if (data.success && data.data) {
-        setStats({
-          total_productos_vendidos: data.data.total_productos_vendidos ?? 0,
-          total_ventas: data.data.total_ventas ?? 0,
-          productos_distintos: data.data.productos_distintos ?? 0,
-          ticket_promedio: data.data.ticket_promedio ?? 0
-        });
-        setDataSource(data.metadata?.invoiceSource ?? null);
-      } else {
-
-      }
-    } catch (err) {
-
-    } finally {
-      setLoadingStats(false);
-    }
-  }, [selectedBusiness, dateRange, customStartDate, customEndDate]);
-
-  // Cargar reporte de productos
+  // ─── Cargar reporte ──────────────────────────────────────────────────────
   const loadReport = useCallback(async () => {
-    if (!selectedBusiness?.id) {
+    const { from, to } = getDateRangeFromPeriod(dateRange, customStartDate, customEndDate);
+    if (!from || !to) {
       setLoading(false);
       return;
     }
+
     setLoading(true);
     setError('');
-    
+
     try {
-      const params = new URLSearchParams();
-      
-      if (dateRange === 'custom' && customStartDate && customEndDate) {
-        params.append('startDate', customStartDate);
-        params.append('endDate', customEndDate);
-      } else {
-        params.append('periodo', dateRange);
-      }
-      
+      let url = `/reports/profit-detail?from=${from}&to=${to}`;
       if (filterCategory) {
-        params.append('categoria', filterCategory);
+        url += `&category=${filterCategory}`;
       }
-      params.append('order_by', filterOrderBy);
-      params.append('limit', String(filterLimit));
-      
-      const url = `/api/reports/products-sold?${params.toString()}`;
 
       const res = await fetchWithAuth(url);
-      
-      if (!res.ok) {
-        throw new Error(`Error HTTP: ${res.status}`);
-      }
-      
-      const data = await res.json();
+      if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+      const result = await res.json();
 
-      let productsList = [];
-      if (data.success && data.data && Array.isArray(data.data)) {
-        productsList = data.data;
-      } else if (data.productos && Array.isArray(data.productos)) {
-        productsList = data.productos;
-      } else if (data.products && Array.isArray(data.products)) {
-        productsList = data.products;
-      } else if (Array.isArray(data)) {
-        productsList = data;
-      }
-      
+      const data = result.data || {};
+      const productList = data.products || [];
+      const summary = data.summary || {};
 
-      if (productsList.length === 0) {
-        const sourceInfo = data.metadata?.invoiceSource || 'unknown';
-        if (sourceInfo === 'none') {
-          setError('No se encontraron ventas en el sistema. Registra facturas electrónicas u órdenes de POS pagadas para ver datos aquí.');
-        } else {
-          setError('No hay ventas registradas en este período. Intenta cambiar el rango de fechas.');
-        }
-      }
-      
-      const formatted = productsList.map((item, index) => ({
-        id: item.id || item.producto_id || item.product_id || `temp-${index}`,
-        name: item.nombre_producto || item.nombre || item.producto_nombre || item.name || 'Producto sin nombre',
-        sku: item.sku || item.codigo || item.code || '-',
-        qty: Number(item.cantidad_vendida || item.cantidad || item.total_qty || 0),
-        total: Number(item.total_vendido || item.total_venta || item.monto || item.total || 0),
-        category: item.categoria || item.category || 'Sin categoría',
-        transactions: item.numero_transacciones || item.transacciones || 0
+      const formatted = productList.map((item) => ({
+        id: item.product_id || `temp-${Math.random()}`,
+        name: item.product_name || 'Producto sin nombre',
+        sku: item.sku || '-',
+        barcode: item.barcode || '-',
+        category: item.category_name || 'Sin categoría',
+        category_id: item.category_id,
+        qty: Number(item.total_quantity || 0),
+        total: Number(item.total_ventas || 0),
+        costo: Number(item.total_costo || 0),
+        ganancia: Number(item.total_ganancia || 0),
+        margen: Number(item.margen || 0),
+        precio_promedio: item.precio_promedio || 0,
+        costo_promedio: item.costo_promedio || 0,
       }));
-      
-      setProducts(formatted);
-      setDataSource(data.metadata?.invoiceSource ?? null);
-    } catch (err) {
 
+      setProducts(formatted);
+
+      const totalVentas = summary.total_ventas || 0;
+      const totalCosto = summary.total_costo || 0;
+      const gananciaBruta = summary.total_ganancia || 0;
+      const margenBruto = summary.margen_promedio || 0;
+      const totalQty = formatted.reduce((s, p) => s + p.qty, 0);
+
+      setStats({
+        total_productos_vendidos: totalQty,
+        total_ventas: totalVentas,
+        productos_distintos: formatted.length,
+        ticket_promedio: formatted.length > 0 ? totalVentas / formatted.length : 0,
+        total_costo: totalCosto,
+        ganancia_bruta: gananciaBruta,
+        margen_bruto: margenBruto,
+      });
+
+      if (formatted.length === 0) {
+        setError('No hay ventas registradas en este período.');
+      }
+
+    } catch (err) {
       setError('Error al cargar el reporte: ' + (err.message || 'Error desconocido'));
       setProducts([]);
     } finally {
       setLoading(false);
     }
-  }, [selectedBusiness, dateRange, customStartDate, customEndDate, filterCategory, filterOrderBy, filterLimit]);
+  }, [dateRange, customStartDate, customEndDate, filterCategory]);
 
-  // Cargar datos al montar o cambiar dependencias
+  // ─── Cargar datos al montar o cambiar dependencias ──────────────────────
   useEffect(() => {
-    if (selectedBusiness?.id) {
-      loadStats();
-    }
-  }, [loadStats]);
-
-  useEffect(() => {
-    if (selectedBusiness?.id) {
-      loadReport();
-    }
+    loadReport();
   }, [loadReport]);
 
-  // Filtrar por búsqueda local
+  // ─── Filtro local por búsqueda ──────────────────────────────────────────
   useEffect(() => {
     const filtered = products.filter(p =>
-      p.name?.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku?.toLowerCase().includes(search.toLowerCase())
+      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredProducts(filtered);
-  }, [search, products]);
+  }, [searchTerm, products]);
 
-  // Refresh manual
+  // ─── Refresh manual ──────────────────────────────────────────────────────
   const handleRefresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
     try {
-      await Promise.all([loadReport(), loadStats()]);
+      await loadReport();
     } finally {
       setRefreshing(false);
     }
   };
 
-  // Aplicar filtros desde el modal
-  const handleApplyFilters = (newFilters) => {
-    if (applyingFilters) return;
-    setApplyingFilters(true);
-
-    setFilterCategory(newFilters.category);
-    setFilterOrderBy(newFilters.orderBy || 'quantity');
-    setFilterLimit(newFilters.limit || 50);
-    setShowFiltersModal(false);
-    setTimeout(() => setApplyingFilters(false), 300);
-  };
-
-  // Manejar cambio de período
-  const handleDateRangeChange = (value) => {
-
+  // ─── Manejo de fechas ──────────────────────────────────────────────────
+  const handleDateRangeChange = useCallback((value) => {
     setDateRange(value);
-    setShowDateDropdown(false);
     if (value === 'custom') {
       setShowCustomDate(true);
     } else {
@@ -387,351 +290,305 @@ export default function ReportsProductsPage() {
       setCustomStartDate('');
       setCustomEndDate('');
     }
-  };
+  }, []);
 
-  // Aplicar fechas personalizadas
-  const handleApplyCustomDate = (start, end) => {
-
+  const handleApplyCustomDate = useCallback((start, end) => {
     setCustomStartDate(start);
     setCustomEndDate(end);
+    setDateRange('custom');
     setShowCustomDate(false);
-    setShowDateDropdown(false);
-  };
+  }, []);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // EXPORTACIÓN A EXCEL (XLSX)
-  // ─────────────────────────────────────────────────────────────────────────
-  const handleExportXLSX = async () => {
-    if (!filteredProducts.length) return;
+  // ─── Limpiar filtros ──────────────────────────────────────────────────
+  const handleClearFilters = useCallback(() => {
+    setSearchTerm('');
+    setFilterCategory(null);
+    setDateRange('month');
+    setCustomStartDate('');
+    setCustomEndDate('');
+    setShowCustomDate(false);
+  }, []);
 
-    const wb = new ExcelJS.Workbook();
-    wb.creator = 'IDON Gestion';
-    wb.created = new Date();
+  // ─── Cálculo de totales ──────────────────────────────────────────────────
+  const totals = useMemo(() => {
+    if (!filteredProducts.length) {
+      return { totalVentas: 0, totalCosto: 0, gananciaBruta: 0, margen: 0, totalQty: 0, count: 0 };
+    }
+    const totalVentas = filteredProducts.reduce((sum, p) => sum + p.total, 0);
+    const totalCosto = filteredProducts.reduce((sum, p) => sum + p.costo, 0);
+    const gananciaBruta = totalVentas - totalCosto;
+    const margen = totalVentas > 0 ? (gananciaBruta / totalVentas) * 100 : 0;
+    const totalQty = filteredProducts.reduce((sum, p) => sum + p.qty, 0);
+    return { totalVentas, totalCosto, gananciaBruta, margen, totalQty, count: filteredProducts.length };
+  }, [filteredProducts]);
 
-    const ws = wb.addWorksheet('Productos', {
-      views: [{ showGridLines: false }],
-      pageSetup: { paperSize: 9, orientation: 'landscape' },
-    });
+  const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-    ws.columns = [
-      { header: 'Producto', key: 'name', width: 35 },
-      { header: 'SKU / Código', key: 'sku', width: 20 },
-      { header: 'Categoría', key: 'category', width: 20 },
-      { header: 'Cantidad vendida', key: 'qty', width: 18 },
-      { header: 'Total vendido', key: 'total', width: 18 },
-      { header: 'Participación (%)', key: 'percent', width: 18 },
+  // ─── Generar nombre de archivo según el período ─────────────────────────────
+  const getFilename = useCallback(() => {
+    const baseName = 'reporte_productos';
+    const { from, to } = getDateRangeFromPeriod(dateRange, customStartDate, customEndDate);
+    if (!from || !to) {
+      return `${baseName}_${dateRange}`;
+    }
+
+    const formatDateShort = (dateStr) => {
+      const parts = dateStr.split('-');
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    };
+
+    if (dateRange === 'day') {
+      return `${baseName}_${formatDateShort(from)}`;
+    }
+    if (dateRange === 'week') {
+      return `${baseName}_${formatDateShort(from)}--${formatDateShort(to)}`;
+    }
+    if (dateRange === 'month') {
+      const [year, month] = from.split('-');
+      const monthName = MONTHS[parseInt(month) - 1];
+      return `${baseName}_${monthName}-${year}`;
+    }
+    if (dateRange === 'quarter') {
+      const [year, month] = from.split('-');
+      const quarter = Math.floor((parseInt(month) - 1) / 3) + 1;
+      return `${baseName}_Q${quarter}-${year}`;
+    }
+    if (dateRange === 'year') {
+      const [year] = from.split('-');
+      return `${baseName}_${year}`;
+    }
+    if (dateRange === 'custom') {
+      return `${baseName}_${formatDateShort(from)}--${formatDateShort(to)}`;
+    }
+    return `${baseName}_${dateRange}`;
+  }, [dateRange, customStartDate, customEndDate]);
+
+  // ─── Configuración Excel ──────────────────────────────────────────────────
+  const excelConfig = useMemo(() => {
+    if (!filteredProducts.length) return null;
+
+    const periodText = dateOptions.find(o => o.value === dateRange)?.label || dateRange;
+
+    const columns = [
+      { label: 'Cód. barras', key: 'barcode', align: 'left', width: 20 },
+      { label: 'Producto', key: 'name', align: 'left', width: 30 },
+      { label: 'Categoría', key: 'category', align: 'left', width: 20 },
+      { label: 'Cantidad', key: 'qty', align: 'right', width: 12, numFmt: '#,##0', total: true },
+      { label: 'Ventas ($)', key: 'total', align: 'right', width: 14, numFmt: '"$"#,##0.00', total: true },
+      { label: 'Costo ($)', key: 'costo', align: 'right', width: 14, numFmt: '"$"#,##0.00', total: true },
+      { label: 'Ganancia ($)', key: 'ganancia', align: 'right', width: 14, numFmt: '"$"#,##0.00', total: true },
+      { label: 'Margen (%)', key: 'margen', align: 'right', width: 12, numFmt: '0.0"%"' }
     ];
 
-    ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
-    ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '1E3A5F' } };
+    const rows = filteredProducts.map(p => ({
+      name: p.name,
+      barcode: p.barcode || '-',
+      category: p.category || 'Sin categoría',
+      qty: p.qty,
+      total: p.total,
+      costo: p.costo || 0,
+      ganancia: p.ganancia || 0,
+      margen: p.margen || 0
+    }));
 
-    const totalSales = filteredProducts.reduce((sum, p) => sum + (Number(p.total) || 0), 0);
-    
-    filteredProducts.forEach(p => {
-      const percent = totalSales > 0 ? ((Number(p.total) || 0) / totalSales) * 100 : 0;
-      ws.addRow({
-        name: p.name,
-        sku: p.sku || '-',
-        category: p.category || 'Sin categoría',
-        qty: Number(p.qty) || 0,
-        total: Number(p.total) || 0,
-        percent: percent.toFixed(1) + '%'
-      });
-    });
-
-    const totalQty = filteredProducts.reduce((s, p) => s + (Number(p.qty) || 0), 0);
-    const totalRow = ws.addRow({
-      name: 'TOTALES',
-      sku: '',
-      category: '',
-      qty: totalQty,
-      total: totalSales,
-      percent: '100%'
-    });
-    totalRow.font = { bold: true };
-
-    ws.getColumn('total').numFmt = '"$"#,##0.00';
-    ws.getColumn('qty').numFmt = '#,##0';
-
-    const buffer = await wb.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reporte_productos_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // CONFIGURACIÓN PARA PDF
-  // ─────────────────────────────────────────────────────────────────────────
-  const totalQtyPDF = filteredProducts.reduce((sum, p) => sum + (Number(p.qty) || 0), 0);
-  const totalSalesPDF = filteredProducts.reduce((sum, p) => sum + (Number(p.total) || 0), 0);
-  const productsCountPDF = filteredProducts.length;
-
-  const pdfConfig = (filteredProducts.length > 0) ? {
-    title: 'Reporte de Productos',
-    subtitle: `Período: ${dateOptions.find(o => o.value === dateRange)?.label || dateRange} | Origen: ${dataSource === 'einvoicing' ? 'Facturación Electrónica' : dataSource === 'pos' ? 'POS' : 'N/A'}`,
-    kpis: [
-      { label: 'Total Productos Vendidos', value: stats.total_productos_vendidos || totalQtyPDF },
-      { label: 'Total Ventas', value: stats.total_ventas || totalSalesPDF, formatter: (v) => `$${Number(v).toFixed(2)}` },
-      { label: 'Ticket Promedio', value: stats.ticket_promedio || (productsCountPDF > 0 ? totalSalesPDF / productsCountPDF : 0), formatter: (v) => `$${Number(v).toFixed(2)}` },
-      { label: 'Productos Distintos', value: stats.productos_distintos || productsCountPDF }
-    ],
-    sections: [{
-      title: 'Detalle de Productos',
-      columns: [
-        { label: 'Producto', key: 'name', width: 35 },
-        { label: 'SKU / Código', key: 'sku', width: 20 },
-        { label: 'Categoría', key: 'category', width: 20 },
-        { label: 'Cantidad vendida', key: 'qty', width: 18 },
-        { label: 'Total vendido', key: 'total', width: 18, formatter: (v) => `$${Number(v).toFixed(2)}` },
-        { label: 'Participación', key: 'percent', width: 18, formatter: (v) => `${Number(v).toFixed(1)}%` }
+    return {
+      title: 'REPORTE DE PRODUCTOS',
+      subtitle: 'Análisis de ventas, costos y margen por producto',
+      period: `Período: ${periodText}`,
+      filename: getFilename(),
+      confidential: true,
+      kpis: [
+        { label: 'Productos Vendidos', value: totals.totalQty, formatter: (v) => Number(v).toLocaleString() },
+        { label: 'Ventas Totales', value: totals.totalVentas, formatter: fmtCurrency, bold: true },
+        { label: 'Costo Total (FIFO)', value: totals.totalCosto, formatter: fmtCurrency },
+        { label: 'Ganancia Bruta', value: totals.gananciaBruta, formatter: fmtCurrency, bold: true },
+        { label: 'Margen de Ganancia', value: totals.margen, formatter: (v) => `${Number(v).toFixed(1)}%`, bold: true },
+        { label: 'Ticket Promedio', value: stats.ticket_promedio, formatter: fmtCurrency }
       ],
-      rows: filteredProducts.map(p => {
-        const percent = totalSalesPDF > 0 ? ((Number(p.total) || 0) / totalSalesPDF) * 100 : 0;
-        return {
-          name: p.name,
-          sku: p.sku || '-',
-          category: p.category || 'Sin categoría',
-          qty: Number(p.qty) || 0,
-          total: Number(p.total) || 0,
-          percent: percent
-        };
-      })
-    }]
-  } : null;
+      sections: [{ title: 'DETALLE POR PRODUCTO', columns, rows, showTotals: true }],
+      observations: [
+        `Reporte generado para el período ${periodText}.`,
+        `Total de productos distintos: ${totals.count}.`,
+        'Las cifras están expresadas en dólares americanos (USD).',
+        totals.gananciaBruta >= 0 ? '✅ El período presenta ganancias positivas.' : '⚠️ El período presenta pérdidas.'
+      ],
+    };
+  }, [filteredProducts, totals, stats.ticket_promedio, dateRange]);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────────────────
-  const headerAction = (
-    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-      {/* Selector de período */}
-      <div className="report-dropdown">
-        <button onClick={() => setShowDateDropdown(!showDateDropdown)} className="report-date-btn">
-          <FiCalendar size={16} />
-          {dateOptions.find(o => o.value === dateRange)?.label || 'Este mes'}
-          <FiChevronDown size={14} />
-        </button>
-        {showDateDropdown && (
-          <div className="report-dropdown-menu">
-            {dateOptions.map(option => (
-              <button
-                key={option.value}
-                onClick={() => handleDateRangeChange(option.value)}
-                className={dateRange === option.value ? 'active' : ''}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+  // ─── Configuración PDF ───────────────────────────────────────────────────
+  const pdfConfig = useMemo(() => {
+    if (!filteredProducts.length || !excelConfig) return null;
+    const columns = excelConfig.sections[0].columns.map(col => ({
+      label: col.label,
+      key: col.key,
+      align: col.align,
+      formatter: col.numFmt ? (val) => {
+        if (col.numFmt.includes('"$"')) return fmtCurrency(val);
+        if (col.numFmt.includes('%')) return `${Number(val).toFixed(1)}%`;
+        return val;
+      } : undefined
+    }));
 
-      {/* Buscador */}
-      <div className="report-search-wrapper">
-        <FiSearch size={16} className="report-search-icon" />
-        <input
-          type="text"
-          placeholder="Buscar producto o SKU..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="report-search-input"
+    return {
+      title: excelConfig.title,
+      subtitle: excelConfig.subtitle,
+      period: excelConfig.period,
+      filename: excelConfig.filename,
+      confidential: true,
+      kpis: excelConfig.kpis,
+      sections: [{ title: excelConfig.sections[0].title, columns, rows: excelConfig.sections[0].rows }],
+      observations: excelConfig.observations,
+      signatures: excelConfig.signatures,
+      chartRefs: []
+    };
+  }, [filteredProducts, excelConfig]);
+
+  // ─── Columnas para la tabla UI ───────────────────────────────────────────
+  const columns = useMemo(() => [
+    { accessor: 'barcode', label: 'Cód. Barra', render: (item) => <span>{item.barcode || '-'}</span> },
+    { accessor: 'name', label: 'Producto', render: (item) => <div><span>{item.name}</span></div> },
+    { accessor: 'category', label: 'Categoría', render: (item) => <span>{item.category || 'Sin categoría'}</span> },
+    { accessor: 'qty', label: 'Cantidad', align: 'center', render: (item) => <span>{Number(item.qty).toLocaleString()}</span> },
+    { accessor: 'total', label: 'Ventas ($)', align: 'center', render: (item) => <span>{fmtCurrency(item.total)}</span> },
+    { accessor: 'costo', label: 'Costo ($)', align: 'center', render: (item) => <span>{fmtCurrency(item.costo || 0)}</span> },
+    { accessor: 'ganancia', label: 'Ganancia ($)', align: 'center', render: (item) => <span style={{ color: item.ganancia >= 0 ? 'var(--success)' : 'var(--danger)' }}>{fmtCurrency(item.ganancia)}</span> },
+    { accessor: 'margen', label: 'Margen (%)', align: 'right', render: (item) => <span style={{ color: item.margen >= 0 ? 'var(--success)' : 'var(--danger)' }}>{item.margen.toFixed(1)}%</span> },
+  ], []);
+
+  // ─── Footer de la tabla ──────────────────────────────────────────────────
+  const tableFooter = useMemo(() => {
+    if (!filteredProducts.length) return null;
+    return (
+      <tr className="table-footer-totals">
+        <td><strong>TOTALES</strong></td>
+        <td></td><td></td>
+        <td className="text-right"><strong>{totals.totalQty.toLocaleString()}</strong></td>
+        <td className="text-right"><strong>{fmtCurrency(totals.totalVentas)}</strong></td>
+        <td className="text-right"><strong>{fmtCurrency(totals.totalCosto)}</strong></td>
+        <td className={`text-right ${totals.gananciaBruta >= 0 ? 'text-success' : 'text-danger'}`}>
+          <strong>{fmtCurrency(totals.gananciaBruta)}</strong>
+        </td>
+        <td className={`text-right ${totals.margen >= 0 ? 'text-success' : 'text-danger'}`}>
+          <strong>{totals.margen.toFixed(1)}%</strong>
+        </td>
+      </tr>
+    );
+  }, [filteredProducts, totals]);
+
+  // ─── Toolbar ──────────────────────────────────────────────────────────────
+  const tableToolbar = (
+    <div className="products-toolbar">
+      <div className="products-toolbar-right">
+        <CustomCombobox
+          options={dateOptions}
+          value={dateRange}
+          onChange={handleDateRangeChange}
+          placeholder="Todas las fechas"
+          filterable={false}
+          forceDropup={false}
+          className="combobox-compact"
+          style={{ flexShrink: 1, minWidth: '80px', maxWidth: '150px' }}
         />
+
+        <CustomCombobox
+          options={[
+            { value: '', label: 'Todas las categorías' },
+            ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+          ]}
+          value={filterCategory || ''}
+          onChange={setFilterCategory}
+          placeholder="Todas las categorías"
+          filterable={true}
+          className="combobox-compact"
+          style={{ flexShrink: 1, minWidth: '80px', maxWidth: '150px' }}
+        />
+        <ButtonGroup>
+          <ReportExcelButton config={excelConfig} />
+          <ReportPdfButton
+            customConfig={pdfConfig}
+            dateRange={{ from: customStartDate || dateRange, to: customEndDate || new Date().toISOString().split('T')[0] }}
+            groupBy={null}
+          />
+        </ButtonGroup>
+        <button onClick={handleClearFilters} className="report-btn-cancel-sm" style={{ flexShrink: 0 }}>
+          <FiX size={14} /> Limpiar
+        </button>
       </div>
-
-      <button onClick={() => setShowFiltersModal(true)} className="report-btn-secondary">
-        <FiGrid size={16} /> Filtros
-      </button>
-
-      <button onClick={handleExportXLSX} className="report-btn-secondary" disabled={!filteredProducts.length}>
-        <FiDownload size={16} /> Excel
-      </button>
-
-      <ReportPdfButton
-        customConfig={pdfConfig}
-        dateRange={{ from: dateRange, to: new Date().toISOString().split('T')[0] }}
-        groupBy={null}
-        className="report-btn-secondary"
-      />
-
-      <button onClick={handleRefresh} className="report-btn-secondary" disabled={refreshing}>
-        {refreshing ? <FiLoader size={16} className="spinning" /> : <FiRefreshCw size={16} />}
-        {refreshing ? '...' : 'Actualizar'}
-      </button>
     </div>
   );
 
+  // ─── Botón de refresh ────────────────────────────────────────────────────
+  const refreshButton = (
+    <button onClick={handleRefresh} className="dashboard-refresh-btn-header" disabled={refreshing} title="Actualizar datos">
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
+  // ─── Acciones del header ──────────────────────────────────────────────────
+  const headerActions = (
+    <div className="products-header-actions">
+      {refreshButton}
+    </div>
+  );
+
+  // ─── Render ──────────────────────────────────────────────────────────────
   return (
-    <PageTemplate
-      title="PRODUCTOS"
-      subtitle="Cantidad y ventas por producto"
-      theme="business"
-      loading={loading}
-      headerAction={headerAction}
-    >
-      {/* Alerta de fuente de datos */}
-      {dataSource === 'none' && !loading && (
-        <div className="alert alert-warning" style={{ marginBottom: '1rem' }}>
-          <FiAlertCircle size={16} /> 
-          No se detectaron fuentes de datos. El sistema buscará en facturación electrónica y punto de venta.
-        </div>
-      )}
+    <PageTemplate title="REPORTE DE PRODUCTOS" subtitle="Cantidad, ventas y margen por producto" theme="business" loading={loading} headerAction={headerActions}>
+      {error && <div className="alert alert-error"><FiAlertCircle size={16} /> {error}</div>}
 
-      {dataSource && dataSource !== 'none' && (
-        <div className="alert alert-info" style={{ marginBottom: '1rem' }}>
-          <FiInfo size={16} /> 
-          Origen de datos: <strong>{dataSource === 'einvoicing' ? 'Facturación Electrónica' : 'Punto de Venta (POS)'}</strong>
-        </div>
-      )}
-
-      {error && (
-        <div className="alert alert-error">
-          <FiAlertCircle size={16} /> {error}
-        </div>
-      )}
-
-      {/* Tarjetas de resumen */}
       <div className="report-summary-grid">
-        <SummaryCard
-          title="Total Productos Vendidos"
-          value={(stats.total_productos_vendidos ?? 0).toLocaleString()}
-          icon={<FiShoppingCart size={24} />}
-          color="#A0E7C7"
-          loading={loadingStats}
-        />
-        <SummaryCard
-          title="Total Ventas"
-          value={`$${(stats.total_ventas ?? 0).toFixed(2)}`}
-          icon={<FiDollarSign size={24} />}
-          color="#FFD700"
-          loading={loadingStats}
-        />
-        <SummaryCard
-          title="Ticket Promedio"
-          value={`$${(stats.ticket_promedio ?? 0).toFixed(2)}`}
-          icon={<FiTrendingUp size={24} />}
-          color="#FFA07A"
-          subtitle="Por producto"
-          loading={loadingStats}
-        />
-        <SummaryCard
-          title="Productos Distintos"
-          value={(stats.productos_distintos ?? 0).toLocaleString()}
-          icon={<FiPackage size={24} />}
-          color="#87CEEB"
-          loading={loadingStats}
-        />
+        <SummaryCard title="Total Productos Vendidos" value={(stats.total_productos_vendidos ?? 0).toLocaleString()} icon={<FiShoppingCart size={24} />} color="var(--text-primary)" loading={loading} />
+        <SummaryCard title="Ventas Totales" value={fmtCurrency(stats.total_ventas ?? 0)} icon={<FiDollarSign size={24} />} color="var(--text-primary)" loading={loading} />
+        <SummaryCard title="Ganancia Bruta" value={fmtCurrency(stats.ganancia_bruta ?? 0)} icon={<FiTrendingUp size={24} />} color={stats.ganancia_bruta >= 0 ? 'var(--success)' : 'var(--danger)'} loading={loading} />
+        <SummaryCard title="Margen Bruto" value={`${(stats.margen_bruto ?? 0).toFixed(1)}%`} icon={<FiBarChart2 size={24} />} color={stats.margen_bruto >= 0 ? 'var(--success)' : 'var(--danger)'} loading={loading} />
       </div>
 
-      {/* Producto destacado */}
       {filteredProducts.length > 0 && (
         <div className="report-top-product">
           <div className="report-top-product-content">
-            <FiBarChart2 size={20} />
+            <FiBarChart2 size={22} />
             <span>Producto más vendido:</span>
             <strong>{filteredProducts[0].name}</strong>
             <span className="report-top-product-qty">{Number(filteredProducts[0].qty) || 0} unidades</span>
-            <span className="report-top-product-total">${(Number(filteredProducts[0].total) || 0).toFixed(2)}</span>
+            <span className="report-top-product-total">{fmtCurrency(filteredProducts[0].total)}</span>
           </div>
         </div>
       )}
 
-      {/* Tabla de productos */}
       <div className="report-table-container">
-        <div className="report-table-wrapper">
-          <table className="report-product-table">
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>SKU / Código</th>
-                <th>Categoría</th>
-                <th className="report-text-right">Cantidad vendida</th>
-                <th className="report-text-right">Total vendido</th>
-                <th className="report-text-right">% participación</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.length === 0 && !loading ? (
-                <tr>
-                  <td colSpan={6} className="report-empty-state">
-                    <FiBarChart2 size={48} />
-                    <span>No hay ventas registradas en este período</span>
-                    {dataSource === 'none' && (
-                      <span className="report-empty-hint">
-                        No se detectaron facturas electrónicas ni órdenes de POS pagadas.
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ) : (
-                filteredProducts.map((product, idx) => {
-                  const percentage = totalSalesPDF > 0 ? ((Number(product.total) || 0) / totalSalesPDF) * 100 : 0;
-                  return (
-                    <tr key={product.id || idx}>
-                      <td className="report-product-name">
-                        <FiPackage size={14} />
-                        {product.name}
-                      </td>
-                      <td className="report-product-sku">{product.sku || '-'}</td>
-                      <td className="report-product-category">{product.category || 'Sin categoría'}</td>
-                      <td className="report-text-right report-product-qty">{Number(product.qty).toLocaleString()}</td>
-                      <td className="report-text-right report-product-total">${(Number(product.total) || 0).toFixed(2)}</td>
-                      <td className="report-text-right report-product-percent">
-                        <div className="report-percent-bar">
-                          <div className="report-percent-fill" style={{ width: `${Math.min(percentage, 100)}%` }} />
-                          <span>{percentage.toFixed(1)}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-            {filteredProducts.length > 0 && (
-              <tfoot>
-                <tr>
-                  <td colSpan={3} className="report-footer-label">Totales</td>
-                  <td className="report-text-right report-footer-qty">{totalQtyPDF.toLocaleString()}</td>
-                  <td className="report-text-right report-footer-total">${totalSalesPDF.toFixed(2)}</td>
-                  <td className="report-text-right report-footer-percent">100%</td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
+        <Table
+          data={filteredProducts}
+          columns={columns}
+          keyField="id"
+          title="Detalle de productos"
+          subtitle={`${filteredProducts.length} ${filteredProducts.length === 1 ? 'producto' : 'productos'} vendidos`}
+          toolbar={tableToolbar}
+          searchable={true}
+          searchPlaceholder="Ej: Producto A, 6855555475209"
+          pagination={true}
+          itemsPerPage={itemsPerPage}
+          itemsPerPageOptions={[10, 15, 20, 50]}
+          onItemsPerPageChange={(newPerPage) => setItemsPerPage(newPerPage)}
+          loading={loading}
+          emptyMessage={error || 'No hay ventas registradas en este período.'}
+          striped={true}
+          hoverable={true}
+          bordered={false}
+          compact={false}
+          footer={tableFooter}
+        />
       </div>
 
-      {/* Modal de filtros */}
-      <FiltersModal
-        open={showFiltersModal}
-        filters={{ category: filterCategory, orderBy: filterOrderBy, limit: filterLimit }}
-        categories={categories}
-        loadingCategories={loadingCategories}
-        onApply={handleApplyFilters}
-        onClose={() => setShowFiltersModal(false)}
-      />
-
-      {/* Modal de fechas personalizadas */}
       {showCustomDate && (
-        <div className="report-modal-overlay" onClick={() => setShowCustomDate(false)}>
-          <div className="report-modal-box" onClick={e => e.stopPropagation()}>
-            <div className="report-modal-header">
-              <h2>Seleccionar fechas</h2>
-              <button type="button" onClick={() => setShowCustomDate(false)} className="report-modal-close">×</button>
-            </div>
-            <div className="report-modal-body">
-              <DateRangePicker
-                startDate={customStartDate}
-                endDate={customEndDate}
-                onApply={handleApplyCustomDate}
-                onClose={() => setShowCustomDate(false)}
-              />
-            </div>
-          </div>
-        </div>
+        <Modal isOpen={true} onClose={() => setShowCustomDate(false)} title="Seleccionar fechas" size="sm">
+          <DateRangePicker
+            startDate={customStartDate}
+            endDate={customEndDate}
+            onApply={handleApplyCustomDate}
+            onClose={() => setShowCustomDate(false)}
+          />
+        </Modal>
       )}
     </PageTemplate>
   );

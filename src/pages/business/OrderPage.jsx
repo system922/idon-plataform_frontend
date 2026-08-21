@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { FiPlus, FiSave, FiEdit2, FiTrash2, FiShoppingCart, FiX } from 'react-icons/fi';
+import { useSession } from '../../context/SessionContext';
+import { FiShoppingCart, FiX } from 'react-icons/fi';
 import PageTemplate from '../../components/PageTemplate';
 import OrderHeader from '../../components/OrderHeader';
 import ItemsSection from '../../components/ItemsSection';
 import AddItemModal from '../../components/AddItemModal';
 import EditItemModal from '../../components/EditItemModal';
-import { fetchWithAuth } from '../../config/apiBase';
-import '../../styles/CreateOrder.css';
+import { fetchWithAuth } from '../../config/api';
 
 export default function TakeOrderPageNew() {
+  const { user } = useSession();
   const isSendingRef = useRef(false);
 
   const [vatRate, setVatRate] = useState(0.15);
@@ -30,6 +31,9 @@ export default function TakeOrderPageNew() {
   const [itemEditando, setItemEditando] = useState(null);
   const [extrasItem, setExtrasItem] = useState([]);
 
+  // ── Helper de redondeo ──────────────────────────────────────────────────
+  const redondear = (valor) => Math.round(valor * 100) / 100;
+
   // ── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
     cargarDatos();
@@ -39,7 +43,7 @@ export default function TakeOrderPageNew() {
 
   async function cargarIva() {
     try {
-      const res = await fetchWithAuth('/api/productos/fiscal-rates');
+      const res = await fetchWithAuth('/productos/fiscal-rates');
       if (!res.ok) return;
       const data = await res.json();
       let rate = Number(data?.iva_rate ?? 0.15);
@@ -50,7 +54,7 @@ export default function TakeOrderPageNew() {
 
   async function cargarCategorias() {
     try {
-      const res = await fetchWithAuth('/api/categories');
+      const res = await fetchWithAuth('/categories');
       const data = await res.json();
       setCategorias(data);
     } catch (err) {
@@ -61,22 +65,31 @@ export default function TakeOrderPageNew() {
   async function cargarDatos() {
     try {
       setGuardando(true);
-      const res = await fetchWithAuth('/api/products');
+      const res = await fetchWithAuth('/products');
       const data = await res.json();
       const productosList = Array.isArray(data) ? data : data?.productos ?? data?.data ?? [];
-      
-      const productosTransformados = productosList.map(p => ({
-        ...p,
-        id: p.id,
-        name: p.name,
-        selling_price: Number(p.selling_price) || 0,
-        tax_rate: Number(p.tax_rate) || 0,
-        unit_cost: Number(p.unit_cost) || 0,
-        stock: Number(p.stock) || 0,
-        is_taxable: p.is_taxable === true,
-        price: (Number(p.selling_price) || 0) + (Number(p.tax_rate) || 0),
-      }));
-      
+
+      const productosTransformados = productosList.map(p => {
+        const precioSinIva = Number(p.selling_price) || 0;
+        const ivaPorcentaje = Number(p.is_taxable) || 0;            // ← porcentaje (15)
+        const ivaPorUnidad = redondear(precioSinIva * (ivaPorcentaje / 100));
+        const precioConIva = redondear(precioSinIva + ivaPorUnidad);
+
+        return {
+          ...p,
+          id: p.id,
+          name: p.name,
+          selling_price: precioSinIva,
+          unit_cost: Number(p.unit_cost) || 0,
+          stock: Number(p.stock) || 0,
+          is_taxable: ivaPorcentaje,           // porcentaje (ej. 15)
+          tax_rate: ivaPorUnidad,              // monto de IVA por unidad (para cálculos internos)
+          tax_percent: ivaPorcentaje,           // ← NUEVO: porcentaje para enviar al backend
+          code: p.code || p.barcode || p.sku || '', // ← NUEVO: guardar el código
+          price: precioConIva,
+        };
+      });
+
       setProductos(productosTransformados);
     } catch {
       setError('Error al cargar productos');
@@ -86,45 +99,50 @@ export default function TakeOrderPageNew() {
   }
 
   // ── Items ─────────────────────────────────────────────────────────────────
-
   function agregarItem() {
     if (!productoSeleccionado || cantidadItem <= 0) {
       setError('Selecciona un producto y cantidad válida');
       return;
     }
-    
-    const sellingPrice = Number(productoSeleccionado.selling_price) || 0;
-    const taxRate = Number(productoSeleccionado.tax_rate) || 0;
-    const pvp = sellingPrice + taxRate;
+
     const cantidad = parseInt(cantidadItem, 10);
-    
-    const extrasSellingTotal = extrasItem.reduce((s, e) => s + (Number(e.selling_price) || 0), 0);
-    const extrasTaxTotal = extrasItem.reduce((s, e) => s + (Number(e.tax_rate) || 0), 0);
-    
-    const subtotalBase = (sellingPrice + extrasSellingTotal) * cantidad;
-    const ivaTotal = (taxRate + extrasTaxTotal) * cantidad;
-    const totalConIva = subtotalBase + ivaTotal;
+    const precioSinIva = Number(productoSeleccionado.selling_price) || 0;
+    const ivaPorcentaje = Number(productoSeleccionado.is_taxable) || 0; // ← porcentaje
+    const ivaPorUnidad = Number(productoSeleccionado.tax_rate) || 0;
+
+    const subtotalBase = redondear(precioSinIva * cantidad);
+    const ivaTotal = redondear(ivaPorUnidad * cantidad);
+    const lineTotal = redondear(subtotalBase + ivaTotal);
+
+    // Extras: también usan su propio tax_rate (monto de IVA por unidad)
+    const extrasGuardados = extrasItem.map(e => ({
+      ...e,
+      selling_price: Number(e.selling_price) || 0,
+      tax_percent: Number(e.is_taxable) || 0,
+      tax_rate: Number(e.tax_rate) || 0,        // monto de IVA por unidad
+      iva_amount: redondear(Number(e.tax_rate) * cantidad),
+    }));
 
     const nuevoItem = {
       id: Date.now(),
       nombre: productoSeleccionado.name,
-      selling_price: sellingPrice,
-      tax_rate: taxRate,
-      pvp: pvp,
-      cantidad: cantidad,
-      subtotal_base: subtotalBase,
-      iva: ivaTotal,
-      total: totalConIva,
-      notas: notasItem,
-      extras: extrasItem,
       product_id: productoSeleccionado.id,
       product_name: productoSeleccionado.name,
-      quantity: cantidad,
-      unit_selling_price: sellingPrice,
-      unit_tax_rate: taxRate,
+
+      unit_price: precioSinIva,
+      tax_rate: ivaPorcentaje,
+      iva_amount: ivaTotal,
+      line_total: lineTotal,
+
+      subtotal_base: subtotalBase,
+      iva: ivaTotal,
+      total: lineTotal,
       line_total_base: subtotalBase,
       line_iva: ivaTotal,
-      line_total: totalConIva,
+
+      quantity: cantidad,
+      notas: notasItem,
+      extras: extrasGuardados,
     };
 
     setItems(prev => [...prev, nuevoItem]);
@@ -137,17 +155,39 @@ export default function TakeOrderPageNew() {
   }
 
   function abrirEditarItem(item) {
-    setItemEditando(item);
-    setProductoSeleccionado({
-      id: item.product_id,
-      name: item.nombre,
-      selling_price: item.selling_price,
-      tax_rate: item.tax_rate,
-      price: item.pvp,
-    });
-    setCantidadItem(item.cantidad);
+    const producto = productos.find(p => p.id === item.product_id);
+
+    if (producto) {
+      setProductoSeleccionado({
+        ...producto,
+        selling_price: Number(producto.selling_price) || 0,
+        tax_rate: Number(producto.tax_rate) || 0,
+        is_taxable: Number(producto.is_taxable) || 0,
+      });
+    } else {
+      const unitPrice = Number(item.unit_price) || 0;
+      const ivaUnit = Number(item.tax_rate) || 0; // monto de IVA por unidad
+      setProductoSeleccionado({
+        id: item.product_id,
+        name: item.product_name,
+        selling_price: unitPrice,
+        tax_rate: ivaUnit,
+        is_taxable: 0, // no lo sabemos, pero no lo usamos para cálculos
+        category_name: item.category_name || '',
+      });
+    }
+
+    setCantidadItem(Number(item.quantity) || 1);
     setNotasItem(item.notas || '');
-    setExtrasItem(item.extras || []);
+
+    setExtrasItem((item.extras || []).map(e => ({
+      ...e,
+      selling_price: Number(e.selling_price) || 0,
+      tax_rate: Number(e.tax_rate) || 0,
+      iva_amount: Number(e.iva_amount) || 0,
+    })));
+
+    setItemEditando(item);
     setShowEditItemModal(true);
   }
 
@@ -157,38 +197,41 @@ export default function TakeOrderPageNew() {
       return;
     }
 
-    const sellingPrice = Number(productoSeleccionado.selling_price) || 0;
-    const taxRate = Number(productoSeleccionado.tax_rate) || 0;
-    const pvp = sellingPrice + taxRate;
     const cantidad = parseInt(cantidadItem, 10);
-    
-    const extrasSellingTotal = extrasItem.reduce((s, e) => s + (Number(e.selling_price) || 0), 0);
-    const extrasTaxTotal = extrasItem.reduce((s, e) => s + (Number(e.tax_rate) || 0), 0);
-    
-    const subtotalBase = (sellingPrice + extrasSellingTotal) * cantidad;
-    const ivaTotal = (taxRate + extrasTaxTotal) * cantidad;
-    const totalConIva = subtotalBase + ivaTotal;
+    const precioSinIva = Number(productoSeleccionado.selling_price) || 0;
+    const ivaPorUnidad = Number(productoSeleccionado.tax_rate) || 0;
+
+    const subtotalBase = redondear(precioSinIva * cantidad);
+    const ivaTotal = redondear(ivaPorUnidad * cantidad);
+    const lineTotal = redondear(subtotalBase + ivaTotal);
+
+    const extrasGuardados = extrasItem.map(e => ({
+      ...e,
+      selling_price: Number(e.selling_price) || 0,
+      tax_rate: Number(e.tax_rate) || 0,
+      iva_amount: redondear(Number(e.tax_rate) * cantidad),
+    }));
 
     const itemActualizado = {
       ...itemEditando,
       nombre: productoSeleccionado.name,
-      selling_price: sellingPrice,
-      tax_rate: taxRate,
-      pvp: pvp,
-      cantidad: cantidad,
-      subtotal_base: subtotalBase,
-      iva: ivaTotal,
-      total: totalConIva,
-      notas: notasItem,
-      extras: extrasItem,
       product_id: productoSeleccionado.id,
       product_name: productoSeleccionado.name,
-      quantity: cantidad,
-      unit_selling_price: sellingPrice,
-      unit_tax_rate: taxRate,
+
+      unit_price: precioSinIva,
+      tax_rate: ivaPorUnidad,
+      iva_amount: ivaTotal,
+      line_total: lineTotal,
+
+      subtotal_base: subtotalBase,
+      iva: ivaTotal,
+      total: lineTotal,
       line_total_base: subtotalBase,
       line_iva: ivaTotal,
-      line_total: totalConIva,
+
+      quantity: cantidad,
+      notas: notasItem,
+      extras: extrasGuardados,
     };
 
     setItems(prev => prev.map(item =>
@@ -206,26 +249,37 @@ export default function TakeOrderPageNew() {
 
   const eliminarItem = itemId => setItems(prev => prev.filter(i => i.id !== itemId));
 
-  // ── Totales ───────────────────────────────────────────────────────────────
-
+  // ── Totales (sumando base + extras, redondeados) ──────────────────────
   const subtotalBase = useMemo(() => {
-    return items.reduce((s, i) => s + (Number(i.subtotal_base) || Number(i.line_total_base) || 0), 0);
+    const total = items.reduce((acc, item) => {
+      const baseSubtotal = Number(item.subtotal_base) || 0;
+      const extrasSubtotal = (item.extras || []).reduce(
+        (sum, extra) => sum + (Number(extra.selling_price) || 0) * (Number(item.quantity) || 1),
+        0
+      );
+      return acc + baseSubtotal + extrasSubtotal;
+    }, 0);
+    return redondear(total);
   }, [items]);
 
   const ivaTotal = useMemo(() => {
-    return items.reduce((s, i) => s + (Number(i.iva) || Number(i.line_iva) || 0), 0);
+    const total = items.reduce((acc, item) => {
+      const baseIVA = Number(item.iva_amount) || 0;
+      const extrasIVA = (item.extras || []).reduce(
+        (sum, extra) => sum + (Number(extra.iva_amount) || 0),
+        0
+      );
+      return acc + baseIVA + extrasIVA;
+    }, 0);
+    return redondear(total);
   }, [items]);
 
-  const totalConIva = useMemo(() => subtotalBase + ivaTotal, [subtotalBase, ivaTotal]);
+  const totalConIva = useMemo(() => redondear(subtotalBase + ivaTotal), [subtotalBase, ivaTotal]);
   const ivaLabel = useMemo(() => `${Math.round((vatRate || 0) * 100)}%`, [vatRate]);
 
   // ── GUARDAR ORDEN ─────────────────────────────────────────────────────────
   async function guardarOrden() {
-    // 🔥 Prevenir múltiples envíos simultáneos
-    if (guardando || isSendingRef.current) {
-
-      return;
-    }
+    if (guardando || isSendingRef.current) return;
 
     if (orderType === 'dine_in' && !numeroMesa) {
       setError('Debe ingresar un número de mesa');
@@ -237,63 +291,92 @@ export default function TakeOrderPageNew() {
       return;
     }
 
-    // 🔥 Marcar que estamos enviando
     isSendingRef.current = true;
     setGuardando(true);
     setError('');
+    setSuccess('');
 
     try {
       const clienteId = null;
 
       const itemsFormateados = items.flatMap(item => {
+        const quantity = Number(item.quantity) || 1;
+        const unitPrice = Number(item.unit_price) || 0;
+        const ivaUnit = Number(item.tax_rate) || 0; // monto de IVA por unidad
+        const subtotalBase = Number(item.subtotal_base) || 0;
+        const ivaMonto = Number(item.iva_amount) || 0;
+        const totalConIva = Number(item.line_total) || 0;
+
         const baseItem = {
           product_id: item.product_id,
           product_name: item.product_name,
-          quantity: item.quantity,
-          unit_price: item.unit_selling_price,
-          line_total: item.unit_selling_price * item.quantity,
-          tax_rate: item.unit_tax_rate,
-          iva_amount: item.unit_tax_rate * item.quantity,
+          quantity: quantity,
+          unit_price: unitPrice,
+          subtotal_base: subtotalBase,
+          line_total_base: subtotalBase,
+          line_total: Number(item.is_taxable),
+          tax_rate: ivaUnit,              // ← guardamos el monto de IVA por unidad
+          iva_amount: ivaMonto,
           notes: item.notas || null,
         };
 
-        const extraItems = (item.extras || []).map(e => ({
-          product_id: e.id,
-          product_name: e.name,
-          quantity: item.quantity,
-          unit_price: Number(e.selling_price) || 0,
-          line_total: (Number(e.selling_price) || 0) * item.quantity,
-          tax_rate: Number(e.tax_rate) || 0,
-          iva_amount: (Number(e.tax_rate) || 0) * item.quantity,
-          notes: `__EXT__: + ${e.name}${e.nota ? ': ' + e.nota : ''}`,
-        }));
+        const extraItems = (item.extras || []).map(e => {
+          const extraQty = quantity;
+          const extraPrice = Number(e.selling_price) || 0;
+          const extraIvaUnit = Number(e.tax_rate) || 0;
+          const extraBase = redondear(extraPrice * extraQty);
+          const extraIva = redondear(extraIvaUnit * extraQty);
+          return {
+            product_id: e.id || e.product_id,
+            product_name: e.name || 'Extra',
+            quantity: extraQty,
+            unit_price: extraPrice,
+            subtotal_base: extraBase,
+            line_total_base: extraBase,
+            line_total: redondear(extraBase + extraIva),
+            tax_rate: extraIvaUnit,
+            iva_amount: extraIva,
+            notes: `__EXT__: + ${e.name}${e.nota ? ': ' + e.nota : ''}`,
+          };
+        });
 
         return [baseItem, ...extraItems];
       });
 
-      const res = await fetchWithAuth('/api/ordenes', {
+      let subtotalTotal = 0, ivaTotal = 0, totalGeneral = 0;
+      itemsFormateados.forEach(item => {
+        subtotalTotal += Number(item.subtotal_base) || 0;
+        ivaTotal += Number(item.iva_amount) || 0;
+        totalGeneral += Number(item.line_total) || 0;
+      });
+
+      subtotalTotal = redondear(subtotalTotal);
+      ivaTotal = redondear(ivaTotal);
+      totalGeneral = redondear(totalGeneral);
+
+      const res = await fetchWithAuth('/ordenes', {
         method: 'POST',
         body: JSON.stringify({
           numero_mesa: orderType === 'dine_in' ? parseInt(numeroMesa, 10) : null,
-          mesa_id: mesaId,
+          mesa_id: mesaId || null,
           cliente_id: clienteId,
           items: itemsFormateados,
-          notas,
+          notas: notas || '',
           order_type: orderType,
-          vat_rate: vatRate,
-          iva_percentage: vatRate * 100,
+          subtotal: subtotalTotal,
           iva_amount: ivaTotal,
-          subtotal: subtotalBase,
-          total: totalConIva,
+          total: totalGeneral,
         }),
       });
 
-      // 🔥 MANEJAR ERROR 409 (Conflicto de número de orden)
       if (res.status === 409) {
         const errData = await res.json();
         setError(`⚠️ ${errData.error || 'Conflicto al generar número de orden'}`);
-        // No limpiar el formulario, permitir reintentar
-        setTimeout(() => setError(''), 5000);
+        setTimeout(() => {
+          setError('');
+          setGuardando(false);
+          isSendingRef.current = false;
+        }, 5000);
         return;
       }
 
@@ -307,31 +390,38 @@ export default function TakeOrderPageNew() {
 
       setSuccess(`✅ Orden ${orderNumber} enviada a cocina`);
 
-      // Limpiar el formulario después de éxito
       setTimeout(() => {
         setNumeroMesa('');
         setMesaId('');
         setNotas('');
         setOrderType('dine_in');
         setItems([]);
+        setShowAddItemModal(false);
+        setShowEditItemModal(false);
+        setProductoSeleccionado(null);
+        setCantidadItem(1);
+        setNotasItem('');
+        setItemEditando(null);
+        setExtrasItem([]);
         setSuccess('');
         setError('');
+        setGuardando(false);
+        isSendingRef.current = false;
       }, 2500);
 
     } catch (err) {
-
       setError(err?.message || 'Error al guardar orden');
-      setTimeout(() => setError(''), 5000);
-    } finally {
-      setGuardando(false);
-      isSendingRef.current = false;
+      setTimeout(() => {
+        setError('');
+        setGuardando(false);
+        isSendingRef.current = false;
+      }, 5000);
     }
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
-
   return (
-    <PageTemplate title="Nueva orden" subtitle="Enviar a cocina">
+    <PageTemplate title="Nueva orden" subtitle="Tomar órdenes y enviar a cocina">
       <div className="takeorder-shell">
         {error && (
           <div className="alert alert-error">

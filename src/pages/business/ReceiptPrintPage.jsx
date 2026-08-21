@@ -1,375 +1,818 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, Check, X, Printer } from 'react-feather';
-import qz from 'qz-tray';
+// src/pages/business/InvoiceReprintPage.jsx
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useSession } from '../../context/SessionContext';
+import {
+  FiCalendar, FiChevronDown, FiRefreshCw, FiAlertCircle,
+  FiFileText, FiEye, FiPrinter, FiSearch, FiX,
+  FiTrendingUp, FiDollarSign, FiUser, FiShoppingCart
+} from "react-icons/fi";
 import PageTemplate from '../../components/PageTemplate';
-import { useBusinessContext } from '../../admin/config/BusinessContext';
-import { fetchWithAuth } from '../../config/apiBase';
-import '../../styles/ReceiptPrint.css';
+import { fetchWithAuth } from '../../config/api';
+import { usePrinterService } from '../../services/usePrinterService';
+import { useConfirm } from '../../context/ConfirmContext';
+import { useAlert } from '../../components/ConfirmContext';
+import Table from '../../components/General/Table';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import Modal from '../../components/General/Modal';
 
-import API_BASE from '../../config/apiBase';
-const PRINTER_NAME  = 'POS-58';
-const WIDTH         = 32;
-// Helpers
-const line  = () => '='.repeat(WIDTH);
-const sep   = () => '-'.repeat(WIDTH);
-const center = (txt) => {
-  const t = String(txt || '').trim().substring(0, WIDTH);
-  const pad = Math.max(0, Math.floor((WIDTH - t.length) / 2));
-  return ' '.repeat(pad) + t;
-};
-const wrap = (txt, w = WIDTH) => {
-  const str = String(txt || '').trim();
-  if (!str) return [];
-  const words = str.split(/\s+/);
-  const lines = [];
-  let cur = '';
-  for (const word of words) {
-    const next = cur ? `${cur} ${word}` : word;
-    if (next.length <= w) { cur = next; }
-    else { if (cur) lines.push(cur); cur = word; }
-  }
-  if (cur) lines.push(cur);
-  return lines;
-};
-const rowLR = (left, right) => {
-  const r = String(right);
-  const l = String(left).substring(0, WIDTH - r.length - 1);
-  return l + ' '.repeat(Math.max(1, WIDTH - l.length - r.length)) + r;
-};
-const itemLine = (qty, name, price) => {
-  const prefix = `${qty} x `;
-  const suffix = ` ${price}`;
-  const maxName = WIDTH - prefix.length - suffix.length;
-  const n = String(name).substring(0, maxName).padEnd(maxName);
-  return prefix + n + suffix;
-};
+// ─── HELPERS ──────────────────────────────────────────────────────────────
 const fmt = (n) => `$${parseFloat(n || 0).toFixed(2)}`;
 
-export default function PosReceiptPrint() {
-  const { selectedBusiness } = useBusinessContext();
-  const [paidOrders, setPaidOrders] = useState([]);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [notification, setNotification] = useState(null);
-  const [bizInfo, setBizInfo] = useState(null);
-  const [printerConnected, setPrinterConnected] = useState(false);
-  const tableRef = useRef(null);
+const getEcuadorDate = () => {
+  const now = new Date();
+  const ecuadorDate = new Date(now.getTime() - (5 * 60 * 60 * 1000));
+  return ecuadorDate.toISOString().split('T')[0];
+};
 
-  // QZ Tray
+const formatDate = (dateString) => {
+  if (!dateString) return '-';
+  const d = new Date(dateString);
+  return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('es-EC');
+};
+
+// ─── TARJETA DE RESUMEN ──────────────────────────────────────────────────
+function SummaryCard({ title, value, icon, color, subtitle, loading }) {
+  return (
+    <div className="report-product-card">
+      <div className="report-product-card-icon" style={{ color }}>
+        {icon}
+      </div>
+      <div className="report-product-card-content">
+        <div className="report-product-card-title">{title}</div>
+        {loading ? (
+          <div className="report-product-card-value skeleton-loading">Cargando...</div>
+        ) : (
+          <div className="report-product-card-value">{value ?? '0'}</div>
+        )}
+        {subtitle && <div className="report-product-card-subtitle">{subtitle}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ─── MODAL DE DETALLE DE FACTURA ──────────────────────────────────────
+function InvoiceDetailModal({ sale, onClose, isOpen }) {
+  const { user } = useSession();
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
   useEffect(() => {
-    (async () => {
-      try {
-        if (qz.websocket.isActive()) { setPrinterConnected(true); return; }
-        const certData = await fetchWithAuth('/api/print/cert').then(r => r.text());
-        qz.security.setCertificatePromise(async () => certData);
-        qz.security.setSignaturePromise(async (toSign) => {
-          const r = await fetchWithAuth('/api/print/sign', {
-            method: 'POST',
-            body: JSON.stringify({ data: toSign }),
-          });
-          const { signature } = await r.json();
-          return signature;
-        });
-        await qz.websocket.connect({
-          host: 'localhost',
-          port: { secure: [8183, 8184], insecure: [8182] },
-          usingSecure: window.location.protocol === 'https:',
-        });
-        setPrinterConnected(true);
-      } catch (e) {
+    if (sale && isOpen) {
+      loadDetail();
+    }
+  }, [sale, isOpen]);
 
-        setPrinterConnected(false);
-      }
-    })();
-  }, []);
-
-  // Auth headers
-  const getHeaders = () => {
-    const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
-    const dbName = selectedBusiness?.schemaName;
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'X-DB-Name': dbName,
-    };
-  };
-
-  // Load business receipt info
-  useEffect(() => {
-    if (!selectedBusiness?.schemaName) return;
-    fetchWithAuth('/api/settings/receipt-info')
-      .then(r => r.json())
-      .then(data => setBizInfo(data))
-      .catch(() => {});
-  }, [selectedBusiness]);
-
-  // Load only paid orders
-  useEffect(() => {
-    loadPaidOrders();
-    const interval = setInterval(loadPaidOrders, 12000);
-    return () => clearInterval(interval);
-  }, [selectedBusiness]);
-
-  const loadPaidOrders = async () => {
+  const loadDetail = async () => {
+    if (!sale) return;
+    setLoading(true);
+    setError('');
     try {
-      const response = await fetchWithAuth('/api/ordenes');
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        const normalized = data
-          .filter(o => o.status === 'paid')
-          .map(o => ({
-            ...o,
-            total:      parseFloat(o.total)      || 0,
-            subtotal:   parseFloat(o.subtotal)   || 0,
-            tax_amount: parseFloat(o.tax_amount) || 0,
-            tax_rate:   parseFloat(o.tax_rate)   || 0,
-            items: (o.items || []).map(i => ({
-              ...i,
-              unit_price: parseFloat(i.unit_price) || 0,
-              quantity:   parseFloat(i.quantity)   || 0,
-              line_total: parseFloat(i.line_total) || 0,
-            })),
-          }));
-        setPaidOrders(normalized);
+      const res = await fetchWithAuth(`/reports/sales/detail/${sale.id}`);
+      const data = await res.json();
+      if (data.success) {
+        setDetail(data.data);
+      } else {
+        setError(data.error || 'Error al cargar detalle');
       }
     } catch (err) {
-      setNotification({ msg: 'Error al cargar órdenes pagadas', type: 'error' });
+      setError('Error al cargar detalle');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // --- Imprimir comprobante ---
-  const buildReceiptText = (order, paid, change, invoiceNumber = null) => {
-    const biz     = bizInfo || {};
-    const now     = new Date();
-    const dateStr = now.toLocaleDateString('es-EC');
-    const timeStr = now.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
-    const taxRate = order.tax_rate || biz.tax_rate || 0;
-    const fmtS    = (n) => `$${parseFloat(n || 0).toFixed(2)}`;
+  const factura = detail?.factura || {};
+  const orden = detail?.orden || {};
 
-    let out = '';
-    out += line() + '\n';
-
-    // Nombre del comercio para header
-    const bizName =
-      biz.trade_name && biz.trade_name !== biz.company_name
-        ? biz.trade_name
-        : biz.company_name || selectedBusiness?.name || 'MI NEGOCIO';
-
-    wrap(bizName.toUpperCase()).forEach(l => { out += center(l) + '\n'; });
-    if (biz.address)
-      wrap(biz.address).forEach(l => { out += center(l) + '\n'; });
-    if (biz.city || biz.country)
-      out += center([biz.city, biz.country].filter(Boolean).join(' - ')) + '\n';
-    if (biz.phone) out += center(`Tel: ${biz.phone}`) + '\n';
-    if (biz.email) out += center(biz.email) + '\n';
-    if (biz.ruc) out += center(biz.ruc) + '\n';
-
-    out += line() + '\n';
-
-    if (invoiceNumber) out += center(`No. ${invoiceNumber}`) + '\n';
-    out += `Fecha:  ${dateStr} ${timeStr}\n`;
-    if (order.customer_document_number) 
-      out += `C.I.: ${order.customer_document_number}\n`; 
-    if (order.customer_name)       
-      out += `Cliente:${order.customer_name}\n`;
-
-    out += sep() + '\n';
-    out += rowLR('DESCRIPCION', 'TOTAL') + '\n';
-    out += sep() + '\n';
-
-    (order.items || []).forEach(item => {
-      const lineTotal = fmtS(item.unit_price * item.quantity);
-      out += itemLine(item.quantity, item.product_name, lineTotal) + '\n';
-      out += `     P.U. ${fmtS(item.unit_price)}\n`;
-      out += sep() + '\n';
-    });
-
-    out += rowLR('SUBTOTAL',       fmtS(order.subtotal || order.total)) + '\n';
-    if (order.tax_amount > 0 || taxRate > 0)
-      out += rowLR(`IVA ${taxRate}%`, fmtS(order.tax_amount)) + '\n';
-    out += line() + '\n';
-    out += rowLR('VALOR TOTAL',    fmtS(order.total))  + '\n';
-    out += line() + '\n';
-    out += rowLR('Recibido',       fmtS(order.total))         + '\n';
-    out += rowLR('Cambio/Vuelto',  fmtS(change))       + '\n';
-    out += sep() + '\n';
-    wrap(biz.receipt_footer || 'DOCUMENTO SIN VALIDEZ TRIBUTARIA')
-      .forEach(l => { out += center(l) + '\n'; });
-    out += center('Gracias por su preferencia') + '\n';
-    out += line() + '\n';
-    out += '\n\n\n\n\n';
-    return out;
-  };
-
-  const handlePrintReceipt = async (order) => {
-    let invoiceNumber = null;
-    try {
-      const r = await fetchWithAuth(`/api/einvoicing/invoices/by-order/${order.id}`);
-      if (r.ok) { const data = await r.json(); invoiceNumber = data?.invoice_number || null; }
-    } catch {}
-    const text = buildReceiptText(order, order.total, 0, invoiceNumber);
-
-    if (printerConnected) {
-      try {
-        const config = qz.configs.create(PRINTER_NAME);
-        await qz.print(config, [text]);
-        return;
-      } catch (e) {
-        setNotification({ msg: 'Error con QZ Tray, usando impresión web', type: 'warning' });
-      }
-    }
-
-    // Fallback: ventana navegador
-    const escaped = text
-      .split('\n')
-      .map(l => l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'))
-      .join('\n');
-
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Comprobante</title>
-<style>
-  @page { margin:3mm; size:58mm auto; }
-  body { font-family:'Courier New',monospace; font-size:9pt; white-space:pre;
-         width:50mm; margin:0 auto; color:#000; line-height:1.3; }
-</style></head><body>${escaped}</body></html>`;
-
-    const w = window.open('', '_blank', 'width=300,height=700,toolbar=0,menubar=0');
-    if (!w) { alert('Permite ventanas emergentes para imprimir'); return; }
-    w.document.write(html);
-    w.document.close();
-    setTimeout(() => { w.focus(); w.print(); }, 300);
-  };
-
-  // Filtro
-  const filteredOrders = paidOrders.filter(order =>
-    (order.mesa_numero?.toString()  || '').includes(searchTerm) ||
-    (order.order_number?.toString() || '').includes(searchTerm) ||
-    order.id.toString().includes(searchTerm)
-  );
-
-  const showNotification = (msg, type = 'info') => {
-    setNotification({ msg, type });
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  // RENDER
   return (
-    <PageTemplate
-      title="Reimpresión recibos"
-      subtitle={`${paidOrders.length} orden${paidOrders.length !== 1 ? 'es' : ''} pagada${paidOrders.length !== 1 ? 's' : ''}`}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Detalle de Factura"
+      size="lg"
+      footer={
+        <ButtonGroup>
+          <IconTextButton
+            variant="danger"
+            size="md"
+            icon={<FiX size={14} />}
+            onClick={onClose}
+          >
+            Cerrar
+          </IconTextButton>
+        </ButtonGroup>
+      }
     >
-      <div className="checkout-main">
-
-        {/* Lista de órdenes pagadas */}
-        <div className="orders-list-panel">
-          <div className="search-box">
-            <Search size={16} />
-            <input
-              type="text"
-              placeholder="Buscar mesa o #orden..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="orders-table">
-            {filteredOrders.length === 0 ? (
-              <div className="empty-state"><p>No hay órdenes pagadas</p></div>
-            ) : (
-              <table ref={tableRef}>
-                <thead>
-                  <tr>
-                    <th>Mesa / Orden</th>
-                    <th>Items</th>
-                    <th>Total</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredOrders.map(order => (
-                    <tr
-                      key={order.id}
-                      className={selectedOrder?.id === order.id ? 'selected' : ''}
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      <td className="mesa-num">
-                        {order.mesa_numero != null ? `Mesa ${order.mesa_numero}` : 'S/Mesa'}
-                        <br />
-                        <small>#{order.order_number || order.id}</small>
-                      </td>
-                      <td>{order.items?.length || 0}</td>
-                      <td className="amount">{fmt(order.total)}</td>
-                      <td>
-                        <button
-                          className="btn-select"
-                          onClick={e => { e.stopPropagation(); setSelectedOrder(order); }}
-                        >
-                          <Printer size={14} /> Reimprimir
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+      {loading && <div className="detail-loading">Cargando detalle...</div>}
+      {error && (
+        <div className="detail-error">
+          <FiAlertCircle size={16} /> {error}
         </div>
-
-        {/* Panel de detalle/imprimir */}
-        {selectedOrder ? (
-          <div className="payment-panel">
-            <div className="panel-title">Detalle del recibo</div>
-            <div className="order-summary">
-              <div className="summary-header">
-                <h3>
-                  {selectedOrder.mesa_numero != null ? `Mesa ${selectedOrder.mesa_numero}` : 'Sin Mesa'}
-                  &nbsp;<small>#{selectedOrder.order_number || selectedOrder.id}</small>
-                </h3>
+      )}
+      {detail && !loading && (
+        <div>
+          {/* Datos de la Factura */}
+          <div className="detail-section">
+            <h4 className="detail-section-title">
+              <FiFileText size={16} /> Datos de la Factura
+            </h4>
+            <div className="detail-grid">
+              <div className="detail-item">
+                <label>N° Factura</label>
+                <span className="detail-value">{factura.numero_factura || sale.numero_factura_electronica || 'N/A'}</span>
               </div>
-              <div className="items-list">
-                {(selectedOrder.items || []).map((item, idx) => (
-                  <div key={idx} className="item-line">
-                    <span className="item-name">{item.quantity}x {item.product_name}</span>
-                    <span className="item-price">{fmt(item.unit_price * item.quantity)}</span>
-                  </div>
-                ))}
+              <div className="detail-item">
+                <label>Estado</label>
+                <span className={`status-badge ${factura.estado || 'pendiente'}`}>
+                  {factura.estado || 'pendiente'}
+                </span>
               </div>
-              <div className="subtotal-line">
-                <span>Subtotal:</span>
-                <span>{fmt(selectedOrder.subtotal || selectedOrder.total)}</span>
+              <div className="detail-item">
+                <label>Fecha Emisión</label>
+                <span className="detail-value">{formatDate(factura.fecha_emision || sale.fecha)}</span>
               </div>
-              {selectedOrder.tax_amount > 0 && (
-                <div className="tax-line">
-                  <span>IVA {selectedOrder.tax_rate}%:</span>
-                  <span>{fmt(selectedOrder.tax_amount)}</span>
+              {factura.clave_acceso && (
+                <div className="detail-item">
+                  <label>Clave Acceso</label>
+                  <span className="detail-value-mono">{factura.clave_acceso}</span>
                 </div>
               )}
-              <div className="total-line">
-                <span>TOTAL:</span>
-                <span className="total-amount">{fmt(selectedOrder.total)}</span>
+            </div>
+          </div>
+
+          {/* Datos del Cliente */}
+          <div className="detail-section">
+            <h4 className="detail-section-title"><FiUser size={16} /> Datos del Cliente</h4>
+            <div className="detail-grid">
+              <div className="detail-item">
+                <label>Nombre</label>
+                <span className="detail-value">{factura.cliente_nombre || sale.cliente_nombre || 'CONSUMIDOR FINAL'}</span>
+              </div>
+              <div className="detail-item">
+                <label>RUC/CI</label>
+                <span className="detail-value">{factura.cliente_ruc || sale.cliente_cedula || '-'}</span>
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 18 }}>
-              <button
-                className="btn-complete"
-                style={{ minWidth: 160, fontSize: 15, fontWeight: 800 }}
-                onClick={() => handlePrintReceipt(selectedOrder)}
-                disabled={notification?.type === 'success'}
-              >
-                <Printer size={18} /> Imprimir
-              </button>
-              <button className="btn-cancel" style={{ marginLeft: 12 }} onClick={() => setSelectedOrder(null)}>
-                <X size={13} /> Cancelar
-              </button>
+          </div>
+
+          {/* Datos de la Orden */}
+          {orden.id && (
+            <div className="detail-section">
+              <h4 className="detail-section-title"><FiShoppingCart size={16} /> Datos de la Orden</h4>
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <label>N° Orden</label>
+                  <span className="detail-value">{orden.numero_orden || '-'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Mesa</label>
+                  <span className="detail-value">{orden.mesa || '-'}</span>
+                </div>
+              </div>
+              {orden.items && orden.items.length > 0 && (
+                <div className="detail-items-table">
+                  <h5>Productos</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Código</th>
+                        <th>Producto</th>
+                        <th className="text-center">Cant.</th>
+                        <th className="text-right">P. Unit.</th>
+                        <th className="text-right">IVA</th>
+                        <th className="text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orden.items.map((item, idx) => (
+                        <tr key={idx}>
+                          <td>{item.barcode || item.product_barcode || item.code || '-'}</td>
+                          <td>{item.product_name}</td>
+                          <td className="text-center">{item.quantity}</td>
+                          <td className="text-right">{fmt(item.unit_price)}</td>
+                          <td className="text-right">{fmt(item.iva_amount)}</td>
+                          <td className="text-right">{fmt(item.line_total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Resumen de Totales */}
+          <div className="detail-summary">
+            <h4 className="detail-section-title"><FiDollarSign size={16} /> Resumen de Totales</h4>
+            <div className="summary-grid">
+              <div className="summary-item">
+                <label>Subtotal</label>
+                <div className="summary-value">{fmt(factura.subtotal || sale.subtotal)}</div>
+              </div>
+              <div className="summary-item">
+                <label>IVA</label>
+                <div className="summary-value">{fmt(factura.iva || sale.iva || 0)}</div>
+              </div>
+              <div className="summary-item">
+                <label>Descuento</label>
+                <div className="summary-value">{fmt(factura.descuento || sale.descuento || 0)}</div>
+              </div>
+              <div className="summary-item summary-item-total">
+                <label>Total</label>
+                <div className="summary-value">{fmt(factura.total || sale.total)}</div>
+              </div>
             </div>
           </div>
-        ) : (
-          <div className="empty-panel">
-            <p>Selecciona una orden para reimprimir</p>
-          </div>
-        )}
-      </div>
-      {notification && (
-        <div className={`notification ${notification.type}`}>{notification.msg}</div>
+        </div>
       )}
+    </Modal>
+  );
+}
+
+// ─── PÁGINA PRINCIPAL ──────────────────────────────────────────────────
+export default function InvoiceReprintPage() {
+  const { user, selectedBusiness } = useSession();
+  const { showConfirm } = useConfirm();
+  const alert = useAlert();
+  const { print } = usePrinterService();
+
+  const [sales, setSales] = useState([]);
+  const [filteredSales, setFilteredSales] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState('month');
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
+  const [showCustomDate, setShowCustomDate] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [selectedSale, setSelectedSale] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [stats, setStats] = useState({
+    total_facturas: 0,
+    total_ingresos: 0,
+    ticket_promedio: 0,
+    clientes_unicos: 0
+  });
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [invoiceNumbers, setInvoiceNumbers] = useState({});
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [bizInfo, setBizInfo] = useState(null);
+
+  const dateOptions = [
+    { value: 'day', label: 'Hoy' },
+    { value: 'week', label: 'Esta semana' },
+    { value: 'month', label: 'Este mes' },
+    { value: 'quarter', label: 'Este trimestre' },
+    { value: 'year', label: 'Este año' },
+    { value: 'custom', label: 'Personalizado' }
+  ];
+
+  const toNumber = (val) => Number(val) || 0;
+
+  // ── Obtener rango efectivo ────────────────────────────────────────────
+  const getEffectiveDateRange = useCallback(() => {
+    const now = new Date();
+    let from, to;
+
+    if (dateRange === 'day') {
+      const today = getEcuadorDate();
+      from = today;
+      to = today;
+    } else if (dateRange === 'week') {
+      const weekAgo = new Date(now);
+      weekAgo.setDate(now.getDate() - 7);
+      from = weekAgo.toISOString().split('T')[0];
+      to = now.toISOString().split('T')[0];
+    } else if (dateRange === 'month') {
+      const monthAgo = new Date(now);
+      monthAgo.setMonth(now.getMonth() - 1);
+      from = monthAgo.toISOString().split('T')[0];
+      to = now.toISOString().split('T')[0];
+    } else if (dateRange === 'quarter') {
+      const quarterStart = new Date(now);
+      quarterStart.setMonth(now.getMonth() - 3);
+      from = quarterStart.toISOString().split('T')[0];
+      to = now.toISOString().split('T')[0];
+    } else if (dateRange === 'year') {
+      from = `${now.getFullYear()}-01-01`;
+      to = `${now.getFullYear()}-12-31`;
+    } else if (dateRange === 'custom' && customStartDate && customEndDate) {
+      from = customStartDate;
+      to = customEndDate;
+    } else {
+      // default month
+      const monthAgo = new Date(now);
+      monthAgo.setMonth(now.getMonth() - 1);
+      from = monthAgo.toISOString().split('T')[0];
+      to = now.toISOString().split('T')[0];
+    }
+    return { from, to };
+  }, [dateRange, customStartDate, customEndDate]);
+
+  // ── Cargar estadísticas ──────────────────────────────────────────────
+  const loadStats = useCallback(async () => {
+    if (!selectedBusiness?.id) return;
+    try {
+      setLoadingStats(true);
+      const { from, to } = getEffectiveDateRange();
+      let url = `/reports/sales/summary`;
+      const params = [];
+      if (from && to) {
+        params.push(`from=${from}`);
+        params.push(`to=${to}`);
+      }
+      if (params.length) url += `?${params.join('&')}`;
+
+      const res = await fetchWithAuth(url);
+      if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+      const data = await res.json();
+      if (data.success && data.data) {
+        setStats({
+          total_facturas: data.data.total_ventas ?? 0,
+          total_ingresos: data.data.total_ingresos ?? 0,
+          ticket_promedio: data.data.total_ventas > 0 ? (data.data.total_ingresos / data.data.total_ventas) : 0,
+          clientes_unicos: data.data.clientes_unicos ?? 0
+        });
+      }
+    } catch (err) {
+      // silencioso
+    } finally {
+      setLoadingStats(false);
+    }
+  }, [selectedBusiness, getEffectiveDateRange]);
+
+  // ── Cargar ventas ─────────────────────────────────────────────────────
+  const loadSales = useCallback(async (page = 1) => {
+    if (!selectedBusiness?.id) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setInvoiceNumbers({});
+
+    try {
+      const { from, to } = getEffectiveDateRange();
+      const params = new URLSearchParams();
+      params.append('page', page);
+      params.append('limit', '20');
+      if (from && to) {
+        params.append('from', from);
+        params.append('to', to);
+      }
+
+      const url = `/reports/sales?${params.toString()}`;
+      const res = await fetchWithAuth(url);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al cargar facturas');
+      }
+      const result = await res.json();
+      if (result.success) {
+        setSales(result.data);
+        setFilteredSales(result.data);
+        setPagination({
+          page: result.pagination.page,
+          totalPages: result.pagination.totalPages,
+          total: result.pagination.total
+        });
+
+        // Obtener números de factura (solo para visualización)
+        const saleIds = result.data.map(sale => sale.id).filter(id => id);
+        if (saleIds.length > 0) {
+          setLoadingInvoices(true);
+          try {
+            const detailPromises = saleIds.map(id =>
+              fetchWithAuth(`/reports/sales/detail/${id}`)
+                .then(res => res.json())
+                .then(data => ({
+                  id,
+                  numero_factura: data?.data?.factura?.numero_factura || null
+                }))
+                .catch(() => ({ id, numero_factura: null }))
+            );
+            const results = await Promise.all(detailPromises);
+            const invoiceMap = {};
+            results.forEach(({ id, numero_factura }) => {
+              if (numero_factura) invoiceMap[id] = numero_factura;
+            });
+            setInvoiceNumbers(invoiceMap);
+          } catch (err) {
+            console.warn('Error al obtener números de factura:', err);
+          } finally {
+            setLoadingInvoices(false);
+          }
+        }
+      } else {
+        throw new Error(result.error || 'Error al cargar facturas');
+      }
+    } catch (err) {
+      setError(err.message);
+      setSales([]);
+      setFilteredSales([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedBusiness, getEffectiveDateRange]);
+
+  // ── Cargar datos de negocio para impresión ────────────────────────────
+  useEffect(() => {
+    if (!selectedBusiness?.id) return;
+    const loadBizInfo = async () => {
+      try {
+        const response = await fetchWithAuth('/settings/receipt-info');
+        const data = await response.json();
+        setBizInfo(data);
+      } catch (error) {
+        console.warn('Error cargando info del negocio:', error);
+      }
+    };
+    loadBizInfo();
+  }, [selectedBusiness]);
+
+  // ── Carga inicial ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (selectedBusiness?.id) {
+      loadStats();
+      loadSales(1);
+    }
+  }, [dateRange, customStartDate, customEndDate, selectedBusiness]);
+
+  // ── Filtro por búsqueda ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredSales(sales);
+      return;
+    }
+    const lowerSearch = searchTerm.toLowerCase();
+    const filtered = sales.filter(sale =>
+      (sale.numero_orden || '').toLowerCase().includes(lowerSearch) ||
+      (sale.numero_factura || '').toLowerCase().includes(lowerSearch) ||
+      (sale.cliente_nombre || '').toLowerCase().includes(lowerSearch) ||
+      (sale.cliente_cedula || '').includes(lowerSearch)
+    );
+    setFilteredSales(filtered);
+  }, [searchTerm, sales]);
+
+  // ─── HANDLERS ──────────────────────────────────────────────────────────
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await Promise.all([loadSales(pagination.page), loadStats()]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleDateRangeChange = (value) => {
+    setDateRange(value);
+    setShowDateDropdown(false);
+    if (value === 'custom') {
+      setShowCustomDate(true);
+    } else {
+      setShowCustomDate(false);
+      setCustomStartDate('');
+      setCustomEndDate('');
+    }
+  };
+
+  const handleApplyCustomDate = (start, end) => {
+    setCustomStartDate(start);
+    setCustomEndDate(end);
+    setDateRange('custom');
+    setShowCustomDate(false);
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setDateRange('month');
+    setCustomStartDate('');
+    setCustomEndDate('');
+    setShowCustomDate(false);
+  };
+
+  // ─── REIMPRIMIR FACTURA ──────────────────────────────────────────────
+  const handlePrintInvoice = async (sale) => {
+    setLoading(true);
+    try {
+      // Obtener detalle completo para tener items
+      let invoiceData = sale;
+      try {
+        const res = await fetchWithAuth(`/reports/sales/detail/${sale.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.data) {
+            invoiceData = data.data;
+          }
+        }
+      } catch {}
+
+      const factura = invoiceData.factura || {};
+      const orden = invoiceData.orden || {};
+      const items = orden.items || sale.items || [];
+
+      const printData = {
+        bizInfo,
+        invoice: {
+          number: factura.numero_factura || sale.numero_factura_electronica || 'N/A',
+          auth_number: factura.auth_number || null,
+          auth_date: factura.auth_date || null,
+          date: factura.fecha_emision || sale.fecha,
+        },
+        customer: {
+          name: factura.cliente_nombre || sale.cliente_nombre || 'CONSUMIDOR FINAL',
+          id: factura.cliente_ruc || sale.cliente_cedula || '9999999999',
+        },
+        items: items.map(item => ({
+          description: item.product_name || item.description || 'Producto',
+          quantity: item.quantity || 1,
+          price: item.unit_price || 0,
+          total: (item.quantity || 1) * (item.unit_price || 0),
+        })),
+        subtotal_15: factura.subtotal || sale.subtotal || 0,
+        subtotal_0: 0,
+        tax: factura.iva || sale.iva || 0,
+        total: factura.total || sale.total || 0,
+        printerFooter: bizInfo?.receipt_footer || '¡Gracias por su preferencia!',
+      };
+
+      const result = await print('printer_main', 'invoice', printData, false);
+      if (result?.success) {
+        alert.success('Factura reimpresa correctamente');
+      } else {
+        alert.error(result?.error || 'Error al imprimir factura');
+      }
+    } catch (error) {
+      alert.error('Error al reimprimir la factura');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewDetail = (sale) => {
+    setSelectedSale(sale);
+    setShowDetailModal(true);
+  };
+
+  // ─── COLUMNAS ──────────────────────────────────────────────────────────
+  const getNumeroVenta = (sale) => sale.numero_orden || sale.numero_factura || '-';
+  const getNumeroFactura = (sale) => {
+    if (invoiceNumbers[sale.id]) return invoiceNumbers[sale.id];
+    return sale.numero_factura_electronica || sale.factura_numero || sale.documento || '-';
+  };
+  const getTaxAmount = (sale) => toNumber(sale.iva || 0);
+
+  const columns = [
+    { accessor: 'fecha', label: 'Fecha', render: (item) => <span>{formatDate(item.fecha)}</span> },
+    { accessor: 'numero_venta', label: 'N° Venta', render: (item) => <span className="invoice-number">{getNumeroVenta(item)}</span> },
+    { accessor: 'numero_factura', label: 'N° Factura', render: (item) => {
+        const factura = getNumeroFactura(item);
+        return <span>{loadingInvoices && !factura ? 'Cargando...' : factura}</span>;
+      }
+    },
+    { accessor: 'cliente_nombre', label: 'Cliente', render: (item) => <span>{item.cliente_nombre || 'CONSUMIDOR FINAL'}</span> },
+    { accessor: 'subtotal', label: 'Subtotal', align: 'center', render: (item) => <span>{fmt(item.subtotal)}</span> },
+    { accessor: 'tax', label: 'IVA', align: 'center', render: (item) => <span>{fmt(getTaxAmount(item))}</span> },
+    { accessor: 'total', label: 'Total', align: 'center', render: (item) => <span className="amount">{fmt(item.total)}</span> },
+    { accessor: 'actions', label: 'Acciones', align: 'center', render: (item) => (
+        <ButtonGroup>
+          <IconTextButton
+            variant="info"
+            size="sm"
+            inline={true}
+            icon={<FiEye size={14} />}
+            onClick={() => handleViewDetail(item)}
+            title="Ver detalle"
+          >
+            Ver
+          </IconTextButton>
+          <IconTextButton
+            variant="success"
+            size="sm"
+            inline={true}
+            icon={<FiPrinter size={14} />}
+            onClick={() => handlePrintInvoice(item)}
+            disabled={loading}
+            title="Reimprimir factura"
+          >
+            Reimprimir
+          </IconTextButton>
+        </ButtonGroup>
+      )
+    },
+  ];
+
+  // ─── TOOLBAR ──────────────────────────────────────────────────────────
+  const toolbar = (
+    <div className="products-toolbar">
+      <div className="products-toolbar-right">
+        <div className="report-dropdown">
+          <button onClick={() => setShowDateDropdown(!showDateDropdown)} className="report-date-btn">
+            <FiCalendar size={16} />
+            {dateOptions.find(o => o.value === dateRange)?.label || 'Este mes'}
+            <FiChevronDown size={14} />
+          </button>
+          {showDateDropdown && (
+            <div className="report-dropdown-menu">
+              {dateOptions.map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => handleDateRangeChange(option.value)}
+                  className={dateRange === option.value ? 'active' : ''}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="products-filter-actions">
+          <button onClick={handleClearFilters} className="report-btn-cancel-sm">
+            <FiX size={14} /> Limpiar
+          </button>
+        </div>
+        <div className="search-input-wrapper" style={{ position: 'relative', minWidth: '150px' }}>
+          <FiSearch size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar..."
+            style={{
+              padding: '6px 12px 6px 34px',
+              border: '1px solid var(--border-color)',
+              borderRadius: '6px',
+              width: '100%',
+              fontSize: '12px',
+              background: 'var(--bg-input)',
+              color: 'var(--text-primary)',
+              outline: 'none',
+              height: '34px'
+            }}
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+              <FiX size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ─── BOTÓN DE REFRESCAR ──────────────────────────────────────────────
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
+  // ─── HEADER ACTIONS ──────────────────────────────────────────────────
+  const headerActions = (
+    <div className="products-header-actions"> 
+      {refreshButton}
+    </div>
+  );
+
+  // ─── RENDER ──────────────────────────────────────────────────────────
+  return (
+    <PageTemplate
+      title="REIMPRESIÓN DE FACTURAS"
+      subtitle={`${stats.total_facturas || 0} facturas • ${fmt(stats.total_ingresos || 0)} en total`}
+      theme="business"
+      loading={loading}
+      headerAction={headerActions}
+    >
+      {error && (
+        <div className="alert alert-error">
+          <FiAlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      {/* Tarjetas de resumen igual que en reportes */}
+      <div className="report-summary-grid">
+        <SummaryCard
+          title="Total Facturas"
+          value={(stats.total_facturas || 0).toLocaleString()}
+          icon={<FiFileText size={24} />}
+          color="var(--text-primary)"
+          loading={loadingStats}
+        />
+        <SummaryCard
+          title="Ingresos Totales"
+          value={fmt(stats.total_ingresos || 0)}
+          icon={<FiDollarSign size={24} />}
+          color="var(--text-primary)"
+          loading={loadingStats}
+        />
+        <SummaryCard
+          title="Ticket Promedio"
+          value={fmt(stats.ticket_promedio || 0)}
+          icon={<FiTrendingUp size={24} />}
+          color="var(--text-primary)"
+          loading={loadingStats}
+        />
+        <SummaryCard
+          title="Clientes Únicos"
+          value={(stats.clientes_unicos || 0).toLocaleString()}
+          icon={<FiUser size={24} />}
+          color="var(--text-primary)"
+          loading={loadingStats}
+        />
+      </div>
+
+      {/* Tabla con acciones de reimpresión */}
+      <div className="report-table-container">
+        <Table
+          data={filteredSales}
+          columns={columns}
+          keyField="id"
+          title="Detalle de Ventas"
+          subtitle={`${filteredSales.length} ${filteredSales.length === 1 ? 'factura' : 'facturas'} listas para reimprimir`}
+          toolbar={toolbar}
+          searchable={false}
+          pagination={true}
+          itemsPerPage={itemsPerPage}
+          itemsPerPageOptions={[10, 15]}
+          onItemsPerPageChange={(newPerPage) => setItemsPerPage(newPerPage)}
+          loading={loading}
+          emptyMessage={
+            error ? error : 
+            'No hay facturas registradas en este período. Intenta cambiar el rango de fechas.'
+          }
+          striped={true}
+          hoverable={true}
+          bordered={false}
+          compact={false}
+        />
+      </div>
+
+      {/* Modal de fechas personalizadas */}
+      {showCustomDate && (
+        <Modal
+          isOpen={true}
+          onClose={() => setShowCustomDate(false)}
+          title="Seleccionar fechas"
+          size="sm"
+          footer={
+            <ButtonGroup>
+              <IconTextButton
+                variant="danger"
+                size="md"
+                icon={<FiX size={14} />}
+                onClick={() => setShowCustomDate(false)}
+              >
+                Cancelar
+              </IconTextButton>
+              <IconTextButton
+                variant="success"
+                size="md"
+                onClick={() => handleApplyCustomDate(customStartDate, customEndDate)}
+                disabled={!customStartDate || !customEndDate}
+              >
+                Aplicar
+              </IconTextButton>
+            </ButtonGroup>
+          }
+        >
+          <div className="report-date-range-picker">
+            <div className="report-date-range-inputs">
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                placeholder="Fecha inicial"
+              />
+              <span>a</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                placeholder="Fecha final"
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal de detalle de factura */}
+      <InvoiceDetailModal
+        sale={selectedSale}
+        isOpen={!!selectedSale}
+        onClose={() => setSelectedSale(null)}
+      />
     </PageTemplate>
   );
 }

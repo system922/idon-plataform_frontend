@@ -5,7 +5,6 @@ import {
   FiCreditCard, FiClipboard, FiXCircle, FiCheckCircle,
 } from 'react-icons/fi';
 import { adminApiService as apiService } from '../../services/apiService';
-import '../../styles/AdminPages.css';
 
 const TYPE_CFG = {
   payment_overdue:  { label: 'Pago vencido',       color: '#ef4444', bg: 'rgba(239,68,68,.08)',  border: 'rgba(239,68,68,.25)',  icon: <FiAlertCircle size={18}/> },

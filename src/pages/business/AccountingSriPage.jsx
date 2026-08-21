@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSession } from '../../context/SessionContext'; // ✅ AGREGADO
 import {
   FiRefreshCw, FiAlertCircle,
   FiEdit2, FiSave, FiX, FiCheck,
@@ -6,50 +7,53 @@ import {
   FiShield, FiLock, FiHash
 } from 'react-icons/fi';
 import PageTemplate from '../../components/PageTemplate';
-import { fetchWithAuth } from '../../config/apiBase';
-import '../../styles/SettingsPage.css';
+import { fetchWithAuth } from '../../config/api'; // ✅ CORREGIDO
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 
 export default function AccountingSriPage() {
-  const [loading,     setLoading    ] = useState(true);
-  const [msg,         setMsg        ] = useState(null);
-  const [error,       setError      ] = useState(null);   // bloquea el render
-  const [warn,        setWarn       ] = useState(null);   // aviso sin bloquear
+  const { user } = useSession(); // ✅ AGREGADO
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [error, setError] = useState(null);
+  const [warn, setWarn] = useState(null);
 
-  // Einvoice config
-  const [einvCfg,    setEinvCfg   ] = useState(null);
+  const [einvCfg, setEinvCfg] = useState(null);
   const [ambEditing, setAmbEditing] = useState(false);
-  const [ambValue,   setAmbValue  ] = useState('1');
-  const [ambSaving,  setAmbSaving ] = useState(false);
+  const [ambValue, setAmbValue] = useState('1');
+  const [ambSaving, setAmbSaving] = useState(false);
 
-  // Logo
-  const [logoUrl,       setLogoUrl      ] = useState(null);
-  const [logoPreview,   setLogoPreview  ] = useState(null);
-  const [logoFile,      setLogoFile     ] = useState(null);
+  const [logoUrl, setLogoUrl] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [logoFile, setLogoFile] = useState(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const logoInputRef = useRef(null);
 
-  // Firma electrónica
   const sigFileRef = useRef();
-  const [sigPassword,  setSigPassword ] = useState('');
+  const [sigPassword, setSigPassword] = useState('');
   const [sigUploading, setSigUploading] = useState(false);
 
-  // Secuenciales
-  const [seqEdit,   setSeqEdit  ] = useState(null);
-  const [seqValue,  setSeqValue ] = useState('');
+  const [seqEdit, setSeqEdit] = useState(null);
+  const [seqValue, setSeqValue] = useState('');
   const [seqSaving, setSeqSaving] = useState(false);
 
   const SEQ_FIELDS = [
-    { key: 'serie_estab',       label: 'Establecimiento',   type: 'text',   maxLen: 3, hint: 'Ej: 001' },
-    { key: 'serie_pto_emision', label: 'Punto de emisión',  type: 'text',   maxLen: 3, hint: 'Ej: 001' },
-    { key: 'secuencial_actual', label: 'Secuencial actual', type: 'number', maxLen: 9, hint: 'Nro. siguiente a emitir' },
+    { key: 'serie_estab', label: 'Establecimiento', type: 'text', maxLen: 3, hint: 'Ej: 001' },
+    { key: 'serie_pto_emision', label: 'Punto de emisión', type: 'text', maxLen: 3, hint: 'Ej: 001' },
+    { key: 'secuencial_actual', label: 'Secuencial Facturas', type: 'number', maxLen: 9, hint: 'Nro. siguiente a emitir' },
+    { key: 'secuencial_credit_notes', label: 'Secuencial Notas de Crédito', type: 'number', maxLen: 9, hint: 'Nro. siguiente a emitir' },
   ];
 
   // ── Carga ────────────────────────────────────────────────────────────────
 
   const load = async () => {
-    setLoading(true); setError(null); setWarn(null); setMsg(null);
+    setLoading(true);
+    setError(null);
+    setWarn(null);
+    setMsg(null);
     try {
-      const res = await fetchWithAuth('/api/einvoicing/config');
+      // ✅ SIN /api
+      const res = await fetchWithAuth('/einvoicing/config');
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 403) {
@@ -72,6 +76,14 @@ export default function AccountingSriPage() {
 
   useEffect(() => { load(); }, []);
 
+  // ── Refresh ─────────────────────────────────────────────────────────────
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
+
   const showMsg = (ok, text) => {
     setMsg({ ok, text });
     if (ok) setTimeout(() => setMsg(null), 3000);
@@ -82,7 +94,8 @@ export default function AccountingSriPage() {
   const saveAmbiente = async () => {
     setAmbSaving(true);
     try {
-      const res = await fetchWithAuth('/api/einvoicing/config', {
+      // ✅ SIN /api
+      const res = await fetchWithAuth('/einvoicing/config', {
         method: 'PUT',
         body: JSON.stringify({ ambiente: ambValue }),
       });
@@ -112,7 +125,8 @@ export default function AccountingSriPage() {
     try {
       const form = new FormData();
       form.append('file', logoFile);
-      const res = await fetchWithAuth('/api/einvoicing/config/logo', { method: 'POST', body: form });
+      // ✅ SIN /api
+      const res = await fetchWithAuth('/einvoicing/config/logo', { method: 'POST', body: form });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Error al subir'); }
       const { logo_url } = await res.json();
       setLogoUrl(logo_url);
@@ -137,14 +151,15 @@ export default function AccountingSriPage() {
 
   const handleSignatureUpload = async () => {
     const file = sigFileRef.current?.files?.[0];
-    if (!file)        { showMsg(false, 'Selecciona el archivo .p12'); return; }
+    if (!file) { showMsg(false, 'Selecciona el archivo .p12'); return; }
     if (!sigPassword) { showMsg(false, 'Ingresa la contraseña del certificado'); return; }
     setSigUploading(true);
     try {
       const fd = new FormData();
-      fd.append('file',     file);
+      fd.append('file', file);
       fd.append('password', sigPassword);
-      const res = await fetchWithAuth('/api/einvoicing/config/signature', { method: 'POST', body: fd });
+      // ✅ SIN /api
+      const res = await fetchWithAuth('/einvoicing/config/signature', { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cargar firma');
       setEinvCfg(data);
@@ -160,14 +175,15 @@ export default function AccountingSriPage() {
 
   // ── Secuenciales ─────────────────────────────────────────────────────────
 
-  const startSeqEdit  = key => { setSeqEdit(key); setSeqValue(String(einvCfg?.[key] ?? '')); };
-  const cancelSeqEdit = ()  => { setSeqEdit(null); setSeqValue(''); };
+  const startSeqEdit = key => { setSeqEdit(key); setSeqValue(String(einvCfg?.[key] ?? '')); };
+  const cancelSeqEdit = () => { setSeqEdit(null); setSeqValue(''); };
 
   const saveSeqField = async key => {
     setSeqSaving(true);
     try {
-      const payload = { [key]: key === 'secuencial_actual' ? Number(seqValue) : seqValue };
-      const res = await fetchWithAuth('/api/einvoicing/config', {
+      const payload = { [key]: key === 'secuencial_actual' || key === 'secuencial_credit_notes' ? Number(seqValue) : seqValue };
+      // ✅ SIN /api
+      const res = await fetchWithAuth('/einvoicing/config', {
         method: 'PUT',
         body: JSON.stringify(payload),
       });
@@ -182,7 +198,21 @@ export default function AccountingSriPage() {
     }
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────
+  // ── Botón de refrescar ──────────────────────────────────────────────────
+
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
+  // ── Render ──────────────────────────────────────────────────────────────
 
   return (
     <PageTemplate
@@ -191,90 +221,86 @@ export default function AccountingSriPage() {
       loading={loading}
       error={error}
       onRetry={load}
-      headerAction={
-        <button onClick={load} disabled={loading} className="printer-edit">
-          <FiRefreshCw size={14} className={loading ? 'spin' : ''} /> Recargar
-        </button>
-      }
+      headerAction={refreshButton}
     >
       {warn && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 10, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)', color: '#f59e0b', fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
+        <div className="sri-warning">
           <FiAlertCircle size={15} /> {warn}
         </div>
       )}
+
       {msg && (
-        <div className={`settings-toast ${msg.ok ? 'ok' : 'fail'}`}>
+        <div className={`sri-toast ${msg.ok ? 'success' : 'error'}`}>
           {msg.ok ? <FiCheck size={15} /> : <FiAlertCircle size={15} />}
           {msg.text}
         </div>
       )}
 
-      {/* ── Logo del negocio ── */}
-      <div className="settings-card">
-        <div className="settings-card-header" style={{ background: 'rgba(16,185,129,0.08)' }}>
-          <span style={{ color: '#10b981' }}><FiImage size={16} /></span>
-          <span className="settings-card-title">Logo del negocio</span>
+      {/* ── Logo ── */}
+      <div className="sri-card">
+        <div className="sri-card-header">
+          <span className="sri-card-header-icon" style={{ color: 'var(--text-primary)' }}>
+            <FiImage size={16} />
+          </span>
+          <span className="sri-card-title">Logo del negocio</span>
         </div>
 
-        <div style={{ padding: '18px 20px' }}>
-          <p style={{ margin: '0 0 14px', fontSize: 12, color: '#94a3b8' }}>
+        <div className="sri-card-body">
+          <p className="sri-logo-description">
             Este logo aparecerá en la cabecera de las facturas electrónicas (RIDE PDF).
           </p>
 
           {(logoPreview || logoUrl) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+            <div className="sri-logo-preview-container">
               <img
                 src={logoPreview || logoUrl}
                 alt="Logo"
-                style={{ height: 80, maxWidth: 200, objectFit: 'contain', borderRadius: 8, background: '#fff', padding: 6, border: '1px solid rgba(255,255,255,0.1)' }}
+                className="sri-logo-preview"
               />
-              <div style={{ fontSize: 12, color: '#64748b' }}>
-                {logoPreview
-                  ? <span style={{ color: '#f59e0b' }}>Vista previa — aún no guardado</span>
-                  : <span style={{ color: '#22c55e' }}>Logo actual guardado en Cloudinary</span>
-                }
+              <div className="sri-logo-status-preview">
               </div>
             </div>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div className="sri-logo-actions">
             <input
               ref={logoInputRef}
               type="file"
               accept="image/png,image/jpeg,image/svg+xml,image/webp"
               onChange={onLogoChange}
-              style={{ display: 'none' }}
+              className="sri-logo-file-input"
               id="logo-file-input-sri"
             />
-            <label
-              htmlFor="logo-file-input-sri"
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
-            >
+            <label htmlFor="logo-file-input-sri" className="sri-btn-select">
               <FiImage size={14} /> Seleccionar imagen
             </label>
 
             {logoFile && (
-              <>
-                <button
+              <ButtonGroup>
+                <IconTextButton
+                  variant="success"
+                  size="sm"
+                  icon={<FiUploadCloud size={14} className={logoUploading ? 'sri-spin' : ''} />}
                   onClick={uploadLogo}
                   disabled={logoUploading}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
+                  loading={logoUploading}
                 >
-                  <FiUploadCloud size={14} style={{ animation: logoUploading ? 'spin 1s linear infinite' : 'none' }} />
                   {logoUploading ? 'Subiendo…' : 'Guardar logo'}
-                </button>
-                <button
+                </IconTextButton>
+                <IconTextButton
+                  variant="danger"
+                  size="sm"
+                  icon={<FiX size={13} />}
                   onClick={cancelLogoPreview}
                   disabled={logoUploading}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'rgba(225,29,72,0.08)', color: '#e11d48', border: '1px solid rgba(225,29,72,0.3)', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
                 >
-                  <FiX size={13} /> Cancelar
-                </button>
-              </>
+                  Cancelar
+                </IconTextButton>
+              </ButtonGroup>
             )}
           </div>
           {logoFile && (
-            <p style={{ margin: '8px 0 0', fontSize: 11, color: '#64748b' }}>
+            <p className="sri-logo-file-info">
               {logoFile.name} · {(logoFile.size / 1024).toFixed(1)} KB
             </p>
           )}
@@ -282,136 +308,109 @@ export default function AccountingSriPage() {
       </div>
 
       {/* ── Firma Electrónica ── */}
-      <div className="settings-card" style={{ marginTop: 20 }}>
-        <div className="settings-card-header" style={{ background: 'rgba(104,66,254,0.08)' }}>
-          <span style={{ color: '#6842fe' }}><FiLock size={16} /></span>
-          <span className="settings-card-title" style={{ color: '#a78bfa' }}>Firma Electrónica · Certificado .p12</span>
+      <div className="sri-card">
+        <div className="sri-card-header">
+          <span className="sri-card-header-icon" style={{ color: 'var(--text-primary)' }}>
+            <FiLock size={16} />
+          </span>
+          <span className="sri-card-title">Firma Electrónica · Certificado .p12</span>
         </div>
 
-        <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Estado del certificado */}
-          <div style={{
-            borderRadius: 10, padding: '14px 16px',
-            background: einvCfg?.has_signature
-              ? 'linear-gradient(135deg,rgba(34,197,94,0.07),rgba(16,185,129,0.04))'
-              : 'linear-gradient(135deg,rgba(225,29,72,0.06),rgba(239,68,68,0.03))',
-            border: einvCfg?.has_signature ? '1.5px solid rgba(34,197,94,0.3)' : '1.5px solid rgba(225,29,72,0.25)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                background: einvCfg?.has_signature ? 'rgba(34,197,94,0.15)' : 'rgba(225,29,72,0.1)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
+        <div className="sri-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div className={`sri-signature-status ${einvCfg?.has_signature ? 'active' : 'inactive'}`}>
+            <div className="sri-signature-status-content">
+              <div className={`sri-signature-icon-wrapper ${einvCfg?.has_signature ? 'active' : 'inactive'}`}>
                 {einvCfg?.has_signature
-                  ? <FiCheck size={20} color="#22c55e" />
-                  : <FiX    size={20} color="#e11d48" />
+                  ? <FiCheck size={20} className="icon-success" />
+                  : <FiX size={20} className="icon-danger" />
                 }
               </div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: einvCfg?.has_signature ? '#15803d' : '#b91c1c' }}>
+                <div className={`sri-signature-title ${einvCfg?.has_signature ? 'active' : 'inactive'}`}>
                   {einvCfg?.has_signature ? 'Certificado activo' : 'Sin certificado'}
                 </div>
-                <div style={{ fontSize: 12, color: '#888' }}>
+                <div className="sri-signature-subtitle">
                   {einvCfg?.has_signature ? 'Firma electrónica cargada' : 'Carga tu archivo .p12 del SRI'}
                 </div>
               </div>
             </div>
 
             {einvCfg?.has_signature && (
-              <div style={{ display: 'flex', gap: 24, marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(34,197,94,0.15)', flexWrap: 'wrap' }}>
+              <div className="sri-signature-details">
                 {einvCfg.cert_valid_until && (
-                  <div style={{ fontSize: 12 }}>
-                    <span style={{ color: '#888' }}>Válido hasta: </span>
-                    <span style={{ fontWeight: 700 }}>{einvCfg.cert_valid_until}</span>
+                  <div className="sri-signature-detail">
+                    <span className="sri-signature-detail-label">Válido hasta: </span>
+                    <span className="sri-signature-detail-value">{einvCfg.cert_valid_until}</span>
                   </div>
                 )}
                 {einvCfg.razon_social && (
-                  <div style={{ fontSize: 12 }}>
-                    <span style={{ color: '#888' }}>Emisor: </span>
-                    <span style={{ fontWeight: 600 }}>{einvCfg.razon_social}</span>
+                  <div className="sri-signature-detail">
+                    <span className="sri-signature-detail-label">Emisor: </span>
+                    <span className="sri-signature-detail-value">{einvCfg.razon_social}</span>
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          {/* Cargar / reemplazar firma */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div>
-              <label style={{ fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Archivo .p12
-              </label>
+          <div className="sri-signature-upload-section">
+            <div className="sri-signature-form-group">
+              <label className="sri-signature-label">Archivo .p12</label>
               <input
                 ref={sigFileRef}
                 type="file"
                 accept=".p12"
-                style={{
-                  width: '100%', padding: '7px 10px', borderRadius: 7, boxSizing: 'border-box',
-                  border: '1.5px dashed rgba(255,255,255,0.12)',
-                  fontSize: 13, cursor: 'pointer',
-                  background: 'rgba(255,255,255,0.03)', color: 'var(--color-text,#e2e8f0)',
-                }}
+                className="sri-signature-file-input"
               />
             </div>
-            <div>
-              <label style={{ fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Contraseña del certificado
-              </label>
+            <div className="sri-signature-form-group">
+              <label className="sri-signature-label">Contraseña del certificado</label>
               <input
                 type="password"
                 value={sigPassword}
                 onChange={e => setSigPassword(e.target.value)}
                 placeholder="Contraseña del .p12"
-                style={{
-                  width: '100%', padding: '8px 11px', borderRadius: 7, boxSizing: 'border-box',
-                  border: '1.5px solid rgba(255,255,255,0.1)',
-                  fontSize: 13, background: 'rgba(255,255,255,0.03)',
-                  color: 'var(--color-text,#e2e8f0)', outline: 'none',
-                }}
+                className="sri-signature-password-input"
               />
             </div>
-            <button
+            <IconTextButton
+              variant={einvCfg?.has_signature ? 'warning' : 'purple'}
+              size="md"
+              icon={<FiUploadCloud size={14} className={sigUploading ? 'sri-spin' : ''} />}
               onClick={handleSignatureUpload}
               disabled={sigUploading}
-              style={{
-                background: sigUploading ? '#a78bfa' : einvCfg?.has_signature
-                  ? 'linear-gradient(135deg,#f59e0b,#d97706)'
-                  : 'linear-gradient(135deg,#6842fe,#7c3aed)',
-                color: '#fff', border: 'none', padding: '9px 18px',
-                borderRadius: 7, fontWeight: 700, fontSize: 13,
-                cursor: sigUploading ? 'default' : 'pointer',
-                display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center',
-              }}
+              loading={sigUploading}
+              fullWidth
             >
-              <FiUploadCloud size={14} />
               {sigUploading ? 'Cargando...' : einvCfg?.has_signature ? 'Reemplazar certificado' : 'Cargar certificado'}
-            </button>
+            </IconTextButton>
           </div>
         </div>
       </div>
 
-      {/* ── Secuenciales SRI ── */}
-      <div className="settings-card" style={{ marginTop: 20 }}>
-        <div className="settings-card-header" style={{ background: 'rgba(234,179,8,0.08)' }}>
-          <span style={{ color: '#eab308' }}><FiHash size={16} /></span>
-          <span className="settings-card-title" style={{ color: '#facc15' }}>Secuenciales SRI · Numeración de comprobantes</span>
+      {/* ── Secuenciales ── */}
+      <div className="sri-card">
+        <div className="sri-card-header">
+          <span className="sri-card-header-icon" style={{ color: 'var(--text-primary)' }}>
+            <FiHash size={16} />
+          </span>
+          <span className="sri-card-title">Secuenciales SRI · Numeración de comprobantes</span>
         </div>
 
-        <div style={{ padding: '6px 0' }}>
-          <p style={{ margin: '10px 20px', fontSize: 12, color: '#94a3b8' }}>
-            Número de serie y secuencial usado al emitir facturas electrónicas.
+        <div style={{ padding: 'var(--space-2) 0' }}>
+          <p style={{ color: 'var(--text-primary)', fontSize: 12, margin: 'var(--space-2)' }}>
+            Número de serie y secuencial usado al emitir comprobantes electrónicos.
             El secuencial se incrementa automáticamente con cada emisión.
           </p>
 
           {SEQ_FIELDS.map(({ key, label, type, maxLen, hint }) => {
-            const editing    = seqEdit === key;
+            const editing = seqEdit === key;
             const currentVal = einvCfg?.[key] ?? '—';
             return (
-              <div className="settings-field-row" key={key}>
-                <div className="settings-field-label">
-                  <span style={{ color: 'rgba(255,255,255,0.3)' }}><FiHash size={14} /></span>
-                  <span>{label}</span>
+              <div className="sri-field-row" key={key}>
+                <div className="sri-field-label">
+                  <span style={{ color: 'var(--text-muted)' }}><FiHash size={14} /></span>
+                  <span className="sri-field-label-text">{label}</span>
                 </div>
 
                 {editing ? (
@@ -423,34 +422,51 @@ export default function AccountingSriPage() {
                     placeholder={hint}
                     onChange={e => setSeqValue(e.target.value)}
                     onKeyDown={e => {
-                      if (e.key === 'Enter')  saveSeqField(key);
+                      if (e.key === 'Enter') saveSeqField(key);
                       if (e.key === 'Escape') cancelSeqEdit();
                     }}
-                    className="settings-input"
-                    style={{ maxWidth: 160 }}
+                    className="sri-field-input"
                   />
                 ) : (
-                  <span className="settings-value" style={{ color: currentVal !== '—' ? '#facc15' : '#bbb' }}>
-                    {key === 'secuencial_actual'
+                  <span className={`sri-field-value ${currentVal !== '—' ? 'has-value' : 'empty'}`}>
+                    {key === 'secuencial_actual' || key === 'secuencial_credit_notes'
                       ? String(currentVal).padStart(9, '0')
                       : currentVal}
                   </span>
                 )}
 
-                <div className="settings-actions">
+                <div className="sri-field-actions">
                   {editing ? (
-                    <>
-                      <button onClick={() => saveSeqField(key)} disabled={seqSaving} className="settings-action-save" style={{ background: '#eab308', color: '#fff', border: 'none' }}>
-                        <FiSave size={13} /> Guardar
-                      </button>
-                      <button onClick={cancelSeqEdit} disabled={seqSaving} className="settings-action-cancel" style={{ background: '#1e1a09', color: '#eab308', border: '1.5px solid #eab308' }}>
-                        <FiX size={13} /> Cancelar
-                      </button>
-                    </>
+                    <ButtonGroup>
+                      <IconTextButton
+                        variant="success"
+                        size="sm"
+                        icon={<FiSave size={13} />}
+                        onClick={() => saveSeqField(key)}
+                        disabled={seqSaving}
+                        loading={seqSaving}
+                      >
+                        Guardar
+                      </IconTextButton>
+                      <IconTextButton
+                        variant="danger"
+                        size="sm"
+                        icon={<FiX size={13} />}
+                        onClick={cancelSeqEdit}
+                        disabled={seqSaving}
+                      >
+                        Cancelar
+                      </IconTextButton>
+                    </ButtonGroup>
                   ) : (
-                    <button onClick={() => startSeqEdit(key)} className="settings-action-edit">
-                      <FiEdit2 size={13} /> Editar
-                    </button>
+                    <IconTextButton
+                      variant="primary"
+                      size="sm"
+                      icon={<FiEdit2 size={13} />}
+                      onClick={() => startSeqEdit(key)}
+                    >
+                      Editar
+                    </IconTextButton>
                   )}
                 </div>
               </div>
@@ -458,29 +474,43 @@ export default function AccountingSriPage() {
           })}
 
           {einvCfg && (
-            <div style={{ margin: '8px 20px 14px', padding: '8px 12px', borderRadius: 8, background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.15)', fontSize: 12, color: '#94a3b8' }}>
-              Número de factura resultante:{' '}
-              <span style={{ fontWeight: 700, color: '#facc15', fontFamily: 'monospace' }}>
-                {String(einvCfg.serie_estab ?? '001').padStart(3,'0')}-
-                {String(einvCfg.serie_pto_emision ?? '001').padStart(3,'0')}-
-                {String(einvCfg.secuencial_actual ?? 1).padStart(9,'0')}
-              </span>
+            <div style={{ marginTop: 16, padding: '12px 16px', background: 'rgba(104,66,254,0.06)', borderRadius: 8, border: '1px solid rgba(104,66,254,0.12)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Factura resultante</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {String(einvCfg.serie_estab ?? '001').padStart(3, '0')}-
+                    {String(einvCfg.serie_pto_emision ?? '001').padStart(3, '0')}-
+                    {String(einvCfg.secuencial_actual ?? 1).padStart(9, '0')}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Nota de Crédito resultante</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {String(einvCfg.serie_estab ?? '001').padStart(3, '0')}-
+                    {String(einvCfg.serie_pto_emision ?? '001').padStart(3, '0')}-
+                    {String(einvCfg.secuencial_credit_notes ?? 1).padStart(9, '0')}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Ambiente SRI ── */}
-      <div className="settings-card" style={{ marginTop: 20 }}>
-        <div className="settings-card-header" style={{ background: 'rgba(104,66,254,0.08)' }}>
-          <span style={{ color: '#6842fe' }}><FiShield size={16} /></span>
-          <span className="settings-card-title" style={{ color: '#a78bfa' }}>Ambiente SRI</span>
+      {/* ── Ambiente ── */}
+      <div className="sri-card">
+        <div className="sri-card-header">
+          <span className="sri-card-header-icon" style={{ color: 'var(--purple)' }}>
+            <FiShield size={16} />
+          </span>
+          <span className="sri-card-title">Ambiente SRI</span>
         </div>
 
-        <div className="settings-field-row">
-          <div className="settings-field-label">
-            <span style={{ color: 'rgba(255,255,255,0.3)' }}><FiShield size={14} /></span>
-            <span>Ambiente</span>
+        <div className="sri-ambiente-row">
+          <div className="sri-ambiente-label">
+            <span style={{ color: 'var(--text-muted)' }}><FiShield size={14} /></span>
+            <span className="sri-field-label-text">Ambiente</span>
           </div>
 
           {ambEditing ? (
@@ -488,32 +518,48 @@ export default function AccountingSriPage() {
               autoFocus
               value={ambValue}
               onChange={e => setAmbValue(e.target.value)}
-              className="settings-input"
-              style={{ minWidth: 180 }}
+              className="sri-ambiente-select"
             >
               <option value="1">Pruebas (Certificación)</option>
               <option value="2">Producción</option>
             </select>
           ) : (
-            <span className="settings-value" style={{ color: einvCfg?.ambiente === '2' ? '#10b981' : '#f59e0b' }}>
+            <span className={`sri-ambiente-value ${einvCfg?.ambiente === '2' ? 'production' : 'test'}`}>
               {einvCfg?.ambiente === '2' ? 'Producción' : 'Pruebas (Certificación)'}
             </span>
           )}
 
-          <div className="settings-actions">
+          <div className="sri-field-actions">
             {ambEditing ? (
-              <>
-                <button onClick={saveAmbiente} disabled={ambSaving} className="settings-action-save" style={{ background: '#6842fe', color: '#fff', border: 'none' }}>
-                  <FiSave size={13} /> Guardar
-                </button>
-                <button onClick={() => { setAmbEditing(false); setAmbValue(einvCfg?.ambiente || '1'); }} className="settings-action-cancel" style={{ background: '#221d32', color: '#6842fe', border: '1.5px solid #6842fe' }}>
-                  <FiX size={13} /> Cancelar
-                </button>
-              </>
+              <ButtonGroup>
+                <IconTextButton
+                  variant="success"
+                  size="sm"
+                  icon={<FiSave size={13} />}
+                  onClick={saveAmbiente}
+                  disabled={ambSaving}
+                  loading={ambSaving}
+                >
+                  Guardar
+                </IconTextButton>
+                <IconTextButton
+                  variant="danger"
+                  size="sm"
+                  icon={<FiX size={13} />}
+                  onClick={() => { setAmbEditing(false); setAmbValue(einvCfg?.ambiente || '1'); }}
+                >
+                  Cancelar
+                </IconTextButton>
+              </ButtonGroup>
             ) : (
-              <button onClick={() => setAmbEditing(true)} className="settings-action-edit">
-                <FiEdit2 size={13} /> Editar
-              </button>
+              <IconTextButton
+                variant="primary"
+                size="sm"
+                icon={<FiEdit2 size={13} />}
+                onClick={() => setAmbEditing(true)}
+              >
+                Editar
+              </IconTextButton>
             )}
           </div>
         </div>

@@ -1,9 +1,13 @@
-// src/components/GlobalExpenseBubble.jsx (versión completa mejorada)
+// src/components/GlobalExpenseBubble.jsx
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useDrawer } from '../context/DrawerContext';
-import { fetchWithAuth } from '../config/apiBase';
-import { FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
+import { useSession } from '../context/SessionContext';
+import { api } from '../config/api';
+import { 
+  FiAlertCircle, FiRefreshCw, 
+  FiX, FiDollarSign 
+} from 'react-icons/fi';
 import { usePrinterService } from '../services/usePrinterService';
 
 // ─── Helper para obtener fecha actual en Ecuador ────────────────────────────
@@ -14,6 +18,7 @@ function getTodayDateInEcuador() {
 }
 
 function GlobalExpenseBubble() {
+  const { user } = useSession();
   const { pendingExpense, clearExpense } = useDrawer();
   const { openCashDrawer } = usePrinterService();
   const [expanded, setExpanded] = useState(false);
@@ -24,6 +29,7 @@ function GlobalExpenseBubble() {
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (pendingExpense) {
@@ -33,19 +39,17 @@ function GlobalExpenseBubble() {
 
   const loadCategories = async () => {
     setLoadingCategories(true);
+    setError('');
     try {
-      const res = await fetchWithAuth('/api/expense-categories');
-      if (res.ok) {
-        const data = await res.json();
-        setCategories(data);
-        if (data.length > 0 && !categoryId) {
-          setCategoryId(data[0].id);
-        }
-      } else {
-
+      const response = await api.get('/expense-categories');
+      const data = response.data || [];
+      setCategories(data);
+      if (data.length > 0 && !categoryId) {
+        setCategoryId(data[0].id);
       }
     } catch (err) {
-
+      console.error('Error cargando categorías:', err);
+      setError('Error al cargar categorías');
     } finally {
       setLoadingCategories(false);
     }
@@ -53,165 +57,202 @@ function GlobalExpenseBubble() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!amount || isNaN(parseFloat(amount))) {
-      setError('Monto inválido');
+    
+    // Validaciones
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+      setError('Ingresa un monto válido mayor a 0');
       return;
     }
     if (!categoryId) {
       setError('Selecciona una categoría');
       return;
     }
+
     setSaving(true);
     setError('');
+    setSuccess(false);
+
     try {
       const payload = {
         amount: parseFloat(amount),
         description: `Retiro/egreso para compras${reason ? ': ' + reason : ''}`,
-        reference: reason || null,   // ✅ Cambiado: antes era "notes"
+        reference: reason || null,
         category_id: categoryId,
-        created_by: pendingExpense?.userId || null,
+        created_by: user?.id || pendingExpense?.userId || null,
         date: getTodayDateInEcuador()
       };
 
-      const resp = await fetchWithAuth('/api/expenses', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      const response = await api.post('/expenses', payload);
 
-      if (!resp.ok) {
-        const errorText = await resp.text();
-
-        let errorMsg;
+      if (response.data) {
+        setSuccess(true);
+        
+        // Abrir cajón
         try {
-          const data = JSON.parse(errorText);
-          errorMsg = data?.error || data?.message || 'Error registrando el gasto';
-        } catch {
-          errorMsg = errorText || `Error ${resp.status}: ${resp.statusText}`;
+          await openCashDrawer();
+        } catch (drawerError) {
+          console.warn('Error abriendo cajón:', drawerError);
         }
-        setError(errorMsg);
-        return;
+
+        // Limpiar estado después de un momento
+        setTimeout(() => {
+          clearExpense();
+          setExpanded(false);
+          setAmount('');
+          setReason('');
+          setCategoryId('');
+          setSuccess(false);
+          if (pendingExpense?.onDoneCallback) {
+            pendingExpense.onDoneCallback();
+          }
+        }, 1500);
       }
-      const data = await resp.json();
-
-      await openCashDrawer().catch(() => {});
-      clearExpense();
-      setExpanded(false);
-      if (pendingExpense?.onDoneCallback) pendingExpense.onDoneCallback();
     } catch (err) {
-
-      setError(err.message);
+      console.error('Error registrando gasto:', err);
+      const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Error registrando el gasto';
+      setError(errorMsg);
     } finally {
       setSaving(false);
     }
   };
 
+  const handleCancel = () => {
+    setExpanded(false);
+    setAmount('');
+    setReason('');
+    setCategoryId('');
+    setError('');
+    setSuccess(false);
+    clearExpense();
+  };
+
+  // Si no hay gasto pendiente, no mostrar nada
   if (!pendingExpense) return null;
 
+  // Estado contraído (burbuja)
   if (!expanded) {
     return ReactDOM.createPortal(
       <div
+        className="global-expense-bubble collapsed"
         onClick={() => setExpanded(true)}
-        style={{
-          position: 'fixed', bottom: 28, right: 28, zIndex: 2000,
-          background: '#f39c12', borderRadius: 50, padding: '14px 20px',
-          boxShadow: '0 6px 24px rgba(243,156,18,0.5)',
-          display: 'flex', alignItems: 'center', gap: 10,
-          cursor: 'pointer', userSelect: 'none',
-          animation: 'pulse-bubble 2s infinite',
-        }}
       >
-        <FiAlertCircle size={22} color="#1a1a2e" />
-        <span style={{ color: '#1a1a2e', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap' }}>
-          Registrar gasto
-        </span>
+        <FiAlertCircle size={22} className="bubble-icon" />
+        <span className="bubble-text">Registrar gasto</span>
       </div>,
       document.body
     );
   }
 
+  // Estado expandido (formulario)
   return ReactDOM.createPortal(
-    <div style={{
-      position: 'fixed', bottom: 28, right: 28, zIndex: 2000,
-      background: '#1a1a2e', border: '2px solid #f39c12',
-      borderRadius: 16, padding: '16px 18px', width: 320,
-      boxShadow: '0 8px 32px rgba(243,156,18,0.45)',
-    }}>
-      <div
-        onClick={() => setExpanded(false)}
-        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, cursor: 'pointer' }}
-      >
-        <FiAlertCircle size={18} color="#f39c12" />
-        <span style={{ color: '#f39c12', fontWeight: 700, fontSize: 13, flex: 1 }}>
-          Registra lo gastado al regresar
-        </span>
-        <span style={{ color: '#f39c12', fontSize: 18, lineHeight: 1 }}>›</span>
+    <div className="global-expense-bubble expanded">
+      {/* Header */}
+      <div className="bubble-header" onClick={() => setExpanded(false)}>
+        <FiDollarSign size={18} className="header-icon" />
+        <span className="header-title">Registra lo gastado al regresar</span>
+        <FiX size={18} className="header-close" />
       </div>
 
-      <form onSubmit={handleSave}>
-        <input
-          type="number" min="0" step="0.01"
-          placeholder="Monto gastado *"
-          value={amount}
-          onChange={e => setAmount(e.target.value)}
-          disabled={saving}
-          required
-          style={{
-            width: '100%', padding: '7px 10px', borderRadius: 8,
-            border: '1px solid #ffffff33', background: '#0d0d1a',
-            color: '#fff', fontSize: 13, marginBottom: 8, boxSizing: 'border-box',
-          }}
-        />
+      {/* Formulario */}
+      <form onSubmit={handleSave} className="bubble-form">
+        {/* Monto */}
+        <div className="form-group">
+          <label htmlFor="expense-amount">Monto gastado *</label>
+          <div className="input-wrapper">
+            <span className="input-prefix">$</span>
+            <input
+              id="expense-amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="0.00"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              disabled={saving}
+              className="form-input"
+            />
+          </div>
+        </div>
 
-        <div style={{ marginBottom: 8 }}>
+        {/* Categoría */}
+        <div className="form-group">
+          <label htmlFor="expense-category">Tipo de gasto *</label>
           <select
+            id="expense-category"
             value={categoryId}
-            onChange={e => setCategoryId(e.target.value)}
+            onChange={(e) => setCategoryId(e.target.value)}
             disabled={saving || loadingCategories}
-            required
-            style={{
-              width: '100%', padding: '7px 10px', borderRadius: 8,
-              border: '1px solid #ffffff33', background: '#0d0d1a',
-              color: '#fff', fontSize: 13, boxSizing: 'border-box',
-            }}
+            className="form-select"
           >
-            <option value="" disabled>Selecciona tipo de gasto</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            <option value="" disabled>Selecciona una categoría</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.icon && <span className="category-icon">{cat.icon}</span>}
+                {cat.name}
+              </option>
             ))}
           </select>
           {loadingCategories && (
-            <div style={{ fontSize: 11, color: '#aaa', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <FiRefreshCw size={10} style={{ animation: 'spin 1s linear infinite' }} /> Cargando categorías...
+            <div className="loading-categories">
+              <FiRefreshCw size={12} className="spinning" />
+              <span>Cargando categorías...</span>
             </div>
           )}
         </div>
 
-        <textarea
-          placeholder="Comentario de la compra (opcional)"
-          value={reason}
-          onChange={e => setReason(e.target.value)}
-          disabled={saving}
-          rows={2}
-          style={{
-            width: '100%', padding: '7px 10px', borderRadius: 8,
-            border: '1px solid #ffffff33', background: '#0d0d1a',
-            color: '#fff', fontSize: 13, marginBottom: 8,
-            resize: 'none', boxSizing: 'border-box',
-          }}
-        />
-        {error && <div style={{ color: '#e74c3c', fontSize: 12, marginBottom: 6 }}>{error}</div>}
-        <button
-          type="submit"
-          disabled={saving || !amount || !categoryId}
-          style={{
-            width: '100%', padding: '9px 0', borderRadius: 8,
-            background: amount && categoryId ? '#27ae60' : '#555',
-            color: '#fff', border: 'none', fontWeight: 700, fontSize: 13,
-            cursor: amount && categoryId ? 'pointer' : 'not-allowed',
-          }}
-        >
-          {saving ? 'Guardando...' : 'Guardar Gasto'}
-        </button>
+        {/* Comentario */}
+        <div className="form-group">
+          <label htmlFor="expense-reason">Comentario (opcional)</label>
+          <textarea
+            id="expense-reason"
+            placeholder="Ej: Compra de insumos para la cocina"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            disabled={saving}
+            rows={2}
+            className="form-textarea"
+          />
+        </div>
+
+        {/* Mensajes */}
+        {error && (
+          <div className="bubble-error">
+            <FiAlertCircle size={14} />
+            <span>{error}</span>
+          </div>
+        )}
+        {success && (
+          <div className="bubble-success">
+            <FiAlertCircle size={14} />
+            <span>✓ Gasto registrado correctamente</span>
+          </div>
+        )}
+
+        {/* Botones */}
+        <div className="bubble-actions">
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={saving}
+            className="btn-cancel"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={saving || !amount || !categoryId}
+            className={`btn-submit ${amount && categoryId ? 'active' : ''}`}
+          >
+            {saving ? (
+              <>
+                <FiRefreshCw size={14} className="spinning" />
+                Guardando...
+              </>
+            ) : (
+              'Guardar Gasto'
+            )}
+          </button>
+        </div>
       </form>
     </div>,
     document.body

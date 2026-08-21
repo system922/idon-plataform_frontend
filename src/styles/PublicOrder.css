@@ -1,0 +1,920 @@
+/* PublicOrder.css - Estilo moderno tipo KFC */
+
+.public-order-page {
+  min-height: 100vh;
+  background: #f0f2f5;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+.public-order-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+  padding: 30px;
+}
+
+/* ============================================
+   HEADER ESTILO KFC
+   ============================================ */
+
+.public-business-header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  border-radius: 16px;
+  padding: 32px 28px 28px;
+  margin-bottom: 28px;
+  color: white;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.public-business-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.public-business-header::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  left: -10%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.05) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.public-business-header-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.public-business-logo-container {
+  flex-shrink: 0;
+}
+
+.public-business-logo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.1);
+  border: 3px solid rgba(255, 215, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.public-business-logo:hover {
+  transform: scale(1.05);
+}
+
+.public-business-logo-placeholder {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  border: 3px solid rgba(255, 215, 0, 0.4);
+}
+
+.public-business-name {
+  font-size: 30px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.public-business-subtitle {
+  font-size: 15px;
+  opacity: 0.85;
+  margin: 0;
+  font-weight: 300;
+}
+
+.public-business-contact {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 12px;
+  margin-top: 4px;
+}
+
+.public-business-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  opacity: 0.85;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px 14px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+  transition: background 0.2s;
+}
+
+.public-business-contact-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.public-business-contact-item svg {
+  flex-shrink: 0;
+}
+
+.public-business-ruc {
+  background: rgba(255, 215, 0, 0.15);
+  font-weight: 500;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+/* ============================================
+   ALERTAS
+   ============================================ */
+
+.public-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.public-alert-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.public-alert-success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+/* ============================================
+   GRID LAYOUT
+   ============================================ */
+
+.public-order-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 28px;
+  margin-top: 10px;
+}
+
+@media (max-width: 1024px) {
+  .public-order-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   CLIENTE COMPACTO
+   ============================================ */
+
+.public-cliente-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  margin-bottom: 10px;
+}
+
+.public-cliente-compact .public-cliente-input {
+  padding: 10px 14px;
+  border: 1.5px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+  background: white;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.public-cliente-compact .public-cliente-input:focus {
+  outline: none;
+  border-color: #ffc107;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.15);
+}
+
+.public-cliente-compact .public-cliente-input::placeholder {
+  color: #adb5bd;
+}
+
+.public-cliente-compact .public-notas-input {
+  grid-column: 1 / -1;
+  padding: 10px 14px;
+  border: 1.5px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+  background: white;
+  resize: vertical;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.public-cliente-compact .public-notas-input:focus {
+  outline: none;
+  border-color: #ffc107;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.15);
+}
+
+.public-cliente-compact .public-notas-input::placeholder {
+  color: #adb5bd;
+}
+
+@media (max-width: 640px) {
+  .public-cliente-compact {
+    grid-template-columns: 1fr;
+  }
+  
+  .public-cliente-compact .public-notas-input {
+    grid-column: 1;
+  }
+}
+
+/* ============================================
+   MENÚ EN ACORDEÓN ESTILO KFC
+   ============================================ */
+
+.public-menu-section {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+}
+
+.public-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.public-menu-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.public-menu-count {
+  font-size: 13px;
+  color: #6c757d;
+  background: #e9ecef;
+  padding: 2px 12px;
+  border-radius: 12px;
+}
+
+.public-menu-categoria {
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.public-menu-categoria:last-child {
+  border-bottom: none;
+}
+
+.public-categoria-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+  font-size: inherit;
+  gap: 12px;
+}
+
+.public-categoria-header:hover {
+  background: #f8f9fa;
+}
+
+.public-categoria-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.public-categoria-icon {
+  color: #ffc107;
+  transition: transform 0.25s;
+}
+
+.public-categoria-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.public-categoria-count {
+  font-size: 12px;
+  color: #6c757d;
+  background: #e9ecef;
+  padding: 1px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.public-categoria-body {
+  padding: 4px 4px 8px 4px;
+  background: #fafbfc;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.public-producto-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  margin: 2px 0;
+  background: white;
+  border-radius: 8px;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+
+.public-producto-card:hover {
+  background: #fff8e1;
+  border-color: #ffc107;
+  transform: translateX(4px);
+}
+
+.public-producto-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.public-producto-nombre {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a2e;
+  line-height: 1.3;
+}
+
+.public-producto-precio {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ff6b00;
+}
+
+.public-producto-add-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: #ffc107;
+  color: #1a1a2e;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  margin-left: 8px;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+.public-producto-add-btn:hover {
+  background: #ffb300;
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+}
+
+.public-producto-add-btn:active {
+  transform: scale(0.92);
+}
+
+.public-no-products {
+  text-align: center;
+  color: #6c757d;
+  padding: 40px 0;
+  font-size: 14px;
+}
+
+/* ============================================
+   CARRITO ESTILO KFC (Lateral)
+   ============================================ */
+
+.public-cart-container {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 100px);
+  display: flex;
+  flex-direction: column;
+}
+
+.public-cart-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  background: #1a1a2e;
+  color: white;
+  border-bottom: 3px solid #ffc107;
+}
+
+.public-cart-title {
+  font-size: 17px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.public-cart-badge {
+  background: #ffc107;
+  color: #1a1a2e;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 12px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.public-cart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 20px;
+  color: #6c757d;
+  text-align: center;
+  flex: 1;
+}
+
+.public-cart-empty svg {
+  color: #dee2e6;
+  margin-bottom: 12px;
+}
+
+.public-cart-empty p {
+  margin: 0;
+  font-weight: 500;
+  color: #495057;
+}
+
+.public-cart-empty span {
+  font-size: 13px;
+  color: #adb5bd;
+}
+
+.public-cart-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+  max-height: 320px;
+}
+
+.public-cart-items::-webkit-scrollbar {
+  width: 4px;
+}
+
+.public-cart-items::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.public-cart-items::-webkit-scrollbar-thumb {
+  background: #ced4da;
+  border-radius: 4px;
+}
+
+.public-cart-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f1f3f5;
+  transition: background 0.15s;
+}
+
+.public-cart-item:hover {
+  background: #f8f9fa;
+}
+
+.public-cart-item-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.public-cart-item-qty {
+  font-weight: 600;
+  color: #ff6b00;
+  font-size: 14px;
+  min-width: 28px;
+}
+
+.public-cart-item-name {
+  font-size: 14px;
+  color: #1a1a2e;
+  word-break: break-word;
+}
+
+.public-cart-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+
+.public-cart-item-price {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+  white-space: nowrap;
+}
+
+.public-cart-item-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #dc2626;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.public-cart-item-remove:hover {
+  background: #fecaca;
+  transform: scale(1.05);
+}
+
+/* ============================================
+   TOTALES DEL CARRITO
+   ============================================ */
+
+.public-cart-totales {
+  padding: 16px 20px 20px;
+  border-top: 2px solid #f1f3f5;
+  background: #fafbfc;
+}
+
+.public-cart-total-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 14px;
+  color: #495057;
+}
+
+.public-cart-total-line span:first-child {
+  color: #6c757d;
+}
+
+.public-cart-total-line span:last-child {
+  font-weight: 500;
+}
+
+.public-cart-grand-total {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a1a2e;
+  border-top: 2px solid #e9ecef;
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.public-cart-grand-total span:first-child {
+  color: #1a1a2e;
+}
+
+.public-cart-grand-total span:last-child {
+  color: #ff6b00;
+  font-size: 18px;
+}
+
+.public-cart-checkout-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 14px;
+  background: #ffc107;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(255, 193, 7, 0.3);
+}
+
+.public-cart-checkout-btn:hover:not(:disabled) {
+  background: #ffb300;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(255, 193, 7, 0.4);
+}
+
+.public-cart-checkout-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.public-cart-checkout-btn:disabled {
+  background: #e9ecef;
+  color: #adb5bd;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ============================================
+   LOADING Y ERROR STATES
+   ============================================ */
+
+.public-loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  font-size: 16px;
+  color: #6c757d;
+}
+
+.public-loading-spinner::before {
+  content: '';
+  width: 30px;
+  height: 30px;
+  border: 3px solid #e9ecef;
+  border-top-color: #ffc107;
+  border-radius: 50%;
+  animation: public-spinner 0.8s linear infinite;
+  margin-right: 12px;
+}
+
+@keyframes public-spinner {
+  to { transform: rotate(360deg); }
+}
+
+.public-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  padding: 40px;
+}
+
+.public-error-icon {
+  color: #dc2626;
+  margin-bottom: 16px;
+}
+
+.public-error-state h2 {
+  font-size: 22px;
+  color: #1a1a2e;
+  margin-bottom: 12px;
+}
+
+.public-error-state p {
+  color: #6c757d;
+  font-size: 15px;
+  max-width: 500px;
+}
+
+.public-error-sub {
+  margin-top: 8px;
+  font-size: 14px !important;
+  color: #adb5bd !important;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 1024px) {
+  .public-order-shell {
+    padding: 20px;
+  }
+  
+  .public-order-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .public-cart-container {
+    position: static;
+    max-height: none;
+  }
+  
+  .public-cart-items {
+    max-height: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .public-order-shell {
+    padding: 16px;
+    border-radius: 16px;
+  }
+  
+  .public-business-header {
+    padding: 24px 16px 20px;
+    border-radius: 12px;
+  }
+  
+  .public-business-logo,
+  .public-business-logo-placeholder {
+    width: 80px;
+    height: 80px;
+    font-size: 36px;
+  }
+  
+  .public-business-name {
+    font-size: 24px;
+  }
+  
+  .public-business-subtitle {
+    font-size: 14px;
+  }
+  
+  .public-business-contact-item {
+    font-size: 12px;
+    padding: 3px 10px;
+  }
+  
+  .public-cliente-compact {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+  
+  .public-cart-header {
+    padding: 14px 16px;
+  }
+  
+  .public-cart-items {
+    max-height: 200px;
+  }
+  
+  .public-cart-item {
+    padding: 8px 12px;
+  }
+  
+  .public-cart-totales {
+    padding: 12px 16px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .public-order-shell {
+    padding: 12px;
+    border-radius: 12px;
+  }
+  
+  .public-business-header {
+    padding: 16px 12px 16px;
+    border-radius: 10px;
+  }
+  
+  .public-business-logo,
+  .public-business-logo-placeholder {
+    width: 64px;
+    height: 64px;
+    font-size: 28px;
+  }
+  
+  .public-business-name {
+    font-size: 20px;
+  }
+  
+  .public-business-subtitle {
+    font-size: 13px;
+  }
+  
+  .public-business-contact {
+    gap: 4px 8px;
+  }
+  
+  .public-business-contact-item {
+    font-size: 11px;
+    padding: 2px 8px;
+    gap: 4px;
+  }
+  
+  .public-business-contact-item svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .public-menu-header {
+    padding: 12px 14px;
+  }
+  
+  .public-menu-title {
+    font-size: 15px;
+  }
+  
+  .public-categoria-header {
+    padding: 10px 14px;
+  }
+  
+  .public-categoria-title {
+    font-size: 14px;
+  }
+  
+  .public-producto-card {
+    padding: 8px 10px;
+  }
+  
+  .public-producto-nombre {
+    font-size: 13px;
+  }
+  
+  .public-producto-precio {
+    font-size: 12px;
+  }
+  
+  .public-producto-add-btn {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .public-producto-add-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .public-cart-header {
+    padding: 12px 14px;
+  }
+  
+  .public-cart-title {
+    font-size: 15px;
+  }
+  
+  .public-cart-item {
+    padding: 6px 10px;
+  }
+  
+  .public-cart-item-qty {
+    font-size: 13px;
+    min-width: 24px;
+  }
+  
+  .public-cart-item-name {
+    font-size: 13px;
+  }
+  
+  .public-cart-item-price {
+    font-size: 13px;
+  }
+  
+  .public-cart-grand-total {
+    font-size: 15px;
+  }
+  
+  .public-cart-checkout-btn {
+    font-size: 15px;
+    padding: 12px;
+  }
+}

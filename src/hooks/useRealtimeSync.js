@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
-import API_BASE from '../config/apiBase';
+import API_BASE from '../config/api';
 
 /**
  * Connects to the business Socket.IO room and calls onRefresh()

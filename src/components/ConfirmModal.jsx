@@ -1,12 +1,16 @@
+import React from 'react';
+import Modal from './General/Modal';
+import { IconTextButton, ButtonGroup } from './General/Button';
+import { X, CheckCircle, AlertTriangle, Trash2 } from 'react-feather';
 import { useState } from 'react';
-import '../styles/ConfirmModal.css';
 
+// ─── HOOK useConfirm ─────────────────────────────────────────────
 export function useConfirm() {
   const [isOpen, setIsOpen] = useState(false);
   const [config, setConfig] = useState({
     title: '',
     message: '',
-    danger: true,
+    danger: false,
     confirmText: 'Confirmar',
     cancelText: 'Cancelar',
     onConfirm: null,
@@ -30,31 +34,74 @@ export function useConfirm() {
   return { isOpen, open, close, confirm, config };
 }
 
-export default function ConfirmModal({ isOpen, message, title, danger = true, confirmText = 'Confirmar', cancelText = 'Cancelar', onConfirm, onCancel }) {
-  if (isOpen === false) return null;
+// ─── COMPONENTE ConfirmModal ─────────────────────────────────────
+const ConfirmModal = ({
+  isOpen,
+  title = 'Confirmar',
+  message,
+  confirmText = 'Confirmar',
+  cancelText = 'Cancelar',
+  danger = false,
+  onConfirm,
+  onCancel,
+}) => {
+  if (!isOpen) return null;
+
   return (
-    <div className="cm-overlay" onClick={onCancel}>
-      <div className="cm-box" onClick={e => e.stopPropagation()}>
-        <div className="cm-icon-wrap">
-          {danger
-            ? <span className="cm-icon cm-icon-danger">!</span>
-            : <span className="cm-icon cm-icon-info">?</span>
-          }
-        </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onCancel}
+      title={title}
+      size="sm"
+    >
+      <div style={{ padding: '8px 0' }}>
+        {/* Mensaje */}
+        <p style={{
+          fontSize: 'var(--font-size-base, 14px)',
+          color: 'var(--text-primary, #1A202C)',
+          marginBottom: '24px',
+          lineHeight: 1.6,
+        }}>
+          {message}
+        </p>
 
-        {title && <h3 className="cm-title">{title}</h3>}
-
-        <div className="cm-message">{message}</div>
-
-        <div className="cm-actions">
-          <button className="cm-btn cm-btn-cancel" onClick={onCancel}>
-            {cancelText}
-          </button>
-          <button className={`cm-btn ${danger ? 'cm-btn-danger' : 'cm-btn-confirm'}`} onClick={onConfirm} autoFocus>
+        {/* Botones */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '8px',
+          borderTop: '1px solid var(--border-color, #E2E8F0)',
+          paddingTop: '16px',
+        }}>
+          {cancelText && (
+            <ButtonGroup>
+              <IconTextButton
+                variant=""
+                size="md"
+                icon={<X size={14} />}
+                onClick={onCancel}
+                style={{
+                  color: 'var(--text-secondary, #4A5568)',
+                  background: 'var(--bg-tertiary, #f8fafc)',
+                  border: '1px solid var(--border-color, #E2E8F0)',
+                }}
+              >
+                {cancelText}
+              </IconTextButton>
+            </ButtonGroup>
+          )}
+          <IconTextButton
+            variant={danger ? 'danger' : 'primary'}
+            size="md"
+            icon={danger ? <Trash2 size={14} /> : <CheckCircle size={14} />}
+            onClick={onConfirm}
+          >
             {confirmText}
-          </button>
+          </IconTextButton>
         </div>
       </div>
-    </div>
+    </Modal>
   );
-}
+};
+
+export default ConfirmModal;

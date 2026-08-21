@@ -1,0 +1,938 @@
+/* ============================================================
+   INPUT.CSS - Componente Input reutilizable
+   ============================================================ */
+
+/* ─── Contenedor principal ────────────────────────────────────── */
+
+.input-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+/* ─── Label ────────────────────────────────────────────────────── */
+
+.input-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.input-required {
+  color: var(--danger);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+}
+
+/* ─── Wrapper ──────────────────────────────────────────────────── */
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+  min-height: 40px;
+}
+
+.input-wrapper:hover:not(.input-disabled) {
+  border-color: var(--border-dark);
+}
+
+.input-focused .input-wrapper {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--border-focus);
+}
+
+.input-error .input-wrapper {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px var(--danger-bg);
+}
+
+.input-disabled .input-wrapper {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input-readonly .input-wrapper {
+  background: var(--bg-tertiary);
+}
+
+/* ─── Input field ─────────────────────────────────────────────── */
+
+.input-field {
+  flex: 1;
+  padding: 8px 12px;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  color: var(--text-primary) !important;
+  font-size: 13px;
+  font-family: var(--font-family);
+  width: 100%;
+  min-width: 0;
+  line-height: 1.5;
+  height: 100%;
+  min-height: 36px;
+  box-shadow: none !important;
+  -webkit-text-fill-color: var(--text-primary) !important; /* Para iOS/Safari */
+  caret-color: var(--text-primary) !important; /* Color del cursor */
+}
+
+.input-field::placeholder {
+  color: var(--text-placeholder) !important;               /* Gris claro */
+  -webkit-text-fill-color: var(--text-placeholder) !important;
+  opacity: 1 !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+}
+
+.input-field:disabled {
+  cursor: not-allowed;
+}
+
+.input-field:read-only {
+  cursor: default;
+}
+
+/* Textarea */
+.input-field[type="textarea"] {
+  resize: vertical;
+  min-height: 60px;
+  padding: 8px 12px;
+  height: auto;
+}
+
+/* ─── Tamaños ──────────────────────────────────────────────────── */
+
+/* Small */
+.input-sm .input-wrapper {
+  min-height: 32px;
+}
+
+.input-sm .input-field {
+  font-size: 12px;
+  padding: 4px 8px;
+  min-height: 28px;
+}
+
+.input-sm .input-icon-left,
+.input-sm .input-icon-right {
+  padding: 0 4px;
+}
+
+.input-sm .input-icon-left svg,
+.input-sm .input-icon-right svg {
+  width: 14px;
+  height: 14px;
+}
+
+.input-sm .input-clear-btn,
+.input-sm .input-password-toggle {
+  padding: 2px;
+}
+
+/* Medium (default) */
+.input-md .input-wrapper {
+  min-height: 40px;
+}
+
+.input-md .input-field {
+  font-size: 13px;
+  padding: 8px 12px;
+  min-height: 36px;
+}
+
+.input-md .input-icon-left,
+.input-md .input-icon-right {
+  padding: 0 8px;
+}
+
+.input-md .input-icon-left svg,
+.input-md .input-icon-right svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Large */
+.input-lg .input-wrapper {
+  min-height: 48px;
+}
+
+.input-lg .input-field {
+  font-size: 14px;
+  padding: 10px 16px;
+  min-height: 44px;
+}
+
+.input-lg .input-icon-left,
+.input-lg .input-icon-right {
+  padding: 0 12px;
+}
+
+.input-lg .input-icon-left svg,
+.input-lg .input-icon-right svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ─── Variantes ────────────────────────────────────────────────── */
+
+/* Default - estilo base (sin cambios) */
+.input-default .input-wrapper {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+}
+
+/* Ghost - sin fondo ni borde */
+.input-ghost .input-wrapper {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+}
+
+.input-ghost .input-wrapper:hover:not(.input-disabled) {
+  border-color: var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.input-ghost.input-focused .input-wrapper {
+  border-color: var(--border-focus);
+  background: var(--bg-input);
+  box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+/* Bordered - borde más grueso */
+.input-bordered .input-wrapper {
+  background: var(--bg-input) !important;
+  border: 2px solid var(--border-color) !important;
+  border-radius: 8px !important;
+}
+
+.input-bordered.input-focused .input-wrapper {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+/* ============================================
+   CUSTOM COMBOBOX - ESTILOS
+   ============================================ */
+
+/* ── Contenedor principal ───────────────────── */
+.custom-combobox {
+  position: relative;
+  width: 100%;
+  z-index: 10;
+}
+
+.custom-combobox > div {
+  position: relative;
+  z-index: 10;
+  background: #f8fafc;
+  border: 2px solid #e8edf3;
+  border-radius: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.custom-combobox > div:hover {
+  border-color: #d0d9e6;
+}
+
+.custom-combobox > div:focus-within {
+  border-color: #ff8c42;
+  box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.1);
+}
+
+.custom-combobox input {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  color: #1a2332;
+  font-family: inherit;
+  width: 100%;
+  min-width: 0;
+}
+
+.custom-combobox input::placeholder {
+  color: #9aabb8;
+}
+
+.custom-combobox input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Icono de flecha ────────────────────────── */
+.custom-combobox svg {
+  color: #8a9bb5;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.custom-combobox svg.open {
+  transform: rotate(180deg);
+}
+
+/* ── Dropdown (Portal) ───────────────────────── */
+.custom-combobox .dropdown-portal {
+  position: fixed !important;
+  z-index: 99999 !important;
+  background: #ffffff;
+  border: 1px solid #e8edf3;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 4px 0;
+  list-style: none;
+  margin: 0;
+  overflow-y: auto;
+  min-width: 100px;
+}
+
+/* ── Opciones del dropdown ───────────────────── */
+.custom-combobox .dropdown-option {
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #4a5a6e;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-combobox .dropdown-option:hover {
+  background: #f1f4f9;
+  color: #1a2332;
+}
+
+.custom-combobox .dropdown-option.highlighted {
+  background: #f1f4f9;
+  color: #1a2332;
+}
+
+.custom-combobox .dropdown-option.selected {
+  background: rgba(255, 140, 66, 0.08);
+  color: #ff8c42;
+  font-weight: 600;
+}
+
+.custom-combobox .dropdown-option.empty {
+  color: #8a9bb5;
+  cursor: default;
+  text-align: center;
+  padding: 12px 16px;
+}
+
+.custom-combobox .dropdown-option.empty:hover {
+  background: transparent;
+}
+
+/* ── Scrollbar del dropdown ──────────────────── */
+.custom-combobox .dropdown-portal::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-combobox .dropdown-portal::-webkit-scrollbar-track {
+  background: #f1f4f9;
+  border-radius: 4px;
+}
+
+.custom-combobox .dropdown-portal::-webkit-scrollbar-thumb {
+  background: #d0d9e6;
+  border-radius: 4px;
+}
+
+.custom-combobox .dropdown-portal::-webkit-scrollbar-thumb:hover {
+  background: #b0c0d0;
+}
+
+/* ── Tamaños ────────────────────────────────── */
+/* Small */
+.custom-combobox-sm > div {
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 8px !important;
+}
+
+.custom-combobox-sm input {
+  font-size: 12px !important;
+  padding: 4px 0 !important;
+}
+
+.custom-combobox-sm svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.custom-combobox-sm .dropdown-option {
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+}
+
+/* Medium (default) */
+.custom-combobox-md > div {
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 12px !important;
+}
+
+.custom-combobox-md input {
+  font-size: 13px !important;
+  padding: 8px 0 !important;
+}
+
+.custom-combobox-md svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.custom-combobox-md .dropdown-option {
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+}
+
+/* Large */
+.custom-combobox-lg > div {
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 16px !important;
+}
+
+.custom-combobox-lg input {
+  font-size: 15px !important;
+  padding: 10px 0 !important;
+}
+
+.custom-combobox-lg svg {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.custom-combobox-lg .dropdown-option {
+  padding: 10px 16px !important;
+  font-size: 15px !important;
+}
+
+/* ── Variantes ────────────────────────────────── */
+/* Bordered */
+.custom-combobox.bordered > div {
+  background: #ffffff;
+  border: 2px solid #e8edf3;
+}
+
+.custom-combobox.bordered > div:focus-within {
+  border-color: #ff8c42;
+  box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.08);
+}
+
+/* Ghost (sin borde visible) */
+.custom-combobox.ghost > div {
+  background: transparent;
+  border-color: transparent;
+}
+
+.custom-combobox.ghost > div:hover {
+  border-color: #e8edf3;
+}
+
+.custom-combobox.ghost > div:focus-within {
+  border-color: #ff8c42;
+}
+
+/* Error */
+.custom-combobox.error > div {
+  border-color: #ef4444;
+}
+
+.custom-combobox.error > div:focus-within {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* ── Para que no se corte en tablas ───────────── */
+.custom-combobox.combobox-dropup .dropdown-portal {
+  transform-origin: bottom left !important;
+}
+
+/* Si el combobox está dentro de la tabla, forzar a abrir arriba */
+.inventory-table-container .custom-combobox .dropdown-portal,
+.items-table-container .custom-combobox .dropdown-portal {
+  top: auto !important;
+  bottom: 100% !important;
+  margin-bottom: 4px;
+}
+
+/* ── Compacto ────────────────────────────────── */
+.custom-combobox.combobox-compact {
+  width: 140px !important;
+  max-width: 140px !important;
+  min-width: 140px !important;
+  flex: 0 0 140px !important;
+}
+
+.custom-combobox.combobox-compact > div {
+  width: 100% !important;
+}
+
+.custom-combobox.combobox-compact input {
+  font-size: 12px !important;
+}
+
+/* ── Responsive ───────────────────────────────── */
+@media (max-width: 768px) {
+  .custom-combobox.combobox-compact {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+
+  .custom-combobox .dropdown-portal {
+    min-width: 80px;
+  }
+
+  .custom-combobox .dropdown-option {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+
+  .custom-combobox-sm .dropdown-option {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .custom-combobox .dropdown-portal {
+    min-width: 60px;
+  }
+
+  .custom-combobox .dropdown-option {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* ── Dark mode ────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  .custom-combobox > div {
+    background: #1a2332;
+    border-color: #2a3344;
+  }
+
+  .custom-combobox > div:hover {
+    border-color: #3a4a5e;
+  }
+
+  .custom-combobox input {
+    color: #e8edf3;
+  }
+
+  .custom-combobox input::placeholder {
+    color: #6b7a8f;
+  }
+
+  .custom-combobox svg {
+    color: #6b7a8f;
+  }
+
+  .custom-combobox .dropdown-portal {
+    background: #1a2332;
+    border-color: #2a3344;
+  }
+
+  .custom-combobox .dropdown-option {
+    color: #8a9bb5;
+  }
+
+  .custom-combobox .dropdown-option:hover {
+    background: #0f1624;
+    color: #e8edf3;
+  }
+
+  .custom-combobox .dropdown-option.highlighted {
+    background: #0f1624;
+    color: #e8edf3;
+  }
+
+  .custom-combobox .dropdown-option.selected {
+    background: rgba(255, 140, 66, 0.15);
+    color: #ff8c42;
+  }
+
+  .custom-combobox .dropdown-option.empty {
+    color: #6b7a8f;
+  }
+
+  .custom-combobox .dropdown-portal::-webkit-scrollbar-track {
+    background: #0f1624;
+  }
+
+  .custom-combobox .dropdown-portal::-webkit-scrollbar-thumb {
+    background: #2a3344;
+  }
+
+  .custom-combobox .dropdown-portal::-webkit-scrollbar-thumb:hover {
+    background: #3a4a5e;
+  }
+}
+
+/* ─── Iconos ───────────────────────────────────────────────────── */
+
+.input-icon-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  pointer-events: none;
+  padding: 0 4px 0 8px;
+}
+
+.input-icon-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  pointer-events: none;
+  padding: 0 8px 0 4px;
+}
+
+.input-with-icon .input-field {
+  padding-left: 4px;
+}
+
+.input-with-icon-right .input-field {
+  padding-right: 4px;
+}
+
+/* ─── Botón de limpiar ────────────────────────────────────────── */
+
+.input-clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.input-clear-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* ─── Botón mostrar contraseña ────────────────────────────────── */
+
+.input-password-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.input-password-toggle:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* ─── Contador de caracteres ──────────────────────────────────── */
+
+.input-char-counter {
+  font-size: var(--font-size-xs);
+  color: var(--text-dim);
+  padding: 0 var(--space-2);
+  flex-shrink: 0;
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+/* ─── Helper / Error ──────────────────────────────────────────── */
+
+.input-helper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  padding: 0 var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.input-helper-error {
+  color: var(--danger);
+}
+
+.input-helper-error svg {
+  flex-shrink: 0;
+  color: var(--danger);
+}
+
+.input-helper-help {
+  color: var(--text-muted);
+}
+
+/* ─── Variante date ────────────────────────────────────────────── */
+
+.input-date .input-wrapper {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  min-height: 40px;
+}
+
+.input-date .input-field[type="date"] {
+  color: var(--text-primary);
+  background: transparent !important;
+  padding: 8px 12px;
+  border: none !important;
+  outline: none !important;
+  width: 100%;
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 36px;
+}
+
+.input-date .input-field[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.3);
+  opacity: 0.7;
+  cursor: pointer;
+  padding: 4px;
+  transition: var(--transition-fast);
+}
+
+.input-date .input-field[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.input-date .input-field[type="date"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .input-lg .input-wrapper {
+    min-height: 40px;
+  }
+  
+  .input-lg .input-field {
+    font-size: 13px;
+    padding: 8px 12px;
+    min-height: 36px;
+  }
+}
+
+/* ─── Clase especial para password placeholder ───────────────── */
+
+.password-placeholder .input-field::placeholder {
+  color: var(--text-placeholder) !important;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+
+/* ============================================================
+   COMBOBOX WIDE - Estilos mejorados
+   ============================================================ */
+
+/* ─── Base para todos los tamaños ──────────────────────────────── */
+
+.combobox-wide {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: 1 !important;
+}
+
+.combobox-wide > div {
+  width: 100% !important;
+  max-width: 100% !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.combobox-wide > div:hover:not(.input-disabled) {
+  border-color: var(--border-hover) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.05) !important;
+}
+
+.combobox-wide > div:focus-within {
+  border-color: var(--border-focus) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+.combobox-wide input {
+  width: 100% !important;
+  min-width: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  color: var(--text-primary) !important;
+  font-family: inherit !important;
+}
+
+.combobox-wide input::placeholder {
+  color: var(--text-placeholder) !important;
+  opacity: 0.8 !important;
+}
+
+/* ─── Tamaño Small (sm) ─────────────────────────────────────────── */
+
+.combobox-wide.combobox-sm,
+.custom-combobox-sm.combobox-wide {
+  min-width: 0 !important;
+}
+
+.combobox-wide.combobox-sm > div,
+.custom-combobox-sm.combobox-wide > div {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 0 8px !important;
+}
+
+.combobox-wide.combobox-sm input,
+.custom-combobox-sm.combobox-wide input {
+  font-size: 12px !important;
+  padding: 4px 0 !important;
+  min-height: 28px !important;
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.combobox-wide.combobox-sm svg,
+.custom-combobox-sm.combobox-wide svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* ─── Tamaño Medium (md) ────────────────────────────────────────── */
+
+.combobox-wide.combobox-md,
+.custom-combobox-md.combobox-wide {
+  min-width: 0 !important;
+}
+
+.combobox-wide.combobox-md > div,
+.custom-combobox-md.combobox-wide > div {
+  min-height: 40px !important;
+  height: 40px !important;
+  padding: 0 12px !important;
+}
+
+.combobox-wide.combobox-md input,
+.custom-combobox-md.combobox-wide input {
+  font-size: 13px !important;
+  padding: 8px 0 !important;
+  min-height: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+}
+
+.combobox-wide.combobox-md svg,
+.custom-combobox-md.combobox-wide svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* ─── Tamaño Large (lg) ─────────────────────────────────────────── */
+
+.combobox-wide.combobox-lg,
+.custom-combobox-lg.combobox-wide {
+  min-width: 0 !important;
+}
+
+.combobox-wide.combobox-lg > div,
+.custom-combobox-lg.combobox-wide > div {
+  min-height: 48px !important;
+  height: 48px !important;
+  padding: 0 16px !important;
+}
+
+.combobox-wide.combobox-lg input,
+.custom-combobox-lg.combobox-wide input {
+  font-size: 14px !important;
+  padding: 10px 0 !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+}
+
+.combobox-wide.combobox-lg svg,
+.custom-combobox-lg.combobox-wide svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* ─── Variantes de estado ───────────────────────────────────────── */
+
+/* Disabled */
+.combobox-wide > div.input-disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+.combobox-wide > div.input-disabled:hover {
+  border-color: var(--border-color) !important;
+  box-shadow: none !important;
+}
+
+/* Error */
+.combobox-wide.input-error > div {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.combobox-wide.input-error > div:hover {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+/* Focus */
+.combobox-wide > div:focus-within {
+  border-color: var(--border-focus) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* ─── Dropdown (menú desplegable) ──────────────────────────────── */
+
+.combobox-wide .combobox-dropdown {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .combobox-wide {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .combobox-wide > div {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}

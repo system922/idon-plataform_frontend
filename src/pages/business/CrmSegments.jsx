@@ -4,7 +4,7 @@ import {
   RefreshCw, Users, DollarSign, ShoppingBag, Calendar,
   Plus, X, ChevronLeft, ChevronRight, Filter, Target
 } from 'react-feather';
-import { fetchWithAuth } from '../../config/apiBase';
+import { fetchWithAuth } from '../../config/apiBase_';
 import '../../styles/CrmSegments.css';
 
 // Modal para crear segmento personalizado

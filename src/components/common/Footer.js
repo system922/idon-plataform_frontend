@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../../styles/Footer.css';
 
 export default function Footer({ variant = 'dark' }) {
   const navigate = useNavigate();
@@ -9,10 +8,10 @@ export default function Footer({ variant = 'dark' }) {
     <footer className={`saas-footer saas-footer--${variant}`}>
       <div className="saas-footer__brand">
         <span className="saas-footer__logo">
-          <span className="saas-footer__logo-id">ID</span>
+          <span className="brand-id">ID</span>
           <span className="saas-footer__logo-on">ON</span>
         </span>
-        <span className="saas-footer__version">v1.0</span>
+        <span className="saas-footer__version">v2.0</span>
         <span className="saas-footer__divider" />
         <span className="saas-footer__copy">© 2026 IDON PLATAFORM by SYSTEM DESIGN</span>
       </div>

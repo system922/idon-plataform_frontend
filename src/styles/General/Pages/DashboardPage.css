@@ -1,0 +1,538 @@
+/* ============================================================
+   DASHBOARD.CSS - Estilos del dashboard principal
+   Usa variables de general-variables.css
+   ============================================================ */
+
+.custom-dashboard {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   HEADER Y TÍTULOS
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: var(--space-5);
+  margin-bottom: var(--space-8);
+}
+
+.dashboard-header h1 {
+  font-size: var(--font-size-4xl);
+  margin-bottom: 0;
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-primary);
+}
+
+.dashboard-subtitle {
+  color: var(--primary);
+  font-size: var(--font-size-md);
+  margin-top: 7px;
+  margin-bottom: 0;
+  margin-left: var(--space-3);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.5px;
+}
+
+/* Botón de actualizar en el header */
+.dashboard-refresh-btn {
+  margin-left: auto;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 9px 22px;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.dashboard-refresh-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Botón de actualizar en PageTemplate header */
+.dashboard-refresh-btn-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--primary-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--primary);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: var(--transition);
+  backdrop-filter: blur(10px);
+  letter-spacing: 0.3px;
+}
+
+.dashboard-refresh-btn-header:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--primary-bg);
+  color: var(--primary-light);
+}
+
+.dashboard-refresh-btn-header:active:not(:disabled) {
+  transform: translateY(0px);
+}
+
+.dashboard-refresh-btn-header:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Animación de rotación */
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   TARJETAS DE ESTADÍSTICAS
+   ────────────────────────────────────────────────────────────── */
+
+.stat-cards-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  margin-bottom: 39px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--space-8) var(--space-5) var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  border: 1.5px solid var(--border-color);
+  transition: border var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.stat-card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xl);
+  flex-shrink: 0;
+}
+
+.stat-card-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-bottom: var(--space-1);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.stat-card-value {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  margin: var(--space-2) 0 2px 0;
+  line-height: 1.05;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.stat-card-detail {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   GRÁFICOS
+   ────────────────────────────────────────────────────────────── */
+
+.graph-big {
+  margin-bottom: var(--space-6);
+}
+
+.dashboard-graph-card {
+  background: var(--bg-card) !important;
+  border-radius: var(--radius);
+  padding: var(--space-6) !important;
+  box-shadow: var(--shadow);
+  min-width: 0;
+  border: 1px solid var(--border-color);
+}
+
+.dashboard-graph-title {
+  color: var(--text-primary) !important;
+  font-size: var(--font-size-md);
+  margin-top: var(--space-2);
+  font-weight: var(--font-weight-bold);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   ACCIONES RÁPIDAS
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-quick-actions {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  margin-top: var(--space-8);
+  padding: var(--space-6) var(--space-6) var(--space-5) var(--space-6);
+  box-shadow: var(--shadow);
+  border: 1.5px solid var(--border-color);
+}
+
+.dashboard-quick-actions h3 {
+  margin-bottom: var(--space-4);
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+  letter-spacing: 0.3px;
+  font-weight: var(--font-weight-extrabold);
+}
+
+/* Contenedor de botones - grid responsive */
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, auto));
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+}
+
+/* Botones de acción */
+.action-btn {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-color);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.action-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Efecto hover mejorado */
+.action-btn.quick:hover {
+  background: var(--success-gradient);
+  color: var(--text-white);
+  border-color: var(--success);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--success-bg);
+}
+
+.action-btn:active {
+  transform: translateY(0px);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   LOADING STATES
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-loading {
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 6px solid var(--border-color);
+  border-top: 6px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   GRAPHS ROW — flex con stacking en móvil
+   ────────────────────────────────────────────────────────────── */
+
+.dashboard-graphs-row {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: 0px;
+}
+
+.sales-chart-card {
+  padding: var(--space-8);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   RESPONSIVE DESIGN - 2 columnas en móvil
+   ────────────────────────────────────────────────────────────── */
+
+/* Tablet grande: 4 → 2 columnas en stats */
+@media (max-width: 1100px) {
+  .stat-cards-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .dashboard-graphs-row {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .dashboard-graph-card {
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+/* Móvil grande - 2 columnas compactas */
+@media (max-width: 768px) {
+  .dashboard-header h1 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .stat-cards-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+  }
+
+  .stat-card {
+    padding: var(--space-4) var(--space-3);
+    gap: var(--space-3);
+  }
+
+  .stat-card-value {
+    font-size: var(--font-size-2xl);
+  }
+
+  .stat-card-icon {
+    width: 40px;
+    height: 40px;
+    font-size: var(--font-size-lg);
+  }
+
+  .stat-card-label {
+    font-size: var(--font-size-xs);
+  }
+
+  .stat-card-detail {
+    font-size: var(--font-size-xs);
+  }
+
+  .dashboard-graph-card {
+    padding: var(--space-4) !important;
+  }
+
+  .sales-chart-card {
+    padding: var(--space-4) !important;
+  }
+
+  .action-buttons {
+    grid-template-columns: repeat(auto-fit, minmax(110px, auto));
+    gap: var(--space-2);
+  }
+
+  .action-btn {
+    padding: var(--space-2) var(--space-3);
+    font-size: 0.8rem;
+  }
+
+  .action-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Texto del botón actualizar se oculta */
+  .dashboard-refresh-btn-header span {
+    display: none;
+  }
+
+  .dashboard-refresh-btn-header {
+    padding: var(--space-2) var(--space-3);
+  }
+}
+
+/* Móvil pequeño - 2 columnas más compactas */
+@media (max-width: 550px) {
+  .stat-cards-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .stat-card {
+    padding: var(--space-3) var(--space-2);
+    gap: var(--space-2);
+    border-radius: var(--radius-sm);
+    border-left-width: 3px !important;
+  }
+
+  .stat-card-value {
+    font-size: var(--font-size-xl);
+    margin: var(--space-1) 0 0 0;
+  }
+
+  .stat-card-icon {
+    width: 34px;
+    height: 34px;
+    font-size: var(--font-size-md);
+  }
+
+  .stat-card-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .stat-card-label {
+    font-size: var(--font-size-2xs);
+    margin-bottom: 0;
+    letter-spacing: 0.3px;
+  }
+
+  .stat-card-detail {
+    font-size: var(--font-size-2xs);
+    margin-top: 1px;
+  }
+
+  .dashboard-quick-actions {
+    padding: var(--space-4) var(--space-4);
+  }
+
+  .dashboard-quick-actions h3 {
+    font-size: var(--font-size-md);
+    margin-bottom: var(--space-3);
+  }
+
+  .action-buttons {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+
+  .action-btn {
+    padding: var(--space-2) var(--space-2);
+    font-size: 0.75rem;
+    flex-direction: column;
+    gap: var(--space-1);
+    height: auto;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .action-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Móvil muy pequeño - 2 columnas ultra compactas */
+@media (max-width: 400px) {
+  .stat-cards-row {
+    gap: var(--space-1);
+  }
+
+  .stat-card {
+    padding: var(--space-2) var(--space-2);
+    gap: var(--space-2);
+    border-radius: var(--radius-xs);
+  }
+
+  .stat-card-value {
+    font-size: var(--font-size-lg);
+  }
+
+  .stat-card-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .stat-card-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .stat-card-label {
+    font-size: var(--font-size-3xs);
+  }
+
+  .stat-card-detail {
+    font-size: var(--font-size-3xs);
+  }
+
+  .action-buttons {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-1);
+  }
+
+  .action-btn {
+    padding: var(--space-1) var(--space-2);
+    font-size: 0.65rem;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   UTILIDADES ADICIONALES
+   ────────────────────────────────────────────────────────────── */
+
+/* Alertas */
+.alert {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-5);
+  font-weight: var(--font-weight-medium);
+}
+
+.alert-error {
+  background: var(--danger-bg);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--danger-light);
+}
+
+.alert-success {
+  background: var(--success-bg);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: var(--success);
+}
+
+/* Scrollbar personalizado */
+.custom-dashboard::-webkit-scrollbar {
+  width: var(--space-2);
+  height: var(--space-2);
+}
+
+.custom-dashboard::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-xs);
+}
+
+.custom-dashboard::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: var(--radius-xs);
+}
+
+.custom-dashboard::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}

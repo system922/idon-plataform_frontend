@@ -14,9 +14,9 @@ export const INVENTORY_CONSTANTS = {
 };
 
 export const API_ENDPOINTS = {
-  PRODUCTS: '/api/products',
-  CATEGORIES: '/api/categories',
-  NEXT_CODE: '/api/products/next-code',
+  PRODUCTS: '/products',
+  CATEGORIES: '/categories',
+  NEXT_CODE: '/products/next-code',
 };
 
 export const ERROR_MESSAGES = {

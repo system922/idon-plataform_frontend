@@ -9,7 +9,7 @@ import {
 } from "react-icons/fi";
 import PageTemplate from '../../components/PageTemplate';
 import { useBusinessContext } from '../../admin/config/BusinessContext';
-import { fetchWithAuth } from '../../config/apiBase';
+import { fetchWithAuth } from '../../config/apiBase_';
 import "../../styles/NotificationsEmailPage.css";
 
 // ─── Modal de Plantilla de Email ──────────────────────────────────────────────

@@ -1,0 +1,345 @@
+/* ============================================
+   ROLES - ESTILOS ESPECÍFICOS
+   ============================================ */
+
+/* ─── Business Selector ────────────────────────────────────────────────── */
+.roles-business-selector {
+  margin-bottom: 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+}
+
+.roles-selector-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-muted);
+}
+
+.roles-selector-loading {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.roles-selector-wrapper {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.roles-selector {
+  flex: 1;
+  min-width: 200px;
+  max-width: 360px;
+}
+
+.roles-selector-slug {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #8CB79B;
+  font-weight: 600;
+}
+
+/* ─── Toolbar ───────────────────────────────────────────────────────────── */
+.roles-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+/* ─── Tabla ────────────────────────────────────────────────────────────── */
+.roles-name {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.roles-description {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ─── Permisos Summary ────────────────────────────────────────────────── */
+.roles-perms-empty {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.roles-perms-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.roles-perm-badge {
+  background: rgba(255, 140, 66, 0.08);
+  color: #ff8c42;
+  border: 1px solid rgba(255, 140, 66, 0.15);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.roles-perm-count {
+  color: #8CB79B;
+  margin-left: 2px;
+}
+
+/* ─── MODAL ─────────────────────────────────────────────────────────────── */
+.roles-modal .modal-content {
+  max-width: 600px;
+  width: 95vw;
+  max-height: 92vh;
+}
+
+.roles-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 0;
+}
+
+.roles-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.roles-form-group label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.roles-form-group .input-container textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+/* ─── Permisos en modal ────────────────────────────────────────────────── */
+.roles-permissions-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.roles-permissions-section label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.roles-permissions-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0 0 4px 0;
+}
+
+.roles-no-modules {
+  padding: 12px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.roles-modules-list {
+  max-height: 320px;
+  overflow-y: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.roles-module-item {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.roles-module-item:last-child {
+  border-bottom: none;
+}
+
+.roles-module-item.on {
+  background: rgba(255, 140, 66, 0.04);
+}
+
+.roles-module-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.roles-module-header:hover {
+  background: var(--bg-hover);
+}
+
+.roles-checkbox {
+  width: 15px;
+  height: 15px;
+  accent-color: #ff8c42;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.roles-module-name {
+  flex: 1;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.roles-module-item.on .roles-module-name {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.roles-module-icon {
+  opacity: 0.6;
+}
+
+.roles-feature-count {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(255, 140, 66, 0.12);
+  color: #ff8c42;
+  border-radius: 10px;
+  padding: 1px 7px;
+}
+
+.roles-expand-icon {
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px;
+}
+
+.roles-expand-icon:hover {
+  color: var(--text-secondary);
+}
+
+/* ─── Features en modal ────────────────────────────────────────────────── */
+.roles-features-list {
+  padding: 4px 14px 10px 40px;
+  background: rgba(0, 0, 0, 0.05);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 4px 12px;
+}
+
+.roles-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 3px 0;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.roles-feature-item.on {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.roles-feature-checkbox {
+  width: 13px;
+  height: 13px;
+  accent-color: #8CB79B;
+  cursor: pointer;
+}
+
+.roles-feature-premium {
+  font-size: 9px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.roles-summary {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ─── Scrollbar ────────────────────────────────────────────────────────── */
+.roles-modules-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.roles-modules-list::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+.roles-modules-list::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .roles-selector-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .roles-selector {
+    max-width: 100%;
+    min-width: unset;
+  }
+
+  .roles-features-list {
+    grid-template-columns: 1fr 1fr;
+    padding: 4px 12px 8px 30px;
+  }
+
+  .roles-module-header {
+    padding: 8px 12px;
+  }
+
+  .roles-module-name {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .roles-features-list {
+    grid-template-columns: 1fr;
+    padding: 4px 10px 8px 20px;
+  }
+
+  .roles-perm-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+
+  .roles-selector-slug {
+    font-size: 11px;
+  }
+}

@@ -1,53 +1,38 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useSession } from '../../context/SessionContext';
+import { api} from '../../config/api';
 
 const BusinessContext = createContext();
 
 export function BusinessContextProvider({ children }) {
-  const [selectedBusiness, setSelectedBusinessState] = useState(null);
+  const { user, isAuthenticated } = useSession();
+  const { selectedBusiness: sessionSelectedBusiness, setSelectedBusiness: setSessionSelectedBusiness, businesses: sessionBusinesses } = useSession();
+  const [selectedBusiness, setSelectedBusinessState] = useState(sessionSelectedBusiness || null);
   const [businesses, setBusinesses] = useState([]);
   const [businessLoading, setBusinessLoading] = useState(false);
 
-  // Cargar el negocio seleccionado desde localStorage O del usuario asignado
+  // Cargar el negocio seleccionado desde el usuario autenticado
   useEffect(() => {
-    // Primero intentar cargar del usuario autenticado con businessId asignado
-    try {
-      const userStr = localStorage.getItem('idonUser');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        // Si el usuario tiene businessId asignado (manager, caja, vendedor)
-        if (user.businessId) {
-          const assignedBusiness = {
-            id: user.businessId,
-            name: user.businessName,
-            type: user.businessType,
-            schemaName: user.schemaName,
-            slug: user.schemaName
-          };
-          setSelectedBusinessState(assignedBusiness);
-          localStorage.setItem('selectedBusiness', JSON.stringify(assignedBusiness));
-          localStorage.setItem('dbName', user.schemaName);
-          return;
-        }
-      }
-    } catch (e) {
-
+    // Sincronizar con el SessionContext
+    if (sessionSelectedBusiness) {
+      setSelectedBusinessState(sessionSelectedBusiness);
+    } else if (user && user.businessId) {
+      const assignedBusiness = {
+        id: user.businessId,
+        name: user.businessName || user.business?.name,
+        type: user.businessType,
+        schemaName: user.schemaName,
+        slug: user.schemaName || user.businessSlug
+      };
+      setSelectedBusinessState(assignedBusiness);
+      // Propagar al SessionContext
+      setSessionSelectedBusiness(assignedBusiness);
     }
+  }, [user, isAuthenticated, sessionSelectedBusiness, setSessionSelectedBusiness]);
 
-    // Si no hay usuario con businessId, cargar desde localStorage
-    const saved = localStorage.getItem('selectedBusiness');
-    if (saved) {
-      try {
-        setSelectedBusinessState(JSON.parse(saved));
-      } catch (e) {
-
-      }
-    }
-  }, []);
-
-  // Detectar subdominio (por ejemplo: myslug.localhost o myslug.example.com)
-  // y precargar información pública del negocio si aún no hay uno seleccionado.
+  // Detectar subdominio
   useEffect(() => {
-    if (selectedBusiness) return; // ya seleccionado manualmente
+    if (selectedBusiness) return;
 
     try {
       const hostname = window.location.hostname || '';
@@ -57,11 +42,9 @@ export function BusinessContextProvider({ children }) {
       const parts = hostname.split('.');
       let subdomain = null;
 
-      // Manejo para myslug.localhost
       if (hostname.includes('localhost') && parts.length >= 2) {
         subdomain = parts[0];
       } else if (parts.length > 2) {
-        // ejemplo: myslug.example.com
         subdomain = parts[0];
       }
 
@@ -71,35 +54,32 @@ export function BusinessContextProvider({ children }) {
       (async () => {
         try {
           setBusinessLoading(true);
-          const base = process.env.REACT_APP_API_BASE || '';
-          const res = await fetch(`${base}/api/public/businesses/slug/${subdomain}`);
-          if (!res.ok) return;
-          const b = await res.json();
-          if (b) {
+          const response = await api.get(`/public/businesses/slug/${subdomain}`);
+          if (response.data) {
+            const b = response.data;
             selectBusiness(b);
-            try { localStorage.setItem('business_logo', b.logoUrl || ''); } catch {}
+            try { /* keep business logo in memory only */ } catch {}
           }
         } catch (e) {
-
+          console.error('Error cargando negocio por subdominio:', e);
         } finally {
           setBusinessLoading(false);
         }
       })();
     } catch (err) {
-
+      console.error('Error detectando subdominio:', err);
     }
   }, [selectedBusiness]);
 
   const selectBusiness = (business) => {
     setSelectedBusinessState(business);
-    localStorage.setItem('selectedBusiness', JSON.stringify(business));
-    localStorage.setItem('dbName', business.dbName || business.schemaName);
+    // Propagar al SessionContext para que actualice headers y estado global
+    setSessionSelectedBusiness(business);
   };
 
   const clearBusiness = () => {
     setSelectedBusinessState(null);
-    localStorage.removeItem('selectedBusiness');
-    localStorage.removeItem('dbName');
+    setSessionSelectedBusiness(null);
   };
 
   return (

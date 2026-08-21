@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { FiChevronDown, FiMapPin, FiFileText } from 'react-icons/fi';
+import CustomCombobox from './General/CustomCombobox';
+import Input from './General/Input';
 
 export default function OrderHeader({
   orderType,
@@ -14,85 +16,116 @@ export default function OrderHeader({
   const [showUbicacion, setShowUbicacion] = useState(false);
   const [showNotas, setShowNotas] = useState(false);
 
+  const orderTypeOptions = [
+    { value: 'dine_in', label: 'Local' },
+    { value: 'take_away', label: 'Llevar' },
+    { value: 'delivery', label: 'Delivery' }
+  ];
+
+  const isMesaDisabled = orderType !== 'dine_in';
+
   return (
     <section className="card card-soft">
       <div className="card-head">
         <h3>Datos de la orden</h3>
+        <p>Configura el tipo de orden y los detalles del pedido</p>
       </div>
-      <div className="form-grid form-grid-3col">
-
-        {/* TIPO */}
+      
+      {/* PRIMERA FILA: 3 columnas (Tipo | Mesa | Ubicación) */}
+      <div className="form-grid-3col">
+        {/* TIPO DE ORDEN */}
         <div className="field">
-          <label>Tipo</label>
-          <select value={orderType} onChange={(e) => setOrderType(e.target.value)}>
-            <option value="dine_in">Local</option>
-            <option value="take_away">Llevar</option>
-            <option value="delivery">Delivery</option>
-          </select>
+          <label>Tipo de orden</label>
+          <CustomCombobox
+            options={orderTypeOptions}
+            value={orderType}
+            onChange={setOrderType}
+            placeholder="Seleccionar tipo"
+            filterable={false}
+          />
         </div>
 
         {/* N° MESA */}
         <div className="field">
           <label>N° Mesa</label>
-          <input
+          <Input
             type="number"
             value={numeroMesa}
-            onChange={(e) => setNumeroMesa(e.target.value)}
+            onChange={setNumeroMesa}
             placeholder="1, 2, 3..."
-            min="1"
-            disabled={orderType !== 'dine_in'}
+            disabled={isMesaDisabled}
+            size="md"
+            variant="bordered"
+            min={1}
+            help={isMesaDisabled ? 'Solo disponible para pedidos en local' : ''}
           />
         </div>
 
-        {/* UBICACIÓN — collapsible */}
+        {/* UBICACIÓN */}
         <div className="field order-field-ubicacion">
           <button
             type="button"
             className="collapsible-label"
             onClick={() => setShowUbicacion(v => !v)}
+            aria-expanded={showUbicacion}
           >
-            <FiMapPin size={12} />
+            <FiMapPin size={14} />
             <span>Ubicación</span>
-            <FiChevronDown size={13} className={showUbicacion ? 'chev-open' : ''} />
-          </button>
-          {showUbicacion && (
-            <input
-              type="text"
-              value={mesaId}
-              onChange={(e) => setMesaId(e.target.value)}
-              placeholder="A-1, Interior-5..."
-              disabled={orderType !== 'dine_in'}
-              style={{
-                opacity: orderType === 'dine_in' ? 1 : 0.5,
-                cursor: orderType === 'dine_in' ? 'text' : 'not-allowed',
-                marginTop: 6
-              }}
+            <FiChevronDown 
+              size={14} 
+              className={showUbicacion ? 'chev-open' : ''} 
             />
+          </button>
+          
+          {showUbicacion && (
+            <div className="collapsible-content" style={{ marginTop: 6 }}>
+              <Input
+                type="text"
+                value={mesaId}
+                onChange={setMesaId}
+                placeholder="A-1, Interior-5..."
+                disabled={isMesaDisabled}
+                size="md"
+                variant="bordered"
+                help={isMesaDisabled ? 'Solo disponible para pedidos en local' : ''}
+              />
+            </div>
           )}
         </div>
+      </div>
 
-        {/* NOTAS — collapsible, full width */}
+      {/* SEGUNDA FILA: NOTAS (full width) - FUERA del grid de 3 columnas */}
+      <div className="form-grid" style={{ marginTop: 'var(--space-2)' }}>
         <div className="field field-full">
           <button
             type="button"
             className="collapsible-label"
             onClick={() => setShowNotas(v => !v)}
+            aria-expanded={showNotas}
           >
-            <FiFileText size={12} />
-            <span>Notas</span>
-            <FiChevronDown size={13} className={showNotas ? 'chev-open' : ''} />
-          </button>
-          {showNotas && (
-            <textarea
-              value={notas}
-              onChange={(e) => setNotas(e.target.value)}
-              placeholder="Instrucciones especiales..."
-              rows={3}
-              style={{ marginTop: 6 }}
+            <FiFileText size={14} />
+            <span>Notas de la orden</span>
+            <FiChevronDown 
+              size={14} 
+              className={showNotas ? 'chev-open' : ''} 
             />
+          </button>
+          
+          {showNotas && (
+            <div className="collapsible-content" style={{ marginTop: 6 }}>
+              <Input
+                type="textarea"
+                value={notas}
+                onChange={setNotas}
+                placeholder="Instrucciones especiales (ej: sin cebolla, bien cocido, etc.)"
+                rows={3}
+                size="md"
+                variant="bordered"
+                help="Estas notas se enviarán a la cocina junto con la orden"
+              />
+            </div>
           )}
         </div>
-
       </div>
     </section>
   );

@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import '../styles/AddItemModal.css';
+import Modal from './General/Modal';
+import CustomCombobox from './General/CustomCombobox';
+import Input from './General/Input';
+import { IconTextButton, ButtonGroup } from './General/Button';
+import { size } from 'lodash';
 
 export default function AddItemModal({
   showAddItemModal,
@@ -9,202 +13,269 @@ export default function AddItemModal({
   setProductoSeleccionado,
   cantidadItem,
   setCantidadItem,
-  notasItem,
-  setNotasItem,
   agregarItem,
   categorias,
   extrasItem,
   setExtrasItem,
+  notasItem,      
+  setNotasItem,
 }) {
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
   const [extraSel, setExtraSel] = useState('');
-  const [notaExtra, setNotaExtra] = useState('');
 
   const getProductData = (product) => {
     if (!product) return { selling_price: 0, tax_rate: 0, price: 0 };
+
     return {
       selling_price: Number(product.selling_price) || 0,
       tax_rate: Number(product.tax_rate) || 0,
-      price: (Number(product.selling_price) || 0) + (Number(product.tax_rate) || 0),
+      price:
+        (Number(product.selling_price) || 0) +
+        (Number(product.tax_rate) || 0),
     };
   };
 
   const extrasProductos = productos
-    .filter(p => p.category_name?.toLowerCase() === 'extras')
-    .map(p => ({
+    .filter((p) => p.category_name?.toLowerCase() === 'extras')
+    .map((p) => ({
       ...p,
-      selling_price: Number(p.selling_price) || 0,
-      tax_rate: Number(p.tax_rate) || 0,
-      displayPrice: (Number(p.selling_price) || 0) + (Number(p.tax_rate) || 0),
+      displayPrice:
+        (Number(p.selling_price) || 0) +
+        (Number(p.tax_rate) || 0),
     }));
 
-  const categoriasFiltradas = categorias.filter(c => c.name?.toLowerCase() !== 'extras');
+  const categoriasFiltradas = categorias.filter(
+    (c) => c.name?.toLowerCase() !== 'extras'
+  );
 
   const productosFiltrados = categoriaSeleccionada
-    ? productos.filter(p => p.category_name === categoriaSeleccionada)
-    : productos.filter(p => p.category_name?.toLowerCase() !== 'extras');
-
-  if (!showAddItemModal) return null;
+    ? productos.filter((p) => p.category_name === categoriaSeleccionada)
+    : productos.filter(
+        (p) => p.category_name?.toLowerCase() !== 'extras'
+      );
 
   const handleClose = () => {
     setShowAddItemModal(false);
     setExtrasItem([]);
+    setExtraSel('');
   };
 
+  const handleAgregarExtra = () => {
+    if (!extraSel) return;
+
+    const extra = extrasProductos.find(
+      (e) => String(e.id) === extraSel
+    );
+
+    if (!extra) return;
+
+    setExtrasItem((prev) => [
+      ...prev,
+      {
+        id: extra.id,
+        name: extra.name,
+        price: extra.displayPrice,
+        selling_price: Number(extra.selling_price) || 0,   // Precio sin IVA
+        tax_rate: Number(extra.tax_rate) || 0,             // MONTO de IVA
+        is_taxable: Number(extra.is_taxable) || 0,         // 🔥 PORCENTAJE - AGREGADO
+        nota: ''
+      },
+    ]);
+
+    setExtraSel('');
+  };
+
+  const footer = (
+    <ButtonGroup
+      style={{
+        display: 'flex',
+        gap: 'var(--space-2)',
+        justifyContent: 'flex-end',
+      }}
+    >
+      <IconTextButton
+        variant=""
+        size="md"
+        onClick={handleClose}
+      >
+        Cancelar
+      </IconTextButton>
+
+      <IconTextButton
+        variant="success"
+        size="md"
+        onClick={agregarItem}
+        disabled={!productoSeleccionado}
+      >
+        Agregar
+      </IconTextButton>
+    </ButtonGroup>
+  );
+
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Agregar item</h2>
-          <p>Selecciona producto, cantidad y notas.</p>
-        </div>
+    <Modal
+      isOpen={showAddItemModal}
+      onClose={handleClose}
+      title="Agregar item"
+      size="lg"
+      footer={footer}
+    >
+      <div className="add-item-content">
+        {/* FILA 1 */}
+        <div className="add-item-row add-item-row--first">
+          <div className="add-item-field add-item-field--category">
+            <label>Categoría</label>
+            <CustomCombobox
+              options={categoriasFiltradas.map(cat => ({
+                value: cat.name,
+                label: cat.name
+              }))}
+              value={categoriaSeleccionada}
+              onChange={setCategoriaSeleccionada}
+              placeholder="Categoría"
+              filterable
+              size="sm"
+              forceDropup={false} 
+            />
+          </div>
 
-        <div className="modal-body">
-          <div className="modal-form-grid">
-            <div className="field">
-              <label>Categoría</label>
-              <select
-                value={categoriaSeleccionada}
-                onChange={(e) => setCategoriaSeleccionada(e.target.value)}
+          <div className="add-item-field add-item-field--product">
+            <label>Producto</label>
+            <CustomCombobox
+              options={productosFiltrados.map(p => ({
+                value: String(p.id),
+                label: p.name
+              }))}
+              value={productoSeleccionado ? String(productoSeleccionado.id) : ''}
+              onChange={(val) => {
+                const producto = productosFiltrados.find(
+                  p => String(p.id) === val
+                );
+
+                if (producto) {
+                  setProductoSeleccionado({
+                    ...producto,
+                    ...getProductData(producto),
+                  });
+                } else {
+                  setProductoSeleccionado(null);
+                }
+              }}
+              placeholder="Producto"
+              filterable
+              size="sm"
+              className="combobox-wide combobox-sm"
+            />
+          </div>
+
+          <div className="add-item-field add-item-field--quantity">
+            <label>Cantidad</label>
+            <div className="stepper">
+              <button
+                type="button"
+                className="stepper-btn"
+                onClick={() =>
+                  setCantidadItem(v => Math.max(1, Number(v) - 1))
+                }
               >
-                <option value="">-- Selecciona una categoría --</option>
-                {categoriasFiltradas?.map((cat) => (
-                  <option key={cat.id} value={cat.name}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="field">
-              <label>Producto</label>
-              <select
-                value={productoSeleccionado?.id || ''}
-                onChange={(e) => {
-                  const producto = productosFiltrados.find((p) => String(p.id) === String(e.target.value));
-                  if (producto) {
-                    setProductoSeleccionado({
-                      ...producto,
-                      ...getProductData(producto),
-                    });
-                  } else {
-                    setProductoSeleccionado(null);
-                  }
-                }}
+                −
+              </button>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                value={String(cantidadItem)}
+                onChange={(val) =>
+                  setCantidadItem(Math.max(1, Number(val) || 1))
+                }
+                placeholder="0"
+                size="sm"
+              />
+              <button
+                type="button"
+                className="stepper-btn"
+                onClick={() =>
+                  setCantidadItem(v => Number(v) + 1)
+                }
               >
-                <option value="">-- Selecciona --</option>
-                {productosFiltrados.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="field">
-              <label>Cantidad</label>
-              <div className="stepper">
-                <button
-                  type="button"
-                  className="stepper-btn"
-                  onClick={() => setCantidadItem((v) => Math.max(1, parseInt(v, 10) - 1))}
-                >−</button>
-                <input
-                  className="stepper-input"
-                  type="number"
-                  min="1"
-                  value={cantidadItem}
-                  onChange={(e) => setCantidadItem(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                />
-                <button
-                  type="button"
-                  className="stepper-btn"
-                  onClick={() => setCantidadItem((v) => parseInt(v, 10) + 1)}
-                >+</button>
-              </div>
-            </div>
-
-            <div className="field">
-              <label>Precio</label>
-              <input
-                type="text"
-                value={productoSeleccionado ? `$ ${productoSeleccionado.price.toFixed(2)}` : ''}
-                disabled
-              />
-            </div>
-
-            {extrasProductos.length > 0 && (
-              <div className="field" style={{ gridColumn: '1 / -1' }}>
-                <label>Extras</label>
-                <div className="extras-adder-row">
-                  <select
-                    className="extras-adder-sel"
-                    value={extraSel}
-                    onChange={e => setExtraSel(e.target.value)}
-                  >
-                    <option value="">— Selecciona un extra —</option>
-                    {extrasProductos.map(ex => (
-                      <option key={ex.id} value={ex.id}>{ex.name} - ${ex.displayPrice.toFixed(2)}</option>
-                    ))}
-                  </select>
-                  <input
-                    className="extras-adder-nota"
-                    type="text"
-                    placeholder="Nota del extra..."
-                    value={notaExtra}
-                    onChange={e => setNotaExtra(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="extras-adder-btn"
-                    disabled={!extraSel}
-                    onClick={() => {
-                      const ex = extrasProductos.find(p => String(p.id) === extraSel);
-                      if (!ex) return;
-                      setExtrasItem(prev => [...prev, {
-                        id: ex.id,
-                        name: ex.name,
-                        nota: notaExtra.trim(),
-                        selling_price: ex.selling_price,
-                        tax_rate: ex.tax_rate,
-                        price: ex.displayPrice,
-                      }]);
-                      setExtraSel('');
-                      setNotaExtra('');
-                    }}
-                  >+ Agregar</button>
-                </div>
-                {extrasItem.length > 0 && (
-                  <ul className="extras-added-list">
-                    {extrasItem.map((e, i) => (
-                      <li key={i} className="extras-added-item">
-                        <span className="extras-added-name">+ {e.name}</span>
-                        {e.price > 0 && <span className="extras-added-price">+${Number(e.price).toFixed(2)}</span>}
-                        {e.nota && <span className="extras-added-nota"> — {e.nota}</span>}
-                        <button
-                          type="button"
-                          className="extras-added-remove"
-                          onClick={() => setExtrasItem(prev => prev.filter((_, j) => j !== i))}
-                        >✕</button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-
-            <div className="field" style={{ gridColumn: '1 / -1' }}>
-              <label>Notas</label>
-              <textarea
-                value={notasItem}
-                onChange={(e) => setNotasItem(e.target.value)}
-                placeholder="Sin picante, sin cebolla..."
-              />
+                +
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={handleClose} type="button">Cancelar</button>
-          <button className="btn btn-primary" onClick={agregarItem} disabled={!productoSeleccionado} type="button">Agregar</button>
+        {/* FILA 2 */}
+        <div className="add-item-row add-item-row--second">
+          <div className="add-item-field add-item-field--extras">
+            <label>Extras</label>
+            <CustomCombobox
+              options={extrasProductos.map(ex => ({
+                value: String(ex.id),
+                label: `${ex.name} - $${ex.displayPrice.toFixed(2)}`
+              }))}
+              value={extraSel}
+              onChange={setExtraSel}
+              placeholder="Seleccionar extra"
+              filterable
+              size="sm"
+              className="combobox-wide combobox-sm"
+              forceDropup={false} 
+            />
+          </div>
+
+          <div className="add-item-field add-item-field--extras-btn">
+            <IconTextButton
+              variant="success"
+              size="sm"
+              onClick={handleAgregarExtra}
+              disabled={!extraSel}
+            >
+              Agregar extra
+            </IconTextButton>
+          </div>
+        </div>
+
+        {/* FILA 3 */}
+        {extrasItem.length > 0 && (
+          <div className="add-item-extras-list">
+            {extrasItem.map((e, i) => (
+              <div key={i} className="add-item-extra-item">
+                <span className="add-item-extra-name">
+                  + {e.name}
+                </span>
+                <span className="add-item-extra-price">
+                  +${Number(e.price).toFixed(2)}
+                </span>
+                <button
+                  type="button"
+                  className="add-item-extra-remove"
+                  onClick={() =>
+                    setExtrasItem(prev =>
+                      prev.filter((_, j) => j !== i)
+                    )
+                  }
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* FILA 4: Notas */}
+        <div className="add-item-field add-item-field--notes">
+          <label>Notas</label>
+          <Input
+            type="textarea"
+            value={notasItem}
+            onChange={setNotasItem}
+            placeholder="Sin picante, sin cebolla..."
+            size="sm"
+            rows={2}
+            style={{ minHeight: '40px' }}
+          />
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

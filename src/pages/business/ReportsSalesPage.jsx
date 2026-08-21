@@ -1,34 +1,369 @@
-import { useState, useEffect, useCallback } from 'react';
-import ExcelJS from 'exceljs';
-import PageTemplate from '../../components/PageTemplate';
-import ReportPdfButton from '../../components/ReportPdfButton';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useSession } from '../../context/SessionContext';
 import {
-  Search, DollarSign, User, FileText, Calendar, RefreshCw,
-  TrendingUp, Download, Eye, ShoppingBag, Users, Zap
-} from 'react-feather';
-import { fetchWithAuth } from '../../config/apiBase';
-import '../../styles/ReportsSalesPage.css';
+  FiCalendar, FiChevronDown, FiRefreshCw, FiAlertCircle, FiTrendingUp,
+  FiDollarSign, FiShoppingCart, FiX, FiUser, FiFileText, FiEye
+} from "react-icons/fi";
+import PageTemplate from '../../components/PageTemplate';
+import ReportPdfButton from '../../components/ReportPdfGenerator';
+import ReportExcelButton from '../../components/ReportExcelGenerator';
+import { fetchWithAuth } from '../../config/api';
+import Table from '../../components/General/Table';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import Modal from '../../components/General/Modal';
 
+// ─── Componente de tarjeta de resumen ─────────────────────────────────────────
+function SummaryCard({ title, value, icon, color, subtitle, loading }) {
+  return (
+    <div className="report-product-card">
+      <div className="report-product-card-icon" style={{ color }}>
+        {icon}
+      </div>
+      <div className="report-product-card-content">
+        <div className="report-product-card-title">{title}</div>
+        {loading ? (
+          <div className="report-product-card-value skeleton-loading">Cargando...</div>
+        ) : (
+          <div className="report-product-card-value">{value ?? '0'}</div>
+        )}
+        {subtitle && <div className="report-product-card-subtitle">{subtitle}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Componente de selector de fechas personalizadas ─────────────────────────
+function DateRangePicker({ startDate, endDate, onApply, onClose }) {
+  const [localStart, setLocalStart] = useState(startDate || '');
+  const [localEnd, setLocalEnd] = useState(endDate || '');
+
+  const handleApply = () => {
+    if (localStart && localEnd) {
+      onApply(localStart, localEnd);
+    }
+  };
+
+  return (
+    <div className="report-date-range-picker">
+      <div className="report-date-range-inputs">
+        <input
+          type="date"
+          value={localStart}
+          onChange={(e) => setLocalStart(e.target.value)}
+          placeholder="Fecha inicial"
+        />
+        <span>a</span>
+        <input
+          type="date"
+          value={localEnd}
+          onChange={(e) => setLocalEnd(e.target.value)}
+          placeholder="Fecha final"
+        />
+      </div>
+      <div className="report-date-range-actions">
+        <button onClick={onClose} className="report-btn-cancel">Cancelar</button>
+        <button onClick={handleApply} className="report-btn-apply" disabled={!localStart || !localEnd}>
+          Aplicar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Modal de detalle de factura ─────────────────────────────────────────────
+function SaleDetailModal({ sale, onClose, isOpen }) {
+  const { user } = useSession();
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (sale && isOpen) {
+      loadDetail();
+    }
+  }, [sale, isOpen]);
+
+  const loadDetail = async () => {
+    if (!sale) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetchWithAuth(`/reports/sales/detail/${sale.id}`);
+      const data = await res.json();
+      if (data.success) {
+        setDetail(data.data);
+      } else {
+        setError(data.error || 'Error al cargar detalle');
+      }
+    } catch (err) {
+      console.error('Error loading detail:', err);
+      setError('Error al cargar detalle');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (value) => `$${Number(value || 0).toFixed(2)}`;
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('es-EC');
+  };
+
+  const factura = detail?.factura || {};
+  const orden = detail?.orden || {};
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Detalle de Factura"
+      size="lg"
+      footer={
+        <ButtonGroup>
+          <IconTextButton
+            variant="danger"
+            size="md"
+            icon={<FiX size={14} />}
+            onClick={onClose}
+          >
+            Cerrar
+          </IconTextButton>
+        </ButtonGroup>
+      }
+    >
+      {loading && (
+        <div className="detail-loading">Cargando detalle...</div>
+      )}
+
+      {error && (
+        <div className="detail-error">
+          <FiAlertCircle size={16} />
+          {error}
+        </div>
+      )}
+
+      {detail && !loading && (
+        <div>
+          {/* Datos de la Factura */}
+          <div className="detail-section">
+            <h4 className="detail-section-title">
+              <FiFileText size={16} /> Datos de la Factura
+            </h4>
+            <div className="detail-grid">
+              <div className="detail-item">
+                <label>N° Factura</label>
+                <span className="detail-value">{factura.numero_factura || sale.numero_factura_electronica || 'N/A'}</span>
+              </div>
+              <div className="detail-item">
+                <label>Estado</label>
+                <span className={`status-badge ${factura.estado || 'pendiente'}`}>
+                  {factura.estado || 'pendiente'}
+                </span>
+              </div>
+              <div className="detail-item">
+                <label>Fecha Emisión</label>
+                <span className="detail-value">{formatDate(factura.fecha_emision || sale.fecha)}</span>
+              </div>
+              {factura.clave_acceso && (
+                <div className="detail-item">
+                  <label>Clave Acceso</label>
+                  <span className="detail-value-mono">{factura.clave_acceso}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Datos del Cliente */}
+          <div className="detail-section">
+            <h4 className="detail-section-title">
+              <FiUser size={16} /> Datos del Cliente
+            </h4>
+            <div className="detail-grid">
+              <div className="detail-item">
+                <label>Nombre</label>
+                <span className="detail-value">{factura.cliente_nombre || sale.cliente_nombre || 'CONSUMIDOR FINAL'}</span>
+              </div>
+              <div className="detail-item">
+                <label>RUC/CI</label>
+                <span className="detail-value">{factura.cliente_ruc || sale.cliente_cedula || '-'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Datos de la Orden */}
+          {orden.id && (
+            <div className="detail-section">
+              <h4 className="detail-section-title">
+                <FiShoppingCart size={16} /> Datos de la Orden
+              </h4>
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <label>N° Orden</label>
+                  <span className="detail-value">{orden.numero_orden || '-'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Mesa</label>
+                  <span className="detail-value">{orden.mesa || '-'}</span>
+                </div>
+              </div>
+
+              {/* Items de la Orden */}
+              {orden.items && orden.items.length > 0 && (
+                <div className="detail-items-table">
+                  <h5>Productos</h5>
+                  <div className="items-table-wrapper">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Código de barras</th>
+                          <th>Producto</th>
+                          <th className="text-center">Cant.</th>
+                          <th className="text-right">Precio Unit.</th>
+                          <th className="text-right">IVA</th>
+                          <th className="text-right">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {orden.items.map((item, idx) => (
+                          <tr key={idx}>
+                            <td>{item.barcode || item.product_barcode || item.code || '-'}</td>
+                            <td>{item.product_name}</td>
+                            <td className="text-center">{item.quantity}</td>
+                            <td className="text-right">{formatCurrency(item.unit_price)}</td>
+                            <td className="text-right">{formatCurrency(item.iva_amount)}</td>
+                            <td className="text-right">{formatCurrency(item.line_total)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colSpan="3"></td>
+                          <td className="text-right"><strong>Subtotal:</strong></td>
+                          <td className="text-right"><strong>{formatCurrency(orden.orden_subtotal || factura.subtotal)}</strong></td>
+                          <td className="text-right"><strong>{formatCurrency(orden.orden_total || factura.total)}</strong></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Resumen de Totales */}
+          <div className="detail-summary">
+            <h4 className="detail-section-title">
+              <FiDollarSign size={16} /> Resumen de Totales
+            </h4>
+            <div className="summary-grid">
+              <div className="summary-item">
+                <label>Subtotal</label>
+                <div className="summary-value">{formatCurrency(factura.subtotal || sale.subtotal)}</div>
+              </div>
+              <div className="summary-item">
+                <label>IVA</label>
+                <div className="summary-value">{formatCurrency(factura.iva || sale.iva || 0)}</div>
+              </div>
+              <div className="summary-item">
+                <label>Descuento</label>
+                <div className="summary-value">{formatCurrency(factura.descuento || sale.descuento || 0)}</div>
+              </div>
+              <div className="summary-item summary-item-total">
+                <label>Total</label>
+                <div className="summary-value">{formatCurrency(factura.total || sale.total)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+// ─── Helper para obtener rango de fechas según período ─────────────────────
+const getDateRangeFromPeriod = (period, customStart, customEnd) => {
+  const now = new Date();
+  let from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (period === 'all') {
+    from = new Date(2020, 0, 1);
+    to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if (period === 'day') {
+    // hoy
+  } else if (period === 'week') {
+    from = new Date(now);
+    from.setDate(now.getDate() - 6);
+    to = new Date(now);
+  } else if (period === 'month') {
+    from = new Date(now.getFullYear(), now.getMonth(), 1);
+    to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  } else if (period === 'quarter') {
+    const quarter = Math.floor(now.getMonth() / 3);
+    from = new Date(now.getFullYear(), quarter * 3, 1);
+    to = new Date(now.getFullYear(), quarter * 3 + 3, 0);
+  } else if (period === 'year') {
+    from = new Date(now.getFullYear(), 0, 1);
+    to = new Date(now.getFullYear(), 11, 31);
+  } else if (period === 'custom') {
+    if (customStart && customEnd) {
+      from = new Date(customStart);
+      to = new Date(customEnd);
+    } else {
+      return { from: null, to: null };
+    }
+  }
+
+  const formatDateISO = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  return {
+    from: formatDateISO(from),
+    to: formatDateISO(to)
+  };
+};
+
+// ─── Página principal ─────────────────────────────────────────────────────────
 export default function ReportsSalesPage() {
+  const { user, selectedBusiness } = useSession();
   const [sales, setSales] = useState([]);
   const [filteredSales, setFilteredSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [search, setSearch] = useState('');
-  const [dateFrom, setDateFrom] = useState(() => {
-    const date = new Date();
-    date.setDate(1);
-    return date.toISOString().split('T')[0];
-  });
-  const [dateTo, setDateTo] = useState(() => new Date().toISOString().split('T')[0]);
-  const [selectedSale, setSelectedSale] = useState(null);
   const [error, setError] = useState('');
-  const [notification, setNotification] = useState(null);
-  const [exporting, setExporting] = useState(false);
-  const [useEinvoicing, setUseEinvoicing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState('month');
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
+  const [showCustomDate, setShowCustomDate] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [selectedSale, setSelectedSale] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [stats, setStats] = useState({
+    total_facturas: 0,
+    total_ingresos: 0,
+    ticket_promedio: 0,
+    clientes_unicos: 0
+  });
   const [statsMetadata, setStatsMetadata] = useState(null);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
-  const [summary, setSummary] = useState(null);
+  const [invoiceNumbers, setInvoiceNumbers] = useState({});
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const chartRef = useRef(null);
+
+  const dateOptions = [
+    { value: 'day', label: 'Hoy' },
+    { value: 'week', label: 'Esta semana' },
+    { value: 'month', label: 'Este mes' },
+    { value: 'quarter', label: 'Este trimestre' },
+    { value: 'year', label: 'Este año' },
+    { value: 'custom', label: 'Personalizado' }
+  ];
 
   const toNumber = (val) => Number(val) || 0;
   const formatCurrency = (value) => `$${toNumber(value).toFixed(2)}`;
@@ -38,53 +373,84 @@ export default function ReportsSalesPage() {
     return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('es-EC');
   };
 
-  // Cargar resumen de ventas
-  const loadSummary = useCallback(async () => {
+  // ── Obtener rango efectivo ────────────────────────────────────────────────
+  const getEffectiveDateRange = useCallback(() => {
+    return getDateRangeFromPeriod(dateRange, customStartDate, customEndDate);
+  }, [dateRange, customStartDate, customEndDate]);
+
+  // ── Cargar estadísticas ────────────────────────────────────────────────────
+  const loadStats = useCallback(async () => {
+    if (!selectedBusiness?.id) return;
+    
     try {
-      let url = `/api/reports/sales/summary`;
+      setLoadingStats(true);
+      const { from, to } = getEffectiveDateRange();
+      let url = `/reports/sales/summary`;
       const params = [];
-      if (dateFrom) params.push(`startDate=${dateFrom}`);
-      if (dateTo) params.push(`endDate=${dateTo}`);
-      if (params.length) url += `?${params.join('&')}`;
-      
-      const res = await fetchWithAuth(url);
-      if (res.ok) {
-        const result = await res.json();
-        if (result.success) {
-          setSummary(result.data);
-          setUseEinvoicing(result.metadata?.invoiceSource === 'einvoicing');
-          setStatsMetadata({
-            source: result.metadata?.invoiceSource || 'pos',
-            sourceLabel: result.metadata?.invoiceSource === 'einvoicing' ? 'Facturación Electrónica' : 'Ventas POS',
-            sourceIcon: result.metadata?.invoiceSource === 'einvoicing' ? <FileText size={14} /> : <Zap size={14} />,
-            title: result.metadata?.invoiceSource === 'einvoicing' ? 'Reporte de Ventas (Facturas Autorizadas)' : 'Reporte de Ventas (Órdenes POS)',
-            docLabel: result.metadata?.invoiceSource === 'einvoicing' ? 'N° Factura' : 'N° Orden',
-            taxLabel: result.metadata?.invoiceSource === 'einvoicing' ? 'IVA' : 'Impuesto'
-          });
-        }
+      if (from && to) {
+        params.push(`from=${from}`);
+        params.push(`to=${to}`);
       }
-    } catch (err) {
-
-    }
-  }, [dateFrom, dateTo]);
-
-  // Cargar ventas con paginación y filtros
-  const loadSales = useCallback(async (page = 1) => {
-    try {
-      setLoading(true);
-      setError('');
-      
-      let url = `/api/reports/sales?page=${page}&limit=20`;
-      const params = [];
-      if (dateFrom) params.push(`startDate=${dateFrom}`);
-      if (dateTo) params.push(`endDate=${dateTo}`);
-      if (params.length) url += `&${params.join('&')}`;
+      if (params.length) url += `?${params.join('&')}`;
       
       const res = await fetchWithAuth(url);
       
       if (!res.ok) {
+        throw new Error(`Error HTTP: ${res.status}`);
+      }
+      
+      const data = await res.json();
+
+      if (data.success && data.data) {
+        setStats({
+          total_facturas: data.data.total_ventas ?? 0,
+          total_ingresos: data.data.total_ingresos ?? 0,
+          ticket_promedio: data.data.total_ventas > 0 ? (data.data.total_ingresos / data.data.total_ventas) : 0,
+          clientes_unicos: data.data.clientes_unicos ?? 0
+        });
+        setStatsMetadata({
+          source: 'einvoicing',
+          sourceLabel: 'Facturación Electrónica',
+          sourceIcon: <FiFileText size={14} />,
+          title: 'Reporte de Ventas (Facturas Autorizadas)',
+          docLabel: 'N° Factura',
+          taxLabel: 'IVA'
+        });
+      }
+    } catch (err) {
+      // Error silencioso
+    } finally {
+      setLoadingStats(false);
+    }
+  }, [selectedBusiness, getEffectiveDateRange]);
+
+  // ── Cargar ventas ──────────────────────────────────────────────────────────
+  const loadSales = useCallback(async (page = 1) => {
+    if (!selectedBusiness?.id) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setInvoiceNumbers({});
+    
+    try {
+      const { from, to } = getEffectiveDateRange();
+      const params = new URLSearchParams();
+      params.append('page', page);
+      params.append('limit', '20');
+      if (from && to) {
+        params.append('from', from);
+        params.append('to', to);
+      }
+      
+      const url = `/reports/sales?${params.toString()}`;
+
+      const res = await fetchWithAuth(url);
+      
+      if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Error al cargar ventas');
+        throw new Error(errData.error || 'Error al cargar facturas');
       }
       
       const result = await res.json();
@@ -97,475 +463,508 @@ export default function ReportsSalesPage() {
           totalPages: result.pagination.totalPages,
           total: result.pagination.total
         });
-        setUseEinvoicing(result.metadata?.invoiceSource === 'einvoices');
         setStatsMetadata({
-          source: result.metadata?.invoiceSource || 'pos',
-          sourceLabel: result.metadata?.invoiceSource === 'einvoicing' ? 'Facturación Electrónica' : 'Ventas POS',
-          sourceIcon: result.metadata?.invoiceSource === 'einvoicing' ? <FileText size={14} /> : <Zap size={14} />,
-          title: result.metadata?.invoiceSource === 'einvoicing' ? 'Reporte de Ventas (Facturas Autorizadas)' : 'Reporte de Ventas (Órdenes POS)',
-          docLabel: result.metadata?.invoiceSource === 'einvoicing' ? 'N° Factura' : 'N° Orden',
-          taxLabel: result.metadata?.invoiceSource === 'einvoicing' ? 'IVA' : 'Impuesto'
+          source: 'einvoicing',
+          sourceLabel: 'Facturación Electrónica',
+          sourceIcon: <FiFileText size={14} />,
+          title: 'Reporte de Ventas (Facturas Autorizadas)',
+          docLabel: 'N° Factura',
+          taxLabel: 'IVA'
         });
-      } else {
-        throw new Error(result.error || 'Error al cargar ventas');
-      }
-      
-    } catch (err) {
 
+        // ─── Enriquecer con números de factura ──────────────────────────────
+        const saleIds = result.data.map(sale => sale.id).filter(id => id);
+        if (saleIds.length > 0) {
+          setLoadingInvoices(true);
+          try {
+            const detailPromises = saleIds.map(id =>
+              fetchWithAuth(`/reports/sales/detail/${id}`)
+                .then(res => res.json())
+                .then(data => ({
+                  id,
+                  numero_factura: data?.data?.factura?.numero_factura || null
+                }))
+                .catch(() => ({ id, numero_factura: null }))
+            );
+            
+            const results = await Promise.all(detailPromises);
+            
+            const invoiceMap = {};
+            results.forEach(({ id, numero_factura }) => {
+              if (numero_factura) {
+                invoiceMap[id] = numero_factura;
+              }
+            });
+            setInvoiceNumbers(invoiceMap);
+          } catch (err) {
+            console.warn('Error al obtener números de factura:', err);
+          } finally {
+            setLoadingInvoices(false);
+          }
+        }
+        // ─── Fin enriquecimiento ──────────────────────────────────────────────
+
+      } else {
+        throw new Error(result.error || 'Error al cargar facturas');
+      }
+    } catch (err) {
       setError(err.message);
       setSales([]);
       setFilteredSales([]);
-      showNotification('Error al cargar las ventas', 'error');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  }, [dateFrom, dateTo]);
+  }, [selectedBusiness, getEffectiveDateRange]);
 
-  // Cargar resumen y ventas cuando cambian los filtros
   useEffect(() => {
-    loadSales(1);
-    loadSummary();
-  }, [dateFrom, dateTo]);
+    if (selectedBusiness?.id) {
+      loadStats();
+      loadSales(1);
+    }
+  }, [dateRange, customStartDate, customEndDate, selectedBusiness]);
 
-  // Filtrado local por búsqueda
+  // Filtrar por búsqueda local
   useEffect(() => {
-    if (!search.trim()) {
+    if (!searchTerm.trim()) {
       setFilteredSales(sales);
       return;
     }
     
-    const lowerSearch = search.toLowerCase();
+    const lowerSearch = searchTerm.toLowerCase();
     const filtered = sales.filter(sale =>
+      (sale.numero_orden || '').toLowerCase().includes(lowerSearch) ||
       (sale.numero_factura || '').toLowerCase().includes(lowerSearch) ||
       (sale.cliente_nombre || '').toLowerCase().includes(lowerSearch) ||
       (sale.cliente_cedula || '').includes(lowerSearch)
     );
     setFilteredSales(filtered);
-  }, [search, sales]);
+  }, [searchTerm, sales]);
 
-  const showNotification = (msg, type = 'info') => {
-    setNotification({ msg, type });
-    setTimeout(() => setNotification(null), 3500);
-  };
-
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    if (refreshing) return;
     setRefreshing(true);
-    loadSales(pagination.page);
-    loadSummary();
-    showNotification('Actualizando ventas...', 'info');
-  };
-
-  const handleResetFilters = () => {
-    const today = new Date();
-    const firstDay = new Date();
-    firstDay.setDate(1);
-    setDateFrom(firstDay.toISOString().split('T')[0]);
-    setDateTo(today.toISOString().split('T')[0]);
-    setSearch('');
-    showNotification('Filtros restablecidos', 'success');
-  };
-
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= pagination.totalPages) {
-      loadSales(newPage);
+    try {
+      await Promise.all([loadSales(pagination.page), loadStats()]);
+    } finally {
+      setRefreshing(false);
     }
   };
 
-  // Estadísticas desde el resumen del backend
-  const filteredStats = {
-    total: summary?.total_ventas || filteredSales.length,
-    revenue: summary?.total_ingresos || filteredSales.reduce((sum, sale) => sum + toNumber(sale.total), 0),
-    avgTicket: summary?.total_ventas > 0 ? (summary?.total_ingresos / summary?.total_ventas) : 
-               (filteredSales.length > 0 ? filteredSales.reduce((sum, sale) => sum + toNumber(sale.total), 0) / filteredSales.length : 0),
-    uniqueCustomers: summary?.clientes_unicos || new Set(filteredSales.map(sale => sale.customer_id || sale.cliente_nombre)).size
+  const handleDateRangeChange = (value) => {
+    setDateRange(value);
+    setShowDateDropdown(false);
+    if (value === 'custom') {
+      setShowCustomDate(true);
+    } else {
+      setShowCustomDate(false);
+      setCustomStartDate('');
+      setCustomEndDate('');
+    }
   };
 
-  // Obtener el valor del impuesto según la fuente
+  const handleApplyCustomDate = (start, end) => {
+    setCustomStartDate(start);
+    setCustomEndDate(end);
+    setShowCustomDate(false);
+    setShowDateDropdown(false);
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setDateRange('month');
+    setCustomStartDate('');
+    setCustomEndDate('');
+  };
+
   const getTaxAmount = (sale) => {
     return toNumber(sale.iva || 0);
   };
 
-  // Configuración para PDF
-  const pdfConfig = {
-    title: statsMetadata?.title || 'Reporte de Ventas',
-    landscape: true,
-    kpis: [
-      { label: `Total ${useEinvoicing ? 'Facturas' : 'Órdenes'}`, value: filteredStats.total, formatter: (v) => String(v) },
-      { label: 'Ingresos Totales', value: filteredStats.revenue, formatter: (v) => `$${Number(v).toFixed(2)}`, bold: true },
-      { label: 'Ticket Promedio', value: filteredStats.avgTicket, formatter: (v) => `$${Number(v).toFixed(2)}` },
-      { label: 'Clientes Únicos', value: filteredStats.uniqueCustomers, formatter: (v) => String(v) },
-    ],
-    sections: filteredSales.length ? [{
-      title: useEinvoicing ? 'DETALLE DE FACTURAS AUTORIZADAS' : 'DETALLE DE ÓRDENES POS',
-      columns: [
-        { label: 'Fecha',      key: 'fecha',    width: 10 },
-        { label: statsMetadata?.docLabel || 'Documento', key: 'numero', width: 18 },
-        { label: 'Cliente',    key: 'cliente',  width: 34 },
-        { label: 'Subtotal',   key: 'subtotal', width: 13, formatter: (v) => `$${Number(v).toFixed(2)}` },
-        { label: statsMetadata?.taxLabel || 'Impuesto', key: 'tax', width: 12, formatter: (v) => `$${Number(v).toFixed(2)}` },
-        { label: 'Total',      key: 'total',    width: 13, formatter: (v) => `$${Number(v).toFixed(2)}` },
+  // ─── Obtener N° Venta y N° Factura para cada registro ────────────────────
+  const getNumeroVenta = (sale) => {
+    return sale.numero_orden || sale.numero_factura || '-';
+  };
+
+  const getNumeroFactura = (sale) => {
+    if (invoiceNumbers[sale.id]) {
+      return invoiceNumbers[sale.id];
+    }
+    return sale.numero_factura_electronica || sale.factura_numero || sale.documento || '-';
+  };
+
+  // ─── Configuración para EXCEL ─────────────────────────────────────────────
+  const excelConfig = useMemo(() => {
+    if (!filteredSales.length) return null;
+
+    const periodText = dateOptions.find(o => o.value === dateRange)?.label || dateRange;
+
+    const salesColumns = [
+      { label: 'Fecha', key: 'fecha', width: 14 },
+      { label: 'N° Venta', key: 'venta', width: 16 },
+      { label: 'N° Factura', key: 'factura', width: 18 },
+      { label: 'Cliente', key: 'cliente', width: 34 },
+      { label: 'Subtotal', key: 'subtotal', width: 13, numFmt: '"$"#,##0.00', total: true },
+      { label: 'IVA', key: 'tax', width: 13, numFmt: '"$"#,##0.00', total: true },
+      { label: 'Total', key: 'total', width: 13, numFmt: '"$"#,##0.00', total: true }
+    ];
+
+    const salesRows = filteredSales.map(sale => ({
+      fecha: formatDate(sale.fecha),
+      venta: getNumeroVenta(sale),
+      factura: getNumeroFactura(sale),
+      cliente: sale.cliente_nombre || 'CONSUMIDOR FINAL',
+      subtotal: toNumber(sale.subtotal),
+      tax: getTaxAmount(sale),
+      total: toNumber(sale.total)
+    }));
+
+    const totalVentas = filteredSales.reduce((sum, s) => sum + toNumber(s.total), 0);
+    const totalSubtotal = filteredSales.reduce((sum, s) => sum + toNumber(s.subtotal), 0);
+    const totalIVA = filteredSales.reduce((sum, s) => sum + getTaxAmount(s), 0);
+    const count = filteredSales.length;
+
+    return {
+      title: 'REPORTE DE VENTAS',
+      subtitle: 'Facturas emitidas y detalle de ventas',
+      period: `Período: ${periodText}`,
+      filename: `reporte_ventas_${new Date().toISOString().slice(0,10)}`,
+      confidential: true,
+      kpis: [
+        { label: 'Total Facturas', value: count, formatter: (v) => String(v) },
+        { label: 'Total Ventas', value: totalVentas, formatter: (v) => `$${Number(v).toFixed(2)}` },
+        { label: 'Ticket Promedio', value: count > 0 ? totalVentas / count : 0, formatter: (v) => `$${Number(v).toFixed(2)}` },
+        { label: 'IVA Total', value: totalIVA, formatter: (v) => `$${Number(v).toFixed(2)}` }
       ],
-      rows: filteredSales.map(sale => ({
-        fecha:    formatDate(sale.fecha),
-        numero:   sale.numero_factura || '-',
-        cliente:  sale.cliente_nombre || 'CONSUMIDOR FINAL',
-        subtotal: toNumber(sale.subtotal),
-        tax:      getTaxAmount(sale),
-        total:    toNumber(sale.total),
-      })),
-    }] : [],
-  };
+      sections: [
+        {
+          title: 'DETALLE DE FACTURAS',
+          columns: salesColumns,
+          rows: salesRows,
+          showTotals: true
+        }
+      ],
+      observations: [
+        `Reporte generado para el período ${periodText}.`,
+        `Total de facturas: ${count}.`,
+        'Las cifras están expresadas en dólares americanos (USD).'
+      ],
+      chartRefs: [chartRef]
+    };
+  }, [filteredSales, dateRange, dateOptions, invoiceNumbers]);
 
-  // Exportación a Excel con estilos profesionales
-  const handleExportXLSX = async () => {
-    if (filteredSales.length === 0) {
-      showNotification('No hay datos para exportar', 'warning');
-      return;
-    }
-    setExporting(true);
-    try {
-      const COLORS = {
-        headerBg:   '1E2840',
-        sectionBg:  '2563EB',
-        colHeaderBg:'DBEAFE',
-        totalsBg:   '1E40AF',
-        rowAlt:     'F0F7FF',
-        white:      'FFFFFF',
-        black:      '000000',
-      };
-      const border = {
-        top:    { style: 'thin', color: { argb: 'D1D5DB' } },
-        bottom: { style: 'thin', color: { argb: 'D1D5DB' } },
-        left:   { style: 'thin', color: { argb: 'D1D5DB' } },
-        right:  { style: 'thin', color: { argb: 'D1D5DB' } },
-      };
-      const applyStyle = (cell, style) => { cell.style = style; };
-      const styleHeader = (cell, text) => {
-        cell.value = text;
-        applyStyle(cell, {
-          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerBg } },
-          font: { bold: true, size: 14, color: { argb: COLORS.white }, name: 'Calibri' },
-          alignment: { vertical: 'middle', horizontal: 'center' },
-        });
-      };
-      const styleSection = (cell, text) => {
-        cell.value = text;
-        applyStyle(cell, {
-          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.sectionBg } },
-          font: { bold: true, size: 10, color: { argb: COLORS.white }, name: 'Calibri' },
-          alignment: { vertical: 'middle', horizontal: 'left' },
-          border,
-        });
-      };
-      const styleColHeader = (cell, text) => {
-        cell.value = text;
-        applyStyle(cell, {
-          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.colHeaderBg } },
-          font: { bold: true, size: 9, color: { argb: '1E3A5F' }, name: 'Calibri' },
-          alignment: { vertical: 'middle', horizontal: 'center' },
-          border,
-        });
-      };
-      const styleData = (cell, value, align = 'left', altRow = false, numFmt = null) => {
-        cell.value = value;
-        const style = {
-          fill: altRow ? { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.rowAlt } } : { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.white } },
-          font: { size: 9, name: 'Calibri', color: { argb: COLORS.black } },
-          alignment: { vertical: 'middle', horizontal: align },
-          border,
-        };
-        if (numFmt) style.numFmt = numFmt;
-        applyStyle(cell, style);
-      };
-      const styleTotals = (cell, value, align = 'center', numFmt = null) => {
-        cell.value = value;
-        const style = {
-          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.totalsBg } },
-          font: { bold: true, size: 9, color: { argb: COLORS.white }, name: 'Calibri' },
-          alignment: { vertical: 'middle', horizontal: align },
-          border: {
-            top:    { style: 'medium', color: { argb: COLORS.white } },
-            bottom: { style: 'medium', color: { argb: COLORS.white } },
-            left:   { style: 'thin',   color: { argb: '3B82F6' } },
-            right:  { style: 'thin',   color: { argb: '3B82F6' } },
-          },
-        };
-        if (numFmt) style.numFmt = numFmt;
-        applyStyle(cell, style);
-      };
+  // ─── Configuración para PDF ───────────────────────────────────────────────
+  const pdfConfig = useMemo(() => {
+    if (!filteredSales.length) return null;
 
-      const wb = new ExcelJS.Workbook();
-      wb.creator = 'IDON Gestion';
-      wb.created = new Date();
-      const ws = wb.addWorksheet('VENTAS', {
-        views: [{ showGridLines: false }],
-        pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true },
-      });
-      ws.columns = [
-        { key: 'a', width: 14 }, { key: 'b', width: 14 }, { key: 'c', width: 26 },
-        { key: 'd', width: 13 }, { key: 'e', width: 13 }, { key: 'f', width: 13 },
-      ];
+    const periodText = dateOptions.find(o => o.value === dateRange)?.label || dateRange;
 
-      ws.mergeCells('A1:F1');
-      styleHeader(ws.getCell('A1'), statsMetadata?.title || 'REPORTE DE VENTAS');
-      ws.getRow(1).height = 28;
+    const salesColumns = [
+      { label: 'Fecha', key: 'fecha', width: 14 },
+      { label: 'N° Venta', key: 'venta', width: 16 },
+      { label: 'N° Factura', key: 'factura', width: 18 },
+      { label: 'Cliente', key: 'cliente', width: 34 },
+      { label: 'Subtotal', key: 'subtotal', width: 13, formatter: (v) => `$${Number(v).toFixed(2)}`, total: true },
+      { label: 'IVA', key: 'tax', width: 13, formatter: (v) => `$${Number(v).toFixed(2)}`, total: true },
+      { label: 'Total', key: 'total', width: 13, formatter: (v) => `$${Number(v).toFixed(2)}`, total: true }
+    ];
 
-      ws.getRow(2).height = 18;
-      ws.mergeCells('A2:C2');
-      const cellPeriod = ws.getCell('A2');
-      cellPeriod.value = `Periodo: ${dateFrom} al ${dateTo}`;
-      applyStyle(cellPeriod, {
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: '1E3A5F' } },
-        font: { size: 9, color: { argb: COLORS.white }, name: 'Calibri' },
-        alignment: { vertical: 'middle', horizontal: 'left' },
-      });
-      ws.mergeCells('D2:F2');
-      const cellGen2 = ws.getCell('D2');
-      cellGen2.value = `Generado: ${new Date().toLocaleString('es-EC')} | Fuente: ${statsMetadata?.sourceLabel || 'POS'}`;
-      applyStyle(cellGen2, {
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: '374151' } },
-        font: { size: 8, color: { argb: '9CA3AF' }, name: 'Calibri', italic: true },
-        alignment: { vertical: 'middle', horizontal: 'right' },
-      });
+    const salesRows = filteredSales.map(sale => ({
+      fecha: formatDate(sale.fecha),
+      venta: getNumeroVenta(sale),
+      factura: getNumeroFactura(sale),
+      cliente: sale.cliente_nombre || 'CONSUMIDOR FINAL',
+      subtotal: toNumber(sale.subtotal),
+      tax: getTaxAmount(sale),
+      total: toNumber(sale.total)
+    }));
 
-      ws.getRow(3).height = 6;
+    const totalVentas = filteredSales.reduce((sum, s) => sum + toNumber(s.total), 0);
+    const totalSubtotal = filteredSales.reduce((sum, s) => sum + toNumber(s.subtotal), 0);
+    const totalIVA = filteredSales.reduce((sum, s) => sum + getTaxAmount(s), 0);
+    const count = filteredSales.length;
 
-      ws.mergeCells('A4:F4');
-      styleSection(ws.getCell('A4'), '  RESUMEN EJECUTIVO');
-      ws.getRow(4).height = 18;
+    return {
+      title: 'REPORTE DE VENTAS',
+      subtitle: 'Facturas emitidas y detalle de ventas',
+      period: `Período: ${periodText}`,
+      filename: `reporte_ventas_${new Date().toISOString().slice(0,10)}`,
+      confidential: true,
+      landscape: false,
+      kpis: [
+        { label: 'Total Facturas', value: count, formatter: (v) => String(v) },
+        { label: 'Total Ventas', value: totalVentas, formatter: (v) => `$${Number(v).toFixed(2)}` },
+        { label: 'Ticket Promedio', value: count > 0 ? totalVentas / count : 0, formatter: (v) => `$${Number(v).toFixed(2)}` },
+        { label: 'IVA Total', value: totalIVA, formatter: (v) => `$${Number(v).toFixed(2)}` }
+      ],
+      sections: [
+        {
+          title: 'DETALLE DE FACTURAS',
+          columns: salesColumns,
+          rows: salesRows,
+          showTotals: true
+        }
+      ],
+      observations: [
+        `Reporte generado para el período ${periodText}.`,
+        `Total de facturas: ${count}.`,
+        'Las cifras están expresadas en dólares americanos (USD).'
+      ],
+      chartRefs: [chartRef],
+      signatures: [
+        {
+          name: user?.firstName || user?.nombre || 'Usuario',
+          role: 'Responsable del Reporte',
+          date: new Date().toISOString()
+        }
+      ]
+    };
+  }, [filteredSales, dateRange, dateOptions, user, invoiceNumbers]);
 
-      const kpiRows = [
-        [`Total ${useEinvoicing ? 'Facturas' : 'Órdenes'}`, filteredStats.total, null],
-        ['Ingresos Totales', filteredStats.revenue, '"$"#,##0.00'],
-        ['Ticket Promedio', filteredStats.avgTicket, '"$"#,##0.00'],
-        ['Clientes Únicos', filteredStats.uniqueCustomers, null],
-      ];
-      kpiRows.forEach(([label, value, fmt], i) => {
-        const rowNum = 5 + i;
-        ws.getRow(rowNum).height = 16;
-        const cA = ws.getCell(`A${rowNum}`);
-        const cB = ws.getCell(`B${rowNum}`);
-        ws.mergeCells(`B${rowNum}:F${rowNum}`);
-        const alt = i % 2 === 1;
-        styleData(cA, label, 'left', alt);
-        styleData(cB, value, 'right', alt, fmt);
-      });
-
-      const spRow = 5 + kpiRows.length;
-      ws.getRow(spRow).height = 6;
-
-      let r = spRow + 1;
-      ws.mergeCells(`A${r}:F${r}`);
-      styleSection(ws.getCell(`A${r}`), useEinvoicing ? '  DETALLE DE FACTURAS' : '  DETALLE DE ÓRDENES');
-      ws.getRow(r).height = 18;
-      r++;
-
-      const headers = useEinvoicing 
-        ? ['Fecha', 'N° Factura', 'Cliente', 'Subtotal', 'IVA', 'Total']
-        : ['Fecha', 'N° Orden', 'Cliente', 'Subtotal', 'Impuesto', 'Total'];
-      
-      headers.forEach((h, i) => {
-        styleColHeader(ws.getCell(r, i + 1), h);
-      });
-      ws.getRow(r).height = 16;
-      r++;
-
-      let sumSubtotal = 0, sumTax = 0, sumTotal = 0;
-      filteredSales.forEach((sale, idx) => {
-        const alt = idx % 2 === 1;
-        const sub = toNumber(sale.subtotal);
-        const tax = getTaxAmount(sale);
-        const tot = toNumber(sale.total);
-        sumSubtotal += sub;
-        sumTax += tax;
-        sumTotal += tot;
-
-        ws.getRow(r).height = 15;
-        styleData(ws.getCell(r, 1), formatDate(sale.fecha), 'left', alt);
-        styleData(ws.getCell(r, 2), sale.numero_factura || '-', 'center', alt);
-        styleData(ws.getCell(r, 3), sale.cliente_nombre || 'CONSUMIDOR FINAL', 'left', alt);
-        styleData(ws.getCell(r, 4), sub, 'right', alt, '"$"#,##0.00');
-        styleData(ws.getCell(r, 5), tax, 'right', alt, '"$"#,##0.00');
-        styleData(ws.getCell(r, 6), tot, 'right', alt, '"$"#,##0.00');
-        r++;
-      });
-
-      ws.getRow(r).height = 18;
-      styleTotals(ws.getCell(r, 1), 'TOTALES', 'left');
-      [2, 3].forEach(c => styleTotals(ws.getCell(r, c), ''));
-      styleTotals(ws.getCell(r, 4), sumSubtotal, 'right', '"$"#,##0.00');
-      styleTotals(ws.getCell(r, 5), sumTax,      'right', '"$"#,##0.00');
-      styleTotals(ws.getCell(r, 6), sumTotal,    'right', '"$"#,##0.00');
-
-      const buffer = await wb.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ventas_${dateFrom}_${dateTo}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showNotification('Exportado a Excel', 'success');
-    } catch (err) {
-
-      showNotification('Error al exportar a Excel', 'error');
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const stats = [
-    { label: `Total ${useEinvoicing ? 'Facturas' : 'Órdenes'}`, value: filteredStats.total, icon: <ShoppingBag size={20} />, color: '#6842fe' },
-    { label: 'Ingresos Totales', value: formatCurrency(filteredStats.revenue), icon: <DollarSign size={20} />, color: '#10b981' },
-    { label: 'Ticket Promedio', value: formatCurrency(filteredStats.avgTicket), icon: <TrendingUp size={20} />, color: '#f59e0b' },
-    { label: 'Clientes únicos', value: filteredStats.uniqueCustomers, icon: <Users size={20} />, color: '#8b5cf6' },
+  // ─── Columnas de la tabla ────────────────────────────────────────────────
+  const columns = [
+    {
+      accessor: 'fecha',
+      label: 'Fecha',
+      render: (item) => <span>{formatDate(item.fecha)}</span>,
+    },
+    {
+      accessor: 'numero_venta',
+      label: 'N° Venta',
+      render: (item) => <span className="invoice-number">{getNumeroVenta(item)}</span>,
+    },
+    {
+      accessor: 'numero_factura',
+      label: 'N° Factura',
+      render: (item) => {
+        const factura = getNumeroFactura(item);
+        return (
+          <span>
+            {loadingInvoices && !factura ? (
+              <span className="loading-dots">Cargando...</span>
+            ) : (
+              factura
+            )}
+          </span>
+        );
+      },
+    },
+    {
+      accessor: 'cliente_nombre',
+      label: 'Cliente',
+      render: (item) => (
+        <span>{item.cliente_nombre || 'CONSUMIDOR FINAL'}</span>
+      ),
+    },
+    {
+      accessor: 'subtotal',
+      label: 'Subtotal',
+      align: 'center',
+      render: (item) => <span>{formatCurrency(item.subtotal)}</span>,
+    },
+    {
+      accessor: 'tax',
+      label: 'IVA',
+      align: 'center',
+      render: (item) => <span>{formatCurrency(getTaxAmount(item))}</span>,
+    },
+    {
+      accessor: 'total',
+      label: 'Total',
+      align: 'center',
+      render: (item) => <span>{formatCurrency(item.total)}</span>,
+    },
+    {
+      accessor: 'actions',
+      label: 'Acciones',
+      align: 'center',
+      render: (item) => (
+        <IconTextButton
+          variant="info"
+          size="sm"
+          inline={true}
+          icon={<FiEye size={12} />}
+          onClick={() => setSelectedSale(item)}
+          title="Ver detalle completo"
+        >
+          Ver
+        </IconTextButton>
+      ),
+    },
   ];
 
-  const headerAction = (
-    <div className="reports-header-actions">
-      {statsMetadata && (
-        <div className="source-badge" title={`Datos desde: ${statsMetadata.sourceLabel}`}>
-          {statsMetadata.sourceIcon}
-          <span>{statsMetadata.sourceLabel}</span>
+  // ─── Toolbar ──────────────────────────────────────────────────────────────
+  const tableToolbar = (
+    <div className="products-toolbar">
+      <div className="products-toolbar-right">
+        <div className="report-dropdown">
+          <button onClick={() => setShowDateDropdown(!showDateDropdown)} className="report-date-btn">
+            <FiCalendar size={16} />
+            {dateOptions.find(o => o.value === dateRange)?.label || 'Este mes'}
+            <FiChevronDown size={14} />
+          </button>
+          {showDateDropdown && (
+            <div className="report-dropdown-menu">
+              {dateOptions.map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => handleDateRangeChange(option.value)}
+                  className={dateRange === option.value ? 'active' : ''}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-      <button className="btn-export" onClick={handleExportXLSX} disabled={exporting || filteredSales.length === 0}>
-        <Download size={16} /> {exporting ? 'Exportando...' : 'Excel'}
-      </button>
-      <ReportPdfButton customConfig={pdfConfig} dateRange={{ from: dateFrom, to: dateTo }} className="btn-export" />
-      <button className="btn-refresh" onClick={handleRefresh} disabled={refreshing}>
-        <RefreshCw size={16} className={refreshing ? 'spin' : ''} /> Actualizar
-      </button>
+
+        <div className="products-filter-actions">
+          <button onClick={handleClearFilters} className="report-btn-cancel-sm">
+            <FiX size={14} /> Limpiar
+          </button>
+        </div>
+        <ButtonGroup>
+        <ReportExcelButton
+          config={excelConfig}
+          onSuccess={() => {}}
+          onError={(err) => {
+            setError('Error al generar Excel: ' + err.message);
+            setTimeout(() => setError(''), 5000);
+          }}
+        />
+        <ReportPdfButton
+          customConfig={pdfConfig}
+          dateRange={{ from: dateRange, to: new Date().toISOString().split('T')[0] }}
+          groupBy={null}
+          onSuccess={() => {}}
+          onError={(err) => {
+            setError('Error al generar PDF: ' + err.message);
+            setTimeout(() => setError(''), 5000);
+          }}
+        />
+      </ButtonGroup>
+      </div>
     </div>
   );
 
+  // ─── Botón de refrescar ──────────────────────────────────────────────────
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
+  // ─── Header Actions ─────────────────────────────────────────────────────
+  const headerActions = (
+    <div className="products-header-actions"> 
+      {refreshButton}
+    </div>
+  );
+
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   return (
     <PageTemplate
-      title="Reporte de Ventas"
-      subtitle={`${filteredStats.total} ${useEinvoicing ? 'facturas' : 'órdenes'} • ${formatCurrency(filteredStats.revenue)} en total`}
+      title="REPORTE DE VENTAS"
+      subtitle={`${stats.total_facturas || 0} facturas • ${formatCurrency(stats.total_ingresos || 0)} en total`}
+      theme="business"
       loading={loading}
-      error={error}
-      onRetry={() => loadSales(pagination.page)}
-      headerAction={headerAction}
+      headerAction={headerActions}
     >
-      {notification && <div className={`reports-notification ${notification.type}`}>{notification.msg}</div>}
-
-      <div className="reports-stats-grid">
-        {stats.map(stat => (
-          <div key={stat.label} className="reports-stat-card">
-            <div className="stat-icon" style={{ background: `${stat.color}20`, color: stat.color }}>{stat.icon}</div>
-            <div className="stat-info"><span className="stat-value">{stat.value}</span><span className="stat-label">{stat.label}</span></div>
-          </div>
-        ))}
-      </div>
-
-      <div className="reports-filters">
-        <div className="filter-search">
-          <Search size={16} />
-          <input 
-            type="text" 
-            placeholder={`Buscar por #${useEinvoicing ? 'factura' : 'orden'} o cliente...`} 
-            value={search} 
-            onChange={e => setSearch(e.target.value)} 
-          />
-        </div>
-        <div className="filter-date">
-          <Calendar size={16} />
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-          <span>a</span>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
-        </div>
-        <button className="btn-reset" onClick={handleResetFilters}>Limpiar filtros</button>
-      </div>
-
-      <div className="reports-table-container">
-        <table className="reports-table">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>{useEinvoicing ? 'N° Factura' : 'N° Orden'}</th>
-              <th>Cliente</th>
-              <th className="center">Subtotal</th>
-              <th className="center">{useEinvoicing ? 'IVA' : 'IVA'}</th>
-              <th className="center">Total</th>
-              <th className="center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredSales.length === 0 && !loading && (
-              <tr>
-                <td colSpan={7} className="empty-state">
-                  <FileText size={32} />
-                  <p>No hay {useEinvoicing ? 'facturas autorizadas' : 'órdenes registradas'}</p>
-                  <span>Prueba cambiando los filtros de búsqueda</span>
-                </td>
-              </tr>
-            )}
-            {filteredSales.map(sale => (
-              <tr key={sale.id}>
-                <td>{formatDate(sale.fecha)}</td>
-                <td className="order-number">{sale.numero_factura}</td>
-                <td><div className="customer-cell"><User size={12} />{sale.cliente_nombre || 'CONSUMIDOR FINAL'}</div></td>
-                <td className="center amount">{formatCurrency(sale.subtotal)}</td>
-                <td className="center amount">{formatCurrency(getTaxAmount(sale))}</td>
-                <td className="center total">{formatCurrency(sale.total)}</td>
-                <td className="center">
-                  <button className="btn-view" onClick={() => setSelectedSale(sale)} title="Ver detalle">
-                    <Eye size={14} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {pagination.totalPages > 1 && (
-          <div className="reports-pagination">
-            <button className="btn-pagination" onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1}>
-              Anterior
-            </button>
-            <span className="pagination-info">Página {pagination.page} de {pagination.totalPages}</span>
-            <button className="btn-pagination" onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages}>
-              Siguiente
-            </button>
-          </div>
-        )}
-      </div>
-
-      {filteredSales.length > 0 && (
-        <div className="reports-table-info">
-          Mostrando {filteredSales.length} de {pagination.total || filteredStats.total} {useEinvoicing ? 'facturas' : 'órdenes'}
-          {statsMetadata && <span className="source-info"> (Datos desde: {statsMetadata.sourceLabel})</span>}
+      {error && (
+        <div className="alert alert-error">
+          <FiAlertCircle size={16} /> {error}
         </div>
       )}
 
-      {selectedSale && (
-        <div className="reports-modal-overlay" onClick={() => setSelectedSale(null)}>
-          <div className="reports-modal" onClick={e => e.stopPropagation()}>
-            <div className="reports-modal-header">
-              <div>
-                <h3>Detalle de {useEinvoicing ? 'Factura' : 'Orden'}</h3>
-                <p>#{selectedSale.numero_factura}</p>
-              </div>
-              <button className="btn-modal-close" onClick={() => setSelectedSale(null)}>✕</button>
+      <div className="report-summary-grid">
+        <SummaryCard
+          title="Total Facturas"
+          value={(stats.total_facturas || 0).toLocaleString()}
+          icon={<FiFileText size={24} />}
+          color="var(--text-primary)"
+          loading={loadingStats}
+        />
+        <SummaryCard
+          title="Ingresos Totales"
+          value={formatCurrency(stats.total_ingresos || 0)}
+          icon={<FiDollarSign size={24} />}
+          color="var(--text-primary)"
+          loading={loadingStats}
+        />
+        <SummaryCard
+          title="Ticket Promedio"
+          value={formatCurrency(stats.ticket_promedio || 0)}
+          icon={<FiTrendingUp size={24} />}
+          color="var(--text-primary)"
+          loading={loadingStats}
+        />
+        <SummaryCard
+          title="Clientes Únicos"
+          value={(stats.clientes_unicos || 0).toLocaleString()}
+          icon={<FiUser size={24} />}
+          color="var(--text-primary)"
+          loading={loadingStats}
+        />
+      </div>
+
+      <div className="report-table-container">
+        <Table
+          data={filteredSales}
+          columns={columns}
+          keyField="id"
+          title="Detalle de Ventas"
+          subtitle={`${filteredSales.length} ${filteredSales.length === 1 ? 'factura' : 'facturas'} registradas`}
+          toolbar={tableToolbar}
+          searchable={true}
+          searchPlaceholder="Buscar por #venta, #factura o cliente..."
+          pagination={true}
+          itemsPerPage={itemsPerPage}
+          itemsPerPageOptions={[10, 15]}
+          onItemsPerPageChange={(newPerPage) => setItemsPerPage(newPerPage)}
+          loading={loading}
+          emptyMessage={
+            error ? error : 
+            'No hay facturas registradas en este período. Intenta cambiar el rango de fechas.'
+          }
+          striped={true}
+          hoverable={true}
+          bordered={false}
+          compact={false}
+        />
+      </div>
+
+      {/* Modal de fechas personalizadas */}
+      {showCustomDate && (
+        <div className="report-modal-overlay" onClick={() => setShowCustomDate(false)}>
+          <div className="report-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="report-modal-header">
+              <h2>Seleccionar fechas</h2>
+              <button type="button" onClick={() => setShowCustomDate(false)} className="report-modal-close">×</button>
             </div>
-            <div className="reports-modal-body">
-              <div className="detail-grid">
-                <div className="detail-item"><label>Fecha</label><span>{formatDate(selectedSale.fecha)}</span></div>
-                <div className="detail-item"><label>Cliente</label><span>{selectedSale.cliente_nombre || 'CONSUMIDOR FINAL'}</span></div>
-                <div className="detail-item"><label>RUC/CI</label><span>{selectedSale.cliente_cedula || '-'}</span></div>
-                <div className="detail-item"><label>Subtotal</label><span>{formatCurrency(selectedSale.subtotal)}</span></div>
-                <div className="detail-item"><label>{useEinvoicing ? 'IVA' : 'Impuesto'}</label><span>{formatCurrency(getTaxAmount(selectedSale))}</span></div>
-                <div className="detail-item"><label>Total</label><span className="total-amount">{formatCurrency(selectedSale.total)}</span></div>
-              </div>
-            </div>
-            <div className="reports-modal-footer">
-              <button className="btn-secondary" onClick={() => setSelectedSale(null)}>Cerrar</button>
+            <div className="report-modal-body">
+              <DateRangePicker
+                startDate={customStartDate}
+                endDate={customEndDate}
+                onApply={handleApplyCustomDate}
+                onClose={() => setShowCustomDate(false)}
+              />
             </div>
           </div>
         </div>
       )}
+
+      {/* Modal de detalle de factura */}
+      <SaleDetailModal
+        sale={selectedSale}
+        isOpen={!!selectedSale}
+        onClose={() => setSelectedSale(null)}
+      />
     </PageTemplate>
   );
 }

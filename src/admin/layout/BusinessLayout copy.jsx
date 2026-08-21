@@ -1,30 +1,37 @@
-/**
- * BusinessLayout.jsx
- * Ubicación: src/layouts/BusinessLayout.jsx
- */
-
+// BusinessLayout.jsx - Modificado (MEJORADO PARA CIERRE + ICONOS POR PÁGINA)
 import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
+import { useSoundAlert } from '../../hooks/useSoundAlert';
 import SidebarModern from '../../components/SidebarModern';
 import {
   FiSettings, FiShoppingCart, FiBox, FiBarChart2, FiCreditCard,
   FiDollarSign, FiClipboard, FiThermometer, FiTruck, FiGrid,
   FiCalendar, FiStar, FiShoppingBag, FiClock, FiUsers,
   FiUserCheck, FiMap, FiMapPin, FiList, FiGlobe, FiBell,
-  FiFileText, FiUser, FiAlertCircle, FiZap, FiMenu, FiInbox,
-  FiLock, FiLoader
+  FiFileText, FiAlertCircle, FiZap, FiMenu, FiInbox,
+  FiLock, FiLoader, FiPrinter, FiRefreshCw, FiPercent,
+  FiBook, FiPackage, FiTrendingUp, FiPlus, FiCheckCircle,
+  FiMonitor, FiActivity, FiTag, FiShare2, FiSearch,
+  FiMail, FiGift, FiX, FiUser, FiEye, FiEdit, FiTrash2,
+  FiDownload, FiUpload, FiCloud, FiServer, FiDatabase,
+  FiCpu, FiCode, FiCommand, FiLayers, FiFeather, FiShield
 } from 'react-icons/fi';
 import API_BASE, { fetchWithAuth } from '../../config/apiBase';
 import '../../styles/BusinessLayout.css';
 import Footer from '../../components/common/Footer';
 
 import { BusinessContextProvider } from '../../admin/config/BusinessContext';
+import { BusinessProvider } from '../../context/BusinessContext';
 import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';
 import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
-import { useAutoPrint } from '../../hooks/useAutoPrint';
+import { usePrinterService } from '../../services/usePrinterService';
 import { useQzTray } from '../../components/useQzTray';
-import { useAlert } from '../../components/ConfirmContext';
+import { useAutoPrint } from '../../hooks/useAutoPrint';
+import { useAppVersion } from '../../hooks/useAppVersion';
+import Modal from '../../components/General/Modal';
+import { ButtonGroup, IconTextButton } from '../../components/General/Button';
 
 const getToken = () => localStorage.getItem('idonToken') || localStorage.getItem('token');
 
@@ -53,6 +60,218 @@ const MOD_ICONS = {
   ecommerce:     <FiGlobe       size={17}/>,
   notifications: <FiBell        size={17}/>,
   einvoicing:    <FiFileText    size={17}/>,
+  odontologia:   <FiBook        size={17}/>,
+};
+
+/* ── Iconos por código de página ── */
+const PAGE_ICONS = {
+  // ==================== CORE ====================
+  'core.dashboard': <FiGrid size={15}/>,
+  'core.settings': <FiSettings size={15}/>,
+  'core.users': <FiUsers size={15}/>,
+  'core.audit_log': <FiFileText size={15}/>,
+  'core.roles': <FiShield size={15}/>,
+  'core.retail_dashboard': <FiBarChart2 size={15}/>,
+  
+  // ==================== POS ====================
+  'pos.sales': <FiShoppingCart size={15}/>,
+  'pos.retail': <FiShoppingBag size={15}/>,
+  'pos.cash_register': <FiDollarSign size={15}/>,
+  'pos.discounts': <FiPercent size={15}/>,
+  'pos.quotes': <FiFileText size={15}/>,
+  'pos.receipt_print': <FiPrinter size={15}/>,
+  'pos.returns': <FiRefreshCw size={15}/>,
+  
+  // ==================== INVENTORY ====================
+  'inventory.products': <FiBox size={15}/>,
+  'inventory.categories': <FiGrid size={15}/>,
+  'inventory.adjustments': <FiAlertCircle size={15}/>,
+  'inventory.recipes': <FiBook size={15}/>,
+  'inventory.physical': <FiClipboard size={15}/>,
+  'inventory.suppliers': <FiTruck size={15}/>,
+  
+  // ==================== REPORTS ====================
+  'reports.sales': <FiBarChart2 size={15}/>,
+  'reports.inventory': <FiBox size={15}/>,
+  'reports.shifts': <FiClock size={15}/>,
+  'reports.products': <FiPackage size={15}/>,
+  'reports.cashiers': <FiUser size={15}/>,
+  'reports.profit': <FiDollarSign size={15}/>,
+  'reports.customers': <FiUsers size={15}/>,
+  'reports.advanced': <FiTrendingUp size={15}/>,
+  
+  // ==================== ACCOUNTING ====================
+  'accounting.close': <FiLock size={15}/>,
+  'accounting.sri': <FiFileText size={15}/>,
+  'accounting.tax': <FiPercent size={15}/>,
+  'accounting.payable': <FiDollarSign size={15}/>,
+  'accounting.receivable': <FiCreditCard size={15}/>,
+  'accounting.balance': <FiBarChart2 size={15}/>,
+  
+  // ==================== ORDERS ====================
+  'orders.create': <FiPlus size={15}/>,
+  'orders.history': <FiClock size={15}/>,
+  'orders.status': <FiCheckCircle size={15}/>,
+  'orders.qr': <FiGrid size={15}/>,
+  'orders.scheduled': <FiCalendar size={15}/>,
+  
+  // ==================== KITCHEN ====================
+  'kitchen.kds': <FiMonitor size={15}/>,
+  'kitchen.alerts': <FiBell size={15}/>,
+  'kitchen.times': <FiClock size={15}/>,
+  'kitchen.history': <FiFileText size={15}/>,
+  'kitchen.priority': <FiStar size={15}/>,
+  'kitchen.recipes': <FiBook size={15}/>,
+  'kitchen.stations': <FiGrid size={15}/>,
+  
+  // ==================== DELIVERY ====================
+  'delivery.tracking': <FiMapPin size={15}/>,
+  'delivery.zones': <FiMap size={15}/>,
+  'delivery.history': <FiClock size={15}/>,
+  'delivery.orders': <FiTruck size={15}/>,
+  'delivery.integrations': <FiGlobe size={15}/>,
+  'delivery.drivers': <FiUser size={15}/>,
+  'delivery.rates': <FiDollarSign size={15}/>,
+  'delivery.notifications': <FiBell size={15}/>,
+  
+  // ==================== TRACKING ====================
+  'tracking.gps': <FiMapPin size={15}/>,
+  'tracking.alerts': <FiBell size={15}/>,
+  'tracking.eta': <FiClock size={15}/>,
+  'tracking.history': <FiFileText size={15}/>,
+  'tracking.live_status': <FiActivity size={15}/>,
+  'tracking.notify': <FiBell size={15}/>,
+  
+  // ==================== E-COMMERCE ====================
+  'ecommerce.multi': <FiGlobe size={15}/>,
+  'ecommerce.coupons': <FiTag size={15}/>,
+  'ecommerce.abandoned': <FiShoppingBag size={15}/>,
+  'ecommerce.cart': <FiShoppingCart size={15}/>,
+  'ecommerce.catalog': <FiGrid size={15}/>,
+  'ecommerce.orders': <FiClipboard size={15}/>,
+  'ecommerce.social': <FiShare2 size={15}/>,
+  'ecommerce.seo': <FiSearch size={15}/>,
+  'ecommerce.payments': <FiCreditCard size={15}/>,
+  
+  // ==================== EMPLOYEES ====================
+  'employees.manage': <FiUsers size={15}/>,
+  'employees.performance': <FiBarChart2 size={15}/>,
+  'employees.attendance': <FiClock size={15}/>,
+  'employees.documents': <FiFileText size={15}/>,
+  'employees.schedules': <FiCalendar size={15}/>,
+  'employees.leaves': <FiCalendar size={15}/>,
+  'employees.payroll': <FiDollarSign size={15}/>,
+  
+  // ==================== RESERVATIONS ====================
+  'reservations.reminders': <FiBell size={15}/>,
+  'reservations.calendar': <FiCalendar size={15}/>,
+  'reservations.online': <FiGlobe size={15}/>,
+  'reservations.recurring': <FiRefreshCw size={15}/>,
+  'reservations.deposit': <FiDollarSign size={15}/>,
+  'reservations.waitlist': <FiList size={15}/>,
+  'reservations.email': <FiMail size={15}/>,
+  
+  // ==================== CRM ====================
+  'crm.segments': <FiLayers size={15}/>,
+  'crm.email': <FiMail size={15}/>,
+  'crm.analytics': <FiBarChart2 size={15}/>,
+  'crm.customers': <FiUsers size={15}/>,
+  'crm.history': <FiClock size={15}/>,
+  
+  // ==================== LOYALTY ====================
+  'loyalty.coupons': <FiTag size={15}/>,
+  'loyalty.membership': <FiStar size={15}/>,
+  'loyalty.redeem': <FiGift size={15}/>,
+  'loyalty.referrals': <FiShare2 size={15}/>,
+  'loyalty.cashback': <FiDollarSign size={15}/>,
+  'loyalty.points': <FiStar size={15}/>,
+  'loyalty.card': <FiCreditCard size={15}/>,
+  
+  // ==================== QUEUE ====================
+  'queue.manage': <FiList size={15}/>,
+  'queue.wait_time': <FiClock size={15}/>,
+  'queue.priority': <FiStar size={15}/>,
+  'queue.digital': <FiMonitor size={15}/>,
+  'queue.stats': <FiBarChart2 size={15}/>,
+  'queue.screen': <FiMonitor size={15}/>,
+  
+  // ==================== SUPPLIERS ====================
+  'suppliers.manage': <FiTruck size={15}/>,
+  'suppliers.evaluation': <FiStar size={15}/>,
+  'suppliers.prices': <FiDollarSign size={15}/>,
+  'suppliers.receiving': <FiPackage size={15}/>,
+  'suppliers.orders': <FiClipboard size={15}/>,
+  
+  // ==================== PURCHASES ====================
+  'purchases.budget': <FiDollarSign size={15}/>,
+  'purchases.categories': <FiGrid size={15}/>,
+  'purchases.approval': <FiCheckCircle size={15}/>,
+  'purchases.orders': <FiClipboard size={15}/>,
+  'purchases.history': <FiClock size={15}/>,
+  'purchases.returns': <FiRefreshCw size={15}/>,
+  
+  // ==================== TABLES ====================
+  'tables.map': <FiMap size={15}/>,
+  'tables.merge': <FiGrid size={15}/>,
+  'tables.rotation': <FiRefreshCw size={15}/>,
+  'tables.status': <FiCheckCircle size={15}/>,
+  'tables.waiter': <FiUser size={15}/>,
+  'tables.timer': <FiClock size={15}/>,
+  
+  // ==================== APPOINTMENTS ====================
+  'appointments.online': <FiGlobe size={15}/>,
+  'appointments.reminders': <FiBell size={15}/>,
+  'appointments.prepay': <FiDollarSign size={15}/>,
+  'appointments.recurring': <FiRefreshCw size={15}/>,
+  'appointments.agenda': <FiCalendar size={15}/>,
+  'appointments.history': <FiClock size={15}/>,
+  'appointments.block': <FiLock size={15}/>,
+  'appointments.services': <FiGrid size={15}/>,
+  
+  // ==================== ROUTES ====================
+  'routes.map': <FiMap size={15}/>,
+  'routes.zones': <FiGrid size={15}/>,
+  'routes.optimization': <FiTrendingUp size={15}/>,
+  'routes.cost': <FiDollarSign size={15}/>,
+  'routes.history': <FiClock size={15}/>,
+  
+  // ==================== E-INVOICING ====================
+  'einvoicing.debit_notes': <FiFileText size={15}/>,
+  'einvoicing.credit_notes': <FiFileText size={15}/>,
+  'einvoicing.remissions': <FiFileText size={15}/>,
+  'einvoicing.void': <FiX size={15}/>,
+  'einvoicing.reports': <FiBarChart2 size={15}/>,
+  'einvoicing.status': <FiCheckCircle size={15}/>,
+  'einvoicing.retentions': <FiLock size={15}/>,
+  
+  // ==================== NOTIFICATIONS ====================
+  'notifications.email': <FiMail size={15}/>,
+  'notifications.scheduled': <FiClock size={15}/>,
+  'notifications.push': <FiBell size={15}/>,
+  
+  // ==================== ODONTOLOGÍA ====================
+  'odontologia.reportes': <FiBarChart2 size={15}/>,
+  'odontologia.planes': <FiGrid size={15}/>,
+  'odontologia.tratamientos': <FiBook size={15}/>,
+  'odontologia.historias': <FiFileText size={15}/>,
+  'odontologia.pacientes': <FiUsers size={15}/>,
+  'odontologia.agenda': <FiCalendar size={15}/>,
+  'odontologia.configuracion': <FiSettings size={15}/>,
+  'odontologia.plantilla.recetas': <FiFileText size={15}/>,
+  
+  // ==================== PAYMENTS ====================
+  'payments.methods': <FiCreditCard size={15}/>,
+};
+
+/* ── Resolver icono por código de página ── */
+const resolvePageIcon = (pageCode, modCode) => {
+  if (pageCode && PAGE_ICONS[pageCode]) {
+    return PAGE_ICONS[pageCode];
+  }
+  if (modCode && MOD_ICONS[modCode]) {
+    return MOD_ICONS[modCode];
+  }
+  return <FiZap size={15}/>;
 };
 
 const toSlug = (str = '') =>
@@ -63,7 +282,7 @@ function buildSidebarMenu(navData) {
   if (!navData?.modules?.length) return [];
 
   return navData.modules.map(mod => {
-    const icon = MOD_ICONS[mod.code] || <FiZap size={17}/>;
+    const modIcon = MOD_ICONS[mod.code] || <FiZap size={17}/>;
     
     const pages = (mod.pages || []).filter(page => {
       const pagePath = page.path || '';
@@ -98,12 +317,12 @@ function buildSidebarMenu(navData) {
 
       return {
         section: mod.name,
-        icon,
+        icon: modIcon,
         path: mainPath,
         items: subPages.map(page => ({
           label: page.name,
           path: resolvePath(page.path, `/app/${mod.code}/${toSlug(page.name)}`),
-          icon: <FiZap size={15}/>,
+          icon: resolvePageIcon(page.code, mod.code),
         })),
       };
     }
@@ -111,7 +330,7 @@ function buildSidebarMenu(navData) {
     const single = pages[0];
     return {
       label: mod.name,
-      icon,
+      icon: modIcon,
       path: resolvePath(single?.path, `/app/${mod.code}`),
     };
   }).filter(Boolean);
@@ -141,53 +360,121 @@ function getOperatorUser() {
 ══════════════════════════════════════════════════════════ */
 function AlertaAperturaModal({ onAceptar, abriendo }) {
   return (
-    <div className="apertura-alert-overlay">
-      <div className="apertura-alert-modal">
-        <div className="apertura-alert-icon">
-          <FiInbox size={48} color="#f97316" />
-        </div>
-        <h2 className="apertura-alert-title">Apertura de Caja Requerida</h2>
-        <p className="apertura-alert-message">
+    <Modal
+      isOpen={true}
+      onClose={() => {}}
+      size="sm"
+      title="Apertura de Caja Requerida"
+      closeOnOverlayClick={false}
+      closeOnEscape={false}
+      footer={
+        <ButtonGroup>
+          <IconTextButton
+            variant="success"
+            size="md"
+            onClick={onAceptar}
+            disabled={abriendo}
+            loading={abriendo}
+            block
+          >
+            {abriendo ? 'Abriendo cajón...' : 'Aceptar y Abrir Caja'}
+          </IconTextButton>
+        </ButtonGroup>
+      }
+    >
+      <div className="alerta-apertura-content">
+        <p className="alerta-apertura-message">
           Debes registrar la apertura de caja antes de comenzar a operar.
-          Al presionar "Aceptar", se abrirá el cajón físico y podrás ingresar los datos iniciales.
+          <br /><br />
+          Al presionar <strong>"Aceptar y Abrir Caja"</strong>, se abrirá el cajón físico 
+          y podrás ingresar los datos iniciales.
         </p>
-        <button
-          type="button"
-          className="btn-modal-aceptar"
-          onClick={onAceptar}
-          disabled={abriendo}
-        >
-          {abriendo ? (
-            <>
-              <FiLoader size={16} className="spinning" />
-              Abriendo cajón...
-            </>
-          ) : (
-            'Aceptar y Abrir Caja'
-          )}
-        </button>
       </div>
-    </div>
+    </Modal>
   );
 }
 
 /* ══════════════════════════════════════════════════════════
    MODAL DE CONFIRMACIÓN PARA CIERRE DE CAJA
 ══════════════════════════════════════════════════════════ */
+function OrdenesPendientesModal({ ordenes, onClose }) {
+  return (
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      size="sm"
+      title="Órdenes Pendientes de Pago"
+      footer={
+        <ButtonGroup>
+          <IconTextButton
+            variant="success"
+            size="md"
+            onClick={onClose}
+          >
+            Ir a cobrar
+          </IconTextButton>
+        </ButtonGroup>
+      }
+    >
+      <div className="ordenes-pendientes-content">
+        <p className="ordenes-pendientes-message">
+          <strong>No puedes cerrar la caja con órdenes pendientes de pago.</strong>
+          <br /><br />
+          Tienes <strong style={{ color: 'var(--danger)' }}>{ordenes.length} orden{ordenes.length !== 1 ? 'es' : ''}</strong> sin cobrar. 
+          Debes cobrarlas o eliminarlas antes de cerrar.
+        </p>
+        
+        <div className="ordenes-pendientes-lista">
+          {ordenes.length > 10 && (
+            <p className="ordenes-pendientes-mas">
+              ...y {ordenes.length - 10} más
+            </p>
+          )}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
   return (
-    <div className="apertura-alert-overlay">
-      <div className="apertura-alert-modal">
-        <div className="apertura-alert-icon">
-          <FiLock size={48} color="#f97316" />
-        </div>
-        <h2 className="apertura-alert-title">Cerrar Caja</h2>
-        <p className="apertura-alert-message">
+    <Modal
+      isOpen={true}
+      onClose={onCancel}
+      size="sm"
+      className="confirmar-cierre-modal"
+      overlayClassName="confirmar-cierre-overlay"
+      title='Confirmar Cierre de Caja'
+      footer={
+          <ButtonGroup>
+            <IconTextButton
+              variant=""
+              size="md"
+              icon={<FiX size={14} />}
+              onClick={onCancel}
+              disabled={cargando}
+            >
+              Cancelar
+            </IconTextButton>
+            <IconTextButton
+              variant="success"
+              size="md"
+              onClick={onConfirm}
+              disabled={cargando}
+              loading={cargando}
+            >
+              {cargando ? 'Cerrando caja...' : 'Sí, Cerrar Caja'}
+            </IconTextButton>
+          </ButtonGroup>
+      }
+    >
+      <div className="confirmar-cierre-content">
+        <p className="confirmar-cierre-message">
           <strong>¿Estás seguro que deseas cerrar la caja?</strong>
           <br /><br />
           Una vez cerrada la caja:
           <br />
-          • No podrás seguir cobrando hasta la próxima apertura
+          • No podrás cobrar hasta la próxima apertura
           <br />
           • Se generará el reporte de cierre del día
           <br />
@@ -195,33 +482,8 @@ function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
           <br /><br />
           <strong>El cajón se abrirá para que puedas contar el dinero.</strong>
         </p>
-        <div className="modal-buttons-group">
-          <button
-            type="button"
-            className="btn-modal-cancelar"
-            onClick={onCancel}
-            disabled={cargando}
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            className="btn-modal-confirmar"
-            onClick={onConfirm}
-            disabled={cargando}
-          >
-            {cargando ? (
-              <>
-                <FiLoader size={16} className="spinning" />
-                Abriendo cajón...
-              </>
-            ) : (
-              'Sí, Cerrar Caja'
-            )}
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -230,10 +492,8 @@ function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
 ══════════════════════════════════════════════════════════ */
 export default function BusinessLayout({ user, onLogout }) {
   const navigate = useNavigate();
-  const alert = useAlert();
 
-  // 🔥 SOLO UN HOOK para abrir cajón - el mismo que usa PosCheckoutPage
-  const { openDrawer: openDrawerQz, printerError, isQzReady } = useQzTray();
+  const { openCashDrawer, printerError } = usePrinterService();
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
@@ -261,9 +521,29 @@ export default function BusinessLayout({ user, onLogout }) {
   const [error, setError] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (mobileOpen) setCollapsed(false);
+  }, [mobileOpen]);
   const [selectedBiz, setSelectedBiz] = useState(getStoredBiz);
 
+  useQzTray();
   useAutoPrint({ businessId: selectedBiz?.id, enabled: !!selectedBiz?.id });
+  const { updateReady, countdown } = useAppVersion();
+  const { playOrderReady } = useSoundAlert();
+
+  useEffect(() => {
+    if (!selectedBiz?.id) return;
+    const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
+    const socket = io(API_BASE, {
+      auth: { token, businessId: selectedBiz.id },
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 10,
+      reconnectionDelay: 3000,
+    });
+    socket.on('order_ready', () => { playOrderReady(); });
+    return () => socket.disconnect();
+  }, [selectedBiz?.id, playOrderReady]);
 
   // Apertura de caja
   const [aperturaChecked, setAperturaChecked] = useState(false);
@@ -277,43 +557,19 @@ export default function BusinessLayout({ user, onLogout }) {
   const [mostrarConfirmacionCierre, setMostrarConfirmacionCierre] = useState(false);
   const [mostrarCierreForm, setMostrarCierreForm] = useState(false);
   const [datosCierre, setDatosCierre] = useState(null);
-  const [cargandoCierre, setCargandoCierre] = useState(false);
   const [abriendoCajonCierre, setAbriendoCajonCierre] = useState(false);
+  const [ordenesPendientes, setOrdenesPendientes] = useState([]);
+  const [cargandoCierreInicial, setCargandoCierreInicial] = useState(false);
 
-  // ═══════════════════════════════════════════════════════
-  // 🔥 FUNCIÓN SIMPLE PARA ABRIR CAJÓN
-  // Funciona igual que en PosCheckoutPage
-  // ═══════════════════════════════════════════════════════
   const abrirCajon = useCallback(async () => {
-
-    // Intento 1: QZ Tray
-    if (isQzReady) {
-      try {
-        await openDrawerQz();
-
-        return true;
-      } catch (err) {
-
-      }
-    }
-    
-    // Intento 2: HTTP API
     try {
-      const res = await fetchWithAuth('/api/pos/open-drawer', { method: 'POST' });
-      if (res.ok) {
-
-        return true;
-      }
+      await openCashDrawer();
+      return true;
     } catch (err) {
-
+      return false;
     }
-    
-    throw new Error('No se pudo abrir el cajón');
-  }, [isQzReady, openDrawerQz]);
+  }, [openCashDrawer]);
 
-  // ═══════════════════════════════════════════════════════
-  // VERIFICAR APERTURA
-  // ═══════════════════════════════════════════════════════
   const checkApertura = useCallback(async () => {
     if (!isCashierRole(user)) { 
       setAperturaChecked(true); 
@@ -335,7 +591,6 @@ export default function BusinessLayout({ user, onLogout }) {
         setAperturaHecha(true);
       }
     } catch (err) {
-
       setAperturaHecha(true);
     } finally {
       setAperturaChecked(true);
@@ -344,13 +599,10 @@ export default function BusinessLayout({ user, onLogout }) {
 
   useEffect(() => { checkApertura(); }, [checkApertura]);
 
-  // ═══════════════════════════════════════════════════════
-  // CARGAR DATOS PARA CIERRE
-  // ═══════════════════════════════════════════════════════
   const cargarDatosCierre = async () => {
     try {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
-      
+            
       const [sumRes, openRes, incomesRes] = await Promise.all([
         fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`),
         fetchWithAuth(`/api/pos/cash-register/opening?date=${today}`),
@@ -361,41 +613,53 @@ export default function BusinessLayout({ user, onLogout }) {
       let opening = {};
       let incomes = [];
 
-      if (sumRes.ok) summary = await sumRes.json();
-      if (openRes.ok) opening = await openRes.json();
-      if (incomesRes.ok) incomes = await incomesRes.json();
+      if (sumRes.ok) {
+        summary = await sumRes.json();
+      } else {
+        console.error('❌ Error en summary:', sumRes.status);
+      }
+      
+      if (openRes.ok) {
+        opening = await openRes.json();
+      } else {
+        console.error('❌ Error en opening:', openRes.status);
+      }
+      
+      if (incomesRes.ok) {
+        incomes = await incomesRes.json();
+      }
 
-      const ventasPorMetodo = summary?.metodos || [];
-      const totalVentas = ventasPorMetodo.reduce((a, b) => a + (Number(b.total_cobrado) || 0), 0);
-      const ventasEfectivo = ventasPorMetodo.find(m => m.payment_method === 'cash')?.total_cobrado || 0;
-      const ventasTarjeta = ventasPorMetodo.find(m => m.payment_method === 'card')?.total_cobrado || 0;
-      const ventasTransferencia = ventasPorMetodo.find(m => m.payment_method === 'transfer')?.total_cobrado || 0;
-      
-      const gastos = (summary?.gastos || []).reduce((a, g) => a + (Number(g.monto) || 0), 0);
-      const ingresosExtras = incomes.reduce((a, i) => a + (Number(i.amount) || 0), 0);
-      
-      const aperturaInicial = (opening?.total_efectivo || 0) + (opening?.monto_banca || 0);
-      const totalTransacciones = summary?.total_transactions || 0;
+      if (!summary.metodos || summary.metodos.length === 0) {
+        console.warn('⚠️ No se encontraron métodos de pago en summary');
+      }
 
       return {
-        ventasDelDia: totalVentas,
-        totalTransacciones: totalTransacciones,
-        ventasEfectivo: ventasEfectivo,
-        ventasTarjeta: ventasTarjeta + ventasTransferencia,
-        gastosOperativos: gastos,
-        ingresosExtras: ingresosExtras,
-        aperturaInicial: aperturaInicial,
-        fechaApertura: opening?.created_at || new Date().toISOString(),
-        cajero: opening?.user_name || user?.nombre || 'N/A'
+        summary: summary,
+        opening: opening,
+        incomes: incomes
       };
     } catch (err) {
-
+      console.error('Error cargando datos cierre:', err);
       return null;
     }
   };
 
+  function CargandoCierreModal() {
+    return (
+      <div className="spinner-overlay">
+        <div className="spinner-brand">
+          <div className="spinner-loader spinner-loader-lg spinner-primary" />
+          <div className="brand-text">
+            ID<span className="highlight">ON</span>
+          </div>
+          <div className="sub-text">Preparando cierre de caja...</div>
+        </div>
+      </div>
+    );
+  }
+
   // ═══════════════════════════════════════════════════════
-  // CIERRE DE CAJA
+  // ✅ CIERRE DE CAJA - CON VERIFICACIÓN DE EXISTENCIA
   // ═══════════════════════════════════════════════════════
   const handleClickCerrarCaja = async () => {
     if (!aperturaHecha) {
@@ -404,59 +668,126 @@ export default function BusinessLayout({ user, onLogout }) {
       return;
     }
 
-    setCargandoCierre(true);
-    const datos = await cargarDatosCierre();
-    
-    if (!datos) {
-      setError('Error al cargar los datos para el cierre');
+    setCargandoCierreInicial(true);
+
+    try {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
+      
+      // ✅ VERIFICAR SI EL USUARIO YA TIENE CIERRE
+      const closeRes = await fetchWithAuth(`/api/pos/cash-register/full-closing?date=${today}`);
+      
+      if (closeRes.status === 200) {
+        const existingClose = await closeRes.json();
+        if (existingClose && existingClose.id) {
+          console.log('✅ Cierre existente encontrado:', existingClose);
+          
+          const [sumRes, openRes, incomesRes] = await Promise.all([
+            fetchWithAuth(`/api/pos/cash-register/summary?date=${today}`),
+            fetchWithAuth(`/api/pos/cash-register/opening?date=${today}`),
+            fetchWithAuth(`/api/pos/cash-register/income-extra?date=${today}`)
+          ]);
+
+          const datosCierre = {
+            summary: sumRes.ok ? await sumRes.json() : {},
+            opening: openRes.ok ? await openRes.json() : {},
+            incomes: incomesRes.ok ? await incomesRes.json() : [],
+            existingClose: existingClose
+          };
+
+          setDatosCierre(datosCierre);
+          setCargandoCierreInicial(false);
+          setMostrarCierreForm(true);
+          return;
+        }
+      }
+      
+      // ✅ NO EXISTE CIERRE - Continuar con el flujo normal
+      try {
+        const res = await fetchWithAuth('/api/ordenes?status=pending');
+        if (res.ok) {
+          const pendientes = await res.json();
+          const lista = Array.isArray(pendientes) ? pendientes : (pendientes.orders || pendientes.data || []);
+          if (lista.length > 0) {
+            setOrdenesPendientes(lista);
+            setCargandoCierreInicial(false);
+            return;
+          }
+        }
+      } catch { /* continuar */ }
+
+      const datos = await cargarDatosCierre();
+      setCargandoCierreInicial(false);
+      
+      if (!datos) {
+        setError('Error al cargar los datos para el cierre');
+        setTimeout(() => setError(null), 4000);
+        return;
+      }
+      
+      setDatosCierre(datos);
+      setMostrarConfirmacionCierre(true);
+      
+    } catch (err) {
+      console.error('Error en handleClickCerrarCaja:', err);
+      setCargandoCierreInicial(false);
+      setError('Error al verificar cierre existente');
       setTimeout(() => setError(null), 4000);
-      setCargandoCierre(false);
-      return;
     }
-    
-    setDatosCierre(datos);
-    setCargandoCierre(false);
-    setMostrarConfirmacionCierre(true);
   };
 
+  // ✅ CONFIRMAR CIERRE
   const handleConfirmarCierre = async () => {
     setMostrarConfirmacionCierre(false);
     setAbriendoCajonCierre(true);
     
-    try {
-      await abrirCajon();
-
-    } catch (err) {
-
-    } finally {
-      setAbriendoCajonCierre(false);
-      setMostrarCierreForm(true);
-    }
+    await abrirCajon();
+    
+    setAbriendoCajonCierre(false);
+    setMostrarCierreForm(true);
   };
 
+  // ✅ CANCELAR CIERRE
   const handleCancelarCierre = () => {
     setMostrarConfirmacionCierre(false);
   };
 
-  const handleCierreCompleto = async (data) => {
+  // ✅ CIERRE COMPLETO
+  const handleCierreCompleto = async (cierreData) => {
     const operador = getOperatorUser();
-    if (operador?.id && data) {
+    const userName = operador?.nombre || operador?.name || operador?.username || operador?.email || 'Usuario';
+    
+    if (operador?.id && cierreData) {
       await fetchWithAuth('/api/audit-log', {
         method: 'POST',
         body: JSON.stringify({
           user_id: operador.id,
+          user_name: userName,
+          user_email: operador?.email || '',
           table_name: "cash_drawer",
-          action: "cierre_caja_completado",
-          description: `Cierre de caja completado por ${operador?.nombre || 'Usuario'}`,
-          new_values: data,
-          reason: "Cierre de caja"
+          action: "c_business",
+          description: `Cierre de caja completado por ${userName}. Total sistema: $${cierreData?.total_system || 0}, Total contado: $${cierreData?.total_counted || 0}, Diferencia: $${cierreData?.diff_total || 0}`,
+          new_values: {
+            total_system: cierreData?.total_system || 0,
+            total_counted: cierreData?.total_counted || 0,
+            diff_total: cierreData?.diff_total || 0,
+            orders_system: cierreData?.orders_system || 0,
+            cash_counted: cierreData?.cash_counted || 0,
+            transfer_counted: cierreData?.transfer_counted || 0,
+            card_counted: cierreData?.card_counted || 0,
+            tip_counted: cierreData?.tip_counted || 0,
+            date: cierreData?.date || new Date().toISOString().split('T')[0],
+            remarks: cierreData?.remarks || '',
+          },
+          reason: "Cierre de caja completado"
         })
-      }).catch(() => {});
+      }).catch((err) => {
+        console.error('Error registrando auditoría de cierre:', err);
+      });
     }
-    
-    setMostrarCierreForm(false);
+
     setAperturaHecha(false);
     await checkApertura();
+    setMostrarCierreForm(false);
   };
 
   // ═══════════════════════════════════════════════════════
@@ -468,34 +799,27 @@ export default function BusinessLayout({ user, onLogout }) {
     setAperturaIniciada(true);
     setAbriendoCaja(true);
 
-    try {
-      await abrirCajon();
-    } catch (err) {
+    await abrirCajon();
 
-    } finally {
-      setAbriendoCaja(false);
-      setAperturaIniciada(false);
-      setMostrarAlerta(false);
-      setMostrarFormulario(true);
-    }
+    setAbriendoCaja(false);
+    setAperturaIniciada(false);
+    setMostrarAlerta(false);
+    setMostrarFormulario(true);
   };
 
   const handleClickAbrirCaja = async () => {
     if (aperturaHecha) {
-      await alert.warning('Ya hay una apertura de caja activa para hoy');
+      if (window.alert) {
+        alert('Ya hay una apertura de caja activa para hoy');
+      }
       return;
     }
     
     setAbriendoCaja(true);
-    try {
-      await abrirCajon();
-    } catch (err) {
-
-    } finally {
-      setAbriendoCaja(false);
-      setMostrarAlerta(false);
-      setMostrarFormulario(true);
-    }
+    await abrirCajon();
+    setAbriendoCaja(false);
+    setMostrarAlerta(false);
+    setMostrarFormulario(true);
   };
 
   const handleAperturaCompleta = async (data) => {
@@ -503,8 +827,8 @@ export default function BusinessLayout({ user, onLogout }) {
     const userName = operador?.nombre || operador?.name || operador?.username || operador?.email || 'Usuario';
 
     if (operador?.id && data) {
-      const totalEfectivo = data.total_efectivo || 0;
-      const montoBanca = data.monto_banca || 0;
+      const totalEfectivo = Number(data.total_efectivo) || 0;
+      const montoBanca = Number(data.monto_banca) || 0;
       const totalInicial = totalEfectivo + montoBanca;
 
       await fetchWithAuth('/api/audit-log', {
@@ -512,7 +836,7 @@ export default function BusinessLayout({ user, onLogout }) {
         body: JSON.stringify({
           user_id: operador.id,
           table_name: "cash_drawer",
-          action: "apertura_caja_completada",
+          action: "a_caja",
           description: `Apertura de caja completada por ${userName}. Efectivo: $${totalEfectivo.toFixed(2)}, Banca: $${montoBanca.toFixed(2)}, Total: $${totalInicial.toFixed(2)}`,
           new_values: {
             total_efectivo: totalEfectivo,
@@ -536,15 +860,22 @@ export default function BusinessLayout({ user, onLogout }) {
   useEffect(() => {
     const load = async () => {
       try {
+        localStorage.removeItem('idonNavModules');
+        const storedBiz = getStoredBiz();
         const navRes = await fetch(`${API_BASE}/api/business-status/navigation`, {
-          headers: { 'Authorization': `Bearer ${getToken()}` },
+          headers: {
+            'Authorization': `Bearer ${getToken()}`,
+            ...(storedBiz?.id ? { 'x-business-id': storedBiz.id } : {}),
+          },
         });
         if (navRes.ok) {
           const navData = await navRes.json();
-          if (navData.ok) setNavData(navData.data);
+          if (navData.ok) {
+            setNavData(navData.data);
+            try { localStorage.setItem('idonNavModules', JSON.stringify(navData.data)); } catch {}
+          }
         }
       } catch (e) {
-
         setError(e.message);
       } finally {
         setLoading(false);
@@ -561,16 +892,33 @@ export default function BusinessLayout({ user, onLogout }) {
 
   if (loading) {
     return (
-      <div className="business-loading">
-        <div className="business-loading-spinner"/>
-        <p>Cargando tu panel...</p>
+      <div className="spinner-overlay">
+        <div className="spinner-brand">
+          <div className="spinner-loader spinner-loader-lg spinner-primary" />
+          <div className="brand-text">
+            ID<span className="highlight">ON</span>
+          </div>
+          <div className="sub-text">Cargando panel...</div>
+        </div>
       </div>
     );
   }
 
   return (
     <BusinessContextProvider>
-      {/* Alerta de apertura requerida */}
+    <BusinessProvider>
+      {updateReady && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999,
+          background: '#1a1a2e', color: '#fff',
+          padding: '10px 20px', textAlign: 'center',
+          fontSize: 14, fontWeight: 600,
+          boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+        }}>
+          🚀 Nueva versión disponible — actualizando en {countdown}s...
+        </div>
+      )}
+
       {aperturaChecked && mostrarAlerta && !mostrarFormulario && !mostrarCierreForm && (
         <AlertaAperturaModal 
           onAceptar={handleAceptarAlerta}
@@ -578,7 +926,8 @@ export default function BusinessLayout({ user, onLogout }) {
         />
       )}
 
-      {/* Formulario de apertura de caja */}
+      {cargandoCierreInicial && <CargandoCierreModal />}
+
       {aperturaChecked && mostrarFormulario && (
         <AperturaCajaPage 
           onAperturaCompleta={handleAperturaCompleta}
@@ -590,7 +939,13 @@ export default function BusinessLayout({ user, onLogout }) {
         />
       )}
 
-      {/* Modal de confirmación para cierre de caja */}
+      {ordenesPendientes.length > 0 && (
+        <OrdenesPendientesModal
+          ordenes={ordenesPendientes}
+          onClose={() => setOrdenesPendientes([])}
+        />
+      )}
+
       {mostrarConfirmacionCierre && (
         <ConfirmarCierreModal
           onConfirm={handleConfirmarCierre}
@@ -599,14 +954,14 @@ export default function BusinessLayout({ user, onLogout }) {
         />
       )}
 
-      {/* Formulario de cierre de caja */}
       {mostrarCierreForm && datosCierre && (
         <CierreDeCajaPage
           cajaData={datosCierre}
-          onClose={(exitoso) => {
+          user={user}
+          onClose={(exitoso, cierreData) => {
             setMostrarCierreForm(false);
             if (exitoso) {
-              handleCierreCompleto(datosCierre);
+              handleCierreCompleto(cierreData || datosCierre);
             }
           }}
         />
@@ -637,7 +992,11 @@ export default function BusinessLayout({ user, onLogout }) {
         <div className="business-content-area">
           <div className="mobile-topbar">
             <span className="mobile-topbar-brand">
-              <span className="logo-white">ID</span><span className="logo-orange">ON</span>
+              <img src="/IDON_2.svg" alt="IDON" className="mobile-topbar-logo" />
+              <span className="mobile-topbar-brand-text">
+                <span className="mobile-topbar-name"><span className="logo-white">ID</span><span className="logo-orange">ON</span></span>
+                <span className="mobile-topbar-subtitle">GESTIÓN MULTINEGOCIOS</span>
+              </span>
             </span>
             <button
               className="mobile-hamburger"
@@ -655,12 +1014,6 @@ export default function BusinessLayout({ user, onLogout }) {
                 {error}
               </div>
             )}
-            {!isQzReady && !loading && (
-              <div className="business-warning" style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '8px', borderRadius: '4px', marginBottom: '10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <FiAlertCircle size={14} />
-                QZ Tray no está conectado. El cajón se abrirá mediante método alternativo.
-              </div>
-            )}
             {printerError && !loading && (
               <div className="business-warning" style={{ backgroundColor: '#fce4e4', color: '#991b1b', padding: '8px', borderRadius: '4px', marginBottom: '10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <FiAlertCircle size={14} />
@@ -672,6 +1025,7 @@ export default function BusinessLayout({ user, onLogout }) {
           <Footer />
         </div>
       </div>
+    </BusinessProvider>
     </BusinessContextProvider>
   );
 }

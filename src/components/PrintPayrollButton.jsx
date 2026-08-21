@@ -1,6 +1,7 @@
 // components/PrintPayrollButton.jsx
 import React, { useState } from 'react';
 import { FiPrinter, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { IconTextButton } from './General/Button'; // ← Importar IconTextButton
 import { usePrinterService } from '../services/usePrinterService';
 
 export default function PrintPayrollButton({ 
@@ -11,7 +12,13 @@ export default function PrintPayrollButton({
   userName,
   printerTicket, 
   className,
-  onPrintComplete
+  onPrintComplete,
+  // Nuevas props para consistencia con otros botones
+  variant = 'success',
+  size = 'md',
+  icon = <FiPrinter size={14} />,
+  disabled = false,
+  ...rest
 }) {
   const [printing, setPrinting] = useState(false);
   const [error, setError] = useState('');
@@ -23,16 +30,12 @@ export default function PrintPayrollButton({
     setError('');
     setSuccess('');
     
-
-    // Validaciones
     if (!printerTicket || !printerTicket.name) {
-
       setError('⚠️ IMPRESORA NO DETECTADA, PRIMERO AGREGUE UNA IMPRESORA');
       return;
     }
 
     if (!payroll) {
-
       setError('No hay datos de nómina para imprimir');
       return;
     }
@@ -40,10 +43,8 @@ export default function PrintPayrollButton({
     setPrinting(true);
 
     try {
-      // Construir items (ingresos) y deductions (deducciones)
       const itemsList = [];
       const deductionsList = [];
-      
 
       if (details && Array.isArray(details)) {
         details.forEach(detail => {
@@ -66,10 +67,7 @@ export default function PrintPayrollButton({
         });
       }
 
-
-      // Si no hay detalles, agregar el pago base
       if (itemsList.length === 0) {
-
         if (periodInfo?.payment_type === 'hourly') {
           itemsList.push({
             concept: `Horas trabajadas (${payroll?.total_hours || 0} h x $${Number(payroll?.hourly_rate || 0).toFixed(2)})`,
@@ -81,7 +79,6 @@ export default function PrintPayrollButton({
             amount: Number(payroll?.total_pay || 0)
           });
         }
-
       }
 
       const data = {
@@ -113,39 +110,26 @@ export default function PrintPayrollButton({
         printerFooter: printerTicket?.footer || "Gracias por su trabajo"
       };
 
-
-      // Usar el servicio de impresión con template 'payroll'
       const result = await print('printer_main', 'payroll', data, false);
 
-
       if (result.success) {
-
         setSuccess('✅ Recibo impreso correctamente');
         setTimeout(() => setSuccess(''), 3000);
         if (onPrintComplete) onPrintComplete();
       } else {
-
         throw new Error(result.error || 'Error al imprimir');
       }
 
     } catch (err) {
-
       setError(err.message || 'Error al imprimir');
-      
-      // Fallback: imprimir en navegador
-
       imprimirHTMLFallback();
     } finally {
       setPrinting(false);
-
     }
   };
 
   const imprimirHTMLFallback = () => {
-
     const width = printerTicket?.width || 32;
-
-    // Construir texto simple para fallback
     let text = '';
     const line = '='.repeat(width);
     const sep = '-'.repeat(width);
@@ -163,7 +147,6 @@ export default function PrintPayrollButton({
     text += sep + '\n';
     text += `Impreso: ${new Date().toLocaleString()}\n`;
     text += line + '\n\n';
-    
 
     const html = `
       <!DOCTYPE html>
@@ -183,7 +166,6 @@ export default function PrintPayrollButton({
 
     const printWindow = window.open('', '_blank', 'width=450,height=650,toolbar=0,menubar=0');
     if (printWindow) {
-
       printWindow.document.write(html);
       printWindow.document.close();
       printWindow.focus();
@@ -191,69 +173,35 @@ export default function PrintPayrollButton({
       if (onPrintComplete) onPrintComplete();
       setSuccess('✅ Enviado a impresión (ventana del navegador)');
     } else {
-
       setError('Permite ventanas emergentes para imprimir');
     }
   };
 
   return (
-    <div className="print-button-wrapper" style={{ flex: 1 }}>
-      <button 
-        className={className || "btn-print-modern"} 
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+      <IconTextButton
+        variant={variant}
+        size={size}
         onClick={handlePrint}
-        disabled={printing}
-        type="button"
-        style={{
-          width: '100%',
-          padding: '10px',
-          background: 'linear-gradient(135deg, #10b981, #059669)',
-          border: 'none',
-          borderRadius: '10px',
-          color: 'white',
-          fontWeight: 600,
-          cursor: printing ? 'not-allowed' : 'pointer',
-          opacity: printing ? 0.6 : 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px'
-        }}
+        disabled={disabled || printing}
+        loading={printing}
+        icon={icon}
+        className={className}
+        block
+        {...rest}
       >
-        <FiPrinter size={16} />
         {printing ? 'Imprimiendo...' : 'Imprimir'}
-      </button>
+      </IconTextButton>
       
       {error && (
-        <div style={{
-          marginTop: '8px',
-          padding: '8px 12px',
-          background: 'rgba(239, 68, 68, 0.15)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: '8px',
-          color: '#ef4444',
-          fontSize: '11px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px'
-        }}>
+        <div className="payroll-print-error">
           <FiAlertCircle size={12} />
           <span>{error}</span>
         </div>
       )}
       
       {success && (
-        <div style={{
-          marginTop: '8px',
-          padding: '8px 12px',
-          background: 'rgba(16, 185, 129, 0.15)',
-          border: '1px solid rgba(16, 185, 129, 0.3)',
-          borderRadius: '8px',
-          color: '#10b981',
-          fontSize: '11px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px'
-        }}>
+        <div className="payroll-print-success">
           <FiCheckCircle size={12} />
           <span>{success}</span>
         </div>

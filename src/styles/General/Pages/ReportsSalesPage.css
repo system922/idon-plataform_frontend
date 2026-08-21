@@ -1,0 +1,500 @@
+/* ============================================================
+   REPORTS SALES PAGE - Estilos para reporte de ventas
+   ============================================================ */
+
+/* ─── Header Actions ─────────────────────────────────────────────────────── */
+.products-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: var(--primary-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: 99px;
+  color: var(--primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ─── Dropdown ────────────────────────────────────────────────────────────── */
+.report-dropdown {
+  position: relative;
+}
+
+.report-date-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  height: 40px;
+  transition: var(--transition-fast);
+}
+
+.report-date-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+}
+
+.report-date-btn svg {
+  flex-shrink: 0;
+}
+
+.report-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: var(--space-1);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  z-index: var(--z-dropdown);
+  min-width: 180px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.report-dropdown-menu button {
+  display: block;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: var(--transition-fast);
+}
+
+.report-dropdown-menu button:not(:last-child) {
+  border-bottom: 1px solid var(--border-light);
+}
+
+.report-dropdown-menu button:hover {
+  background: var(--bg-hover);
+}
+
+.report-dropdown-menu button.active {
+  background: var(--primary);
+  color: var(--text-white);
+}
+
+/* ─── Filter Actions ────────────────────────────────────────────────────── */
+.products-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.report-btn-cancel-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  height: 36px;
+  transition: var(--transition-fast);
+}
+
+.report-btn-cancel-sm:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+/* ─── Date Range Picker ──────────────────────────────────────────────────── */
+.report-date-range-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.report-date-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.report-date-range-inputs input {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.report-date-range-inputs input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.report-date-range-inputs span {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.report-date-range-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.report-btn-cancel {
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: var(--transition-fast);
+}
+
+.report-btn-cancel:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.report-btn-apply {
+  padding: var(--space-2) var(--space-5);
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-white);
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  transition: var(--transition-fast);
+}
+
+.report-btn-apply:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.report-btn-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Status Badge ───────────────────────────────────────────────────────── */
+.status-badge {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 99px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-badge.pending,
+.status-badge.pendiente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.paid,
+.status-badge.pagado {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.authorized,
+.status-badge.autorizado {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.rejected,
+.status-badge.rechazado {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-badge.completed,
+.status-badge.completado {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.cancelled,
+.status-badge.cancelado {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* ─── Detail Modal ───────────────────────────────────────────────────────── */
+.detail-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+.detail-error {
+  padding: 12px 16px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-section {
+  margin-bottom: 20px;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.detail-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-section-title svg {
+  color: var(--primary);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 20px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-item label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-item .detail-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.detail-item .detail-value-mono {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-family: monospace;
+  word-break: break-all;
+}
+
+/* ─── Items Table dentro del modal ──────────────────────────────────────── */
+.detail-items-table {
+  margin-top: 12px;
+}
+
+.detail-items-table h5 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.items-table-wrapper {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.items-table-wrapper table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.items-table-wrapper thead {
+  background: var(--bg-tertiary);
+}
+
+.items-table-wrapper th {
+  padding: 6px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.items-table-wrapper td {
+  padding: 6px 10px;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.items-table-wrapper .text-center {
+  text-align: center;
+}
+
+.items-table-wrapper .text-right {
+  text-align: right;
+}
+
+.items-table-wrapper tfoot td {
+  padding: 8px 10px;
+  font-weight: 600;
+  border-top: 2px solid var(--border-color);
+}
+
+/* ─── Summary Section ────────────────────────────────────────────────────── */
+.detail-summary {
+  background: var(--primary-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.detail-summary .detail-section-title {
+  border-bottom-color: var(--border-primary);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.summary-item {
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.summary-item label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-item .summary-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.summary-item-total {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.summary-item-total label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.summary-item-total .summary-value {
+  color: #ffffff;
+  font-size: 18px;
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .products-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .products-toolbar-left {
+    width: 100%;
+  }
+
+  .products-toolbar-right {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .products-filters-row {
+    flex: 1;
+  }
+
+  .products-filter-group {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .products-header-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .report-date-range-inputs {
+    flex-direction: column;
+  }
+
+  .report-date-range-inputs span {
+    display: none;
+  }
+
+  .products-header-actions .btn-group {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .products-header-actions .btn-group .btn {
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .dashboard-refresh-btn-header {
+    width: 100%;
+    justify-content: center;
+  }
+}

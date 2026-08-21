@@ -1,26 +1,125 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSession } from '../../context/SessionContext'; // ✅ AGREGADO
 import PageTemplate from '../../components/PageTemplate';
-import { 
-  RefreshCw, TrendingUp, Users, ShoppingBag, DollarSign, 
-  Clock, Calendar, Award, Target, PieChart
+import {
+  TrendingUp, CheckCircle, AlertCircle, Info, X, Layout,
+  Users as UsersIcon,
+  PieChart as PieChartIcon,
+  Award as AwardIcon
 } from 'react-feather';
-import { fetchWithAuth } from '../../config/apiBase';
+import { FiRefreshCw } from 'react-icons/fi';
+import { fetchWithAuth } from '../../config/api'; // ✅ CORREGIDO
 import '../../styles/CrmAnalytics.css';
 
+// ── IMPORTAR COMPONENTES DE TABS ──
+import TabResumen from '../../components/General/Tabs/TabResumen';
+import TabVentas from '../../components/General/Tabs/TabVentas';
+import TabClientes from '../../components/General/Tabs/TabClientes';
+import TabSegmentacion from '../../components/General/Tabs/TabSegmentacion';
+import TabRanking from '../../components/General/Tabs/TabRanking';
+
+// ── CONFIGURACIÓN ──
+const ECUADOR_TIMEZONE = 'America/Guayaquil';
+
+const COLORS = {
+  primary: 'var(--primary)',
+  primaryLight: '#8b5cf6',
+  primaryDark: '#4f2dbd',
+  success: '#10b981',
+  successLight: '#34d399',
+  warning: '#f59e0b',
+  danger: '#ef4444',
+  info: '#3b82f6',
+  purple: '#8b5cf6',
+  pink: '#ec4899',
+  gray: '#6b7280',
+  grayLight: '#9ca3af',
+  grayDark: '#4b5563'
+};
+
+// ── UTILIDADES ──
+export const formatUtils = {
+  currency: (value) => {
+    const num = Number(value) || 0;
+    return new Intl.NumberFormat('es-EC', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(num);
+  },
+
+  number: (value) => {
+    const num = Number(value) || 0;
+    return num.toLocaleString('es-EC');
+  },
+
+  compactNumber: (value) => {
+    const num = Number(value) || 0;
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  },
+
+  percentage: (value, total) => {
+    if (!total || total === 0) return '0%';
+    return ((Number(value) / total) * 100).toFixed(1) + '%';
+  },
+
+  date: (dateString) => {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-EC', {
+        timeZone: ECUADOR_TIMEZONE,
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return '-';
+    }
+  },
+
+  monthName: (monthNumber) => {
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return months[parseInt(monthNumber) - 1] || monthNumber;
+  },
+
+  dayName: (dayName) => {
+    const days = {
+      Monday: 'Lun',
+      Tuesday: 'Mar',
+      Wednesday: 'Mié',
+      Thursday: 'Jue',
+      Friday: 'Vie',
+      Saturday: 'Sáb',
+      Sunday: 'Dom'
+    };
+    return days[dayName] || dayName?.substring(0, 3) || '-';
+  }
+};
+
+// ── COMPONENTE PRINCIPAL ──
 export default function CrmAnalytics() {
+  const { user } = useSession(); // ✅ AGREGADO
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [summary, setSummary] = useState(null);
-  const [segments, setSegments] = useState([]);
-  const [topCustomers, setTopCustomers] = useState([]);
-  const [salesByHour, setSalesByHour] = useState([]);
-  const [salesByDay, setSalesByDay] = useState([]);
-  const [monthlyTrend, setMonthlyTrend] = useState([]);
-  const [clv, setClv] = useState(null);
-  const [periodFilter, setPeriodFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('resumen');
+  const [data, setData] = useState({
+    summary: null,
+    segments: [],
+    topCustomers: [],
+    salesByHour: [],
+    salesByDay: [],
+    monthlyTrend: [],
+    clv: null,
+    invoiceSource: null
+  });
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [error, setError] = useState('');
   const [notification, setNotification] = useState(null);
-  const [invoiceSource, setInvoiceSource] = useState(null);
+  const [timeRange, setTimeRange] = useState('month');
 
   const showNotification = (msg, type = 'info') => {
     setNotification({ msg, type });
@@ -32,6 +131,7 @@ export default function CrmAnalytics() {
       setLoading(true);
       setError('');
 
+      // ✅ SIN /api
       const [
         summaryRes,
         segmentsRes,
@@ -41,13 +141,13 @@ export default function CrmAnalytics() {
         monthlyTrendRes,
         clvRes
       ] = await Promise.all([
-        fetchWithAuth('/api/crm/analytics/summary'),
-        fetchWithAuth('/api/crm/analytics/customer-segments'),
-        fetchWithAuth(`/api/crm/analytics/top-customers?limit=10&period=${periodFilter}`),
-        fetchWithAuth('/api/crm/analytics/sales-by-hour'),
-        fetchWithAuth('/api/crm/analytics/sales-by-day'),
-        fetchWithAuth('/api/crm/analytics/monthly-trend?months=6'),
-        fetchWithAuth('/api/crm/analytics/customer-lifetime-value')
+        fetchWithAuth('/crm/analytics/summary'),
+        fetchWithAuth('/crm/analytics/customer-segments'),
+        fetchWithAuth(`/crm/analytics/top-customers?limit=10&period=${timeRange}`),
+        fetchWithAuth('/crm/analytics/sales-by-hour'),
+        fetchWithAuth('/crm/analytics/sales-by-day'),
+        fetchWithAuth('/crm/analytics/monthly-trend?months=6'),
+        fetchWithAuth('/crm/analytics/customer-lifetime-value')
       ]);
 
       const summaryData = await summaryRes.json();
@@ -58,51 +158,25 @@ export default function CrmAnalytics() {
       const monthlyTrendData = await monthlyTrendRes.json();
       const clvData = await clvRes.json();
 
-      if (summaryData.success) {
-        setSummary(summaryData.data);
-      }
-      if (segmentsData.success && Array.isArray(segmentsData.data)) {
-        setSegments(segmentsData.data);
-      } else {
-        setSegments([]);
-      }
-      if (topCustomersData.success && Array.isArray(topCustomersData.data)) {
-        setTopCustomers(topCustomersData.data);
-      } else {
-        setTopCustomers([]);
-      }
-      if (salesByHourData.success && Array.isArray(salesByHourData.data)) {
-        setSalesByHour(salesByHourData.data);
-      } else {
-        setSalesByHour([]);
-      }
-      if (salesByDayData.success && Array.isArray(salesByDayData.data)) {
-        setSalesByDay(salesByDayData.data);
-      } else {
-        setSalesByDay([]);
-      }
-      if (monthlyTrendData.success && Array.isArray(monthlyTrendData.data)) {
-        setMonthlyTrend(monthlyTrendData.data);
-      } else {
-        setMonthlyTrend([]);
-      }
-      if (clvData.success) {
-        setClv(clvData.data);
-      }
-
-      if (summaryData.metadata) {
-        setInvoiceSource(summaryData.metadata.invoiceSource);
-      }
+      setData({
+        summary: summaryData.success ? summaryData.data : null,
+        segments: segmentsData.success && Array.isArray(segmentsData.data) ? segmentsData.data : [],
+        topCustomers: topCustomersData.success && Array.isArray(topCustomersData.data) ? topCustomersData.data : [],
+        salesByHour: salesByHourData.success && Array.isArray(salesByHourData.data) ? salesByHourData.data : [],
+        salesByDay: salesByDayData.success && Array.isArray(salesByDayData.data) ? salesByDayData.data : [],
+        monthlyTrend: monthlyTrendData.success && Array.isArray(monthlyTrendData.data) ? monthlyTrendData.data : [],
+        clv: clvData.success ? clvData.data : null,
+        invoiceSource: summaryData.metadata?.invoiceSource || null
+      });
 
     } catch (err) {
-
       setError(err.message);
       showNotification('Error al cargar datos', 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [periodFilter]);
+  }, [timeRange]);
 
   useEffect(() => {
     loadAllData();
@@ -111,412 +185,189 @@ export default function CrmAnalytics() {
   const handleRefresh = () => {
     setRefreshing(true);
     loadAllData();
-    showNotification('Actualizando datos...', 'info');
   };
 
-  // Calcular máximos para las barras (con validación)
-  const maxHourSales = salesByHour.length > 0 
-    ? Math.max(...salesByHour.map(h => Number(h.total_sales) || 0), 0) 
-    : 0;
-  const maxDaySales = salesByDay.length > 0 
-    ? Math.max(...salesByDay.map(d => Number(d.total_sales) || 0), 0) 
-    : 0;
-  const maxMonthSales = monthlyTrend.length > 0 
-    ? Math.max(...monthlyTrend.map(m => Number(m.total_sales) || 0), 0) 
-    : 0;
+  const tabs = [
+    { id: 'resumen', label: 'Resumen', icon: Layout, badge: null },
+    { id: 'ventas', label: 'Ventas', icon: TrendingUp, badge: null },
+    { id: 'clientes', label: 'Clientes', icon: UsersIcon, badge: data.summary?.total_customers || 0 },
+    { id: 'segmentacion', label: 'Segmentación', icon: PieChartIcon, badge: null },
+    { id: 'ranking', label: 'Ranking', icon: AwardIcon, badge: null },
+  ];
 
-  // Formato de moneda para Ecuador (USD)
-  const formatCurrency = (value) => {
-    const num = Number(value) || 0;
-    return new Intl.NumberFormat('es-EC', { 
-      style: 'currency', 
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(num);
-  };
-  
-  // Formato de números para Ecuador
-  const formatNumber = (value) => {
-    const num = Number(value) || 0;
-    return num.toLocaleString('es-EC');
-  };
+  if (loading) {
+    return (
+      <PageTemplate
+        title="Analítica de Clientes"
+        subtitle="Cargando datos..."
+        loading={true}
+      />
+    );
+  }
 
-  // Formato de fecha para Ecuador
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-EC', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  if (error) {
+    return (
+      <PageTemplate
+        title="Analítica de Clientes"
+        subtitle="Error al cargar los datos"
+        error={error}
+        onRetry={loadAllData}
+      />
+    );
+  }
 
-  const segmentColors = {
-    vip: { bg: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', icon: '👑' },
-    frecuente: { bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', icon: '⭐' },
-    ocasional: { bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', icon: '🔄' },
-    nuevo: { bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', icon: '🆕' }
-  };
-
-  const segmentNames = {
-    vip: 'VIP',
-    frecuente: 'Frecuente',
-    ocasional: 'Ocasional',
-    nuevo: 'Nuevo'
-  };
-
-  // Nombres de días en español (Ecuador)
-  const dayNames = {
-    Monday: 'Lun',
-    Tuesday: 'Mar',
-    Wednesday: 'Mié',
-    Thursday: 'Jue',
-    Friday: 'Vie',
-    Saturday: 'Sáb',
-    Sunday: 'Dom'
-  };
-
-  // Orden de segmentos para mostrar
-  const segmentOrder = ['vip', 'frecuente', 'ocasional', 'nuevo'];
-  
-  // Ordenar segmentos según el orden deseado
-  const sortedSegments = [...segments].sort((a, b) => {
-    return segmentOrder.indexOf(a.segment) - segmentOrder.indexOf(b.segment);
-  });
+  const refreshButton = (
+      <button
+        onClick={handleRefresh}
+        className="dashboard-refresh-btn-header"
+        disabled={refreshing}
+        title="Actualizar datos"
+      >
+        <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+        <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+      </button>
+    );
 
   return (
     <PageTemplate
       title="Analítica de Clientes"
-      subtitle="Comportamiento y tendencias de tus clientes"
-      loading={loading}
-      error={error}
-      onRetry={loadAllData}
-      headerAction={
-        <div className="header-actions">
-          {invoiceSource && (
-            <div className="invoice-source-badge-analytics">
-              {invoiceSource === 'einvoicing' ? '📄 Fact. Electrónica' : '🛒 Ventas POS'}
-            </div>
-          )}
-          <button className="btn-refresh-analytics" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw size={16} className={refreshing ? 'spin' : ''} />
-            Actualizar
-          </button>
-        </div>
-      }
+      subtitle="Dashboard completo de comportamiento y tendencias"
+      headerAction={refreshButton}
     >
-      {notification && (
-        <div className={`crm-analytics-notification ${notification.type}`}>
-          {notification.msg}
-        </div>
-      )}
-
-      {/* Tarjetas de resumen */}
-      {summary && (
-        <div className="analytics-summary-grid">
-          <div className="summary-card">
-            <div className="summary-icon total">
-              <Users size={24} />
-            </div>
-            <div className="summary-info">
-              <span className="summary-value">{formatNumber(summary.total_customers)}</span>
-              <span className="summary-label">Total Clientes</span>
-            </div>
-          </div>
-          <div className="summary-card">
-            <div className="summary-icon active">
-              <Users size={24} />
-            </div>
-            <div className="summary-info">
-              <span className="summary-value">{formatNumber(summary.active_customers)}</span>
-              <span className="summary-label">Clientes Activos</span>
-              <span className="summary-sub">{formatNumber(summary.customers_last_30d)} últimos 30 días</span>
-            </div>
-          </div>
-          <div className="summary-card">
-            <div className="summary-icon revenue">
-              <DollarSign size={24} />
-            </div>
-            <div className="summary-info">
-              <span className="summary-value">{formatCurrency(summary.total_revenue)}</span>
-              <span className="summary-label">Ingresos Totales</span>
-              <span className="summary-sub">{formatNumber(summary.total_orders)} órdenes</span>
-            </div>
-          </div>
-          <div className="summary-card">
-            <div className="summary-icon ticket">
-              <ShoppingBag size={24} />
-            </div>
-            <div className="summary-info">
-              <span className="summary-value">{formatCurrency(summary.avg_ticket)}</span>
-              <span className="summary-label">Ticket Promedio</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Segmentación de clientes */}
-      {sortedSegments.length > 0 && (
-        <div className="analytics-section">
-          <div className="section-header">
-            <h3><PieChart size={18} /> Segmentación de Clientes</h3>
-            <p>Distribución por comportamiento de compra</p>
-          </div>
-          <div className="segments-grid">
-            {sortedSegments.map((segment, index) => {
-              const config = segmentColors[segment.segment] || segmentColors.ocasional;
-              const total = sortedSegments.reduce((sum, s) => sum + (Number(s.count) || 0), 0);
-              const percentage = total > 0 ? ((Number(segment.count) / total) * 100).toFixed(1) : 0;
-              const avgSpent = Number(segment.avg_spent) || 0;
-              const avgOrders = Number(segment.avg_orders) || 0;
-              
-              return (
-                <div key={`segment-${segment.segment}-${index}`} className="segment-card">
-                  <div className="segment-header" style={{ background: config.bg }}>
-                    <span className="segment-icon">{config.icon}</span>
-                    <span className="segment-name" style={{ color: config.color }}>
-                      {segmentNames[segment.segment] || segment.segment}
-                    </span>
-                  </div>
-                  <div className="segment-body">
-                    <div className="segment-stat">
-                      <span className="stat-value">{formatNumber(segment.count)}</span>
-                      <span className="stat-label">clientes</span>
-                    </div>
-                    <div className="segment-stat">
-                      <span className="stat-value">{formatCurrency(avgSpent)}</span>
-                      <span className="stat-label">gasto promedio</span>
-                    </div>
-                    <div className="segment-stat">
-                      <span className="stat-value">{Math.round(avgOrders)}</span>
-                      <span className="stat-label">órdenes promedio</span>
-                    </div>
-                    <div className="segment-progress">
-                      <div className="progress-bar" style={{ width: `${percentage}%`, background: config.color }} />
-                      <span className="progress-label">{percentage}%</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Top clientes y CLV */}
-      <div className="analytics-two-columns">
-        {/* Top clientes */}
-        <div className="analytics-section half">
-          <div className="section-header">
-            <h3><Award size={18} /> Top Clientes</h3>
-            <div className="period-filter">
-              <select value={periodFilter} onChange={e => setPeriodFilter(e.target.value)}>
-                <option value="all">Todo el período</option>
-                <option value="month">Último mes</option>
-                <option value="week">Última semana</option>
-              </select>
-            </div>
-          </div>
-          <div className="top-customers-list">
-            {topCustomers.length === 0 ? (
-              <div className="empty-state">
-                <ShoppingBag size={32} />
-                <p>No hay datos de clientes</p>
-                <span>Realiza ventas para ver el top de clientes</span>
-              </div>
-            ) : (
-              topCustomers.map((customer, idx) => (
-                <div key={customer.id || `customer-${idx}`} className="top-customer-item">
-                  <div className="customer-rank">#{idx + 1}</div>
-                  <div className="customer-avatar">
-                    {customer.name?.charAt(0)?.toUpperCase() || '?'}
-                  </div>
-                  <div className="customer-info">
-                    <div className="customer-name">{customer.name || 'Cliente'}</div>
-                    <div className="customer-email">{customer.email || 'Sin email'}</div>
-                    <div className="customer-document">{customer.document_number || 'Sin documento'}</div>
-                    {customer.last_order && (
-                      <div className="customer-last-order">Última compra: {formatDate(customer.last_order)}</div>
-                    )}
-                  </div>
-                  <div className="customer-stats">
-                    <div className="stat">
-                      <span className="stat-value">{formatNumber(customer.total_orders)}</span>
-                      <span className="stat-label">órdenes</span>
-                    </div>
-                    <div className="stat">
-                      <span className="stat-value">{formatCurrency(customer.total_spent)}</span>
-                      <span className="stat-label">gastado</span>
-                    </div>
-                    <div className="stat">
-                      <span className="stat-value">{formatCurrency(customer.avg_ticket)}</span>
-                      <span className="stat-label">promedio</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* CLV - Customer Lifetime Value */}
-        {clv && (
-          <div className="analytics-section half">
-            <div className="section-header">
-              <h3><Target size={18} /> Valor de Vida del Cliente (CLV)</h3>
-              <p>Métrica clave de negocio</p>
-            </div>
-            <div className="clv-cards">
-              <div className="clv-card">
-                <span className="clv-value">{formatCurrency(clv.avg_clv)}</span>
-                <span className="clv-label">CLV Promedio</span>
-              </div>
-              <div className="clv-card">
-                <span className="clv-value">{formatCurrency(clv.median_clv)}</span>
-                <span className="clv-label">CLV Mediana</span>
-              </div>
-              <div className="clv-card">
-                <span className="clv-value">{formatCurrency(clv.max_clv)}</span>
-                <span className="clv-label">CLV Máximo</span>
-              </div>
-              <div className="clv-card">
-                <span className="clv-value">{formatCurrency(clv.avg_projected_annual)}</span>
-                <span className="clv-label">Valor Anual Proyectado</span>
-              </div>
-            </div>
+      <div className="crm-analytics-container">
+        {/* ── NOTIFICACIONES ── */}
+        {notification && (
+          <div className={`crm-analytics-notification ${notification.type}`}>
+            {notification.type === 'error' && <AlertCircle size={16} style={{ marginRight: '8px' }} />}
+            {notification.type === 'success' && <CheckCircle size={16} style={{ marginRight: '8px' }} />}
+            {notification.type === 'info' && <Info size={16} style={{ marginRight: '8px' }} />}
+            {notification.msg}
           </div>
         )}
+
+        {/* ── TABS ── */}
+        <div className="crm-tabs">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              className={`crm-tab ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <tab.icon size={16} />
+              <span>{tab.label}</span>
+              {tab.badge !== null && tab.badge > 0 && (
+                <span className="tab-badge">{tab.badge}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* ── CONTENIDO DE TABS ── */}
+        <div className="tab-content">
+          {activeTab === 'resumen' && (
+            <TabResumen
+              data={data}
+              formatUtils={formatUtils}
+              COLORS={COLORS}
+              timeRange={timeRange}
+              setTimeRange={setTimeRange}
+              onSelectCustomer={setSelectedCustomer}
+            />
+          )}
+
+          {activeTab === 'ventas' && (
+            <TabVentas
+              data={data}
+              formatUtils={formatUtils}
+              COLORS={COLORS}
+              timeRange={timeRange}
+              setTimeRange={setTimeRange}
+            />
+          )}
+
+          {activeTab === 'clientes' && (
+            <TabClientes
+              data={data}
+              formatUtils={formatUtils}
+              COLORS={COLORS}
+              onSelectCustomer={setSelectedCustomer}
+            />
+          )}
+
+          {activeTab === 'segmentacion' && (
+            <TabSegmentacion
+              data={data}
+              formatUtils={formatUtils}
+              COLORS={COLORS}
+            />
+          )}
+
+          {activeTab === 'ranking' && (
+            <TabRanking
+              data={data}
+              formatUtils={formatUtils}
+              COLORS={COLORS}
+              onSelectCustomer={setSelectedCustomer}
+            />
+          )}
+        </div>
+
+        {/* ── MODAL DE CLIENTE ── */}
+        {selectedCustomer && (
+          <CustomerDetailModal
+            customer={selectedCustomer}
+            formatUtils={formatUtils}
+            onClose={() => setSelectedCustomer(null)}
+          />
+        )}
       </div>
-
-      {/* Ventas por hora y día */}
-      <div className="analytics-two-columns">
-        {/* Ventas por hora */}
-        <div className="analytics-section half">
-          <div className="section-header">
-            <h3><Clock size={18} /> Ventas por Hora</h3>
-            <p>Horario de mayor actividad (hora local Ecuador)</p>
-          </div>
-          <div className="chart-bars hour-bars">
-            {salesByHour.length === 0 ? (
-              <div className="empty-chart">No hay datos de ventas por hora</div>
-            ) : (
-              salesByHour.map((hour, idx) => (
-                <div key={`hour-${hour.hour}-${idx}`} className="bar-item">
-                  <div className="bar-label">{String(hour.hour).padStart(2, '0')}:00</div>
-                  <div className="bar-container">
-                    <div 
-                      className="bar-fill" 
-                      style={{ 
-                        width: maxHourSales > 0 ? `${(Number(hour.total_sales) / maxHourSales) * 100}%` : '0%',
-                        background: 'linear-gradient(90deg, #6842fe, #8b5cf6)'
-                      }}
-                    />
-                  </div>
-                  <div className="bar-value">{formatCurrency(hour.total_sales)}</div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Ventas por día */}
-        <div className="analytics-section half">
-          <div className="section-header">
-            <h3><Calendar size={18} /> Ventas por Día</h3>
-            <p>Días de mayor facturación</p>
-          </div>
-          <div className="chart-bars day-bars">
-            {salesByDay.length === 0 ? (
-              <div className="empty-chart">No hay datos de ventas por día</div>
-            ) : (
-              salesByDay.map((day, idx) => {
-                // Convertir nombre del día a español
-                let dayName = day.day_name || '';
-                const spanishDay = {
-                  'Monday': 'Lun',
-                  'Tuesday': 'Mar', 
-                  'Wednesday': 'Mié',
-                  'Thursday': 'Jue',
-                  'Friday': 'Vie',
-                  'Saturday': 'Sáb',
-                  'Sunday': 'Dom'
-                };
-                const shortName = spanishDay[dayName] || dayName?.substring(0, 3) || '-';
-                
-                return (
-                  <div key={`day-${day.day_of_week}-${idx}`} className="bar-item">
-                    <div className="bar-label">{shortName}</div>
-                    <div className="bar-container">
-                      <div 
-                        className="bar-fill" 
-                        style={{ 
-                          width: maxDaySales > 0 ? `${(Number(day.total_sales) / maxDaySales) * 100}%` : '0%',
-                          background: 'linear-gradient(90deg, #10b981, #34d399)'
-                        }}
-                      />
-                    </div>
-                    <div className="bar-value">{formatCurrency(day.total_sales)}</div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Tendencia mensual */}
-      {monthlyTrend.length > 0 && (
-        <div className="analytics-section">
-          <div className="section-header">
-            <h3><TrendingUp size={18} /> Tendencia Mensual</h3>
-            <p>Evolución de ventas y clientes</p>
-          </div>
-          <div className="monthly-trend">
-            <div className="trend-chart">
-              {monthlyTrend.map((month, idx) => {
-                // Convertir número de mes a nombre en español
-                const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-                const monthNum = parseInt(month.month) - 1;
-                const monthName = monthNames[monthNum] || month.month;
-                
-                return (
-                  <div key={month.month_key || `month-${idx}`} className="trend-bar-item">
-                    <div className="trend-label">
-                      {monthName}/{month.year}
-                    </div>
-                    <div className="trend-bars">
-                      <div 
-                        className="trend-bar sales-bar" 
-                        style={{ 
-                          height: maxMonthSales > 0 ? `${(Number(month.total_sales) / maxMonthSales) * 100}%` : '0%',
-                        }}
-                        title={`Ventas: ${formatCurrency(month.total_sales)}`}
-                      />
-                      <div 
-                        className="trend-bar customers-bar" 
-                        style={{ 
-                          height: maxMonthSales > 0 ? `${(Number(month.unique_customers) / maxMonthSales) * 100}%` : '0%',
-                        }}
-                        title={`Clientes: ${formatNumber(month.unique_customers)}`}
-                      />
-                    </div>
-                    <div className="trend-values">
-                      <span className="sales">{formatCurrency(month.total_sales)}</span>
-                      <span className="customers">{formatNumber(month.unique_customers)} clientes</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="trend-legend">
-              <span><div className="legend-color sales"></div> Ventas</span>
-              <span><div className="legend-color customers"></div> Clientes únicos</span>
-            </div>
-          </div>
-        </div>
-      )}
     </PageTemplate>
+  );
+}
+
+// ── COMPONENTE: CUSTOMER DETAIL MODAL ──
+function CustomerDetailModal({ customer, formatUtils, onClose }) {
+  if (!customer) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <div className="modal-title">
+            <div className="modal-avatar">
+              {customer.name?.charAt(0)?.toUpperCase() || '?'}
+            </div>
+            <div>
+              <h3>{customer.name || 'Cliente'}</h3>
+              <span>{customer.document_number || 'Sin documento'}</span>
+            </div>
+          </div>
+          <button className="modal-close" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="modal-body">
+          <div className="modal-stats">
+            <div className="modal-stat">
+              <span className="modal-stat-value">{formatUtils.currency(customer.total_spent)}</span>
+              <span className="modal-stat-label">Total gastado</span>
+            </div>
+            <div className="modal-stat">
+              <span className="modal-stat-value">{formatUtils.number(customer.total_orders)}</span>
+              <span className="modal-stat-label">Órdenes</span>
+            </div>
+            <div className="modal-stat">
+              <span className="modal-stat-value">{formatUtils.currency(customer.avg_ticket)}</span>
+              <span className="modal-stat-label">Promedio</span>
+            </div>
+            <div className="modal-stat">
+              <span className="modal-stat-value">{formatUtils.date(customer.last_order)}</span>
+              <span className="modal-stat-label">Última compra</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

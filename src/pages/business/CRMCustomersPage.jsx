@@ -1,17 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSession } from '../../context/SessionContext'; // ✅ AGREGADO
 import PageTemplate from '../../components/PageTemplate';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAlert } from '../../components/ConfirmContext';
 import { 
   Plus, Edit2, Trash2, X, Search, RefreshCw, 
   Mail, Phone, CreditCard, ChevronLeft, ChevronRight,
-  Users, UserCheck, UserPlus, ShoppingBag, FileText, Zap
+  Users, UserCheck, UserPlus, ShoppingBag, FileText, Zap,
+  CheckCircle, AlertCircle
 } from 'react-feather';
-import { fetchWithAuth } from '../../config/apiBase';
+import { FiRefreshCw as FiRefreshCwIcon } from 'react-icons/fi';
+import { fetchWithAuth } from '../../config/api'; // ✅ CORREGIDO
 import { useRealtimeSync } from '../../hooks/useRealtimeSync';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import Modal from '../../components/General/Modal';
+import Input from '../../components/General/Input';
+import SearchInput from '../../components/General/SearchInput';
+import Table from '../../components/General/Table';
 import '../../styles/CRMCustomersPage.css';
 
-// Modal para agregar/editar cliente
+// ── Modal para agregar/editar cliente ──────────────────────────────────────
 function CustomerModal({ customer, onClose, onSave, saving }) {
   const [form, setForm] = useState({
     nombre: '',
@@ -22,6 +30,9 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
     address: '',
     notes: '',
   });
+  const [errors, setErrors] = useState({});
+  const [loadingPerson, setLoadingPerson] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (customer) {
@@ -47,114 +58,327 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
     }
   }, [customer]);
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const canSave = form.nombre.trim() && form.cedula.trim();
+  const setFormField = (key, value) => {
+    setForm(prev => ({ ...prev, [key]: value }));
+    if (errors[key]) setErrors(prev => ({ ...prev, [key]: '' }));
+  };
+
+  // ── Validar cédula ecuatoriana ──────────────────────────────────────────
+  const validarCedula = (cedula) => {
+    if (!cedula || cedula.length !== 10) return false;
+    if (!/^\d{10}$/.test(cedula)) return false;
+    
+    const provincia = parseInt(cedula.substring(0, 2));
+    if (provincia < 1 || provincia > 24) return false;
+    
+    const digitos = cedula.split('').map(Number);
+    const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+    let suma = 0;
+    
+    for (let i = 0; i < 9; i++) {
+      let valor = digitos[i] * coeficientes[i];
+      if (valor > 9) valor -= 9;
+      suma += valor;
+    }
+    
+    const digitoVerificador = (10 - (suma % 10)) % 10;
+    return digitoVerificador === digitos[9];
+  };
+
+  // ── Buscar persona por cédula ──────────────────────────────────────────
+  const buscarPersonaPorCedula = async (cedula) => {
+    if (!cedula || cedula.length !== 10 || !validarCedula(cedula)) return;
+    
+    setLoadingPerson(true);
+    try {
+      // ✅ SIN /api
+      const res = await fetchWithAuth(`/customers/by-document?document_number=${cedula}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.name) {
+          setFormField('nombre', data.name);
+          setFormField('email', data.email || '');
+          setFormField('phone', data.phone || '');
+          return;
+        }
+      }
+
+      // Si no existe en el sistema, buscar en el padrón
+      await buscarEnPadron(cedula);
+    } catch (error) {
+      console.error('Error buscando persona:', error);
+    } finally {
+      setLoadingPerson(false);
+    }
+  };
+
+  // ── Buscar en el padrón ─────────────────────────────────────────────
+  const buscarEnPadron = async (cedula) => {
+    try {
+      const proxyUrl = 'https://infoplacas.herokuapp.com/';
+      const targetUrl = 'https://si.secap.gob.ec/sisecap/logeo_web/json/busca_persona_registro_civil.php';
+      const postData = new URLSearchParams({ documento: cedula, tipo: '1' });
+      
+      const response = await fetch(proxyUrl + targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: postData
+      });
+      
+      const text = await response.text();
+      if (text) {
+        const json = JSON.parse(text);
+        if (json?.nombres) {
+          const nombreCompleto = (json.nombres + ' ' + (json.apellidos || '')).trim();
+          setFormField('nombre', nombreCompleto);
+        }
+      }
+    } catch (error) {
+      console.error('Error en padrón:', error);
+    }
+  };
+
+  // ── Auto-buscar al cambiar cédula ──────────────────────────────────────
+  useEffect(() => {
+    const doc = form.cedula;
+    if (doc && doc.length === 10 && validarCedula(doc)) {
+      const timer = setTimeout(() => {
+        buscarPersonaPorCedula(doc);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [form.cedula]);
+
+  // ── Validación completa del formulario ──────────────────────────────────
+  const validateForm = () => {
+    const newErrors = {};
+    let isValid = true;
+
+    if (!form.nombre?.trim()) {
+      newErrors.nombre = 'Nombre es requerido';
+      isValid = false;
+    }
+
+    if (!form.cedula?.trim()) {
+      newErrors.cedula = 'Número de documento es requerido';
+      isValid = false;
+    } else if (form.cedula.length !== 10) {
+      newErrors.cedula = 'La cédula debe tener 10 dígitos';
+      isValid = false;
+    } else if (!validarCedula(form.cedula)) {
+      newErrors.cedula = 'Cédula inválida';
+      isValid = false;
+    }
+
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      newErrors.email = 'Email inválido';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  // ── Guardar ──────────────────────────────────────────────────────────────
+  const handleSaveClick = async (e) => {
+    e.preventDefault();
+    if (isSubmitting || saving) return;
+    
+    setIsSubmitting(true);
+    try {
+      const isValid = validateForm();
+      if (isValid) {
+        await onSave(form);
+      }
+    } catch (error) {
+      console.error('Error en validación:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ── Verificar si el botón de guardar debe estar habilitado ────────────
+  const isFormValid = () => {
+    if (!form.nombre?.trim()) return false;
+    if (!form.cedula?.trim()) return false;
+    if (form.cedula.length !== 10) return false;
+    if (!validarCedula(form.cedula)) return false;
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return false;
+    return true;
+  };
 
   return (
-    <div className="crm-modal-overlay" onClick={onClose}>
-      <div className="crm-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="crm-modal-header">
-          <div>
-            <h3>{customer ? 'Editar cliente' : 'Nuevo cliente'}</h3>
-            <p>{customer ? 'Modificar información del cliente' : 'Registrar un nuevo cliente'}</p>
-          </div>
-          <button className="btn-modal-close" onClick={onClose}>
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="crm-modal-body">
-          <div className="form-group">
-            <label>Nombre completo *</label>
-            <input
-              type="text" 
-              value={form.nombre} 
-              onChange={e => set('nombre', e.target.value)}
-              placeholder="Ej: Juan Pérez"
-            />
-          </div>
-
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={customer ? 'Editar cliente' : 'Nuevo cliente'}
+      size="md"
+      footer={
+        <>
+          <ButtonGroup>
+            <IconTextButton
+              variant="danger"
+              size="md"
+              icon={<X size={14} />}
+              onClick={onClose}
+              disabled={saving || isSubmitting}
+            >
+              Cancelar
+            </IconTextButton>
+            <IconTextButton
+              variant="success"
+              size="md"
+              icon={<Plus size={14} />}
+              onClick={handleSaveClick}
+              disabled={!isFormValid() || saving || isSubmitting}
+              loading={saving || isSubmitting}
+            >
+              {saving ? 'Guardando...' : (customer ? 'Actualizar' : 'Crear cliente')}
+            </IconTextButton>
+          </ButtonGroup>
+        </>
+      }
+    >
+      <form onSubmit={handleSaveClick} className="customer-modal-form">
+        <div className="customer-form-grid">
+          {/* ── Primera fila: Tipo documento + Número documento ── */}
           <div className="form-row">
-            <div className="form-group">
-              <label>Email</label>
-              <input
-                type="email" 
-                value={form.email} 
-                onChange={e => set('email', e.target.value)}
-                placeholder="cliente@ejemplo.com"
-              />
-            </div>
-            <div className="form-group">
-              <label>Teléfono</label>
-              <input
-                type="text" 
-                value={form.phone} 
-                onChange={e => set('phone', e.target.value)}
-                placeholder="0999999999"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
+            <div className="form-group" style={{ maxWidth: '160px' }}>
               <label>Tipo documento</label>
-              <select value={form.tipo_documento} onChange={e => set('tipo_documento', e.target.value)}>
+              <select 
+                value={form.tipo_documento} 
+                onChange={e => setFormField('tipo_documento', e.target.value)}
+                className="customer-select"
+              >
                 <option value="cedula">Cédula</option>
                 <option value="ruc">RUC</option>
                 <option value="pasaporte">Pasaporte</option>
               </select>
             </div>
-            <div className="form-group">
-              <label>Número documento *</label>
-              <input
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Número documento <span className="required">*</span></label>
+              <div style={{ position: 'relative' }}>
+                <Input
+                  type="text"
+                  value={form.cedula}
+                  onChange={(value) => {
+                    const clean = value.replace(/\D/g, '').slice(0, 13);
+                    setFormField('cedula', clean);
+                  }}
+                  placeholder="0123456789"
+                  size="md"
+                  icon={<CreditCard size={14} />}
+                  maxLength={13}
+                  error={errors.cedula}
+                  required
+                />
+                {loadingPerson && (
+                  <div style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                  }}>
+                    <div className="spinner-small" />
+                  </div>
+                )}
+              </div>
+              {errors.cedula && <span className="error-text">{errors.cedula}</span>}
+              <small style={{ 
+                color: form.cedula && form.cedula.length === 10 
+                  ? validarCedula(form.cedula) ? 'var(--success-color)' : 'var(--danger-color)'
+                  : 'var(--text-muted)', 
+                fontSize: '11px', 
+                marginTop: '2px', 
+                display: 'block' 
+              }}>
+                {form.cedula && form.cedula.length === 10 
+                  ? validarCedula(form.cedula) ? '✅ Cédula válida' : '❌ Cédula inválida' 
+                  : '10 dígitos para cédula'}
+              </small>
+            </div>
+          </div>
+
+          {/* ── Segunda fila: Nombre completo ── */}
+          <div className="form-group">
+            <label>Nombre completo <span className="required">*</span></label>
+            <Input
+              type="text" 
+              value={form.nombre} 
+              onChange={(value) => setFormField('nombre', value)}
+              placeholder="Ej: Juan Pérez"
+              size="md"
+              icon={<Users size={14} />}
+              error={errors.nombre}
+              required
+            />
+            {errors.nombre && <span className="error-text">{errors.nombre}</span>}
+          </div>
+
+          {/* ── Tercera fila: Email + Teléfono ── */}
+          <div className="form-row">
+            <div className="form-group" style={{ maxWidth: '400px' }}>
+              <label>Email</label>
+              <Input
+                type="email" 
+                value={form.email} 
+                onChange={(value) => setFormField('email', value)}
+                placeholder="cliente@ejemplo.com"
+                size="md"
+                icon={<Mail size={14} />}
+                error={errors.email}
+              />
+              {errors.email && <span className="error-text">{errors.email}</span>}
+            </div>
+            <div className="form-group" style={{ maxWidth: '190px' }}>
+              <label>Teléfono</label>
+              <Input
                 type="text" 
-                value={form.cedula} 
-                onChange={e => set('cedula', e.target.value.replace(/\D/g, '').slice(0, 13))}
-                placeholder="Número de documento"
+                value={form.phone} 
+                onChange={(value) => {
+                  const clean = value.replace(/\D/g, '').slice(0, 10);
+                  setFormField('phone', clean);
+                }}
+                placeholder="0999999999"
+                size="md"
+                icon={<Phone size={14} />}
+                maxLength={10}
               />
             </div>
           </div>
 
+          {/* ── Cuarta fila: Dirección ── */}
           <div className="form-group">
             <label>Dirección</label>
             <textarea
               value={form.address} 
-              onChange={e => set('address', e.target.value)}
+              onChange={e => setFormField('address', e.target.value)}
               rows={2} 
               placeholder="Dirección del cliente"
+              className="customer-textarea"
             />
           </div>
 
+          {/* ── Quinta fila: Notas ── */}
           <div className="form-group">
             <label>Notas / Observaciones</label>
             <textarea
               value={form.notes} 
-              onChange={e => set('notes', e.target.value)}
+              onChange={e => setFormField('notes', e.target.value)}
               rows={2} 
               placeholder="Notas adicionales"
+              className="customer-textarea"
             />
           </div>
         </div>
-
-        <div className="crm-modal-footer">
-          <button className="btn-secondary" onClick={onClose} disabled={saving}>
-            Cancelar
-          </button>
-          <button
-            className="btn-primary"
-            onClick={() => onSave(form)}
-            disabled={saving || !canSave}
-          >
-            {saving ? 'Guardando...' : (customer ? 'Actualizar' : 'Crear cliente')}
-          </button>
-        </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }
 
-// Componente principal
+// ── Componente principal ─────────────────────────────────────────────────────
 export default function CrmCustomers() {
+  const { user } = useSession(); // ✅ AGREGADO
   const { showConfirm } = useConfirm();
   const alert = useAlert();
   const [customers, setCustomers] = useState([]);
@@ -174,39 +398,37 @@ export default function CrmCustomers() {
   const [invoiceSource, setInvoiceSource] = useState(null);
   const limit = 20;
 
-  // Mostrar notificación
   const showNotification = (msg, type = 'info') => {
     setNotification({ msg, type });
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // Cargar estadísticas
   const loadStats = useCallback(async () => {
     try {
-      const response = await fetchWithAuth('/api/customers/stats');
+      // ✅ SIN /api
+      const response = await fetchWithAuth('/customers/stats');
       if (response.ok) {
         const data = await response.json();
         setStats(data);
       }
     } catch (err) {
-
+      // Silently fail
     }
   }, []);
 
-  // Cargar clientes
   const loadCustomers = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
       
-      let url = `/api/customers?page=${currentPage}&limit=${limit}`;
+      // ✅ SIN /api
+      let url = `/customers?page=${currentPage}&limit=${limit}`;
       if (search) url += `&search=${encodeURIComponent(search)}`;
       if (statusFilter !== 'all') url += `&status=${statusFilter}`;
       
       const response = await fetchWithAuth(url);
       const data = await response.json();
       
-      // Extraer datos correctamente
       let customersArray = [];
       let total = 0;
       let pages = 1;
@@ -233,7 +455,6 @@ export default function CrmCustomers() {
       setTotalPages(pages);
       
     } catch (err) {
-
       setError(err.message);
       setCustomers([]);
       setTotalCustomers(0);
@@ -245,12 +466,12 @@ export default function CrmCustomers() {
     }
   }, [currentPage, search, statusFilter]);
 
-  // Función para refrescar manualmente
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    loadCustomers();
-    loadStats();
-    showNotification('Actualizando clientes...', 'info');
+    await loadCustomers();
+    await loadStats();
+    setRefreshing(false);
+    showNotification('Clientes actualizados', 'success');
   };
 
   useEffect(() => {
@@ -260,13 +481,13 @@ export default function CrmCustomers() {
 
   useRealtimeSync('customers', () => { loadCustomers(); loadStats(); });
 
-  // Guardar cliente
   const handleSaveCustomer = async (form) => {
+    setSaving(true);
     try {
-      setSaving(true);
+      // ✅ SIN /api
       const url = editingCustomer 
-        ? `/api/customers/${editingCustomer.id}` 
-        : '/api/customers';
+        ? `/customers/${editingCustomer.id}` 
+        : '/customers';
       const method = editingCustomer ? 'PUT' : 'POST';
       
       const body = {
@@ -290,38 +511,61 @@ export default function CrmCustomers() {
       
       setShowModal(false);
       setEditingCustomer(null);
-      loadCustomers();
-      loadStats();
-      showNotification(editingCustomer ? 'Cliente actualizado' : 'Cliente creado', 'success');
+      await loadCustomers();
+      await loadStats();
+      await alert.success(
+        editingCustomer ? 'Cliente actualizado correctamente' : 'Cliente creado correctamente',
+        'Éxito'
+      );
     } catch (err) {
-      showNotification(err.message, 'error');
+      await alert.error(err.message);
     } finally {
       setSaving(false);
     }
   };
 
-  // Eliminar cliente
   const handleDeleteCustomer = async (customer) => {
-    if (!await showConfirm(`¿Seguro que deseas eliminar a ${customer.name}?`)) return;
+    if (!await showConfirm({
+      title: 'Confirmar eliminación',
+      message: `¿Eliminar permanentemente a "${customer.name}"?`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      danger: true,
+    })) return;
+
     try {
-      const response = await fetchWithAuth(`/api/customers/${customer.id}`, {
+      // ✅ SIN /api
+      const response = await fetchWithAuth(`/customers/${customer.id}`, {
         method: 'DELETE',
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       
-      loadCustomers();
-      loadStats();
-      showNotification('Cliente eliminado', 'success');
+      await loadCustomers();
+      await loadStats();
+      await alert.success('Cliente eliminado correctamente', 'Eliminado');
     } catch (err) {
-      showNotification(err.message, 'error');
+      await alert.error(err.message);
     }
   };
 
-  // Asegurar que customers es un array
+  const openCreate = () => {
+    setEditingCustomer(null);
+    setShowModal(true);
+  };
+
+  const openEdit = (customer) => {
+    setEditingCustomer(customer);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingCustomer(null);
+  };
+
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
-  // Datos para estadísticas
   const statsData = [
     { label: 'Total clientes', value: stats?.total_customers || totalCustomers || 0, icon: <Users size={24} />, color: 'total' },
     { label: 'Activos', value: stats?.active_customers || safeCustomers.filter(c => c.is_active !== false).length, icon: <UserCheck size={24} />, color: 'active' },
@@ -329,7 +573,6 @@ export default function CrmCustomers() {
     { label: 'Con compras', value: stats?.customers_with_orders || safeCustomers.filter(c => (c.total_orders || 0) > 0).length, icon: <ShoppingBag size={24} />, color: 'orders' },
   ];
 
-  // Filtrar clientes localmente
   const filteredCustomers = search 
     ? safeCustomers.filter(c =>
         (c.name || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -340,231 +583,220 @@ export default function CrmCustomers() {
 
   const displayCustomers = filteredCustomers;
 
+  // ── Columnas para la tabla ──────────────────────────────────────────────────
+  const columns = [
+    {
+      accessor: 'customer',
+      label: 'Cliente',
+      render: (item) => (
+        <div className="customer-info-cell">
+          <div>
+            <div>{item.name || '—'}</div>
+            <div className="customer-date">
+              Registrado: {item.created_at ? new Date(item.created_at).toLocaleDateString('es-EC') : '—'}
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      accessor: 'contact',
+      label: 'Contacto',
+      render: (item) => (
+        <div>
+          {item.email && (
+            <div className="contact-email">
+              {item.email}
+            </div>
+          )}
+          {item.phone && (
+            <div className="contact-phone">
+              {item.phone}
+            </div>
+          )}
+          {!item.email && !item.phone && (
+            <div>Sin contacto</div>
+          )}
+        </div>
+      )
+    },
+    {
+      accessor: 'document',
+      label: 'Documento',
+      render: (item) => (
+        <div className="document-info">
+          {item.document_type || 'Cédula'}: {item.document_number || '—'}
+        </div>
+      )
+    },
+    {
+      accessor: 'orders',
+      label: 'Órdenes',
+      align: 'center',
+      render: (item) => (
+        <span className="orders-count">{item.total_orders || 0}</span>
+      )
+    },
+    {
+      accessor: 'total_spent',
+      label: 'Total gastado',
+      align: 'center',
+      render: (item) => (
+        <div className="total-spent-container">
+          <span className="total-spent">${(parseFloat(item.total_spent) || 0).toFixed(2)}</span>
+        </div>
+      )
+    },
+    {
+      accessor: 'status',
+      label: 'Estado',
+      render: (item) => (
+        item.is_active !== false ? (
+          <div className="users-status-active">
+            <CheckCircle size={16} />
+            <span>Activo</span>
+          </div>
+        ) : (
+          <div className="users-status-inactive">
+            <AlertCircle size={16} />
+            <span>Inactivo</span>
+          </div>
+        )
+      )
+    },
+    {
+      accessor: 'actions',
+      label: 'Acciones',
+      align: 'center',
+      render: (item) => (
+        <ButtonGroup>
+          <IconTextButton
+            variant="blue"
+            size="sm"
+            inline={true}
+            icon={<Edit2 size={12} />}
+            onClick={() => openEdit(item)}
+            title="Editar cliente"
+          >
+            Editar
+          </IconTextButton>
+          <IconTextButton
+            variant="danger"
+            size="sm"
+            inline={true}
+            icon={<Trash2 size={12} />}
+            onClick={() => handleDeleteCustomer(item)}
+            title="Eliminar cliente"
+          >
+            Eliminar
+          </IconTextButton>
+        </ButtonGroup>
+      )
+    }
+  ];
+
+  // ── Toolbar ──────────────────────────────────────────────────────────────────
+  const toolbar = (
+    <div className="crm-toolbar">
+      <ButtonGroup>
+        <IconTextButton
+          variant="success"
+          size="md"
+          icon={<Plus size={13} />}
+          onClick={openCreate}
+          disabled={!!saving}
+          loading={!!saving}
+        >
+          Nuevo cliente
+        </IconTextButton>
+      </ButtonGroup>
+    </div>
+  );
+
+  // ── Botón de refrescar ──────────────────────────────────────────────────
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <FiRefreshCwIcon size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+  
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <PageTemplate
       title="Gestión de Clientes"
       subtitle={`${totalCustomers} clientes registrados`}
       loading={loading}
       error={error}
-      onRetry={loadCustomers}
+      onRetry={handleRefresh}
       headerAction={
         <div className="header-actions">
-          {/* Badge indicador de fuente de datos */}
-          {invoiceSource && (
-            <div className="invoice-source-badge" title={`Los datos de consumo provienen de: ${invoiceSource === 'einvoicing' ? 'Facturación Electrónica' : 'Ventas POS'}`}>
-              {invoiceSource === 'einvoicing' ? (
-                <>
-                  <FileText size={14} />
-                  <span>Fact. Electrónica</span>
-                </>
-              ) : (
-                <>
-                  <Zap size={14} />
-                  <span>Ventas POS</span>
-                </>
-              )}
-            </div>
-          )}
-          <button className="btn-refresh" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw size={16} className={refreshing ? 'spin' : ''} />
-            Actualizar
-          </button>
+          {refreshButton}
         </div>
       }
     >
-      {/* Notificación */}
-      {notification && (
-        <div className={`crm-notification ${notification.type}`}>
-          {notification.msg}
-        </div>
-      )}
-
-      {/* Estadísticas */}
-      <div className="crm-stats-grid">
-        {statsData.map(s => (
-          <div key={s.label} className="crm-stat-card">
-            <div className={`stat-icon ${s.color}`}>
-              {s.icon}
-            </div>
-            <div className="stat-info">
-              <div className="stat-value">{s.value}</div>
-              <div className="stat-label">{s.label}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Filtros */}
-      <div className="crm-filters">
-        <div className="filter-search">
-          <Search size={16} />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, email o documento..."
-            value={search}
-            onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-          />
-        </div>
-
-        <select
-          className="filter-status"
-          value={statusFilter}
-          onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-        >
-          <option value="all">Todos</option>
-          <option value="active">Activos</option>
-          <option value="inactive">Inactivos</option>
-        </select>
-
-        <button className="btn-add" onClick={() => { setEditingCustomer(null); setShowModal(true); }}>
-          <Plus size={16} /> Nuevo cliente
-        </button>
-      </div>
-
-      {/* Tabla de clientes */}
-      <div className="crm-table-container">
-        <table className="crm-table">
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th>Contacto</th>
-              <th>Documento</th>
-              <th className="center">Órdenes</th>
-              <th className="center">Total gastado</th>
-              <th className="center">Estado</th>
-              <th className="center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {displayCustomers.length === 0 && !loading && (
-              <tr>
-                <td colSpan="7" className="crm-empty-state">
-                  {search ? 'No se encontraron clientes' : 'No hay clientes registrados'}
-                </td>
-              </tr>
-            )}
-            {displayCustomers.map((customer) => (
-              <tr key={customer.id}>
-                <td>
-                  <div className="customer-info-cell">
-                    <div className="customer-avatar">
-                      {customer.name?.charAt(0)?.toUpperCase() || '?'}
-                    </div>
-                    <div>
-                      <div className="customer-name">{customer.name || '—'}</div>
-                      <div className="customer-date">
-                        Registrado: {customer.created_at ? new Date(customer.created_at).toLocaleDateString('es-EC') : '—'}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  {customer.email && (
-                    <div className="contact-email">
-                      <Mail size={12} /> {customer.email}
-                    </div>
-                  )}
-                  {customer.phone && (
-                    <div className="contact-phone">
-                      <Phone size={12} /> {customer.phone}
-                    </div>
-                  )}
-                  {!customer.email && !customer.phone && (
-                    <div className="no-contact">Sin contacto</div>
-                  )}
-                </td>
-                <td>
-                  <div className="document-info">
-                    <CreditCard size={12} />
-                    {customer.document_type || 'Cédula'}: {customer.document_number || '—'}
-                  </div>
-                </td>
-                <td className="orders-count center">
-                  {customer.total_orders || 0}
-                </td>
-                <td className="total-spent center">
-                  <div className="total-spent-container">
-                    ${(parseFloat(customer.total_spent) || 0).toFixed(2)}
-                    {invoiceSource === 'einvoicing' && (customer.total_spent || 0) > 0 && (
-                      <span className="source-tooltip" title="Basado en facturas electrónicas">
-                        <FileText size={10} />
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="center">
-                  <span className={`status-badge ${customer.is_active !== false ? 'status-active' : 'status-inactive'}`}>
-                    {customer.is_active !== false ? 'Activo' : 'Inactivo'}
-                  </span>
-                </td>
-                <td className="center">
-                  <div className="action-buttons">
-                    <button
-                      className="btn-edit"
-                      onClick={() => { setEditingCustomer(customer); setShowModal(true); }}
-                      title="Editar"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                    <button
-                      className="btn-delete"
-                      onClick={() => handleDeleteCustomer(customer)}
-                      title="Eliminar"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Paginación */}
-        {totalPages > 1 && (
-          <div className="crm-pagination">
-            <button
-              className="btn-pagination"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft size={14} /> Anterior
-            </button>
-            <span className="pagination-info">
-              Página {currentPage} de {totalPages}
-            </span>
-            <button
-              className="btn-pagination"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Siguiente <ChevronRight size={14} />
-            </button>
+      <div className="crm-page-wrapper">
+        {/* Notificación */}
+        {notification && (
+          <div className={`crm-notification ${notification.type}`}>
+            {notification.msg}
           </div>
         )}
 
-        {/* Info de registros */}
-        {displayCustomers.length > 0 && (
-          <div className="crm-table-info">
-            Mostrando {displayCustomers.length} de {totalCustomers} clientes
-            {invoiceSource && (
-              <span className="source-info">
-                (Datos de consumo desde: {invoiceSource === 'einvoicing' ? 'Facturación Electrónica' : 'Ventas POS'})
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+        {/* Estadísticas */}
+        <div className="crm-stats-grid">
+          {statsData.map(s => (
+            <div key={s.label} className="crm-stat-card">
+              <div className={`stat-icon ${s.color}`}>
+                {s.icon}
+              </div>
+              <div className="stat-info">
+                <div className="stat-value">{s.value}</div>
+                <div className="stat-label">{s.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
 
-      {/* Modal */}
-      {showModal && (
-        <CustomerModal
-          customer={editingCustomer}
-          onClose={() => { setShowModal(false); setEditingCustomer(null); }}
-          onSave={handleSaveCustomer}
-          saving={saving}
+        {/* Tabla de clientes */}
+        <Table
+          data={displayCustomers}
+          columns={columns}
+          keyField="id"
+          title="Lista de clientes"
+          subtitle={`${totalCustomers} ${totalCustomers === 1 ? 'cliente' : 'clientes'} registrados`}
+          toolbar={toolbar}
+          searchable={true}
+          searchPlaceholder="Buscar por nombre, email o documento..."
+          pagination={true}
+          itemsPerPage={itemsPerPage}
+          itemsPerPageOptions={[10, 15]}
+          onItemsPerPageChange={(newPerPage) => setItemsPerPage(newPerPage)}
+          loading={loading}
+          emptyMessage={search ? 'No hay resultados para esa búsqueda' : 'No hay clientes registrados'}
+          striped={true}
+          hoverable={true}
+          bordered={false}
+          compact={false}
         />
-      )}
+
+        {/* Modal */}
+        {showModal && (
+          <CustomerModal
+            customer={editingCustomer}
+            onClose={closeModal}
+            onSave={handleSaveCustomer}
+            saving={saving}
+          />
+        )}
+      </div>
     </PageTemplate>
   );
 }

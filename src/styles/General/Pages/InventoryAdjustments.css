@@ -1,0 +1,125 @@
+/* InventoryAdjustments.css */
+.inv-stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.inv-stat-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 20px;
+  min-width: 130px;
+}
+
+.inv-stat-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-extrabold);
+}
+
+.inv-stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.inv-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.inv-search-input {
+  min-width: 200px;
+  flex: 1;
+}
+
+.inv-product-name {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-strong);
+}
+
+.inv-product-code {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-left: 8px;
+}
+
+.deleted-product {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.inv-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  background: var(--bg-tertiary);
+}
+
+.inv-notes {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.empty-value {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.inv-row:hover {
+  background: var(--bg-hover);
+}
+
+.inv-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inv-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.inv-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inv-form .form-group label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+}
+
+.modal-error-text {
+  color: var(--danger);
+  font-size: var(--font-size-sm);
+  margin-bottom: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .inv-form .form-row {
+    grid-template-columns: 1fr;
+  }
+  .inv-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .inv-search-input {
+    min-width: unset;
+  }
+}

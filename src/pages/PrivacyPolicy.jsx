@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
-import '../styles/LegalPages.css';
 
 export default function PrivacyPolicy() {
   const navigate = useNavigate();

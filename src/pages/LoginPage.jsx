@@ -1,21 +1,26 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+// ========== src/pages/LoginPage.js ==========
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { useSession } from '../context/SessionContext';
+import { api } from '../config/api';
 import {
-  FiEye, FiEyeOff, FiLock, FiMail, FiUser,
+  FiLock, FiMail, FiUser,
   FiPhone, FiArrowRight, FiArrowLeft,
-  FiBriefcase, FiCreditCard, FiShield,
-  FiTrendingUp, FiBarChart2, FiCheckCircle,
+  FiBriefcase, FiCreditCard, FiCheckCircle,
   FiAlertCircle, FiInfo
 } from 'react-icons/fi';
-import '../styles/LoginPage.css';
 import Footer from '../components/common/Footer';
+import Input from '../components/General/Input';
+import CustomCombobox from '../components/General/CustomCombobox';
+import { IconTextButton } from '../components/General/Button';
 
 const SYSTEM_LOGO_URL = process.env.PUBLIC_URL + '/system.svg';
 
-export default function LoginPage({ onLogin }) {
+export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { businessSlug: routeBusinessSlug } = useParams();
+  const { login, selectBusiness, isAuthenticated, requiresBusinessSelection } = useSession();
 
   /* ─── Screen state ─── */
   const [isLogin, setIsLogin] = useState(true);
@@ -24,16 +29,12 @@ export default function LoginPage({ onLogin }) {
   /* ─── Business selector state ─── */
   const [showBusinessSelector, setShowBusinessSelector] = useState(false);
   const [availableBusinesses, setAvailableBusinesses] = useState([]);
-  const [pendingToken, setPendingToken] = useState(null);
-  const [pendingUser, setPendingUser] = useState(null);
   const [selectingBusiness, setSelectingBusiness] = useState(false);
 
   /* ─── Login fields ─── */
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [businessSlugInput, setBusinessSlugInput] = useState('');
-  const [remember, setRemember] = useState(true);
 
   /* ─── Register fields ─── */
   const [regForm, setRegForm] = useState({
@@ -46,9 +47,6 @@ export default function LoginPage({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [errorType, setErrorType] = useState('');
-  const [showPasswords, setShowPasswords] = useState({
-    login: false, register: false, confirm: false
-  });
 
   const errorTimerRef = useRef(null);
 
@@ -60,31 +58,8 @@ export default function LoginPage({ onLogin }) {
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [errorTypes, setErrorTypes] = useState('');
 
-  const logos = [
-    `${process.env.PUBLIC_URL}/IDON_1.svg`,
-    `${process.env.PUBLIC_URL}/IDON_2.svg`,
-    `${process.env.PUBLIC_URL}/IDON_3.svg`
-  ];
-  const colors = ['#ff8c42', '#8CB79B', '#FF6B9D', '#00D4FF'];
-
-  // Features dinámicas que cambian según el logo
-  const logoFeatures = [
-    [
-      { Icon: FiTrendingUp,  label: 'Gestión integral de negocios' },
-      { Icon: FiShield,      label: 'Seguridad empresarial' },
-      { Icon: FiBarChart2,   label: 'Analytics en tiempo real' }
-    ],
-    [
-      { Icon: FiBarChart2,   label: 'Reportes detallados' },
-      { Icon: FiBriefcase,   label: 'Administración de nómina' },
-      { Icon: FiTrendingUp,  label: 'Crecimiento exponencial' }
-    ],
-    [
-      { Icon: FiShield,      label: 'Datos 100% seguros' },
-      { Icon: FiCheckCircle, label: 'Facturación automática' },
-      { Icon: FiBarChart2,   label: 'Decisiones basadas en datos' }
-    ]
-  ];
+  const logo = `${process.env.PUBLIC_URL}/IDON_f.svg`;
+  const color = 'var(--bg-secondary)';
 
   // Slides de propuesta de valor
   const vpSlides = [
@@ -110,7 +85,7 @@ export default function LoginPage({ onLogin }) {
     {
       type: 'ctas',
       buttons: [
-        { text: 'DEMO GRATUITO', type: 'primary' },
+        { text: 'DEMO GRATUITA', type: 'primary' },
       ],
       subtext: 'sin tarjeta de crédito o débito',
       benefits: [
@@ -125,12 +100,8 @@ export default function LoginPage({ onLogin }) {
       title: 'PREGUNTAS FRECUENTES',
       items: [
         {
-          q: '¿Necesito instalar algo?',
-          a: 'No. IDON es 100% en la nube. Funciona desde cualquier navegador, en computadora, tablet o celular.'
-        },
-        {
           q: '¿Funciona con la facturación electrónica del SRI?',
-          a: 'Sí. IDON está integrado con el SRI para Ecuador. Genera facturas y notas de crédito válidas automáticamente.'
+          a: 'Sí. IDON Genera documentos electrónicos validados por el SRI automáticamente.'
         }
       ]
     }
@@ -141,9 +112,84 @@ export default function LoginPage({ onLogin }) {
   const [logoOpacity, setLogoOpacity] = useState(1);
   const [businessLogo, setBusinessLogo] = useState(null);
 
-  /* ─── Value Proposition Slides ─── */
   const [vpSlideIndex, setVpSlideIndex] = useState(0);
   const [vpSlideOpacity, setVpSlideOpacity] = useState(1);
+
+  // ─── Buscar en API de Ecuador (Registro Civil) ──────────────
+  async function buscarEnAPIEcuador(cedula) {
+    try {
+      const proxyUrl = 'https://infoplacas.herokuapp.com/';
+      const targetUrl = 'https://si.secap.gob.ec/sisecap/logeo_web/json/busca_persona_registro_civil.php';
+      const res = await fetch(proxyUrl + targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ documento: cedula, tipo: '1' })
+      });
+      if (!res.ok) return null;
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  // ─── Validación de cédula ecuatoriana ──────────────────────
+  const validarCedulaEcuatoriana = (cedula) => {
+    if (cedula.length !== 10) return false;
+    if (!/^\d+$/.test(cedula)) return false;
+    
+    const provincia = parseInt(cedula.substring(0, 2));
+    if (provincia < 1 || provincia > 24) return false;
+    
+    const tercerDigito = parseInt(cedula[2]);
+    if (tercerDigito < 0 || tercerDigito > 6) return false;
+    
+    const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+    let suma = 0;
+    for (let i = 0; i < 9; i++) {
+      let digito = parseInt(cedula[i]) * coeficientes[i];
+      if (digito > 9) digito -= 9;
+      suma += digito;
+    }
+    const digitoVerificador = parseInt(cedula[9]);
+    const digitoCalculado = (10 - (suma % 10)) % 10;
+    
+    return digitoVerificador === digitoCalculado;
+  };
+
+  const validarRucEcuatoriano = (ruc) => {
+    if (ruc.length !== 13) return false;
+    if (!/^\d+$/.test(ruc)) return false;
+    
+    const provincia = parseInt(ruc.substring(0, 2));
+    if (provincia < 1 || provincia > 24) return false;
+    
+    const tercerDigito = parseInt(ruc[2]);
+    if (tercerDigito < 0 || tercerDigito > 9) return false;
+    
+    if (tercerDigito <= 5) {
+      const cedula = ruc.substring(0, 10);
+      return validarCedulaEcuatoriana(cedula);
+    }
+    
+    const coeficientes = [4, 3, 2, 7, 6, 5, 4, 3, 2];
+    let suma = 0;
+    for (let i = 0; i < 9; i++) {
+      const digito = parseInt(ruc[i]);
+      suma += digito * coeficientes[i];
+    }
+    
+    const digitoVerificador = parseInt(ruc[9]);
+    const digitoCalculado = (11 - (suma % 11)) % 11;
+    const digitoFinal = digitoCalculado === 11 ? 0 : digitoCalculado;
+    const ultimosDigitos = ruc.substring(10, 13);
+    
+    if (tercerDigito === 6 || tercerDigito === 9) {
+      return digitoFinal === digitoVerificador && ultimosDigitos === '001';
+    }
+    
+    return false;
+  };
 
   useEffect(() => {
     return () => {
@@ -163,25 +209,6 @@ export default function LoginPage({ onLogin }) {
 
   useEffect(() => {
     const id = setInterval(() => {
-      setLogoOpacity(0);
-      setTimeout(() => {
-        setLogoIndex(prev => (prev + 1) % logos.length);
-        setLogoOpacity(1);
-      }, 800);
-    }, 5500);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setLogoColor(prev => (prev + 1) % colors.length);
-    }, 2500);
-    return () => clearInterval(id);
-  }, []);
-
-  /* ─── VP Slides Rotation (7 seconds) ─── */
-  useEffect(() => {
-    const id = setInterval(() => {
       setVpSlideOpacity(0);
       setTimeout(() => {
         setVpSlideIndex(prev => (prev + 1) % vpSlides.length);
@@ -194,33 +221,15 @@ export default function LoginPage({ onLogin }) {
   useEffect(() => {
     const saved = localStorage.getItem('business_logo') || SYSTEM_LOGO_URL;
     if (saved) setBusinessLogo(saved);
-
-    try {
-      const biz = sessionStorage.getItem('selectedBusiness');
-      if (biz) {
-        const d = JSON.parse(biz);
-        setBusinessSlugInput(d.businessSlug || d.id);
-        sessionStorage.removeItem('selectedBusiness');
-        return;
-      }
-    } catch {}
-
-    const q = new URLSearchParams(location.search);
-    const id = routeBusinessSlug || q.get('b');
-    if (id) setBusinessSlugInput(id);
   }, []);
 
   useEffect(() => {
     if (!isLogin && registroStep === 2 && businessTypes.length === 0) {
       setLoadingTypes(true);
       setErrorTypes('');
-      const API_BASE = process.env.REACT_APP_API_BASE || 'https://idon-plataform-backend.onrender.com';
-      fetch(`${API_BASE}/api/business-types`)
-        .then(r => {
-          if (!r.ok) throw new Error('No se pudieron cargar los tipos de negocio');
-          return r.json();
-        })
-        .then(data => {
+      api.get('/business-types')
+        .then(response => {
+          const data = response.data;
           const arr = Array.isArray(data) ? data : (data.data || []);
           setBusinessTypes(arr);
         })
@@ -229,27 +238,11 @@ export default function LoginPage({ onLogin }) {
     }
   }, [isLogin, registroStep]);
 
-  async function buscarEnAPIEcuador(cedula) {
-    try {
-      const proxyUrl = 'https://infoplacas.herokuapp.com/';
-      const targetUrl = 'https://si.secap.gob.ec/sisecap/logeo_web/json/busca_persona_registro_civil.php';
-      const res = await fetch(proxyUrl + targetUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ documento: cedula, tipo: '1' })
-      });
-      if (!res.ok) return null;
-      const text = await res.text();
-      return text ? JSON.parse(text) : null;
-    } catch {
-      return null;
-    }
-  }
-
-  const handleDocTypeChange = (e) => {
+  // ─── Handler para cambio de tipo de documento ──────────────
+  const handleDocTypeChange = (value) => {
     setRegForm(f => ({
       ...f,
-      documentType: e.target.value,
+      documentType: value,
       documentNumber: '',
       firstName: '',
       lastName: '',
@@ -261,44 +254,59 @@ export default function LoginPage({ onLogin }) {
     setError('');
   };
 
-  const handleDocumentNumberChange = async (e) => {
-    const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
-    setRegForm(f => ({ ...f, documentNumber: value }));
+  // ─── Handler para cambio de número de documento ─────────────
+  const handleDocumentNumberChange = async (value) => {
+    const cleaned = value.replace(/[^0-9]/g, '');
+    let maxLength = regForm.documentType === 'ruc' ? 13 : 10;
+    const truncated = cleaned.slice(0, maxLength);
+    
+    setRegForm(f => ({ ...f, documentNumber: truncated }));
 
-    if (regForm.documentType === 'cedula' && value.length === 10) {
+    if (regForm.documentType === 'cedula' && truncated.length === 10) {
+      if (!validarCedulaEcuatoriana(truncated)) {
+        showError('Cédula inválida. Verifica el número.', 'document');
+        setOwnerSearching(false);
+        return;
+      }
+
       setOwnerSearching(true);
       setOwnerExists(false);
       setFoundByApi(false);
       setError('');
+      
       try {
-        const API_BASE = process.env.REACT_APP_API_BASE || 'https://idon-plataform-backend.onrender.com';
-        const res = await fetch(`${API_BASE}/api/business-owners/find?type=cedula&number=${value}`);
-        const data = await res.json();
+        // 1. PRIMERO: Buscar en la base de datos de IDON
+        const response = await api.get(`/business-owners/find?type=cedula&number=${truncated}`);
+        const data = response.data;
 
-        if (res.ok && data.exists && data.owner) {
+        if (data.exists && data.owner) {
           setRegForm(f => ({
             ...f,
             firstName: data.owner.first_name || '',
-            lastName:  data.owner.last_name  || '',
-            email:     data.owner.email      || '',
-            phone:     data.owner.phone      || ''
+            lastName: data.owner.last_name || '',
+            email: data.owner.email || '',
+            phone: data.owner.phone || ''
           }));
           setOwnerExists(true);
-          showError('⚠️ Usuario ya existe en la plataforma. Se cargarán sus datos automáticamente.', 'info');
+          showError('Usuario ya existe en la plataforma. Se cargarán sus datos automáticamente.', 'info');
         } else {
-          const civil = await buscarEnAPIEcuador(value);
+          // 2. SI NO ESTÁ EN LA BD, buscar en el Registro Civil
+          const civil = await buscarEnAPIEcuador(truncated);
           if (civil && civil.nombres) {
             setRegForm(f => ({
               ...f,
-              firstName: civil.nombres   || '',
-              lastName:  civil.apellidos || ''
+              firstName: civil.nombres || '',
+              lastName: civil.apellidos || ''
             }));
             setFoundByApi(true);
+            setOwnerExists(false);
+            showError('Datos obtenidos de datos públicos. Completa el registro.', 'info');
           } else {
             setRegForm(f => ({ ...f, firstName: '', lastName: '' }));
             setFoundByApi(false);
+            setOwnerExists(false);
+            showError('No se encontraron datos públicos. Completa los campos manualmente.', 'info');
           }
-          setOwnerExists(false);
         }
       } catch {
         setOwnerExists(false);
@@ -306,7 +314,60 @@ export default function LoginPage({ onLogin }) {
       } finally {
         setOwnerSearching(false);
       }
-    } else {
+    } else if (regForm.documentType === 'ruc' && truncated.length === 13) {
+      if (!validarRucEcuatoriano(truncated)) {
+        showError('RUC inválido. Verifica el número.', 'document');
+        setOwnerSearching(false);
+        return;
+      }
+
+      setOwnerSearching(true);
+      setOwnerExists(false);
+      setFoundByApi(false);
+      setError('');
+      
+      try {
+        // 1. PRIMERO: Buscar en la base de datos de IDON
+        const response = await api.get(`/business-owners/find?type=ruc&number=${truncated}`);
+        const data = response.data;
+
+        if (data.exists && data.owner) {
+          setRegForm(f => ({
+            ...f,
+            firstName: data.owner.first_name || '',
+            lastName: data.owner.last_name || '',
+            email: data.owner.email || '',
+            phone: data.owner.phone || ''
+          }));
+          setOwnerExists(true);
+          showError('Usuario ya existe en la plataforma. Se cargarán sus datos automáticamente.', 'info');
+        } else {
+          // 2. SI NO ESTÁ EN LA BD, buscar en el Registro Civil (con los primeros 10 dígitos)
+          const cedulaBase = truncated.substring(0, 10);
+          const civil = await buscarEnAPIEcuador(cedulaBase);
+          if (civil && civil.nombres) {
+            setRegForm(f => ({
+              ...f,
+              firstName: civil.nombres || '',
+              lastName: civil.apellidos || ''
+            }));
+            setFoundByApi(true);
+            setOwnerExists(false);
+            showError('Datos obtenidos de datos público. Completa el registro.', 'info');
+          } else {
+            setRegForm(f => ({ ...f, firstName: '', lastName: '' }));
+            setFoundByApi(false);
+            setOwnerExists(false);
+            showError('No se encontraron datos. Completa los campos manualmente.', 'info');
+          }
+        }
+      } catch {
+        setOwnerExists(false);
+        setFoundByApi(false);
+      } finally {
+        setOwnerSearching(false);
+      }
+    } else if (truncated.length < (regForm.documentType === 'ruc' ? 13 : 10)) {
       setOwnerExists(false);
       setFoundByApi(false);
       setRegForm(f => ({ ...f, firstName: '', lastName: '', email: '', phone: '' }));
@@ -320,7 +381,9 @@ export default function LoginPage({ onLogin }) {
     if (!ownerExists && !regForm.email.includes('@')) return false;
     return true;
   };
+  
   const isStep2Valid = () => regForm.businessName.trim() && regForm.businessTypeId;
+  
   const isStep3Valid = () => {
     if (ownerExists) return regForm.termsAccepted;
     return (
@@ -330,62 +393,12 @@ export default function LoginPage({ onLogin }) {
     );
   };
 
-  // ============================================
-  // AUTENTICACIÓN - REDIRECCIÓN DIRECTA
-  // ============================================
-  const _commitLogin = (token, user, backendType) => {
-    const schemaName = user.schemaName || user.schema || user.tenant || '';
-    const userType = user?.userType || backendType;
-
-    const userToStore = {
-      ...user,
-      token,
-      type: backendType,
-      userType: userType,
-      role: backendType === 'owner' ? 'owner' :
-            backendType === 'admin' ? 'admin' :
-            backendType === 'admin_idon' ? 'admin_idon' :
-            backendType === 'schema_employee' ? (user?.roleCode || 'employee') :
-            (user?.role || 'user'),
-      schemaName,
-    };
-
-    localStorage.setItem('idonUser', JSON.stringify(userToStore));
-    localStorage.setItem('idonToken', token);
-
-    if (user?.businessId || user?.business_id) {
-      const businessId = user?.businessId || user?.business_id;
-      const businessSlug = user?.businessSlug || user?.business_slug || '';
-      
-      localStorage.setItem('dbName', schemaName);
-      localStorage.setItem('selectedBusiness', JSON.stringify({
-        id: businessId,
-        slug: businessSlug,
-        schemaName: schemaName,
-      }));
-    }
-    
-    if (onLogin) onLogin(userToStore);
-    
-    // REDIRECCIÓN DIRECTA - SIN VERIFICAR NADA
-    const redirectRoute = (backendType === 'admin_idon' || backendType === 'admin') 
-      ? '/admin/dashboard' 
-      : '/app/dashboard';
-    
-    navigate(redirectRoute, { replace: true });
-  };
-
-  const clearLoginFields = () => {
-    setEmail('');
-    setPassword('');
-  };
-
+  // ─── LOGIN CON SESSIONCONTEXT ─────────────────────────────────
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    e.stopPropagation();
     
     if (!email || !password) {
-      showError('❌ Por favor ingresa tu correo y contraseña.', 'general');
+      showError('Por favor ingresa tu correo y contraseña.', 'general');
       return;
     }
     
@@ -394,109 +407,48 @@ export default function LoginPage({ onLogin }) {
     setErrorType('');
     
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || 'https://idon-plataform-backend.onrender.com';
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, business: businessSlugInput || null })
-      });
+      const result = await login(email, password);
       
-      const data = await res.json();
-      
-      if (!res.ok) {
-        setLoading(false);
+      if (result.success) {
+        const businesses = result.businesses || [];
+        const requiresSelection = result.requiresBusinessSelection || false;
         
-        // 🔥 CAPTURAR ERROR 403 - NEGOCIO SUSPENDIDO
-        if (res.status === 403) {
-          const errorMessage = data.message || data.error || 'Tu negocio está suspendido. Por favor realiza el pago.';
-          localStorage.setItem('pendingPaymentEmail', email);
-          localStorage.setItem('pendingPaymentMessage', errorMessage);
-          // ✅ REDIRIGIR CON WINDOW.LOCATION
-          window.location.href = '/app/payment-pending';
+        if ((requiresSelection || businesses.length > 1) && businesses.length > 0) {
+          setAvailableBusinesses(businesses);
+          setShowBusinessSelector(true);
+          setLoading(false);
           return;
         }
         
-        if (res.status === 401) {
-          const errorMessage = data.message || data.error || 'Credenciales inválidas';
-          
-          if (errorMessage.toLowerCase().includes('password') || 
-              errorMessage.toLowerCase().includes('contraseña')) {
-            showError('❌ Contraseña incorrecta. Por favor, verifica tu contraseña.', 'password');
-            setPassword('');
-          } else if (errorMessage.toLowerCase().includes('email') || 
-                     errorMessage.toLowerCase().includes('usuario')) {
-            showError('❌ Usuario no encontrado. Verifica tu correo electrónico o regístrate.', 'user');
-            setEmail('');
-            setPassword('');
-          } else {
-            showError(`❌ ${errorMessage}`, 'general');
-          }
-        } else if (res.status === 429) {
-          showError('⏳ Demasiados intentos. Por favor espera unos minutos.', 'general');
+        if (result.user?.userType === 'admin_idon') {
+          navigate('/admin/dashboard', { replace: true });
         } else {
-          showError(`❌ Error del servidor (${res.status}). Por favor intenta más tarde.`, 'general');
+          navigate('/app', { replace: true });
         }
-        return;
+      } else {
+        showError(result.error || 'Credenciales inválidas', 'general');
       }
-      
-      const payload = data.data;
-      setLoading(false);
-
-      // 🔥 VERIFICAR SI EL NEGOCIO ESTÁ SUSPENDIDO EN LA RESPUESTA
-      if (payload.businessStatus === 'suspended' || payload.user?.businessStatus === 'suspended') {
-        localStorage.setItem('pendingPaymentEmail', email);
-        localStorage.setItem('pendingPaymentMessage', payload.message || 'Tu negocio está suspendido. Por favor realiza el pago.');
-        localStorage.setItem('idonToken', payload.token);
-        localStorage.setItem('idonUser', JSON.stringify(payload.user));
-        // ✅ REDIRIGIR CON WINDOW.LOCATION
-        window.location.href = '/app/payment-pending';
-        return;
-      }
-
-      if (payload.businessStatus === 'payment_pending' || payload.user?.businessStatus === 'payment_pending') {
-        localStorage.setItem('pendingPaymentEmail', email);
-        localStorage.setItem('pendingPaymentMessage', payload.message || 'Tienes pagos pendientes. Por favor realiza el pago.');
-        localStorage.setItem('idonToken', payload.token);
-        localStorage.setItem('idonUser', JSON.stringify(payload.user));
-        // ✅ REDIRIGIR CON WINDOW.LOCATION
-        window.location.href = '/app/payment-pending';
-        return;
-      }
-
-      // Login normal - negocio activo
-      if (payload.requiresBusinessSelection && payload.businesses?.length > 1) {
-        setPendingToken(payload.token);
-        setPendingUser(payload.user);
-        setAvailableBusinesses(payload.businesses);
-        setShowBusinessSelector(true);
-        return;
-      }
-
-      _commitLogin(payload.token, payload.user, payload.type ?? payload.user?.userType);
-      
     } catch (err) {
+      showError(err?.message || 'Error al iniciar sesión', 'general');
+    } finally {
       setLoading(false);
-      showError(`❌ Error de conexión. Verifica tu internet e intenta nuevamente.`, 'general');
     }
   };
 
+  // ─── SELECCIONAR NEGOCIO ──────────────────────────────────────
   const handleSelectBusiness = async (businessId) => {
-    setSelectingBusiness(true); 
+    setSelectingBusiness(true);
     setError('');
+    
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || 'https://idon-plataform-backend.onrender.com';
-      const res = await fetch(`${API_BASE}/api/auth/select-business`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${pendingToken}`,
-        },
-        body: JSON.stringify({ businessId }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Error al seleccionar negocio');
+      const result = await selectBusiness(businessId);
       
-      _commitLogin(data.data.token, data.data.user, 'owner');
+      if (result.success) {
+        setShowBusinessSelector(false);
+        navigate('/app', { replace: true });
+      } else {
+        showError(result.error || 'Error al seleccionar negocio', 'general');
+      }
     } catch (err) {
       showError(err?.message || 'Error al seleccionar negocio', 'general');
     } finally {
@@ -504,139 +456,142 @@ export default function LoginPage({ onLogin }) {
     }
   };
 
+  // ─── REGISTRO ──────────────────────────────────────────────────
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); 
+    setLoading(true);
     setError('');
+    
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || 'https://idon-plataform-backend.onrender.com';
       const body = {
-        firstName:      regForm.firstName,
-        lastName:       regForm.lastName,
-        email:          regForm.email,
-        phone:          regForm.phone,
-        businessName:   regForm.businessName,
+        firstName: regForm.firstName,
+        lastName: regForm.lastName,
+        email: regForm.email,
+        phone: regForm.phone,
+        businessName: regForm.businessName,
         businessTypeId: regForm.businessTypeId,
-        documentType:   regForm.documentType,
+        documentType: regForm.documentType,
         documentNumber: regForm.documentNumber,
         ownerExists,
+        foundByApi,
       };
       if (!ownerExists) body.password = regForm.password;
 
-      const res = await fetch(`${API_BASE}/api/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Error al registrarse');
+      const response = await api.post('/register', body);
       
-      showError('✅ ¡Solicitud enviada exitosamente! Un administrador la revisará en breve.', 'success');
-      setTimeout(() => {
-        setRegForm({
-          firstName:'', lastName:'', email:'', phone:'',
-          documentType:'cedula', documentNumber:'',
-          businessName:'', businessTypeId:'',
-          password:'', confirmPassword:'', termsAccepted:false
-        });
-        setOwnerExists(false);
-        setFoundByApi(false);
-        setRegistroStep(1);
-        setIsLogin(true);
-        setError('');
-      }, 3000);
+      if (response.data?.ok) {
+        showError('¡Solicitud enviada exitosamente! Un administrador la revisará en breve.', 'success');
+        setTimeout(() => {
+          setRegForm({
+            firstName: '', lastName: '', email: '', phone: '',
+            documentType: 'cedula', documentNumber: '',
+            businessName: '', businessTypeId: '',
+            password: '', confirmPassword: '', termsAccepted: false
+          });
+          setOwnerExists(false);
+          setFoundByApi(false);
+          setRegistroStep(1);
+          setIsLogin(true);
+          setError('');
+        }, 3000);
+      }
     } catch (err) {
       setLoading(false);
-      showError(err?.message || 'Error al registrarse. Por favor intenta nuevamente.', 'general');
+      showError(err?.response?.data?.message || 'Error al registrarse', 'general');
     } finally {
       setLoading(false);
     }
   };
 
   const handleNextStep = () => {
-    if (registroStep === 1 && isStep1Valid()) { 
-      setRegistroStep(2); 
-      setError(''); 
-    } else if (registroStep === 2 && isStep2Valid()) { 
-      setRegistroStep(3); 
-      setError(''); 
+    if (registroStep === 1 && isStep1Valid()) {
+      setRegistroStep(2);
+      setError('');
+    } else if (registroStep === 2 && isStep2Valid()) {
+      setRegistroStep(3);
+      setError('');
     } else {
-      showError('⚠️ Por favor completa todos los campos requeridos antes de continuar.', 'info');
+      showError('Por favor completa todos los campos requeridos antes de continuar.', 'info');
     }
   };
 
   const handlePrevStep = () => {
-    if (registroStep > 1) { 
-      setRegistroStep(registroStep - 1); 
-      setError(''); 
+    if (registroStep > 1) {
+      setRegistroStep(registroStep - 1);
+      setError('');
     }
   };
 
   const switchToRegister = () => {
-    setIsLogin(false); 
-    setRegistroStep(1); 
+    setIsLogin(false);
+    setRegistroStep(1);
     setError('');
     setErrorType('');
-    clearLoginFields();
     setRegForm({
-      firstName:'', lastName:'', email:'', phone:'',
-      documentType:'cedula', documentNumber:'',
-      businessName:'', businessTypeId:'',
-      password:'', confirmPassword:'', termsAccepted:false
+      firstName: '', lastName: '', email: '', phone: '',
+      documentType: 'cedula', documentNumber: '',
+      businessName: '', businessTypeId: '',
+      password: '', confirmPassword: '', termsAccepted: false
     });
+    setOwnerExists(false);
+    setFoundByApi(false);
   };
 
-  const switchToLogin = () => { 
-    setIsLogin(true); 
+  const switchToLogin = () => {
+    setIsLogin(true);
     setError('');
     setErrorType('');
-    clearLoginFields();
   };
 
   const stepStatus = (n) => {
-    if (registroStep > n)  return 'done';
+    if (registroStep > n) return 'done';
     if (registroStep === n) return 'active';
     return 'idle';
   };
-
-  const currentColor = colors[logoColor];
 
   const getErrorIcon = () => {
     switch(errorType) {
       case 'password': return <FiLock size={16} />;
       case 'user': return <FiUser size={16} />;
+      case 'document': return <FiCreditCard size={16} />;
       case 'info': return <FiInfo size={16} />;
       case 'success': return <FiCheckCircle size={16} />;
       default: return <FiAlertCircle size={16} />;
     }
   };
 
+  // Redirigir si ya está autenticado PERO NO si está en el selector de negocios
+  useEffect(() => {
+    if (isAuthenticated && !showBusinessSelector && !requiresBusinessSelection) {
+      navigate('/app', { replace: true });
+    }
+  }, [isAuthenticated, navigate, showBusinessSelector, requiresBusinessSelection]);
+
   return (
     <div className="login-page" style={{ position: 'relative', paddingBottom: 44 }}>
       <div className="login-container">
         <section className="login-left" aria-hidden="true">
           <div className="color-ring" style={{
-            background: `radial-gradient(ellipse 60% 60% at 30% 40%, ${currentColor}18 0%, transparent 70%),
-                         radial-gradient(ellipse 50% 50% at 75% 70%, rgba(140,183,155,.1) 0%, transparent 65%)`
+            background: `var(--bg-secondary)`
           }} />
 
           <div className="logo-carousel">
             <img
-              src={logos[logoIndex]}
+              src={logo}
               alt="IDON Logo"
               className="animated-logo"
-              key={`logo-${logoIndex}`}
               style={{
-                opacity: logoOpacity,
-                filter: `drop-shadow(0 0 28px ${currentColor}cc) drop-shadow(0 0 60px ${currentColor}66)`,
-                transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1), filter 1.5s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1)'
+                filter: `drop-shadow(0 0 28px ${color}cc) drop-shadow(0 0 60px ${color}66)`,
               }}
             />
           </div>
 
           <div className="logo-wordmark">
-            <div className="brand-name" data-text="IDON">IDON</div>
-            <div className="brand-tagline">Plataforma de Gestión Multi-Negocios</div>
+            <div className="brand-name">
+              <span className="brand-id">ID</span>
+              <span className="brand-on">ON</span>
+            </div>
+            <div className="brand-tagline">Simplemente eficiente</div>
           </div>
 
           {/* ─── VALUE PROPOSITION SLIDES ─── */}
@@ -720,16 +675,6 @@ export default function LoginPage({ onLogin }) {
               </div>
             )}
           </div>
-
-          <div className="color-indicators">
-            {colors.map((c, i) => (
-              <div
-                key={i}
-                className={`color-dot ${i === logoColor ? 'active' : ''}`}
-                style={{ backgroundColor: c, boxShadow: i === logoColor ? `0 0 10px ${c}` : 'none' }}
-              />
-            ))}
-          </div>
         </section>
 
         <main className="login-right">
@@ -738,10 +683,9 @@ export default function LoginPage({ onLogin }) {
               {showBusinessSelector ? (
                 <div className="auth-form" key="biz-selector">
                   <h3 className="form-title">Selecciona tu negocio</h3>
-                  <p style={{ color: '#aaa', fontSize: '0.85rem', marginBottom: 16 }}>
-                    Hola <strong style={{ color: '#fff' }}>{pendingUser?.firstName}</strong>, tienes{' '}
-                    <strong style={{ color: '#ff8c42' }}>{availableBusinesses.length}</strong> negocios registrados.
-                    ¿Con cuál deseas trabajar hoy?
+                  <p style={{ color: '#2c2b2b', fontSize: '0.85rem', marginBottom: 16 }}>
+                    Tienes <strong>{availableBusinesses.length}</strong> negocios registrados.
+                    ¿A qué negocio deseas acceder?
                   </p>
 
                   {error && (
@@ -750,39 +694,68 @@ export default function LoginPage({ onLogin }) {
                     </div>
                   )}
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {availableBusinesses.map(biz => (
-                      <button
-                        key={biz.id}
-                        type="button"
-                        onClick={() => handleSelectBusiness(biz.id)}
-                        disabled={selectingBusiness}
-                        className="business-selector-btn"
-                      >
-                        <div className="business-selector-avatar">
-                          {biz.name?.charAt(0).toUpperCase()}
+                  {selectingBusiness ? (
+                    <div className="spinner-overlay" style={{ 
+                      position: 'relative',
+                      minHeight: '300px',
+                      background: 'transparent',
+                      zIndex: 'auto'
+                    }}>
+                      <div className="spinner-brand">
+                        <div className="spinner-loader spinner-loader-lg spinner-primary" />
+                        <div className="brand-text">
+                          ID<span className="highlight">ON</span>
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="business-selector-name">{biz.name}</div>
-                          <div className="business-selector-type">{biz.business_type || biz.slug}</div>
-                        </div>
-                        <FiArrowRight size={16} className="business-selector-arrow" />
-                      </button>
-                    ))}
-                  </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {availableBusinesses.map((biz, index) => (
+                        <button
+                          key={biz.id}
+                          type="button"
+                          onClick={() => handleSelectBusiness(biz.id)}
+                          disabled={selectingBusiness}
+                          className="business-selector-btn"
+                          style={{ animationDelay: `${index * 0.05}s` }}
+                        >
+                          <div className="business-selector-avatar">
+                            {biz.name?.charAt(0).toUpperCase() || biz.slug?.charAt(0).toUpperCase() || '?'}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="business-selector-name">{biz.name || biz.slug}</div>
+                            <div className="business-selector-type">
+                              {biz.business_type || biz.business_type_name || 'Negocio'}
+                            </div>
+                          </div>
+                          <FiArrowRight size={18} className="business-selector-arrow" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   <button
                     type="button"
                     onClick={() => {
                       setShowBusinessSelector(false);
-                      setPendingToken(null);
-                      setPendingUser(null);
                       setAvailableBusinesses([]);
                       setError('');
                       setErrorType('');
-                      clearLoginFields();
                     }}
-                    className="back-to-login-btn"
+                    style={{
+                      marginTop: 20,
+                      background: 'none',
+                      border: 'none',
+                      color: '#888',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      transition: 'color 0.2s',
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'center',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#ff8c42'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#888'}
                   >
                     ← Volver al inicio de sesión
                   </button>
@@ -810,49 +783,30 @@ export default function LoginPage({ onLogin }) {
 
                       <div className="form-group">
                         <label><FiMail size={14} /> EMAIL</label>
-                        <input
+                        <Input
                           type="email"
                           value={email}
-                          onChange={e => setEmail(e.target.value)}
-                          placeholder="tu_email@email.com"
-                          required
+                          onChange={(value) => setEmail(value)}
+                          placeholder="Ej: miemail@email.com"
+                          size="md"
                           disabled={loading}
                           className={errorType === 'user' ? 'input-error' : ''}
+                          required
                         />
                       </div>
 
                       <div className="form-group">
                         <label><FiLock size={14} /> CONTRASEÑA</label>
-                        <div className="password-input">
-                          <input
-                            type={showPassword ? 'text' : 'password'}
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            placeholder="••••••••"
-                            required
-                            disabled={loading}
-                            className={errorType === 'password' ? 'input-error' : ''}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            tabIndex={-1}
-                            className="password-toggle"
-                            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                          >
-                            {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="check-row">
-                        <input
-                          type="checkbox"
-                          id="remember"
-                          checked={remember}
-                          onChange={e => setRemember(e.target.checked)}
+                        <Input
+                          type="password"
+                          value={password}
+                          onChange={(value) => setPassword(value)}
+                          placeholder="••••••••"
+                          size="md"
+                          disabled={loading}
+                          className={errorType === 'password' ? 'input-error' : ''}
+                          required
                         />
-                        <label htmlFor="remember">Recordarme</label>
                       </div>
 
                       <button type="submit" disabled={loading} className="btn-submit">
@@ -894,86 +848,92 @@ export default function LoginPage({ onLogin }) {
                         <div className="step-content">
                           <div className="grid-2">
                             <div className="form-group">
-                              <div className="input-with-icon">
-                                <FiCreditCard size={14} className="input-icon" />
-                                <select value={regForm.documentType} onChange={handleDocTypeChange}>
-                                  <option value="cedula">Cédula</option>
-                                  <option value="passport">Pasaporte</option>
-                                  <option value="ruc">RUC</option>
-                                </select>
-                              </div>
+                              <label><FiCreditCard size={14} /> Tipo de Documento *</label>
+                              <CustomCombobox
+                                options={[
+                                  { value: 'cedula', label: 'Cédula' },
+                                  { value: 'passport', label: 'Pasaporte' },
+                                  { value: 'ruc', label: 'RUC' }
+                                ]}
+                                value={regForm.documentType}
+                                onChange={handleDocTypeChange}
+                                placeholder="Selecciona tipo de documento"
+                                size="md"
+                                className="custom-combobox-full"
+                                disabled={loading}
+                              />
                             </div>
+                            
                             <div className="form-group">
-                              <div className="input-with-icon">
-                                <FiCreditCard size={14} className="input-icon" />
-                                <input
-                                  type="text"
-                                  value={regForm.documentNumber}
-                                  onChange={handleDocumentNumberChange}
-                                  placeholder="Número de documento"
-                                  maxLength={regForm.documentType === 'cedula' ? 10 : 20}
-                                  required
-                                />
-                              </div>
+                              <label><FiCreditCard size={14} /> Número de Documento *</label>
+                              <Input
+                                type="text"
+                                value={regForm.documentNumber}
+                                onChange={handleDocumentNumberChange}
+                                placeholder="Número de documento"
+                                size="md"
+                                disabled={loading}
+                                required
+                                className={errorType === 'document' ? 'input-error' : ''}
+                                error={errorType === 'document' ? error : ''}
+                              />
                               {ownerSearching && <small style={{ color: '#aaa' }}>Buscando...</small>}
                             </div>
                           </div>
                           
                           <div className="form-group">
-                            <div className="input-with-icon">
-                              <FiUser size={14} className="input-icon" />
-                              <input
-                                type="text"
-                                value={regForm.firstName}
-                                onChange={e => setRegForm({ ...regForm, firstName: e.target.value })}
-                                placeholder="Nombres"
-                                readOnly={ownerExists}
-                                disabled={ownerExists}
-                                required
-                              />
-                            </div>
+                            <label><FiUser size={14} /> Nombres *</label>
+                            <Input
+                              type="text"
+                              value={regForm.firstName}
+                              onChange={(value) => setRegForm({ ...regForm, firstName: value })}
+                              placeholder="Nombres"
+                              size="md"
+                              disabled={ownerExists || loading}
+                              readOnly={ownerExists || foundByApi}
+                              required
+                            />
                           </div>
+                          
                           <div className="form-group">
-                            <div className="input-with-icon">
-                              <FiUser size={14} className="input-icon" />
-                              <input
-                                type="text"
-                                value={regForm.lastName}
-                                onChange={e => setRegForm({ ...regForm, lastName: e.target.value })}
-                                placeholder="Apellidos"
-                                readOnly={ownerExists}
-                                disabled={ownerExists}
-                                required
-                              />
-                            </div>
+                            <label><FiUser size={14} /> Apellidos *</label>
+                            <Input
+                              type="text"
+                              value={regForm.lastName}
+                              onChange={(value) => setRegForm({ ...regForm, lastName: value })}
+                              placeholder="Apellidos"
+                              size="md"
+                              disabled={ownerExists || loading}
+                              readOnly={ownerExists || foundByApi}
+                              required
+                            />
                           </div>
+                          
                           <div className="form-group">
-                            <div className="input-with-icon">
-                              <FiMail size={14} className="input-icon" />
-                              <input
-                                type="email"
-                                value={regForm.email}
-                                onChange={e => setRegForm({ ...regForm, email: e.target.value })}
-                                placeholder="Email"
-                                readOnly={ownerExists}
-                                disabled={ownerExists}
-                                required={!ownerExists}
-                              />
-                            </div>
+                            <label><FiMail size={14} /> Email *</label>
+                            <Input
+                              type="email"
+                              value={regForm.email}
+                              onChange={(value) => setRegForm({ ...regForm, email: value })}
+                              placeholder="Email"
+                              size="md"
+                              disabled={ownerExists || loading}
+                              readOnly={ownerExists}
+                              required={!ownerExists}
+                            />
                           </div>
 
                           <div className="form-group">
-                            <div className="input-with-icon">
-                              <FiPhone size={14} className="input-icon" />
-                              <input
-                                type="tel"
-                                value={regForm.phone}
-                                onChange={e => setRegForm({ ...regForm, phone: e.target.value })}
-                                placeholder="Teléfono"
-                                readOnly={ownerExists}
-                                disabled={ownerExists}
-                              />
-                            </div>
+                            <label><FiPhone size={14} /> Teléfono</label>
+                            <Input
+                              type="tel"
+                              value={regForm.phone}
+                              onChange={(value) => setRegForm({ ...regForm, phone: value })}
+                              placeholder="Teléfono"
+                              size="md"
+                              disabled={ownerExists || loading}
+                              readOnly={ownerExists}
+                            />
                           </div>
                         </div>
                       )}
@@ -982,36 +942,36 @@ export default function LoginPage({ onLogin }) {
                         <div className="step-content">
                           <div className="form-group">
                             <label><FiBriefcase size={14} /> Nombre del Negocio *</label>
-                            <input
+                            <Input
                               type="text"
                               value={regForm.businessName}
-                              onChange={e => setRegForm({ ...regForm, businessName: e.target.value })}
+                              onChange={(value) => setRegForm({ ...regForm, businessName: value })}
                               placeholder="Mi Negocio"
+                              size="md"
+                              disabled={loading}
                               required
                             />
                           </div>
+                          
                           <div className="form-group">
                             <label><FiBriefcase size={14} /> Tipo de Negocio *</label>
                             {errorTypes && (
                               <small className="hint-error" style={{ marginBottom: 6, display: 'block' }}>
-                                ⚠️ {errorTypes}
+                                {errorTypes}
                               </small>
                             )}
-                            <select
+                            <CustomCombobox
+                              options={businessTypes.map(bt => ({
+                                value: bt.id ?? bt.slug ?? bt.name,
+                                label: bt.icon ? `${bt.icon} ${bt.name}` : bt.name
+                              }))}
                               value={regForm.businessTypeId}
-                              onChange={e => setRegForm({ ...regForm, businessTypeId: e.target.value })}
-                              required
-                              disabled={loadingTypes}
-                            >
-                              <option value="">
-                                {loadingTypes ? 'Cargando tipos...' : 'Selecciona un tipo'}
-                              </option>
-                              {businessTypes.map(bt => (
-                                <option key={bt.id ?? bt.slug ?? bt.name} value={bt.id ?? bt.slug}>
-                                  {bt.icon ? `${bt.icon} ` : ''}{bt.name}
-                                </option>
-                              ))}
-                            </select>
+                              onChange={(value) => setRegForm({ ...regForm, businessTypeId: value })}
+                              placeholder={loadingTypes ? 'Cargando tipos...' : 'Selecciona un tipo'}
+                              disabled={loadingTypes || loading}
+                              size="md"
+                              className="custom-combobox-full"
+                            />
                           </div>
                         </div>
                       )}
@@ -1029,52 +989,36 @@ export default function LoginPage({ onLogin }) {
                           ) : (
                             <>
                               <div className="form-group">
-                                <label><FiLock size={14} /> Contraseña (Mín. 8 caracteres)</label>
-                                <div className="password-input">
-                                  <input
-                                    type={showPasswords.register ? 'text' : 'password'}
-                                    value={regForm.password}
-                                    onChange={e => setRegForm({ ...regForm, password: e.target.value })}
-                                    placeholder="••••••••"
-                                    required
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => setShowPasswords({ ...showPasswords, register: !showPasswords.register })}
-                                    tabIndex={-1}
-                                    className="password-toggle"
-                                    aria-label={showPasswords.register ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                                  >
-                                    {showPasswords.register ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                                  </button>
-                                </div>
+                                <label><FiLock size={14} /> Contraseña (Mín. 8 caracteres) *</label>
+                                <Input
+                                  type="password"
+                                  value={regForm.password}
+                                  onChange={(value) => setRegForm({ ...regForm, password: value })}
+                                  placeholder="••••••••"
+                                  size="md"
+                                  disabled={loading}
+                                  required
+                                />
                               </div>
+                              
                               <div className="form-group">
-                                <label><FiLock size={14} /> Confirmar Contraseña</label>
-                                <div className="password-input">
-                                  <input
-                                    type={showPasswords.confirm ? 'text' : 'password'}
-                                    value={regForm.confirmPassword}
-                                    onChange={e => setRegForm({ ...regForm, confirmPassword: e.target.value })}
-                                    placeholder="••••••••"
-                                    required
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                                    tabIndex={-1}
-                                    className="password-toggle"
-                                    aria-label={showPasswords.confirm ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                                  >
-                                    {showPasswords.confirm ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                                  </button>
-                                </div>
+                                <label><FiLock size={14} /> Confirmar Contraseña *</label>
+                                <Input
+                                  type="password"
+                                  value={regForm.confirmPassword}
+                                  onChange={(value) => setRegForm({ ...regForm, confirmPassword: value })}
+                                  placeholder="••••••••"
+                                  size="md"
+                                  disabled={loading}
+                                  required
+                                />
                                 {regForm.password && regForm.confirmPassword && regForm.password !== regForm.confirmPassword && (
                                   <small className="hint-error">Las contraseñas no coinciden</small>
                                 )}
                               </div>
                             </>
                           )}
+                          
                           <div className="check-row" style={{ marginTop:'12px', alignItems: 'flex-start' }}>
                             <input
                               type="checkbox"
@@ -1102,14 +1046,29 @@ export default function LoginPage({ onLogin }) {
 
                       <div className="step-buttons">
                         {registroStep > 1 && (
-                          <button type="button" onClick={handlePrevStep} className="btn-secondary">
-                            <FiArrowLeft size={17} /> Atrás
-                          </button>
+                          <IconTextButton
+                            variant="blue"
+                            size="sm"
+                            inline={true}
+                            icon={<FiArrowLeft size={12} />}
+                            onClick={handlePrevStep}
+                            title="atrás"
+                            >
+                            Atrás
+                          </IconTextButton>
                         )}
                         {registroStep < 3 ? (
-                          <button type="button" onClick={handleNextStep} className="btn-submit">
-                            Siguiente <FiArrowRight size={17} />
-                          </button>
+
+                          <IconTextButton
+                            variant="success"
+                            size="sm"
+                            inline={true}
+                            icon={<FiArrowRight size={12} />}
+                            onClick={handleNextStep} 
+                            title="siguiente"
+                            >
+                            Siguiente
+                          </IconTextButton>
                         ) : (
                           <button type="submit" disabled={loading || !isStep3Valid()} className="btn-submit">
                             {loading ? <><span className="spinner" /> Registrando...</> : <>Crear Cuenta <FiArrowRight size={17} /></>}

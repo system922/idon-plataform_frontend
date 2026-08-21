@@ -1,287 +1,459 @@
-import { useState, useEffect, useCallback } from 'react';
-import PageTemplate from '../../components/PageTemplate';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAlert } from '../../components/ConfirmContext';
-import { Plus, Edit2, Trash2, X, Search, RefreshCw, Truck } from 'react-feather';
-import { fetchWithAuth } from '../../config/apiBase';
+import {
+  FiPlus, FiEdit2, FiTrash2, FiRefreshCw, FiX, FiAlertCircle, FiTruck
+} from "react-icons/fi";
+import PageTemplate from '../../components/PageTemplate';
+import { fetchWithAuth } from '../../config/apiBase_';
+import Table from '../../components/General/Table';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import SearchInput from '../../components/General/SearchInput';
+import Input from '../../components/General/Input';
+import Modal from '../../components/General/Modal';
+import CustomCombobox from '../../components/General/CustomCombobox';
 
 const EMPTY = { name: '', tax_id: '', contact: '', phone: '', email: '', address: '' };
 
-const inputStyle = {
-  width: '100%', padding: '9px 12px', borderRadius: 8,
-  border: '1px solid rgba(255,255,255,0.12)',
-  background: 'rgba(0,0,0,0.3)', color: '#fff',
-  fontSize: 13, fontFamily: 'inherit', boxSizing: 'border-box',
-};
-const btnPrimary = {
-  padding: '10px 22px', background: '#6842fe', color: '#fff',
-  border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13,
-};
-const btnSecondary = {
-  padding: '10px 22px', background: 'transparent', color: 'rgba(255,255,255,0.7)',
-  border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8,
-  cursor: 'pointer', fontWeight: 600, fontSize: 13,
-};
-
-function Field({ label, children }) {
-  return (
-    <div>
-      <label style={{
-        display: 'block', fontSize: 11, fontWeight: 700,
-        color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase',
-        letterSpacing: 0.5, marginBottom: 6,
-      }}>
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
+// ─── Modal de proveedores ─────────────────────────────────────────────────────
 
 function SupplierModal({ supplier, onClose, onSave, saving }) {
   const [form, setForm] = useState(supplier ? { ...supplier } : { ...EMPTY });
+  const [error, setError] = useState('');
+
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!form.name.trim()) {
+      setError('❌ El nombre del proveedor es requerido');
+      return;
+    }
+    onSave(form);
+  };
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
-      backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', zIndex: 1000, padding: 16,
-    }}>
-      <div style={{
-        background: 'linear-gradient(135deg,#1a1f2a 0%,#141920 100%)',
-        border: '1px solid rgba(104,66,254,0.25)', borderRadius: 16,
-        width: '100%', maxWidth: 560, maxHeight: '90vh',
-        display: 'flex', flexDirection: 'column',
-        boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
-      }}>
-        <div style={{
-          padding: '22px 28px', borderBottom: '1px solid rgba(255,255,255,0.08)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#fff' }}>
-              {supplier ? 'Editar proveedor' : 'Nuevo proveedor'}
-            </h2>
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
-              {supplier ? supplier.name : 'Completa los datos del proveedor'}
-            </p>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', padding: 4 }}>
-            <X size={20} />
-          </button>
-        </div>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div style={{ gridColumn: '1/-1' }}>
-              <Field label="Nombre *">
-                <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Ej: Distribuidora XYZ" style={inputStyle} />
-              </Field>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={supplier ? 'Editar proveedor' : 'Nuevo proveedor'}
+      size="md"
+      footer={
+        <>
+          {error && (
+            <div className="modal-error-text" style={{ color: 'var(--danger)', marginBottom: '12px' }}>
+              <FiAlertCircle size={16} /> {error}
             </div>
-            <Field label="RUC / NIT">
-              <input value={form.tax_id || ''} onChange={e => set('tax_id', e.target.value)} placeholder="Ej: 1234567890001" style={inputStyle} />
-            </Field>
-            <Field label="Contacto">
-              <input value={form.contact || ''} onChange={e => set('contact', e.target.value)} placeholder="Nombre del contacto" style={inputStyle} />
-            </Field>
-            <Field label="Teléfono">
-              <input value={form.phone || ''} onChange={e => set('phone', e.target.value)} placeholder="+593 99 999 9999" style={inputStyle} />
-            </Field>
-            <Field label="Email">
-              <input type="email" value={form.email || ''} onChange={e => set('email', e.target.value)} placeholder="proveedor@email.com" style={inputStyle} />
-            </Field>
-            <div style={{ gridColumn: '1/-1' }}>
-              <Field label="Dirección">
-                <textarea value={form.address || ''} onChange={e => set('address', e.target.value)} rows={2} placeholder="Dirección del proveedor..." style={{ ...inputStyle, height: 'auto', resize: 'vertical' }} />
-              </Field>
+          )}
+          <ButtonGroup>
+            <IconTextButton
+              variant="danger"
+              size="md"
+              icon={<FiX size={14} />}
+              onClick={onClose}
+              disabled={saving}
+            >
+              Cancelar
+            </IconTextButton>
+            <IconTextButton
+              variant="success"
+              size="md"
+              icon={<FiPlus size={14} />}
+              onClick={handleSubmit}
+              disabled={saving || !form.name}
+              loading={saving}
+            >
+              {saving ? 'Guardando...' : supplier ? 'Guardar cambios' : 'Crear proveedor'}
+            </IconTextButton>
+          </ButtonGroup>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Fila 1: RUC (menos ancho) + Nombre */}
+          <div style={{ display: 'grid', gridTemplateColumns: '0.6fr 1.4fr', gap: '16px' }}>
+            <div className="form-group">
+              <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-secondary)' }}>
+                RUC / NIT
+              </label>
+              <Input
+                type="text"
+                value={form.tax_id || ''}
+                onChange={(value) => set('tax_id', value)}
+                placeholder="Ej: 1234567890001"
+                size="md"
+              />
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-secondary)' }}>
+                Nombre *
+              </label>
+              <Input
+                type="text"
+                value={form.name}
+                onChange={(value) => set('name', value)}
+                placeholder="Ej: Distribuidora XYZ"
+                size="md"
+                autoFocus
+                required
+              />
             </div>
           </div>
-        </div>
 
-        <div style={{ padding: '18px 28px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-          <button onClick={onClose} disabled={saving} style={btnSecondary}>Cancelar</button>
-          <button onClick={() => onSave(form)} disabled={saving || !form.name} style={{ ...btnPrimary, opacity: !form.name ? 0.5 : 1 }}>
-            {saving ? 'Guardando...' : supplier ? 'Guardar cambios' : 'Crear proveedor'}
-          </button>
+          {/* Fila 2: Teléfono (menos ancho) + Email */}
+          <div style={{ display: 'grid', gridTemplateColumns: '0.6fr 1.4fr', gap: '16px' }}>
+            <div className="form-group">
+              <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-secondary)' }}>
+                Teléfono
+              </label>
+              <Input
+                type="text"
+                value={form.phone || ''}
+                onChange={(value) => set('phone', value)}
+                placeholder="099 999 9999"
+                size="md"
+              />
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-secondary)' }}>
+                Email
+              </label>
+              <Input
+                type="email"
+                value={form.email || ''}
+                onChange={(value) => set('email', value)}
+                placeholder="proveedor@email.com"
+                size="md"
+              />
+            </div>
+          </div>
+
+          {/* Fila 3: Dirección (ancho completo) */}
+          <div className="form-group">
+            <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-secondary)' }}>
+              Dirección
+            </label>
+            <Input
+              type="text"
+              value={form.address || ''}
+              onChange={(value) => set('address', value)}
+              placeholder="Dirección del proveedor..."
+              size="md"
+            />
+          </div>
         </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }
+
+// ─── Página principal ──────────────────────────────────────────────────────
 
 export default function InventorySuppliersPage() {
   const { showConfirm } = useConfirm();
   const alert = useAlert();
   const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [saving, setSaving]       = useState(false);
-  const [search, setSearch]       = useState('');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing]     = useState(null);
-  const [error, setError]         = useState('');
+  const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  const load = useCallback(async () => {
+  // Opciones para el filtro de estado
+  const statusOptions = [
+    { value: 'all', label: 'Todos los estados' },
+    { value: 'active', label: 'Activos' },
+    { value: 'inactive', label: 'Inactivos' },
+  ];
+
+  // ── Carga de proveedores ──────────────────────────────────────────────────
+  const loadSuppliers = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true); setError('');
       const res = await fetchWithAuth('/api/suppliers');
       if (!res.ok) throw new Error('Error al cargar proveedores');
-      setSuppliers(await res.json());
-    } catch (e) {
-      setError(e.message);
+      const data = await res.json();
+      setSuppliers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError('Error al cargar los proveedores');
+      setSuppliers([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadSuppliers(); }, [loadSuppliers]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadSuppliers();
+    setRefreshing(false);
+  };
 
   const handleSave = async (form) => {
+    setSaving(true);
+    setError('');
     try {
-      setSaving(true);
-      const url    = editing ? `/api/suppliers/${editing.id}` : '/api/suppliers';
-      const method = editing ? 'PUT' : 'POST';
-      const res    = await fetchWithAuth(url, { method, body: JSON.stringify(form) });
-      if (!res.ok) throw new Error((await res.json()).error || 'Error al guardar');
-      await load();
+      const isEdit = !!editing;
+      const url = isEdit ? `/api/suppliers/${editing.id}` : '/api/suppliers';
+      const method = isEdit ? 'PUT' : 'POST';
+      const res = await fetchWithAuth(url, { method, body: JSON.stringify(form) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.message || 'Error al guardar proveedor');
+      await loadSuppliers();
       setShowModal(false);
       setEditing(null);
+      await alert.success(isEdit ? '✅ Proveedor actualizado correctamente' : '✅ Proveedor creado correctamente');
     } catch (e) {
+      setError(e.message);
       await alert.error(e.message);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (s) => {
-    if (!await showConfirm(`¿Desactivar "${s.name}"?`)) return;
+  // ─── Eliminar con confirmación (ELIMINACIÓN FÍSICA) ──────────────────────
+  const handleDelete = async (supplier) => {
+    const confirmed = await showConfirm({
+      title: 'Confirmar eliminación',
+      message: `¿Eliminar el proveedor "${supplier.name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      danger: true,
+    });
+
+    if (!confirmed) return;
+
+    setSaving(true);
     try {
-      const res = await fetchWithAuth(`/api/suppliers/${s.id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/api/suppliers/${supplier.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Error al eliminar');
-      await load();
+      await loadSuppliers();
+      await alert.success(`Proveedor "${supplier.name}" eliminado correctamente`);
     } catch (e) {
+      setError(e.message);
       await alert.error(e.message);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const filtered = suppliers.filter(s =>
-    (s.name    || '').toLowerCase().includes(search.toLowerCase()) ||
-    (s.contact || '').toLowerCase().includes(search.toLowerCase()) ||
-    (s.email   || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const openCreate = () => { setEditing(null); setError(''); setShowModal(true); };
+  const openEdit = (supplier) => { setEditing(supplier); setError(''); setShowModal(true); };
+  const closeModal = () => { setShowModal(false); setEditing(null); setError(''); };
 
-  const stats = [
-    { label: 'Total',   value: suppliers.length,                           color: '#6842fe' },
-    { label: 'Activos', value: suppliers.filter(s => s.is_active).length,  color: '#10b981' },
-    { label: 'Inactivos', value: suppliers.filter(s => !s.is_active).length, color: '#ef4444' },
+  // ── Datos filtrados ──────────────────────────────────────────────────────
+  const filteredSuppliers = useMemo(() => {
+    let result = suppliers;
+    
+    // Filtro por búsqueda
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(s =>
+        (s.name?.toLowerCase() || '').includes(term) ||
+        (s.contact?.toLowerCase() || '').includes(term) ||
+        (s.email?.toLowerCase() || '').includes(term) ||
+        (s.tax_id?.toLowerCase() || '').includes(term)
+      );
+    }
+    
+    // Filtro por estado
+    if (statusFilter === 'active') {
+      result = result.filter(s => s.is_active === true);
+    } else if (statusFilter === 'inactive') {
+      result = result.filter(s => s.is_active === false);
+    }
+    
+    return result;
+  }, [suppliers, searchTerm, statusFilter]);
+
+  // ── Columnas de la tabla ────────────────────────────────────────────────
+  const columns = [
+    {
+      accessor: 'name',
+      label: 'Proveedor',
+      render: (item) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <strong>{item.name}</strong>
+        </div>
+      ),
+    },
+    {
+      accessor: 'tax_id',
+      label: 'RUC',
+      render: (item) => (
+        <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+          {item.tax_id || '—'}
+        </span>
+      ),
+    },
+    {
+      accessor: 'contact',
+      label: 'Contacto',
+      render: (item) => <span>{item.contact || '—'}</span>,
+    },
+    {
+      accessor: 'phone',
+      label: 'Teléfono',
+      render: (item) => <span>{item.phone || '—'}</span>,
+    },
+    {
+      accessor: 'email',
+      label: 'Email',
+      render: (item) => <span>{item.email || '—'}</span>,
+    },
+    {
+      accessor: 'is_active',
+      label: 'Estado',
+      render: (item) => (
+        <span className={item.is_active ? 'status-active' : 'status-inactive'}>
+          {item.is_active ? 'Activo' : 'Inactivo'}
+        </span>
+      ),
+    },
+    {
+      accessor: 'actions',
+      label: 'Acciones',
+      align: 'center',
+      render: (item) => (
+        <ButtonGroup>
+          <IconTextButton
+            variant="blue"
+            size="sm"
+            inline={true}
+            icon={<FiEdit2 size={14} />}
+            onClick={() => openEdit(item)}
+            tooltip="Editar proveedor"
+          >
+            Editar
+          </IconTextButton>
+          <IconTextButton
+            variant="danger"
+            size="sm"
+            inline={true}
+            icon={<FiTrash2 size={14} />}
+            onClick={() => handleDelete(item)}
+            tooltip="Eliminar proveedor"
+          >
+            Eliminar
+          </IconTextButton>
+        </ButtonGroup>
+      ),
+    },
   ];
 
-  const headerAction = (
-    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-      <div style={{ position: 'relative' }}>
-        <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.35)' }} />
-        <input
-          type="text" placeholder="Buscar proveedor..."
-          value={search} onChange={e => setSearch(e.target.value)}
-          style={{ padding: '9px 12px 9px 32px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.3)', color: 'rgba(255,255,255,0.9)', fontSize: 13, width: 230 }}
+  // ── Toolbar personalizado ──────────────────────────────────────────────
+  const toolbar = (
+    <div className="users-toolbar">
+      <SearchInput
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder="Buscar proveedores..."
+        size="md"
+        variant="bordered"
+        className="users-search-input"
+        onClear={() => setSearchTerm('')}
+        autoFocus={false}
+      />
+      
+      {/* Filtro de estado con CustomCombobox */}
+      <div style={{ minWidth: '180px' }}>
+        <CustomCombobox
+          options={statusOptions}
+          value={statusFilter}
+          onChange={setStatusFilter}
+          placeholder="Filtrar por estado..."
+          filterable={false}
         />
       </div>
-      <button onClick={load} title="Recargar" style={{ ...btnSecondary, padding: '9px 12px' }}>
-        <RefreshCw size={14} />
-      </button>
-      <button onClick={() => { setEditing(null); setShowModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: 6, ...btnPrimary, padding: '9px 18px' }}>
-        <Plus size={15} /> Nuevo proveedor
-      </button>
+
+      <ButtonGroup>
+        <IconTextButton
+          variant="success"
+          size="md"
+          icon={<FiPlus size={13} />}
+          onClick={openCreate}
+          disabled={!!saving}
+          loading={!!saving}
+        >
+          Nuevo proveedor
+        </IconTextButton>
+      </ButtonGroup>
     </div>
   );
 
+  // ── Botón de refrescar ──────────────────────────────────────────────────
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
+  // ── Render ──────────────────────────────────────────────────────────────
   return (
     <PageTemplate
       title="Proveedores"
       subtitle="Gestión de proveedores del negocio"
-      headerAction={headerAction}
+      theme="business"
       loading={loading}
-      error={error}
-      onRetry={load}
+      headerAction={refreshButton}
     >
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-        {stats.map(s => (
-          <div key={s.label} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px 20px', minWidth: 120 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: 'rgba(104,66,254,0.12)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                {['Proveedor', 'RUC / NIT', 'Contacto', 'Teléfono', 'Email', 'Estado', ''].map(h => (
-                  <th key={h} style={{ padding: '12px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap' }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>
-                    <Truck size={32} style={{ display: 'block', margin: '0 auto 10px', opacity: 0.3 }} />
-                    {search ? 'Sin resultados para esa búsqueda' : 'No hay proveedores registrados'}
-                  </td>
-                </tr>
-              )}
-              {filtered.map((s, idx) => (
-                <tr
-                  key={s.id}
-                  style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)', transition: 'background 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(104,66,254,0.07)'}
-                  onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'}
-                >
-                  <td style={{ padding: '11px 14px', color: '#fff', fontWeight: 600 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Truck size={13} style={{ color: '#6842fe', flexShrink: 0 }} />
-                      {s.name}
-                    </div>
-                  </td>
-                  <td style={{ padding: '11px 14px', color: 'rgba(255,255,255,0.5)', fontFamily: 'monospace', fontSize: 12 }}>{s.tax_id || '—'}</td>
-                  <td style={{ padding: '11px 14px', color: 'rgba(255,255,255,0.7)' }}>{s.contact || '—'}</td>
-                  <td style={{ padding: '11px 14px', color: 'rgba(255,255,255,0.6)' }}>{s.phone || '—'}</td>
-                  <td style={{ padding: '11px 14px', color: 'rgba(255,255,255,0.6)' }}>{s.email || '—'}</td>
-                  <td style={{ padding: '11px 14px' }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 20, background: s.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: s.is_active ? '#10b981' : '#ef4444' }}>
-                      {s.is_active ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '11px 14px' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => { setEditing(s); setShowModal(true); }} title="Editar" style={{ padding: '6px 10px', background: 'rgba(104,66,254,0.15)', color: '#6842fe', border: '1px solid rgba(104,66,254,0.25)', borderRadius: 6, cursor: 'pointer' }}>
-                        <Edit2 size={13} />
-                      </button>
-                      <button onClick={() => handleDelete(s)} title="Desactivar" style={{ padding: '6px 10px', background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.22)', borderRadius: 6, cursor: 'pointer' }}>
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {error && (
+        <div className="alert alert-error" style={{ 
+          padding: '12px 16px', 
+          background: 'var(--danger-bg)', 
+          color: 'var(--danger)', 
+          borderRadius: '8px', 
+          marginBottom: '16px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '8px' 
+        }}>
+          <FiAlertCircle size={16} /> {error}
         </div>
-        {filtered.length > 0 && (
-          <div style={{ padding: '10px 16px', fontSize: 12, color: 'rgba(255,255,255,0.3)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-            {filtered.length} de {suppliers.length} proveedores
-          </div>
-        )}
-      </div>
+      )}
+
+      <Table
+        data={filteredSuppliers}
+        columns={columns}
+        keyField="id"
+        title="Listado de proveedores"
+        subtitle={`${filteredSuppliers.length} ${filteredSuppliers.length === 1 ? 'proveedor' : 'proveedores'} registrados`}
+        toolbar={toolbar}
+        searchable={false}
+        searchPlaceholder="Buscar por nombre, contacto o email..."
+        searchFields={['name', 'contact', 'email']}
+        pagination={true}
+        itemsPerPage={10}
+        itemsPerPageOptions={[10, 25, 50, 100]}
+        loading={loading}
+        emptyMessage={
+          searchTerm || statusFilter !== 'all'
+            ? 'No hay proveedores que coincidan con los filtros aplicados'
+            : 'No hay proveedores registrados'
+        }
+        striped={true}
+        hoverable={true}
+        bordered={false}
+        compact={false}
+      />
 
       {showModal && (
         <SupplierModal
           supplier={editing}
-          onClose={() => { setShowModal(false); setEditing(null); }}
+          onClose={closeModal}
           onSave={handleSave}
           saving={saving}
         />

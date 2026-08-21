@@ -1,0 +1,354 @@
+/* ============================================================
+   ESTADO DE CUENTA - ESTILOS PROFESIONALES
+   ============================================================ */
+
+/* --- Contenedor principal --- */
+.odont-atender-section {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.odont-atender-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.odont-atender-section-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.odont-atender-section-header h3 svg {
+  color: #7c5cff;
+}
+
+/* --- Subtabs --- */
+.odont-atender-subtabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow-x: auto;
+}
+
+.odont-atender-subtab {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.odont-atender-subtab:hover {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.odont-atender-subtab.active {
+  background: linear-gradient(135deg, rgba(104, 66, 254, 0.9), rgba(37, 99, 235, 0.85));
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(104, 66, 254, 0.2);
+}
+
+/* --- Botones --- */
+.odont-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7c5cff, #2563eb);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px rgba(104, 66, 254, 0.2);
+  text-decoration: none;
+}
+
+.odont-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(104, 66, 254, 0.35);
+}
+
+.odont-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.odont-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(104, 66, 254, 0.2);
+  color: #fff;
+}
+
+.odont-btn-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.2);
+}
+
+.odont-btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(16, 185, 129, 0.35);
+}
+
+/* --- Tarjetas de información --- */
+.odont-info-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s ease;
+}
+
+.odont-info-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(104, 66, 254, 0.15);
+}
+
+.odont-info-card strong {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.odont-info-card span {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* --- Notas de tratamiento --- */
+.odont-treatment-note {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* --- Estado vacío --- */
+.odont-empty-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 14px;
+  border-radius: 12px;
+  border: 2px dashed rgba(255, 255, 255, 0.04);
+}
+
+.odont-empty-state svg {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.3;
+}
+
+/* --- Tabla de presupuesto --- */
+.odont-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.odont-table th {
+  padding: 8px 10px;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.odont-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.odont-table .text-right {
+  text-align: right;
+}
+
+.odont-table .text-center {
+  text-align: center;
+}
+
+.odont-table .total-row td {
+  font-weight: 700;
+  color: #fff;
+  border-top: 2px solid rgba(255, 255, 255, 0.06);
+  padding-top: 10px;
+}
+
+/* --- Presupuesto Card --- */
+.presupuesto-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.presupuesto-card:hover {
+  border-color: rgba(104, 66, 254, 0.15);
+}
+
+.presupuesto-card h4 {
+  margin: 0;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .odont-atender-section {
+    padding: 12px;
+  }
+
+  .odont-atender-section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .odont-atender-subtabs {
+    flex-wrap: wrap;
+  }
+
+  .odont-atender-subtab {
+    flex: 1;
+    text-align: center;
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .odont-treatment-note {
+    grid-template-columns: 1fr;
+  }
+
+  .odont-table {
+    font-size: 10px;
+  }
+
+  .odont-table th,
+  .odont-table td {
+    padding: 5px 6px;
+  }
+
+  .odont-btn-primary,
+  .odont-btn-secondary,
+  .odont-btn-success {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .odont-atender-section {
+    padding: 8px;
+  }
+
+  .odont-atender-section-header h3 {
+    font-size: 15px;
+  }
+
+  .odont-atender-subtab {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+
+  .odont-info-card {
+    padding: 10px 12px;
+  }
+
+  .odont-info-card span {
+    font-size: 13px;
+  }
+
+  .presupuesto-card {
+    padding: 12px;
+  }
+
+  .presupuesto-card h4 {
+    font-size: 13px;
+  }
+
+  .odont-table {
+    font-size: 9px;
+  }
+
+  .odont-table th,
+  .odont-table td {
+    padding: 3px 4px;
+  }
+}
+
+/* --- Scrollbar personalizada --- */
+.odont-atender-subtabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.odont-atender-subtabs::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.odont-atender-subtabs::-webkit-scrollbar-thumb {
+  background: rgba(104, 66, 254, 0.3);
+  border-radius: 4px;
+}
+
+.odont-atender-subtabs::-webkit-scrollbar-thumb:hover {
+  background: rgba(104, 66, 254, 0.5);
+}

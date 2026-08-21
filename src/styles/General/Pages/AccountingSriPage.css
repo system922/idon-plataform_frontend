@@ -1,0 +1,438 @@
+/* ============================================================
+   AccountingSriPage.css - Estilos específicos para Configuración SRI
+   ============================================================ */
+
+/* ── Toast de mensajes ────────────────────────────────────── */
+.sri-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  animation: slideUp 0.3s ease forwards;
+}
+
+.sri-toast.success {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.sri-toast.error {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ── Cards personalizadas ────────────────────────────────── */
+.sri-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  margin-bottom: var(--space-5);
+}
+
+.sri-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.sri-card-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sri-card-title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.sri-card-body {
+  padding: var(--space-5);
+}
+
+/* ── Logo ──────────────────────────────────────────────────── */
+.sri-logo-description {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.sri-logo-preview-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.sri-logo-preview {
+  height: 80px;
+  max-width: 200px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  padding: var(--space-2);
+  border: 1px solid var(--border-color);
+}
+
+.sri-logo-status-preview {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.sri-logo-status-preview .warning {
+  color: var(--warning);
+}
+
+.sri-logo-status-preview .success {
+  color: var(--success);
+}
+
+.sri-logo-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.sri-logo-file-input {
+  display: none;
+}
+
+.sri-btn-select {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--success);
+  color: var(--text-white);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  transition: var(--transition);
+}
+
+.sri-btn-select:hover {
+  background: var(--success-hover);
+}
+
+.sri-logo-file-info {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+/* ── Estado de firma ──────────────────────────────────────── */
+.sri-signature-status {
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.sri-signature-status.active {
+  background: var(--success-bg);
+  border: 1.5px solid rgba(16, 185, 129, 0.3);
+}
+
+.sri-signature-status.inactive {
+  background: var(--danger-bg);
+  border: 1.5px solid rgba(239, 68, 68, 0.25);
+}
+
+.sri-signature-status-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sri-signature-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sri-signature-icon-wrapper.active {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.sri-signature-icon-wrapper.inactive {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.sri-signature-icon-wrapper .icon-success {
+  color: var(--success);
+}
+
+.sri-signature-icon-wrapper .icon-danger {
+  color: var(--danger);
+}
+
+.sri-signature-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+}
+
+.sri-signature-title.active {
+  color: var(--success-dark);
+}
+
+.sri-signature-title.inactive {
+  color: var(--danger-dark);
+}
+
+.sri-signature-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.sri-signature-details {
+  display: flex;
+  gap: var(--space-6);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(16, 185, 129, 0.15);
+  flex-wrap: wrap;
+}
+
+.sri-signature-detail {
+  font-size: var(--font-size-sm);
+}
+
+.sri-signature-detail-label {
+  color: var(--text-muted);
+}
+
+.sri-signature-detail-value {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.sri-signature-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sri-signature-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sri-signature-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sri-signature-file-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  border: 1.5px dashed var(--border-color);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  transition: var(--transition);
+}
+
+.sri-signature-file-input:hover {
+  border-color: var(--primary);
+}
+
+.sri-signature-password-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  border: 1.5px solid var(--border-color);
+  font-size: var(--font-size-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  outline: none;
+  transition: var(--transition);
+}
+
+.sri-signature-password-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+/* ── Campos de secuenciales ──────────────────────────────── */
+.sri-field-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border-light);
+  flex-wrap: wrap;
+}
+
+.sri-field-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 140px;
+  flex: 0 0 auto;
+}
+
+.sri-field-label-text {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.sri-field-value {
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-semibold);
+  flex: 1 1 auto;
+}
+
+.sri-field-value.has-value {
+  color: var(--text-primary);
+}
+
+.sri-field-value.empty {
+  color: var(--text-muted);
+}
+
+.sri-field-input {
+  flex: 1 1 160px;
+  max-width: 160px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-xs);
+  border: 2px solid var(--primary);
+  font-size: var(--font-size-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  outline: none;
+  transition: var(--transition);
+}
+
+.sri-field-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.sri-invoice-number-display {
+  margin: var(--space-2) var(--space-5) var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--warning-bg);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.sri-invoice-number {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+/* ── Ambiente SRI ──────────────────────────────────────────── */
+.sri-ambiente-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  flex-wrap: wrap;
+}
+
+.sri-ambiente-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 140px;
+  flex: 0 0 auto;
+}
+
+.sri-ambiente-value {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  flex: 1 1 auto;
+}
+
+.sri-ambiente-value.production {
+  color: var(--texty-primary);
+}
+
+.sri-ambiente-value.test {
+  color: var(--text-primary);
+}
+
+.sri-ambiente-select {
+  flex: 1 1 180px;
+  min-width: 180px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-xs);
+  border: 2px solid var(--primary);
+  font-size: var(--font-size-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  outline: none;
+  transition: var(--transition);
+}
+
+/* ── Utilidades ────────────────────────────────────────────── */
+.sri-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .sri-field-row,
+  .sri-ambiente-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sri-field-label,
+  .sri-ambiente-label {
+    min-width: auto;
+    flex: 1 1 auto;
+  }
+
+  .sri-field-input {
+    max-width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .sri-field-actions {
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
+  .sri-logo-preview-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sri-signature-details {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+}

@@ -42,17 +42,33 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (!token || !user) {
       setShowTimeoutModal(false);
-      if (!PUBLIC_PATHS.includes(location.pathname)) {
+
+      if (
+        !(
+          PUBLIC_PATHS.includes(location.pathname) ||
+          location.pathname.endsWith('/qr') ||
+          location.pathname.endsWith('/menu')
+        )
+      ) {
         navigate('/login');
       }
+
       return;
     }
     const exp = getTokenExpiration(token);
     if (!exp) {
       setShowTimeoutModal(false);
-      if (!PUBLIC_PATHS.includes(location.pathname)) {
+
+      if (
+        !(
+          PUBLIC_PATHS.includes(location.pathname) ||
+          location.pathname.endsWith('/qr') ||
+          location.pathname.endsWith('/menu')
+        )
+      ) {
         navigate('/login');
       }
+
       return;
     }
     const now = Date.now();
@@ -79,7 +95,14 @@ export const AuthProvider = ({ children }) => {
         setShowTimeoutModal(false);
         logout();
         clearInterval(timerRef.current);
-        if (!PUBLIC_PATHS.includes(location.pathname)) {
+
+        if (
+          !(
+            PUBLIC_PATHS.includes(location.pathname) ||
+            location.pathname.endsWith('/qr') ||
+            location.pathname.endsWith('/menu')
+          )
+        ) {
           navigate('/login');
         }
       } else if (msLeft2 < 2 * 60 * 1000) {

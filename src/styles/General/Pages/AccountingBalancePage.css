@@ -1,0 +1,193 @@
+/* Tabs */
+.tabs-container {
+  margin-top: 24px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.tabs-header {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: var(--bg-primary-light);
+}
+
+.tab-content {
+  padding: 24px;
+}
+
+.tab-panel {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Balance Sheet */
+.balance-sheet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.balance-sheet-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.balance-sheet-section {
+  background: var(--bg-card-alt);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+
+.balance-section-title {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.balance-sheet-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.balance-sheet-table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border-color-light);
+  font-size: 0.9rem;
+}
+
+.balance-sheet-table .account-name {
+  color: var(--text-secondary);
+}
+
+.balance-sheet-table .account-amount {
+  text-align: right;
+  font-weight: 500;
+}
+
+.balance-sheet-table .subtotal-row td {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.balance-sheet-table .total-row td {
+  font-weight: 700;
+  color: var(--text-primary);
+  border-top: 2px solid var(--border-color);
+  padding-top: 8px;
+}
+
+.balance-sheet-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-primary-light);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.balance-sheet-grand-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  background: var(--primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-top: 16px;
+}
+
+/* Ratios */
+.ratios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.ratio-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.ratio-icon {
+  padding: 10px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ratio-content {
+  flex: 1;
+}
+
+.ratio-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.ratio-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .balance-sheet-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tabs-header {
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    flex: 1 1 50%;
+    justify-content: center;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+}

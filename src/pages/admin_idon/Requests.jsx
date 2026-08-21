@@ -1,612 +1,632 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useConfirm, useAlert } from '../../context/ConfirmContext';
 import {
   FiBox, FiShoppingCart, FiShoppingBag, FiClipboard, FiClock,
   FiCheck, FiX, FiRefreshCw, FiEye, FiPackage, FiStar,
-  FiChevronDown, FiChevronRight, FiSettings, FiBarChart2,
+  FiSettings, FiBarChart2,
   FiCreditCard, FiDollarSign, FiTruck, FiGrid, FiCalendar,
   FiUsers, FiUserCheck, FiMap, FiMapPin, FiList, FiGlobe,
-  FiBell, FiFileText, FiThermometer
+  FiBell, FiFileText, FiThermometer, FiUser, FiMail, FiPhone,
+  FiFile, FiAlertCircle,
 } from 'react-icons/fi';
-import { adminApiService as apiService } from '../../services/apiService';
+import { adminApi } from '../../config/api';
 import PageTemplate from '../../components/PageTemplate';
-import '../../styles/AdminPages.css';
+import Table from '../../components/General/Table';
+import Modal from '../../components/General/Modal';
+import Checklist from '../../components/General/Checklist';
+import CustomCombobox from '../../components/General/CustomCombobox';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 
-
-// Iconos por módulo usando react-icons/fi
 const MOD_ICON_MAP = {
-  core:          <FiSettings   size={17}/>,
-  pos:           <FiShoppingCart size={17}/>,
-  inventory:     <FiBox        size={17}/>,
-  reports:       <FiBarChart2  size={17}/>,
-  payments:      <FiCreditCard size={17}/>,
-  accounting:    <FiDollarSign size={17}/>,
-  orders:        <FiClipboard  size={17}/>,
-  kitchen:       <FiThermometer size={17}/>,
-  delivery:      <FiTruck      size={17}/>,
-  tables:        <FiGrid       size={17}/>,
-  reservations:  <FiCalendar   size={17}/>,
-  loyalty:       <FiStar       size={17}/>,
-  suppliers:     <FiTruck      size={17}/>,
-  purchases:     <FiShoppingBag size={17}/>,
-  appointments:  <FiClock      size={17}/>,
-  employees:     <FiUsers      size={17}/>,
-  crm:           <FiUserCheck  size={17}/>,
-  routes:        <FiMap        size={17}/>,
-  tracking:      <FiMapPin     size={17}/>,
-  queue:         <FiList       size={17}/>,
-  ecommerce:     <FiGlobe      size={17}/>,
-  notifications: <FiBell       size={17}/>,
-  einvoicing:    <FiFileText   size={17}/>,
+  core:          <FiSettings size={16} />,
+  pos:           <FiShoppingCart size={16} />,
+  inventory:     <FiBox size={16} />,
+  reports:       <FiBarChart2 size={16} />,
+  payments:      <FiCreditCard size={16} />,
+  accounting:    <FiDollarSign size={16} />,
+  orders:        <FiClipboard size={16} />,
+  kitchen:       <FiThermometer size={16} />,
+  delivery:      <FiTruck size={16} />,
+  tables:        <FiGrid size={16} />,
+  reservations:  <FiCalendar size={16} />,
+  loyalty:       <FiStar size={16} />,
+  suppliers:     <FiTruck size={16} />,
+  purchases:     <FiShoppingBag size={16} />,
+  appointments:  <FiCalendar size={16} />,
+  employees:     <FiUsers size={16} />,
+  crm:           <FiUserCheck size={16} />,
+  routes:        <FiMap size={16} />,
+  tracking:      <FiMapPin size={16} />,
+  queue:         <FiList size={16} />,
+  ecommerce:     <FiGlobe size={16} />,
+  notifications: <FiBell size={16} />,
+  einvoicing:    <FiFileText size={16} />,
 };
+
 const ModIcon = ({ code }) => (
-  <span style={{
-    display:'flex', alignItems:'center', justifyContent:'center',
-    width:'30px', height:'30px', borderRadius:'8px', flexShrink:0,
-    background:'rgba(255,140,66,.12)', color:'#ff8c42',
-  }}>
-    {MOD_ICON_MAP[code] || <FiBox size={17}/>}
+  <span className="solicitud-mod-icon">
+    {MOD_ICON_MAP[code] || <FiBox size={16} />}
   </span>
 );
 
-/* ═══════════════════════════════════════════════════════════
-   COMPONENTE PRINCIPAL
-═══════════════════════════════════════════════════════════ */
-const AdminSolicitudes = () => {
+function DetailModal({ request, onClose, onApprove, onReject, modules, onSave }) {
+  const { showConfirm } = useConfirm();
+  const alert = useAlert();
+  const [selectedMods, setSelectedMods] = useState([]);
+  const [selectedFeats, setSelectedFeats] = useState([]);
+  const [loadingMods, setLoadingMods] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoadingMods(true);
+        let preModIds = [];
+        let preFeatIds = [];
+
+        if (request.status === 'approved' && request.business_id) {
+          try {
+            const bizMods = await adminApi.get(`/admin/businesses/${request.business_id}/modules`);
+            preModIds = bizMods.data?.moduleIds || [];
+            preFeatIds = bizMods.data?.featureIds || [];
+          } catch (e) { }
+        } else {
+          const savedModCodes = request.modulos || [];
+          const savedFeatCodes = request.features || [];
+          preModIds = modules.filter(m => savedModCodes.includes(m.code)).map(m => m.id);
+          preFeatIds = modules.flatMap(m => m.features || [])
+            .filter(f => savedFeatCodes.includes(f.code)).map(f => f.id);
+        }
+
+        setSelectedMods(preModIds);
+        setSelectedFeats(preFeatIds);
+        setHasChanges(false);
+      } catch (e) { } finally {
+        setLoadingMods(false);
+      }
+    };
+    load();
+  }, [request.id, request.status, request.business_id, request.modulos, request.features, modules]);
+
+  const checklistItems = useMemo(() => {
+    return modules.map(m => ({
+      id: String(m.id),
+      label: m.name,
+      icon: <ModIcon code={m.code || m.id} />,
+      badge: m.price_monthly ? `$${m.price_monthly}/mes` : '',
+      isPremium: parseFloat(m.price_monthly || 0) > 0,
+      children: m.features?.map(f => ({
+        id: String(f.id),
+        label: f.name,
+        isPremium: f.is_premium || false,
+      })) || [],
+    }));
+  }, [modules]);
+
+  const checklistValue = useMemo(() => {
+    return selectedMods.map(modId => ({
+      modulo: modId,
+      features: selectedFeats.filter(featId => {
+        const mod = modules.find(m => m.id === modId);
+        return mod?.features?.some(f => f.id === featId);
+      }),
+    }));
+  }, [selectedMods, selectedFeats, modules]);
+
+  const handlePermissionsChange = (newValue) => {
+    const modIds = newValue.map(item => item.modulo);
+    const featIds = newValue.flatMap(item => item.features || []);
+    setSelectedMods(modIds);
+    setSelectedFeats(featIds);
+    setError('');
+    setHasChanges(true);
+  };
+
+  const totalMensual = modules
+    .filter(m => selectedMods.includes(m.id))
+    .reduce((sum, m) => sum + parseFloat(m.price_monthly || 0), 0);
+
+  const handleSave = async () => {
+    if (saving || !hasChanges) return;
+    setSaving(true);
+    setError('');
+    try {
+      if (request.status === 'approved' && request.business_id) {
+        await adminApi.put(`/admin/businesses/${request.business_id}/modules`, {
+          moduleIds: selectedMods,
+          featureIds: selectedFeats,
+        });
+      } else {
+        await adminApi.post(`/admin/requests/${request.id}/save-modules`, {
+          moduleIds: selectedMods,
+          featureIds: selectedFeats,
+        });
+      }
+      
+      alert.success(
+        request.status === 'approved' 
+          ? 'Módulos actualizados correctamente en el negocio' 
+          : 'Selección guardada correctamente',
+        'Actualización Exitosa'
+      );
+      
+      if (onSave) onSave();
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Error al guardar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleApproveWithModules = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      await adminApi.post(`/admin/requests/${request.id}/save-modules`, {
+        moduleIds: selectedMods,
+        featureIds: selectedFeats,
+      });
+      
+      alert.success(
+        `La solicitud "${request.empresa}" ha sido aprobada correctamente. El negocio ya puede comenzar a operar.`,
+        'Solicitud Aprobada'
+      );
+      
+      onApprove();
+    } catch (err) {
+      setError(err.message || 'Error al guardar módulos');
+      setSaving(false);
+    }
+  };
+
+  const isSaveDisabled = saving || !hasChanges || loadingMods;
+
+  const handleRejectWithConfirm = async () => {
+    if (!await showConfirm({
+      title: 'Rechazar solicitud',
+      message: `¿Estás seguro de que deseas rechazar la solicitud "${request.empresa}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Rechazar',
+      cancelText: 'Cancelar',
+      danger: true,
+    })) return;
+    
+    onReject();
+  };
+
+  return (
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Detalles de Solicitud"
+      size="md"
+      className="solicitud-modal-detail"
+      footer={
+        <>
+          {error && (
+            <div className="modal-error-text" style={{ color: 'var(--danger)', marginBottom: '12px' }}>
+              <FiAlertCircle size={16} /> {error}
+            </div>
+          )}
+          <ButtonGroup>
+            <IconTextButton
+              variant=""
+              size="md"
+              icon={<FiX size={14} />}
+              onClick={onClose}
+              disabled={saving}
+            >
+              Cerrar
+            </IconTextButton>
+            {request.estado === 'pendiente' && (
+              <>
+                <IconTextButton
+                  variant="danger"
+                  size="md"
+                  icon={<FiX size={14} />}
+                  onClick={handleRejectWithConfirm}
+                  disabled={saving}
+                >
+                  Rechazar
+                </IconTextButton>
+                <IconTextButton
+                  variant="success"
+                  size="md"
+                  icon={<FiCheck size={14} />}
+                  onClick={handleApproveWithModules}
+                  disabled={saving}
+                  loading={saving}
+                >
+                  {saving ? 'Guardando...' : 'Aprobar'}
+                </IconTextButton>
+              </>
+            )}
+            <IconTextButton
+              variant={request.status === 'approved' ? 'success' : 'secondary'}
+              size="md"
+              icon={<FiCheck size={14} />}
+              onClick={handleSave}
+              disabled={isSaveDisabled}
+              loading={saving}
+            >
+              {saving 
+                ? 'Guardando...' 
+                : request.status === 'approved' 
+                  ? 'Actualizar módulos' 
+                  : 'Guardar selección'
+              }
+            </IconTextButton>
+          </ButtonGroup>
+        </>
+      }
+    >
+      <div className="solicitud-modal-body">
+        <div className="solicitud-detail-grid">
+          <div className="solicitud-detail-item">
+            <span className="solicitud-detail-label"><FiBox size={14} /> Empresa</span>
+            <span className="solicitud-detail-value">{request.empresa}</span>
+          </div>
+          <div className="solicitud-detail-item">
+            <span className="solicitud-detail-label"><FiUser size={14} /> Propietario</span>
+            <span className="solicitud-detail-value">{request.propietario}</span>
+          </div>
+          <div className="solicitud-detail-item">
+            <span className="solicitud-detail-label"><FiMail size={14} /> Email</span>
+            <span className="solicitud-detail-value">{request.email}</span>
+          </div>
+          <div className="solicitud-detail-item">
+            <span className="solicitud-detail-label"><FiPhone size={14} /> Teléfono</span>
+            <span className="solicitud-detail-value">{request.telefono}</span>
+          </div>
+          <div className="solicitud-detail-item">
+            <span className="solicitud-detail-label"><FiFile size={14} /> Cédula / RUC</span>
+            <span className="solicitud-detail-value">{request.cedula}</span>
+          </div>
+          <div className="solicitud-detail-item">
+            <span className="solicitud-detail-label"><FiBox size={14} /> Tipo de negocio</span>
+            <span className="solicitud-detail-value">{request.tipo || '—'}</span>
+          </div>
+        </div>
+
+        <hr className="solicitud-detail-divider" />
+
+        <div className="solicitud-modules-header">
+          <h3><FiPackage size={15} /> Módulos y Funcionalidades</h3>
+          <div className="solicitud-modules-stats">
+            <span>
+              <strong>{selectedMods.length}</strong> módulos ·{' '}
+              <strong>{selectedFeats.length}</strong> funcionalidades
+            </span>
+            {totalMensual > 0 && (
+              <span className="solicitud-modules-total">${totalMensual.toFixed(2)}/mes</span>
+            )}
+          </div>
+        </div>
+
+        {loadingMods ? (
+          <div className="solicitud-loading">Cargando módulos...</div>
+        ) : (
+          <Checklist
+            items={checklistItems}
+            value={checklistValue}
+            onChange={handlePermissionsChange}
+            mode="hierarchical"
+            variant="default"
+            maxHeight={350}
+            showIcons
+            selectAll
+            emptyMessage="No hay módulos disponibles"
+          />
+        )}
+
+        {request.status === 'approved' && (
+          <div className="solicitud-info-message">
+            ℹ️ Esta solicitud ya está aprobada. Los cambios se guardarán directamente en el negocio.
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+export default function AdminSolicitudes() {
+  const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const [allRequests, setAllRequests] = useState([]);
-  const [requests,    setRequests]    = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState(null);
+  const [requests, setRequests] = useState([]);
+  const [modules, setModules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [filterStatus,    setFilterStatus]    = useState('todos');
+  const [filterStatus, setFilterStatus] = useState('todos');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const statusOptions = [
+    { value: 'todos', label: `Todos (${allRequests.length})` },
+    { value: 'pendiente', label: `Pendientes (${allRequests.filter(r => r.estado === 'pendiente').length})` },
+    { value: 'aprobado', label: `Aprobados (${allRequests.filter(r => r.estado === 'aprobado').length})` },
+    { value: 'rechazado', label: `Rechazados (${allRequests.filter(r => r.estado === 'rechazado').length})` },
+  ];
+
+  useEffect(() => {
+    adminApi.get('/admin/modules-with-features')
+      .then(res => setModules(res.data || []))
+      .catch(() => setModules([]));
+  }, []);
 
   const mapRequests = (raw) => (raw || []).map(item => ({
-    id:          item.id,
+    id: item.id,
     propietario: item.contact_name ||
-                 `${item.owner_first_name || ''} ${item.owner_last_name || ''}`.trim(),
-    tipo:        item.business_type_name || item.tipo_nombre || '',
+      `${item.owner_first_name || ''} ${item.owner_last_name || ''}`.trim(),
+    tipo: item.business_type_name || item.tipo_nombre || '',
     tipo_codigo: item.business_type_code || item.tipo || '',
-    empresa:     item.business_name,
-    email:       item.owner_email    || item.contact_email,
-    telefono:    item.owner_phone    || item.contact_phone || '—',
-    cedula:      item.owner_document_number || item.identification_number || '—',
-    status:      item.status,
+    empresa: item.business_name,
+    email: item.owner_email || item.contact_email,
+    telefono: item.owner_phone || item.contact_phone || '—',
+    cedula: item.owner_document_number || item.identification_number || '—',
+    status: item.status,
     business_id: item.business_id || null,
-    estado:      item.status === 'pending'  ? 'pendiente'
-               : item.status === 'approved' ? 'aprobado'
-               : item.status === 'rejected' ? 'rechazado'
-               : item.status,
+    estado: item.status === 'pending' ? 'pendiente'
+      : item.status === 'approved' ? 'aprobado'
+      : item.status === 'rejected' ? 'rechazado'
+      : item.status,
     creado: item.requested_at
       ? new Date(item.requested_at).toLocaleString('es-EC', {
-          year:'numeric', month:'2-digit', day:'2-digit',
-          hour:'2-digit', minute:'2-digit'
-        })
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+      })
       : '—',
-    modulos:  Array.isArray(item.requested_modules)
-               ? item.requested_modules
-               : item.requested_modules
-                 ? item.requested_modules.split(',').map(m => m.trim())
-                 : [],
+    modulos: Array.isArray(item.requested_modules)
+      ? item.requested_modules
+      : item.requested_modules
+        ? item.requested_modules.split(',').map(m => m.trim())
+        : [],
     features: Array.isArray(item.requested_features)
-               ? item.requested_features
-               : item.requested_features
-                 ? item.requested_features.split(',').map(f => f.trim())
-                 : [],
+      ? item.requested_features
+      : item.requested_features
+        ? item.requested_features.split(',').map(f => f.trim())
+        : [],
   }));
 
-  const fetchRequests = useCallback(async () => {
+  const loadRequests = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true);
-      const data    = await apiService.get('/admin/requests');
+      const data = await adminApi.get('/admin/requests');
       const allData = mapRequests(data.data);
       setAllRequests(allData);
       setRequests(filterStatus === 'todos'
         ? allData
         : allData.filter(r => r.estado === filterStatus));
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Error al cargar solicitudes');
+      setRequests([]);
     } finally {
       setLoading(false);
     }
   }, [filterStatus]);
 
-  useEffect(() => { fetchRequests(); }, [filterStatus, fetchRequests]);
+  useEffect(() => { loadRequests(); }, [loadRequests]);
 
-  const getStatusBadge = (status) => {
-    const norm  = status === 'pendiente' ? 'pending'
-                : status === 'aprobado'  ? 'approved'
-                : status === 'rechazado' ? 'rejected'
-                : status;
-    const cls   = { pending:'admin-badge-warning', approved:'admin-badge-success', rejected:'admin-badge-danger' };
-    const label = {
-      pending:  <><FiClock size={13} style={{marginRight:4,display:'inline'}}/> Pendiente</>,
-      approved: <><FiCheck size={13} style={{marginRight:4,display:'inline'}}/> Aprobado</>,
-      rejected: <><FiX    size={13} style={{marginRight:4,display:'inline'}}/> Rechazado</>,
-    };
-    return <span className={`admin-badge ${cls[norm] || 'admin-badge-info'}`}>{label[norm] || status}</span>;
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadRequests();
+    setRefreshing(false);
   };
 
-  // Aprueba la solicitud → backend se encarga de todo usando el usuario autenticado (JWT)
   const handleApprove = async (requestId) => {
     try {
-      await apiService.post(`/admin/${requestId}/approve`, {});
+      await adminApi.post(`/admin/${requestId}/approve`, {});
+      await loadRequests();
+      alert.success('Solicitud aprobada correctamente');
     } catch (err) {
       setError(err.message || 'Error al aprobar la solicitud');
-      setTimeout(() => setError(null), 5000);
-    } finally {
-      await fetchRequests();
+      setTimeout(() => setError(''), 5000);
     }
   };
 
   const handleReject = async (requestId) => {
-    try { await apiService.post(`/admin/${requestId}/reject`, {}); }
-    catch { }
-    finally { await fetchRequests(); }
+    try {
+      await adminApi.post(`/admin/${requestId}/reject`, {});
+      await loadRequests();
+      alert.info('Solicitud rechazada correctamente');
+    } catch (err) {
+      setError(err.message || 'Error al rechazar la solicitud');
+      setTimeout(() => setError(''), 5000);
+    }
   };
 
-  const headerAction = (
-    <button className="admin-btn admin-btn-secondary" onClick={fetchRequests} style={{marginLeft:'auto'}}>
-      <FiRefreshCw size={15}/> Actualizar
+  const getStatusBadge = (status) => {
+    const norm = status === 'pendiente' ? 'pending'
+      : status === 'aprobado' ? 'approved'
+      : status === 'rechazado' ? 'rejected'
+      : status;
+    const cls = { pending: 'admin-badge-warning', approved: 'admin-badge-success', rejected: 'admin-badge-danger' };
+    const label = {
+      pending: <><FiClock size={13} /> Pendiente</>,
+      approved: <><FiCheck size={13} /> Aprobado</>,
+      rejected: <><FiX size={13} /> Rechazado</>,
+    };
+    return <span className={`admin-badge ${cls[norm] || 'admin-badge-info'}`}>{label[norm] || status}</span>;
+  };
+
+  const openDetail = (req) => {
+    setSelectedRequest(req);
+    setShowDetailModal(true);
+  };
+
+  const closeDetail = () => {
+    setShowDetailModal(false);
+    setSelectedRequest(null);
+  };
+
+  const filteredRequests = useMemo(() => {
+    if (!searchTerm) return requests;
+    const term = searchTerm.toLowerCase();
+    return requests.filter(r =>
+      r.propietario?.toLowerCase().includes(term) ||
+      r.empresa?.toLowerCase().includes(term) ||
+      r.email?.toLowerCase().includes(term) ||
+      r.tipo?.toLowerCase().includes(term) ||
+      r.cedula?.toLowerCase().includes(term)
+    );
+  }, [requests, searchTerm]);
+
+  const columns = [
+    {
+      accessor: 'propietario',
+      label: 'Propietario',
+      render: (item) => <strong>{item.propietario}</strong>,
+    },
+    {
+      accessor: 'empresa',
+      label: 'Empresa',
+    },
+    {
+      accessor: 'tipo',
+      label: 'Tipo',
+      render: (item) => item.tipo || item.tipo_codigo || '—',
+    },
+    {
+      accessor: 'estado',
+      label: 'Estado',
+      render: (item) => getStatusBadge(item.status || item.estado),
+    },
+    {
+      accessor: 'creado',
+      label: 'Creado',
+      render: (item) => <span className="admin-table-date">{item.creado}</span>,
+    },
+    {
+      accessor: 'actions',
+      label: 'Acciones',
+      align: 'center',
+      render: (item) => (
+        <ButtonGroup>
+          <IconTextButton
+            variant="blue"
+            size="sm"
+            inline={true}
+            icon={<FiEye size={13} />}
+            onClick={() => openDetail(item)}
+            tooltip="Ver detalles"
+          >
+            Ver
+          </IconTextButton>
+          {item.estado === 'pendiente' && (
+            <>
+              <IconTextButton
+                variant="success"
+                size="sm"
+                inline={true}
+                icon={<FiCheck size={13} />}
+                onClick={() => handleApprove(item.id)}
+                tooltip="Aprobar solicitud"
+              >
+                Aprobar
+              </IconTextButton>
+              <IconTextButton
+                variant="danger"
+                size="sm"
+                inline={true}
+                icon={<FiX size={13} />}
+                onClick={() => handleReject(item.id)}
+                tooltip="Rechazar solicitud"
+              >
+                Rechazar
+              </IconTextButton>
+            </>
+          )}
+        </ButtonGroup>
+      ),
+    },
+  ];
+
+  const toolbar = (
+    <CustomCombobox
+      options={statusOptions}
+      value={filterStatus}
+      onChange={setFilterStatus}
+      placeholder="Filtrar por estado"
+      filterable={false}
+      size="sm"
+    />
+  );
+
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
     </button>
   );
 
   return (
     <PageTemplate
+      title="SOLICITUDES DE REGISTRO"
+      subtitle="Revisa y aprueba nuevas solicitudes de registro de negocios"
       theme="admin"
-      title="Solicitudes de Registro"
-      subtitle="Revisa y aprueba nuevas solicitudes de registro"
       loading={loading}
-      error={error}
-      onRetry={fetchRequests}
-      headerAction={headerAction}
+      headerAction={refreshButton}
     >
-      <div className="admin-filters">
-        {['todos','pendiente','aprobado','rechazado'].map(s => (
-          <button
-            key={s}
-            className={`admin-filter-btn ${filterStatus === s ? 'active' : ''}`}
-            onClick={() => setFilterStatus(s)}
-          >
-            {s === 'todos'     && `✓ TODOS (${allRequests.length})`}
-            {s === 'pendiente' && `PENDIENTES (${allRequests.filter(r=>r.estado==='pendiente').length})`}
-            {s === 'aprobado'  && `✓ APROBADOS (${allRequests.filter(r=>r.estado==='aprobado').length})`}
-            {s === 'rechazado' && `✗ RECHAZADOS (${allRequests.filter(r=>r.estado==='rechazado').length})`}
-          </button>
-        ))}
-      </div>
+      {error && (
+        <div className="alert alert-error" style={{ 
+          padding: '12px 16px', 
+          background: 'var(--danger-bg)', 
+          color: 'var(--danger)', 
+          borderRadius: '8px', 
+          marginBottom: '16px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '8px' 
+        }}>
+          <FiAlertCircle size={16} /> {error}
+        </div>
+      )}
 
-      <div className="admin-card">
-        <div className="admin-card-header">
-          <h2>Lista de Solicitudes</h2>
-          <span style={{fontSize:12,color:'var(--admin-text-muted)'}}>{requests.length} solicitudes</span>
-        </div>
-        <div className="admin-card-body">
-          {requests.length > 0 ? (
-            <div className="admin-table-wrapper">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Propietario</th><th>Empresa</th><th>Tipo</th>
-                    <th>Estado</th><th>Creado</th><th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {requests.map(req => (
-                    <tr key={req.id}>
-                      <td data-label="Propietario"><strong>{req.propietario}</strong></td>
-                      <td data-label="Empresa">{req.empresa}</td>
-                      <td data-label="Tipo">{req.tipo || req.tipo_codigo || '—'}</td>
-                      <td data-label="Estado">{getStatusBadge(req.status || req.estado)}</td>
-                      <td data-label="Creado" style={{fontSize:12}}>{req.creado}</td>
-                      <td data-label="Acciones">
-                        <div className="admin-table-actions">
-                          <button
-                            className="admin-table-btn"
-                            onClick={() => { setSelectedRequest(req); setShowDetailModal(true); }}
-                          >
-                            <FiEye size={13}/> Ver
-                          </button>
-                          {req.estado === 'pendiente' && (
-                            <>
-                              <button className="admin-table-btn admin-table-btn-success" onClick={() => handleApprove(req.id)}>
-                                <FiCheck size={13}/> Aprobar
-                              </button>
-                              <button className="admin-table-btn admin-table-btn-danger" onClick={() => handleReject(req.id)}>
-                                <FiX size={13}/> Rechazar
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="admin-empty">
-              <div className="admin-empty-icon"><FiClipboard size={48}/></div>
-              <p className="admin-empty-title">No hay solicitudes</p>
-              <p className="admin-empty-text">No hay solicitudes con el filtro seleccionado</p>
-            </div>
-          )}
-        </div>
-      </div>
+      <Table
+        data={filteredRequests}
+        columns={columns}
+        keyField="id"
+        title="Lista de Solicitudes"
+        subtitle={`${filteredRequests.length} ${filteredRequests.length === 1 ? 'solicitud' : 'solicitudes'} encontradas`}
+        toolbar={toolbar}
+        searchable={true}
+        searchPlaceholder="Buscar por propietario, empresa, email..."
+        searchFields={['propietario', 'empresa', 'email', 'tipo', 'cedula']}
+        pagination={true}
+        itemsPerPage={10}
+        itemsPerPageOptions={[10, 25, 50, 100]}
+        loading={loading}
+        emptyMessage={
+          searchTerm || filterStatus !== 'todos'
+            ? 'No hay solicitudes que coincidan con los filtros aplicados'
+            : 'No hay solicitudes de registro pendientes'
+        }
+        striped={true}
+        hoverable={true}
+        bordered={false}
+        compact={false}
+      />
 
       {showDetailModal && selectedRequest && (
         <DetailModal
           request={selectedRequest}
-          onClose={() => setShowDetailModal(false)}
-          onApprove={() => { handleApprove(selectedRequest.id); setShowDetailModal(false); }}
-          onReject={()  => { handleReject(selectedRequest.id);  setShowDetailModal(false); }}
+          modules={modules}
+          onClose={closeDetail}
+          onApprove={() => { handleApprove(selectedRequest.id); closeDetail(); }}
+          onReject={() => { handleReject(selectedRequest.id); closeDetail(); }}
+          onSave={loadRequests}
         />
       )}
     </PageTemplate>
   );
-};
-
-/* ═══════════════════════════════════════════════════════════
-   MODAL DE DETALLE
-═══════════════════════════════════════════════════════════ */
-const DetailModal = ({ request, onClose, onApprove, onReject }) => {
-
-  const [allModules,    setAllModules]    = useState([]);
-  const [selectedMods,  setSelectedMods]  = useState([]);
-  const [selectedFeats, setSelectedFeats] = useState([]);
-  const [expandedMods,  setExpandedMods]  = useState([]);
-  const [loadingMods,   setLoadingMods]   = useState(true);
-  const [saving,        setSaving]        = useState(false);
-  const [saveOk,        setSaveOk]        = useState(null);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoadingMods(true);
-        // 1. Cargar todos los módulos con sus features
-        const res  = await apiService.get('/admin/modules-with-features');
-        const mods = res.data || [];
-        setAllModules(mods);
-
-        let preModIds  = [];
-        let preFeatIds = [];
-
-        if (request.status === 'approved' && request.business_id) {
-          // Solicitud aprobada → cargar desde business_modules/features (fuente de verdad del sidebar)
-          try {
-            const bizMods = await apiService.get(`/admin/businesses/${request.business_id}/modules`);
-            preModIds  = bizMods.data?.moduleIds  || [];
-            preFeatIds = bizMods.data?.featureIds || [];
-          } catch (e) {
-
-          }
-        } else {
-          // Solicitud pendiente → cargar desde business_registration_request_modules/features
-          const savedModCodes  = request.modulos  || [];
-          const savedFeatCodes = request.features || [];
-          preModIds  = mods.filter(m => savedModCodes.includes(m.code)).map(m => m.id);
-          preFeatIds = mods.flatMap(m => m.features || [])
-            .filter(f => savedFeatCodes.includes(f.code)).map(f => f.id);
-        }
-
-        setSelectedMods(preModIds);
-        setSelectedFeats(preFeatIds);
-        setExpandedMods(preModIds);
-      } catch (e) {
-
-      } finally {
-        setLoadingMods(false);
-      }
-    };
-    load();
-  }, [request.id, request.status, request.business_id, request.modulos, request.features]);
-
-  const toggleModule = (modId) => {
-    const mod     = allModules.find(m => m.id === modId);
-    const featIds = (mod?.features || []).map(f => f.id);
-    if (selectedMods.includes(modId)) {
-      setSelectedMods(prev  => prev.filter(id => id !== modId));
-      setSelectedFeats(prev => prev.filter(id => !featIds.includes(id)));
-      setExpandedMods(prev  => prev.filter(id => id !== modId));
-    } else {
-      setSelectedMods(prev => [...prev, modId]);
-      setExpandedMods(prev => [...prev, modId]);
-    }
-  };
-
-  const toggleExpand = (modId, e) => {
-    e.stopPropagation();
-    setExpandedMods(prev =>
-      prev.includes(modId) ? prev.filter(id => id !== modId) : [...prev, modId]
-    );
-  };
-
-  const toggleFeature = (featId, modId) => {
-    if (selectedFeats.includes(featId)) {
-      setSelectedFeats(prev => prev.filter(id => id !== featId));
-    } else {
-      if (!selectedMods.includes(modId)) {
-        setSelectedMods(prev => [...prev, modId]);
-        setExpandedMods(prev => [...prev, modId]);
-      }
-      setSelectedFeats(prev => [...prev, featId]);
-    }
-  };
-
-  const handleSave = async (silent = false) => {
-    if (!silent) { setSaving(true); setSaveOk(null); }
-    try {
-      if (request.status === 'approved' && request.business_id) {
-        // Aprobada → guarda directo en business_modules/features (sidebar del negocio)
-        await apiService.put(`/admin/businesses/${request.business_id}/modules`, {
-          moduleIds:  selectedMods,
-          featureIds: selectedFeats,
-        });
-      } else {
-        // Pendiente → guarda en tablas de la solicitud
-        await apiService.post(`/admin/requests/${request.id}/save-modules`, {
-          moduleIds:  selectedMods,
-          featureIds: selectedFeats,
-        });
-      }
-      if (!silent) { setSaveOk(true); setTimeout(() => setSaveOk(null), 3000); }
-      return true;
-    } catch {
-      if (!silent) { setSaveOk(false); setTimeout(() => setSaveOk(null), 3000); }
-      return false;
-    } finally {
-      if (!silent) setSaving(false);
-    }
-  };
-
-  // Aprobar: primero guarda módulos, luego aprueba
-  const handleApproveWithModules = async () => {
-    setSaving(true);
-    try {
-      // Guarda módulos en la solicitud (sin mostrar mensaje)
-      await apiService.post(`/admin/requests/${request.id}/save-modules`, {
-        moduleIds:  selectedMods,
-        featureIds: selectedFeats,
-      });
-    } catch (e) {
-
-    } finally {
-      setSaving(false);
-    }
-    // Luego aprueba (el provisioningService leerá los módulos guardados)
-    onApprove();
-  };
-
-  const totalMensual = allModules
-    .filter(m => selectedMods.includes(m.id))
-    .reduce((sum, m) => sum + parseFloat(m.price_monthly || 0), 0);
-
-  const Lbl = ({ text }) => (
-    <label style={{
-      fontSize:'10px', fontWeight:'700', textTransform:'uppercase',
-      letterSpacing:'.6px', color:'var(--admin-text-muted)',
-      display:'block', marginBottom:'4px'
-    }}>{text}</label>
-  );
-
-  return (
-    <div className="admin-modal-overlay" onClick={onClose}>
-      <div
-        className="admin-modal"
-        style={{maxWidth:'800px', width:'96vw', maxHeight:'90vh', display:'flex', flexDirection:'column'}}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="admin-modal-header" style={{flexShrink:0}}>
-          <h2 style={{display:'flex', alignItems:'center', gap:'8px'}}>
-            <FiClipboard size={18}/> Detalles de Solicitud
-          </h2>
-          <button className="admin-modal-close" onClick={onClose}>✕</button>
-        </div>
-
-        {/* Body */}
-        <div style={{overflowY:'auto', flex:1, padding:'20px 24px'}}>
-
-          {/* Datos del solicitante */}
-          <div className="admin-col-2" style={{gap:'10px 24px', marginBottom:'20px'}}>
-            <div><Lbl text="Empresa"/><p style={{margin:0,fontWeight:700,fontSize:'15px',color:'var(--admin-text-primary)'}}>{request.empresa}</p></div>
-            <div><Lbl text="Propietario"/><p style={{margin:0,fontWeight:700,fontSize:'15px',color:'var(--admin-text-primary)'}}>{request.propietario}</p></div>
-            <div><Lbl text="Email"/><p style={{margin:0,fontSize:'13px',color:'var(--admin-text-secondary)'}}>{request.email}</p></div>
-            <div><Lbl text="Teléfono"/><p style={{margin:0,fontSize:'13px',color:'var(--admin-text-secondary)'}}>{request.telefono}</p></div>
-            <div><Lbl text="Cédula / RUC"/><p style={{margin:0,fontSize:'13px',color:'var(--admin-text-secondary)'}}>{request.cedula}</p></div>
-            <div><Lbl text="Tipo de negocio"/><p style={{margin:0,fontSize:'13px',color:'var(--admin-text-secondary)'}}>{request.tipo || '—'}</p></div>
-          </div>
-
-          <hr style={{border:'none', borderTop:'1px solid var(--admin-border)', margin:'0 0 18px'}}/>
-
-          {/* Cabecera módulos */}
-          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'14px'}}>
-            <h3 style={{margin:0, fontSize:'14px', fontWeight:700, color:'var(--admin-text-primary)', display:'flex', alignItems:'center', gap:'6px'}}>
-              <FiPackage size={15}/> Módulos y Funcionalidades
-            </h3>
-            <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-              <span style={{fontSize:'12px', color:'var(--admin-text-muted)'}}>
-                <strong style={{color:'#ff8c42'}}>{selectedMods.length}</strong> módulos ·{' '}
-                <strong style={{color:'#ff8c42'}}>{selectedFeats.length}</strong> funcionalidades
-              </span>
-              {totalMensual > 0 && (
-                <span style={{background:'rgba(255,140,66,.15)', color:'#ff8c42', padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:700}}>
-                  ${totalMensual.toFixed(2)}/mes
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Módulos */}
-          {loadingMods ? (
-            <div style={{textAlign:'center', padding:'32px', color:'var(--admin-text-muted)'}}>
-              <div className="admin-spinner" style={{margin:'0 auto 12px'}}/>
-              Cargando módulos...
-            </div>
-          ) : (
-            <div style={{display:'flex', flexDirection:'column', gap:'6px'}}>
-              {allModules.map(mod => {
-                const modSel      = selectedMods.includes(mod.id);
-                const expanded    = expandedMods.includes(mod.id);
-                const feats       = mod.features || [];
-                const featSelCount = feats.filter(f => selectedFeats.includes(f.id)).length;
-
-                return (
-                  <div key={mod.id} style={{
-                    border:`1px solid ${modSel ? 'rgba(255,140,66,.5)' : 'var(--admin-border)'}`,
-                    borderRadius:'10px',
-                    background: modSel ? 'rgba(255,140,66,.04)' : 'var(--admin-bg-secondary)',
-                    overflow:'hidden', transition:'border-color .2s, background .2s',
-                  }}>
-
-                    {/* Fila del módulo */}
-                    <div
-                      style={{display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px', cursor:'pointer', userSelect:'none'}}
-                      onClick={() => toggleModule(mod.id)}
-                    >
-                      {/* Checkbox */}
-                      <div style={{
-                        width:'18px', height:'18px', borderRadius:'5px', flexShrink:0,
-                        border:`2px solid ${modSel ? '#ff8c42' : 'var(--admin-border)'}`,
-                        background: modSel ? '#ff8c42' : 'transparent',
-                        display:'flex', alignItems:'center', justifyContent:'center',
-                        transition:'all .2s',
-                      }}>
-                        {modSel && <FiCheck size={11} color="#fff" strokeWidth={3}/>}
-                      </div>
-
-                      <ModIcon code={mod.code}/>
-
-                      <div style={{flex:1, minWidth:0}}>
-                        <div style={{fontWeight:700, fontSize:'13px', color: modSel ? 'var(--admin-text-primary)' : 'var(--admin-text-secondary)'}}>
-                          {mod.name}
-                        </div>
-                        {mod.description && (
-                          <div style={{fontSize:'11px', color:'var(--admin-text-muted)', marginTop:'1px'}}>
-                            {mod.description}
-                          </div>
-                        )}
-                      </div>
-
-                      {feats.length > 0 && (
-                        <span style={{fontSize:'11px', color:'var(--admin-text-muted)', whiteSpace:'nowrap', marginRight:'4px'}}>
-                          {featSelCount}/{feats.length}
-                        </span>
-                      )}
-
-                      {parseFloat(mod.price_monthly) > 0 && (
-                        <span style={{fontSize:'11px', color:'#ff8c42', fontWeight:700, whiteSpace:'nowrap'}}>
-                          ${mod.price_monthly}/mes
-                        </span>
-                      )}
-
-                      {feats.length > 0 && (
-                        <div onClick={e => toggleExpand(mod.id, e)} style={{color:'var(--admin-text-muted)', display:'flex', alignItems:'center', padding:'2px', cursor:'pointer'}}>
-                          {expanded ? <FiChevronDown size={15}/> : <FiChevronRight size={15}/>}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Features expandidas */}
-                    {expanded && feats.length > 0 && (
-                      <div style={{
-                        borderTop:'1px solid var(--admin-border)',
-                        padding:'10px 14px 12px 42px',
-                        display:'flex', flexWrap:'wrap', gap:'6px',
-                        background:'rgba(0,0,0,.1)',
-                      }}>
-                        {feats.map(feat => {
-                          const featSel = selectedFeats.includes(feat.id);
-                          return (
-                            <div
-                              key={feat.id}
-                              onClick={() => toggleFeature(feat.id, mod.id)}
-                              title={feat.description || feat.name}
-                              style={{
-                                display:'flex', alignItems:'center', gap:'5px',
-                                padding:'4px 10px', borderRadius:'20px', cursor:'pointer',
-                                userSelect:'none', fontSize:'12px', fontWeight:600,
-                                border:`1px solid ${featSel ? '#ff8c42' : 'var(--admin-border)'}`,
-                                background: featSel ? 'rgba(255,140,66,.18)' : 'transparent',
-                                color: featSel ? '#ff8c42' : 'var(--admin-text-muted)',
-                                transition:'all .15s',
-                              }}
-                            >
-                              {featSel ? <FiCheck size={10} strokeWidth={3}/> : <span style={{width:10}}/>}
-                              {feat.name}
-                              {feat.is_premium && <FiStar size={9} style={{color:'#f59e0b', flexShrink:0}}/>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Mensaje guardado */}
-          {saveOk !== null && (
-            <div style={{
-              marginTop:'12px', padding:'10px 14px', borderRadius:'8px',
-              fontSize:'13px', fontWeight:600,
-              background: saveOk ? 'rgba(34,197,94,.1)' : 'rgba(239,68,68,.1)',
-              color:      saveOk ? '#22c55e' : '#ef4444',
-              border:`1px solid ${saveOk ? 'rgba(34,197,94,.3)' : 'rgba(239,68,68,.3)'}`,
-            }}>
-              {saveOk
-                ? request.status === 'approved'
-                  ? '✅ Módulos actualizados en el negocio correctamente'
-                  : '✅ Selección guardada correctamente'
-                : '❌ Error al guardar, intenta de nuevo'}
-            </div>
-          )}
-          {/* Aviso si está aprobado */}
-          {request.status === 'approved' && (
-            <div style={{
-              marginTop:'10px', padding:'9px 13px', borderRadius:'8px',
-              fontSize:'12px', background:'rgba(99,102,241,.08)',
-              border:'1px solid rgba(99,102,241,.2)', color:'#818cf8',
-            }}>
-              ℹ️ Esta solicitud ya está aprobada. Los cambios se guardarán directamente en el negocio.
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="admin-modal-footer" style={{flexShrink:0, display:'flex', gap:'10px', flexWrap:'wrap', alignItems:'center'}}>
-          <button className="admin-btn admin-btn-secondary" onClick={onClose}>Cerrar</button>
-
-          <button
-            className="admin-btn admin-btn-secondary"
-            onClick={() => handleSave(false)}
-            disabled={saving}
-            style={{marginLeft:'auto'}}
-          >
-            {saving ? '⏳ Guardando...' : '💾 Guardar selección'}
-          </button>
-
-          {request.estado === 'pendiente' && (
-            <>
-              <button className="admin-btn admin-btn-danger"  onClick={onReject} disabled={saving}><FiX size={15}/> Rechazar</button>
-              <button className="admin-btn admin-btn-success" onClick={handleApproveWithModules} disabled={saving}>
-                {saving ? '⏳ Guardando...' : <><FiCheck size={15}/> Aprobar</>}
-              </button>
-            </>
-          )}
-          {request.status === 'approved' && (
-            <button
-              className="admin-btn admin-btn-success"
-              onClick={() => handleSave(false)}
-              disabled={saving}
-            >
-              {saving ? '⏳ Guardando...' : <><FiCheck size={15}/> Actualizar módulos del negocio</>}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default AdminSolicitudes;
+}

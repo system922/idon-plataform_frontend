@@ -1,0 +1,100 @@
+/* ============================================================
+   ODONTO-STATS.CSS - Tarjetas de estadísticas
+   ============================================================ */
+.odonto-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+.odonto-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+}
+
+.odonto-stat-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-4px);
+}
+
+.odonto-stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 24px;
+  transition: var(--transition);
+}
+
+.odonto-stat-card:hover .odonto-stat-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Colores para iconos - usar con className */
+.odonto-stat-icon.primary {
+  background: var(--primary-gradient);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
+}
+.odonto-stat-icon.blue {
+  background: var(--blue-gradient);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.25);
+}
+.odonto-stat-icon.purple {
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25);
+}
+.odonto-stat-icon.orange {
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.25);
+}
+.odonto-stat-icon.red {
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.25);
+}
+.odonto-stat-icon.yellow {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.25);
+}
+.odonto-stat-icon.teal {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
+}
+
+.odonto-stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.odonto-stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.odonto-stat-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 600;
+}

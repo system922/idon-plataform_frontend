@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import '../styles/LoginPage.css';
-
-import API_BASE from '../config/apiBase';
+import { api } from '../config/api';
 
 const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }) => {
   const [step, setStep] = useState(1);
@@ -28,9 +26,11 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }) => {
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/business-types`)
-      .then(r => r.json())
-      .then(data => setBusinessTypes(Array.isArray(data) ? data : (data.data || [])))
+    api.get('/business-types')
+      .then(response => {
+        const data = response.data;
+        setBusinessTypes(Array.isArray(data) ? data : (data.data || []));
+      })
       .catch(() => setBusinessTypes([]));
   }, []);
 
@@ -44,10 +44,10 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }) => {
       setOwnerExists(false);
       setFoundByApi(false);
       try {
-        // 1) Buscar en local
-        const res = await fetch(`${API_BASE}/api/business-owners/find?type=cedula&number=${value}`);
-        const data = await res.json();
-        if (res.ok && data.exists && data.owner) {
+        const response = await api.get(`/business-owners/find?type=cedula&number=${value}`);
+        const data = response.data;
+        
+        if (data.exists && data.owner) {
           setFormData(f => ({
             ...f,
             ownerFirstName: data.owner.first_name || '',
@@ -101,6 +101,7 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }) => {
     setFoundByApi(false);
   };
 
+  // Esta función no cambia porque es un API externo
   async function buscarEnAPIEcuador(cedula) {
     try {
       const proxyUrl = 'https://infoplacas.herokuapp.com/';
@@ -182,26 +183,21 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }) => {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/api/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName:      formData.ownerFirstName,
-          lastName:       formData.ownerLastName,
-          email:          formData.ownerEmail,
-          phone:          formData.ownerPhone,
-          password:       ownerExists ? undefined : formData.password,
-          businessName:   formData.businessName,
-          businessTypeId: formData.businessType,
-          businessSlug:   formData.businessSlug,
-          documentType:   formData.ownerDocumentType,
-          documentNumber: formData.ownerDocument,
-          ownerExists,
-        }),
+      const response = await api.post('/register', {
+        firstName: formData.ownerFirstName,
+        lastName: formData.ownerLastName,
+        email: formData.ownerEmail,
+        phone: formData.ownerPhone,
+        password: ownerExists ? undefined : formData.password,
+        businessName: formData.businessName,
+        businessTypeId: formData.businessType,
+        businessSlug: formData.businessSlug,
+        documentType: formData.ownerDocumentType,
+        documentNumber: formData.ownerDocument,
+        ownerExists,
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Error al registrar');
+      const data = response.data;
       setMessage({
         type: 'success',
         text: 'Solicitud enviada exitosamente. Un administrador la revisará pronto. Recibirás un mensaje por WhatsApp cuando sea aprobada.',
@@ -209,7 +205,7 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }) => {
     } catch (error) {
       setMessage({
         type: 'error',
-        text: error.message || 'Error al registrar',
+        text: error.response?.data?.message || 'Error al registrar',
       });
     } finally {
       setLoading(false);

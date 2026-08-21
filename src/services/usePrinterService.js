@@ -1,14 +1,18 @@
+// hooks/usePrinterService.js
 import { useCallback } from 'react';
-import { fetchWithAuth } from '../config/apiBase';
+import { useSession } from '../context/SessionContext';
+import { fetchWithAuth } from '../config/api';
 import qz from 'qz-tray';
 
 export function usePrinterService() {
+  const { user, selectedBusiness } = useSession();
+
   /**
    * Obtiene configuración de impresora desde BD
    */
   const getPrinterConfig = useCallback(async (printerKey = 'printer_main') => {
     try {
-      const res = await fetchWithAuth(`/api/settings/${printerKey}`);
+      const res = await fetchWithAuth(`/settings/${printerKey}`);
       if (!res.ok) {
         return getDefaultPrinter(printerKey);
       }
@@ -34,7 +38,7 @@ export function usePrinterService() {
 
       return getDefaultPrinter(printerKey);
     } catch (error) {
-
+      console.error('Error obteniendo configuración de impresora:', error);
       return getDefaultPrinter(printerKey);
     }
   }, []);
@@ -88,6 +92,9 @@ export function usePrinterService() {
       case 'credit-note':
         content = formatCreditNoteTicket(data, paperWidth);
         break;
+      case 'credit-receivable':
+        content = formatCreditReceivableTicket(data, paperWidth);
+        break;
       default:
         throw new Error(`Template '${template}' no reconocido`);
     }
@@ -100,7 +107,6 @@ export function usePrinterService() {
    */
   const printTicket = useCallback(async (printerName, content, openDrawer = false) => {
     if (!qz.websocket.isActive()) {
-
       return { success: false, error: 'QZ Tray no está conectado' };
     }
 
@@ -118,10 +124,8 @@ export function usePrinterService() {
 
     try {
       await sendTo(printerName);
-
       return { success: true };
     } catch (err) {
-
       return { success: false, error: err.message };
     }
   }, []);
@@ -131,9 +135,7 @@ export function usePrinterService() {
    */
   const print = useCallback(async (printerKey, template, data, openDrawer = false) => {
     try {
-
       const printerConfig = await getPrinterConfig(printerKey);
-
 
       if (!printerConfig?.name) {
         return { success: false, error: 'Impresora no configurada' };
@@ -150,14 +152,12 @@ export function usePrinterService() {
         template,
       });
 
-
       return await printTicket(
         ticket.printerName,
         ticket.content,
         openDrawer && printerKey === 'printer_main'
       );
     } catch (error) {
-
       return { success: false, error: error.message };
     }
   }, [getPrinterConfig, formatTicket, printTicket]);
@@ -199,7 +199,9 @@ export function usePrinterService() {
   };
 }
 
-// ─── Utilidades de formato ────────────────────────────────────────────────────
+// ============================================================
+// UTILIDADES DE FORMATO
+// ============================================================
 
 function padCenter(text, width) {
   const padding = Math.max(0, width - text.length);
@@ -266,7 +268,54 @@ function formatDate(str, format = 'short') {
   }
 }
 
-// ─── Templates ────────────────────────────────────────────────────────────────
+function formatDateTime() {
+  return new Date().toLocaleString('es-EC', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+}
+
+function getOperatorName() {
+  try {
+    const user = JSON.parse(localStorage.getItem('idonUser') || '{}');
+    return user.nombre || user.name || user.username || 'Operador';
+  } catch {
+    return 'Operador';
+  }
+}
+
+function numberToWords(num) {
+  const unidades = ['CERO', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+  const decenas = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+  const especiales = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
+  
+  if (num === 0) return 'CERO';
+  if (num < 10) return unidades[num];
+  if (num < 20) return especiales[num - 10];
+  if (num < 100) {
+    const decena = Math.floor(num / 10);
+    const unidad = num % 10;
+    if (unidad === 0) return decenas[decena];
+    return decenas[decena] + ' Y ' + unidades[unidad];
+  }
+  if (num < 1000) {
+    const centena = Math.floor(num / 100);
+    const resto = num % 100;
+    if (centena === 1) return 'CIEN' + (resto > 0 ? ' ' + numberToWords(resto) : '');
+    const letras = { 2: 'DOSCIENTOS', 3: 'TRESCIENTOS', 4: 'CUATROCIENTOS', 5: 'QUINIENTOS', 6: 'SEISCIENTOS', 7: 'SETECIENTOS', 8: 'OCHOCIENTOS', 9: 'NOVECIENTOS' };
+    return letras[centena] + (resto > 0 ? ' ' + numberToWords(resto) : '');
+  }
+  return numberToWords(Math.floor(num / 1000)) + ' MIL' + (num % 1000 > 0 ? ' ' + numberToWords(num % 1000) : '');
+}
+
+// ============================================================
+// TEMPLATES
+// ============================================================
 
 /**
  * COMANDA
@@ -276,7 +325,6 @@ function formatComandaTicket(data, width = 32) {
   
   const line = () => '='.repeat(width);
   const sep = () => '-'.repeat(width);
-
   const center = (text) => {
     const str = String(text ?? '').trim();
     const pad = Math.max(0, Math.floor((width - str.length) / 2));
@@ -338,7 +386,6 @@ function formatComandaTicket(data, width = 32) {
   if (!itemsArr || itemsArr.length === 0) {
     out += center('SIN ITEMS') + '\n\n';
   } else {
-    // Agrupar extras (notas con prefijo \x00) con su ítem principal
     const groups = [];
     let cur = null;
     itemsArr.forEach(item => {
@@ -398,14 +445,12 @@ function formatComandaTicket(data, width = 32) {
   }
 
   out += line() + '\n';
-  out += '\n\n'; // feed/corte
-
+  out += '\n\n';
   return out;
 }
 
 /**
  * COMANDA MODIFICADA
- * data: { mesa, orden, tipoOrden, items: [{ nombre, cantidad, extras: [{name}], notas }] }
  */
 function formatComandaModTicket(data, width = 32) {
   const { mesa, orden, tipoOrden = 'LOCAL', items = [] } = data;
@@ -420,9 +465,7 @@ function formatComandaModTicket(data, width = 32) {
 
   const hora = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
 
-  // 🔥 MODIFICACIÓN: Obtener solo el número de orden sin el prefijo de fecha
   const ordenNumRaw = String(orden || 'N/A').trim();
-  // Si tiene formato "260722-007", tomar solo la parte después del guión
   const ordenNum = ordenNumRaw.includes('-') 
     ? ordenNumRaw.split('-').pop() 
     : ordenNumRaw;
@@ -468,9 +511,7 @@ function formatComandaModTicket(data, width = 32) {
 }
 
 /**
- * TICKET SIMPLE (sin facturación electrónica)
- * data: { bizInfo, orden, customer, items, subtotal, discount, discountName, tax, taxRate, total, recibido, cambio, metodoPago, printerFooter }
- * items: [{ description, quantity, price, total }]
+ * TICKET SIMPLE
  */
 function formatSimpleTicket(data, width = 42) {
   const {
@@ -481,7 +522,7 @@ function formatSimpleTicket(data, width = 42) {
     subtotal     = 0,
     discount     = 0,
     discountName = null,
-    discounts    = null, // [{ name, amount }] — varios descuentos
+    discounts    = null,
     tax          = 0,
     taxRate      = 15,
     total        = 0,
@@ -495,7 +536,6 @@ function formatSimpleTicket(data, width = 42) {
   const sep  = '-'.repeat(width);
   let t = '';
 
-  // ── Encabezado ──────────────────────────────────────────────────────────────
   if (bizInfo?.trade_name) wrap(bizInfo.trade_name.toUpperCase(), width).forEach(l => (t += padCenter(l, width) + '\n'));
   if (bizInfo?.company_name && bizInfo.company_name !== bizInfo.trade_name)
     wrap(bizInfo.company_name, width).forEach(l => (t += padCenter(l, width) + '\n'));
@@ -503,7 +543,6 @@ function formatSimpleTicket(data, width = 42) {
   if (bizInfo?.address) wrap(bizInfo.address, width).forEach(l => (t += padCenter(l, width) + '\n'));
   t += line + '\n';
 
-  // ── Datos de la orden ────────────────────────────────────────────────────────
   const now   = new Date();
   const fecha = now.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Guayaquil' });
   const hora  = now.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Guayaquil' });
@@ -514,9 +553,8 @@ function formatSimpleTicket(data, width = 42) {
   t += `FECHA: ${fecha}   HORA: ${hora}\n`;
   t += sep + '\n';
 
-  // ── Tabla: CANT(cW) + ' ' + DESC(dW) + ' ' + P.UNT(pW) + ' ' + TOTAL(tW) = width ─
   const cW = 4, pW = 8, tW = 9;
-  const dW = Math.max(6, width - cW - pW - tW - 3); // 3 espacios entre 4 columnas
+  const dW = Math.max(6, width - cW - pW - tW - 3);
 
   t += padLeft('CANT', cW) + ' ' + padRight('DESC', dW) + ' ' + padLeft('P.UNT', pW) + ' ' + padLeft('TOTAL', tW) + '\n';
   t += sep + '\n';
@@ -534,7 +572,6 @@ function formatSimpleTicket(data, width = 42) {
 
   t += line + '\n';
 
-  // ── Totales ──────────────────────────────────────────────────────────────────
   const mW   = 10;
   const labW = width - mW;
   const row  = (label, val) => padRight(label, labW) + padLeft(formatMoney(val), mW) + '\n';
@@ -561,7 +598,6 @@ function formatSimpleTicket(data, width = 42) {
   if (recibido > 0) t += row('CAMBIO:', Math.max(0, cambio));
   t += line + '\n';
 
-  // ── Pie ─────────────────────────────────────────────────────────────────────
   if (printerFooter) t += padCenter(printerFooter, width) + '\n';
   t += '\n\n';
 
@@ -570,9 +606,6 @@ function formatSimpleTicket(data, width = 42) {
 
 /**
  * FACTURA — formato SRI Ecuador
- * data: { bizInfo, invoice, customer, items, subtotal_15, subtotal_0, discount, subtotal, tax, taxRate, total, payment, printerFooter }
- * invoice: { number, auth_number, auth_date, valid_until, date, remission_guide, notes }
- * payment: { cash, card, other }
  */
 function formatInvoiceTicket(data, width = 42) {
   const {
@@ -583,7 +616,7 @@ function formatInvoiceTicket(data, width = 42) {
     subtotal_15 = 0,
     subtotal_0  = 0,
     discount    = 0,
-    discounts   = null, // [{ name, amount }]
+    discounts   = null,
     subtotal    = 0,
     tax         = 0,
     taxRate,
@@ -599,7 +632,6 @@ function formatInvoiceTicket(data, width = 42) {
   const sep  = '-'.repeat(width);
   let t = '';
 
-  // ─── Encabezado negocio ───────────────────────────────────────────────────
   if (bizInfo?.trade_name) {
     wrap(bizInfo.trade_name.toUpperCase(), width).forEach(l => (t += padCenter(l, width) + '\n'));
   }
@@ -611,7 +643,6 @@ function formatInvoiceTicket(data, width = 42) {
   }
   t += line + '\n';
 
-  // ─── FACTURA + número + autorización SRI ─────────────────────────────────
   t += padCenter('FACTURA', width) + '\n';
   t += padCenter(`No. ${invoice?.number || 'N/A'}`, width) + '\n';
   if (invoice?.auth_number) {
@@ -622,7 +653,6 @@ function formatInvoiceTicket(data, width = 42) {
   }
   t += sep + '\n';
 
-  // ─── Dirección ───────────────────────────────────────────────────────────
   if (bizInfo?.address) {
     wrap(`Dir.: ${bizInfo.address}`, width).forEach(l => (t += l + '\n'));
   }
@@ -634,16 +664,14 @@ function formatInvoiceTicket(data, width = 42) {
   }
   t += line + '\n';
 
-  // ─── Adquirente ──────────────────────────────────────────────────────────
   if (customer?.name) t += `CLIENTE: ${customer.name}\n`;
   if (customer?.id)   t += `RUC/CI: ${customer.id}\n`;
   if (invoice?.date)  t += `F. Emisión: ${formatDate(invoice.date, 'short')}\n`;
   if (invoice?.remission_guide) t += `Guía Rem.: ${invoice.remission_guide}\n`;
   t += sep + '\n';
 
-  // ─── Tabla: CANT(qW) + ' ' + DESC(dW) + ' ' + P.UNT(pW) + ' ' + TOTAL(tW) = width ─
   const qW = 4, pW = 8, tW = 9;
-  const dW = Math.max(6, width - qW - pW - tW - 3); // 3 espacios entre 4 columnas
+  const dW = Math.max(6, width - qW - pW - tW - 3);
 
   t += padLeft('CANT', qW) + ' ' + padRight('DESC', dW) + ' ' + padLeft('P.UNT', pW) + ' ' + padLeft('TOTAL', tW) + '\n';
   t += sep + '\n';
@@ -663,7 +691,6 @@ function formatInvoiceTicket(data, width = 42) {
 
   t += sep + '\n';
 
-  // ─── Totales SRI ─────────────────────────────────────────────────────────
   const mW    = 12;
   const labW  = width - mW;
   const row   = (label, val) => padRight(label, labW) + padLeft(formatMoney(val), mW) + '\n';
@@ -690,7 +717,6 @@ function formatInvoiceTicket(data, width = 42) {
   t += row('VALOR TOTAL:', total);
   t += line + '\n';
 
-  // ─── Forma de pago ───────────────────────────────────────────────────────
   if (payment) {
     t += padCenter('FORMA DE PAGO', width) + '\n';
     t += sep + '\n';
@@ -700,25 +726,21 @@ function formatInvoiceTicket(data, width = 42) {
     t += line + '\n';
   }
 
-  // ─── Recibido / Cambio (solo pagos en efectivo o mixto) ──────────────────
   if ((metodoPago === 'cash' || metodoPago === 'mixto') && recibido > 0) {
     t += row('RECIBIDO:', recibido);
     t += row('CAMBIO:',   Math.max(0, cambio));
     t += line + '\n';
   }
 
-  // ─── Notas ───────────────────────────────────────────────────────────────
   if (invoice?.notes) {
     t += `Notas: ${invoice.notes}\n`;
   }
 
-  // ─── Firma adquirente ────────────────────────────────────────────────────
   t += '\n' + '_'.repeat(Math.floor(width / 2)) + '\n';
   t += 'Firma adquirente\n';
   t += 'Recibi Conforme\n';
   t += sep + '\n';
 
-  // ─── Footer ──────────────────────────────────────────────────────────────
   if (printerFooter) {
     t += padCenter(printerFooter, width) + '\n';
   }
@@ -786,30 +808,6 @@ function formatReceiptTicket(data, width = 42) {
 
 /**
  * CIERRE DE CAJA
- *
- * data: {
- *   bizInfo:   { company_name, trade_name, ruc, address, phone }
- *   close:     { cash_register_id, session_id, opening_user, closing_user,
- *                opening_date, closing_date, remarks }
- *   sales:     { transaction_count, invoice_count, receipt_count, void_count,
- *                subtotal_15, subtotal_0, discount, subtotal_net,
- *                tax, tax_rate, total }
- *   payments:  { cash:     { system, counted, diff },
- *                transfer: { system, counted, diff },
- *                card:     { system, counted, diff },
- *                other:    { system, counted, diff } }
- *   cashFlow:  { opening_float, extra_income, withdrawals,
- *                expected_cash, counted_cash, cash_diff }
- *   totals:    { system_total, counted_total, total_diff }
- *   summary:   legacy flat object (backward-compat)
- *   printerFooter
- * }
- */
-/**
- * CIERRE DE CAJA - Formato profesional con gastos
- */
-/**
- * CIERRE DE CAJA - Formato profesional con gastos
  */
 function formatCashCloseTicket(data, width = 48) {
   const { bizInfo, close, sales, payments, cashFlow, totals, summary, expenses = [], printerFooter } = data;
@@ -831,7 +829,6 @@ function formatCashCloseTicket(data, width = 48) {
 
   let t = '';
 
-  // ============ ENCABEZADO DEL NEGOCIO ============
   t += line + '\n';
   
   if (bizInfo?.trade_name) {
@@ -859,7 +856,6 @@ function formatCashCloseTicket(data, width = 48) {
   t += padCenter('*** CIERRE DE CAJA ***', width) + '\n';
   t += doubleLine + '\n\n';
 
-  // ============ DATOS DE LA SESIÓN ============
   t += padCenter('DATOS DE LA SESION', width) + '\n';
   t += sep + '\n';
   
@@ -885,12 +881,10 @@ function formatCashCloseTicket(data, width = 48) {
   
   t += sep + '\n\n';
 
-  // ============ RESUMEN DE VENTAS (simplificado - solo TOTAL VENTAS) ============
   t += padCenter('R E S U M E N   D E   V E N T A S', width) + '\n';
   t += dotted + '\n';
 
   if (sales) {
-    // Solo Transacciones y No. de comandas
     if (sales.transaction_count != null) {
       t += row('Transacciones:', sales.transaction_count, { raw: true });
     }
@@ -901,12 +895,9 @@ function formatCashCloseTicket(data, width = 48) {
     }
 
     t += dotted + '\n';
-    
-    // SOLO TOTAL VENTAS (sin desglose de IVA)
     t += row('💰 TOTAL VENTAS:', sales.total ?? 0);
   }
 
-  // ============ FORMAS DE PAGO ============
   t += sectionTitle('F O R M A S   D E   P A G O');
 
   const paymentSection = (label, icon, block) => {
@@ -934,7 +925,6 @@ function formatCashCloseTicket(data, width = 48) {
     paymentSection('TARJETA', '💳', { system: summary.card_system, counted: summary.card_counted, diff: summary.diff_card });
   }
 
-  // ============ GASTOS DEL DÍA ============
   if (expenses && expenses.length > 0) {
     t += sectionTitle('G A S T O S   D E L   D Í A');
     
@@ -950,7 +940,6 @@ function formatCashCloseTicket(data, width = 48) {
     t += row('💰 TOTAL GASTOS:', totalGastos);
   }
 
-  // ============ MOVIMIENTO DE CAJA ============
   if (cashFlow) {
     t += sectionTitle('M O V I M I E N T O   D E   C A J A');
     
@@ -961,7 +950,6 @@ function formatCashCloseTicket(data, width = 48) {
       t += row('📈 Ingresos extra:', cashFlow.extra_income);
     }
     
-    // Mostrar gastos totales si existen
     const totalGastos = expenses.reduce((sum, e) => sum + Number(e.amount || e.monto || 0), 0);
     if (totalGastos > 0) {
       t += row('📉 Total gastos:', totalGastos);
@@ -985,7 +973,6 @@ function formatCashCloseTicket(data, width = 48) {
     t += row(diffIcon, Math.abs(df));
   }
 
-  // ============ TOTALES GENERALES ============
   t += sectionTitle('T O T A L E S   G E N E R A L E S');
 
   if (totals) {
@@ -1004,7 +991,6 @@ function formatCashCloseTicket(data, width = 48) {
 
   t += line + '\n';
 
-  // ============ OBSERVACIONES ============
   if (close?.remarks && close.remarks.trim()) {
     t += '\n' + padCenter('OBSERVACIONES', width) + '\n';
     t += dotted + '\n';
@@ -1012,13 +998,11 @@ function formatCashCloseTicket(data, width = 48) {
     t += dotted + '\n';
   }
 
-  // ============ FIRMA CON NOMBRE REAL ============
   t += '\n' + dotted + '\n';
   t += padCenter('F I R M A   D E L   R E S P O N S A B L E', width) + '\n';
   t += dotted + '\n\n';
   t += padCenter('_________________________', width) + '\n';
   
-  // Obtener el nombre real del responsable
   const nombreResponsable = close?.closing_user_name || 
                            close?.closing_user || 
                            close?.closing_user_id || 
@@ -1027,7 +1011,6 @@ function formatCashCloseTicket(data, width = 48) {
   
   t += padCenter(nombreResponsable, width) + '\n\n';
 
-  // ============ PIE DE PÁGINA ============
   t += dotted + '\n';
   t += padCenter(`Impreso: ${formatDateTime()}`, width) + '\n';
   t += padCenter(`Usuario: ${getOperatorName()}`, width) + '\n';
@@ -1069,7 +1052,6 @@ function formatPayrollTicket(data, width = 48) {
 
   let ticket = '';
 
-  // ============ ENCABEZADO ============
   ticket += line + '\n';
   
   if (bizInfo?.trade_name) {
@@ -1097,7 +1079,6 @@ function formatPayrollTicket(data, width = 48) {
   ticket += padCenter('RECIBO DE NÓMINA', width) + '\n';
   ticket += doubleLine + '\n\n';
 
-  // ============ DATOS DEL EMPLEADO ============
   ticket += padCenter('DATOS DEL EMPLEADO', width) + '\n';
   ticket += subline + '\n';
   
@@ -1114,7 +1095,6 @@ function formatPayrollTicket(data, width = 48) {
     ticket += `  ${padRight('Departamento:', 15)} ${employee.department}\n`;
   }
   
-  // ============ DATOS DEL PERÍODO ============
   ticket += `\n  ${padRight('Período:', 15)} ${period}\n`;
   
   if (payroll?.payment_type === 'hourly') {
@@ -1131,7 +1111,6 @@ function formatPayrollTicket(data, width = 48) {
   ticket += `  ${padRight('Fecha emisión:', 15)} ${formatDate(new Date().toISOString(), 'short')}\n`;
   ticket += subline + '\n\n';
 
-  // ============ INGRESOS ============
   ticket += padCenter('I N G R E S O S', width) + '\n';
   ticket += dotted + '\n';
   
@@ -1141,7 +1120,6 @@ function formatPayrollTicket(data, width = 48) {
       ticket += `  ${padRight(concept, width - 14)} ${padLeft(formatMoney(item.amount), 12)}\n`;
     });
   } else {
-    // Ingreso base por defecto
     const baseConcept = payroll?.payment_type === 'hourly' 
       ? `Pago por horas (${payroll.total_hours || 0}h)`
       : `Sueldo por ${payroll.days_worked || 1} días`;
@@ -1151,7 +1129,6 @@ function formatPayrollTicket(data, width = 48) {
   ticket += dotted + '\n';
   ticket += `  ${padRight('TOTAL INGRESOS', width - 14)} ${padLeft(formatMoney(totalEarnings), 12)}\n\n`;
 
-  // ============ DEDUCCIONES ============
   if (deductions.length > 0) {
     ticket += padCenter('D E D U C C I O N E S', width) + '\n';
     ticket += dotted + '\n';
@@ -1165,7 +1142,6 @@ function formatPayrollTicket(data, width = 48) {
     ticket += `  ${padRight('TOTAL', width - 14)} ${padLeft(formatMoney(totalDeductions), 12)}\n\n`;
   }
 
-  // ============ TOTAL NETO ============
   ticket += line + '\n';
   ticket += padCenter('TOTAL A PAGAR', width) + '\n';
   ticket += line + '\n';
@@ -1173,25 +1149,22 @@ function formatPayrollTicket(data, width = 48) {
   ticket += `\n  ${padRight('Monto en letras:', 20)} ${numberToWords(Math.floor(netSalary))} DÓLARES\n`;
   ticket += line + '\n\n';
 
-  // ============ FORMA DE PAGO ============
   ticket += padCenter('FORMA DE PAGO', width) + '\n';
   ticket += subline + '\n';
   
   const paymentIcons = {
-    'CASH': '',
-    'EFECTIVO': '',
-    'CARD': '',
-    'TARJETA': '',
-    'TRANSFER': '',
-    'TRANSFERENCIA': '',
-    
+    'CASH': '💵',
+    'EFECTIVO': '💵',
+    'CARD': '💳',
+    'TARJETA': '💳',
+    'TRANSFER': '🏦',
+    'TRANSFERENCIA': '🏦',
   };
   
   const icon = paymentIcons[paymentMethod.toUpperCase()] || '💰';
   ticket += `  ${icon}  ${paymentMethod}\n`;
   ticket += subline + '\n\n';
 
-  // ============ FIRMAS ============
   ticket += dotted + '\n';
   ticket += padCenter('FIRMAS DE CONFORMIDAD', width) + '\n';
   ticket += dotted + '\n\n';
@@ -1200,7 +1173,6 @@ function formatPayrollTicket(data, width = 48) {
   ticket += `${padRight('_________________________', width - 20)} ${padRight('_________________________', 20)}\n`;
   ticket += `${padRight('Firma del empleado', width - 20)} ${padRight('Firma del empleador', 20)}\n\n`;
 
-  // ============ PIE DE PÁGINA ============
   if (printerFooter) {
     ticket += dotted + '\n';
     ticket += padCenter(printerFooter, width) + '\n';
@@ -1215,146 +1187,6 @@ function formatPayrollTicket(data, width = 48) {
   ticket += line + '\n\n';
 
   return ticket;
-}
-
-// ============ FUNCIONES AUXILIARES ============
-
-function formatDateTime() {
-  return new Date().toLocaleString('es-EC', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  });
-}
-
-function getOperatorName() {
-  try {
-    const user = JSON.parse(localStorage.getItem('idonUser') || '{}');
-    return user.nombre || user.name || user.username || 'Operador';
-  } catch {
-    return 'Operador';
-  }
-}
-
-function numberToWords(num) {
-  const unidades = ['CERO', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
-  const decenas = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
-  const especiales = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
-  
-  if (num === 0) return 'CERO';
-  if (num < 10) return unidades[num];
-  if (num < 20) return especiales[num - 10];
-  if (num < 100) {
-    const decena = Math.floor(num / 10);
-    const unidad = num % 10;
-    if (unidad === 0) return decenas[decena];
-    return decenas[decena] + ' Y ' + unidades[unidad];
-  }
-  if (num < 1000) {
-    const centena = Math.floor(num / 100);
-    const resto = num % 100;
-    if (centena === 1) return 'CIEN' + (resto > 0 ? ' ' + numberToWords(resto) : '');
-    const letras = { 2: 'DOSCIENTOS', 3: 'TRESCIENTOS', 4: 'CUATROCIENTOS', 5: 'QUINIENTOS', 6: 'SEISCIENTOS', 7: 'SETECIENTOS', 8: 'OCHOCIENTOS', 9: 'NOVECIENTOS' };
-    return letras[centena] + (resto > 0 ? ' ' + numberToWords(resto) : '');
-  }
-  return numberToWords(Math.floor(num / 1000)) + ' MIL' + (num % 1000 > 0 ? ' ' + numberToWords(num % 1000) : '');
-}
-
-/**
- * NOTA DE CRÉDITO
- * data: { bizInfo, creditNote, customer, reason, items, subtotal, iva, total, printerFooter }
- * creditNote: { number, reference_invoice, date }
- * items: [{ description, quantity, unit_price, subtotal }]
- */
-function formatCreditNoteTicket(data, width = 42) {
-  const {
-    bizInfo,
-    creditNote  = {},
-    customer    = {},
-    reason      = '',
-    items       = [],
-    subtotal    = 0,
-    iva         = 0,
-    total       = 0,
-    printerFooter,
-  } = data;
-
-  const line = '='.repeat(width);
-  const sep  = '-'.repeat(width);
-  let t = '';
-
-  // ─── Encabezado negocio ───────────────────────────────────────────────────
-  if (bizInfo?.trade_name) {
-    wrap(bizInfo.trade_name.toUpperCase(), width).forEach(l => (t += padCenter(l, width) + '\n'));
-  }
-  if (bizInfo?.company_name && bizInfo.company_name !== bizInfo?.trade_name) {
-    wrap(bizInfo.company_name, width).forEach(l => (t += padCenter(l, width) + '\n'));
-  }
-  if (bizInfo?.ruc) t += padCenter(`RUC: ${bizInfo.ruc}`, width) + '\n';
-  if (bizInfo?.address) wrap(bizInfo.address, width).forEach(l => (t += padCenter(l, width) + '\n'));
-  t += line + '\n';
-
-  // ─── Encabezado documento ────────────────────────────────────────────────
-  t += padCenter('*** NOTA DE CREDITO ***', width) + '\n';
-  t += padCenter(`No. ${creditNote.number || 'N/A'}`, width) + '\n';
-  t += sep + '\n';
-
-  // ─── Datos ───────────────────────────────────────────────────────────────
-  if (customer?.name)               t += `CLIENTE: ${customer.name}\n`;
-  if (customer?.id)                 t += `RUC/CI:  ${customer.id}\n`;
-  if (creditNote?.reference_invoice) t += `Fac. ref: ${creditNote.reference_invoice}\n`;
-  if (creditNote?.date)             t += `Fecha: ${formatDate(creditNote.date, 'short')}\n`;
-  t += sep + '\n';
-
-  // ─── Motivo ───────────────────────────────────────────────────────────────
-  t += 'MOTIVO:\n';
-  wrap(reason, width).forEach(l => (t += l + '\n'));
-  t += sep + '\n';
-
-  // ─── Tabla de ítems ───────────────────────────────────────────────────────
-  if (items.length > 0) {
-    const qW = 4, pW = 8, tW = 9;
-    const dW = Math.max(6, width - qW - pW - tW - 3);
-
-    t += padLeft('CANT', qW) + ' ' + padRight('DESC', dW) + ' ' + padLeft('P.UNT', pW) + ' ' + padLeft('TOTAL', tW) + '\n';
-    t += sep + '\n';
-
-    items.forEach(item => {
-      const qty   = Number(item.quantity ?? item.qty ?? 1);
-      const desc  = String(item.description || 'Producto').toUpperCase();
-      const price = Number(item.unit_price ?? item.price ?? 0);
-      const tot   = Number(item.subtotal   ?? qty * price);
-
-      const descLines = wrap(desc, dW);
-      t += padLeft(String(qty), qW) + ' ' + padRight(descLines[0] || '', dW) + ' ' + padLeft(formatMoney(price), pW) + ' ' + padLeft(formatMoney(tot), tW) + '\n';
-      for (let i = 1; i < descLines.length; i++) {
-        t += ' '.repeat(qW + 1) + padRight(descLines[i], dW) + '\n';
-      }
-    });
-    t += sep + '\n';
-  }
-
-  // ─── Totales ──────────────────────────────────────────────────────────────
-  const mW   = 12;
-  const labW = width - mW;
-  const row  = (label, val) => padRight(label, labW) + padLeft(formatMoney(val), mW) + '\n';
-
-  t += row('SUBTOTAL:', subtotal);
-  t += row('IVA 15%:',  iva);
-  t += line + '\n';
-  t += row('TOTAL A ACREDITAR:', total);
-  t += line + '\n';
-
-  // ─── Pie ──────────────────────────────────────────────────────────────────
-  if (printerFooter) t += padCenter(printerFooter, width) + '\n';
-  t += padCenter('Original: Adquirente / Copia: Emisor', width) + '\n';
-  t += line + '\n\n';
-
-  return t;
 }
 
 /**
@@ -1412,4 +1244,167 @@ function formatPurchaseTicket(data, width = 42) {
   ticket += padCenter(formatDate(new Date().toISOString(), 'long'), width) + '\n\n';
 
   return ticket;
+}
+
+/**
+ * NOTA DE CRÉDITO
+ */
+function formatCreditNoteTicket(data, width = 42) {
+  const {
+    bizInfo,
+    creditNote  = {},
+    customer    = {},
+    reason      = '',
+    items       = [],
+    subtotal    = 0,
+    iva         = 0,
+    total       = 0,
+    printerFooter,
+  } = data;
+
+  const line = '='.repeat(width);
+  const sep  = '-'.repeat(width);
+  let t = '';
+
+  if (bizInfo?.trade_name) {
+    wrap(bizInfo.trade_name.toUpperCase(), width).forEach(l => (t += padCenter(l, width) + '\n'));
+  }
+  if (bizInfo?.company_name && bizInfo.company_name !== bizInfo?.trade_name) {
+    wrap(bizInfo.company_name, width).forEach(l => (t += padCenter(l, width) + '\n'));
+  }
+  if (bizInfo?.ruc) t += padCenter(`RUC: ${bizInfo.ruc}`, width) + '\n';
+  if (bizInfo?.address) wrap(bizInfo.address, width).forEach(l => (t += padCenter(l, width) + '\n'));
+  t += line + '\n';
+
+  t += padCenter('*** NOTA DE CREDITO ***', width) + '\n';
+  t += padCenter(`No. ${creditNote.number || 'N/A'}`, width) + '\n';
+  t += sep + '\n';
+
+  if (customer?.name)               t += `CLIENTE: ${customer.name}\n`;
+  if (customer?.id)                 t += `RUC/CI:  ${customer.id}\n`;
+  if (creditNote?.reference_invoice) t += `Fac. ref: ${creditNote.reference_invoice}\n`;
+  if (creditNote?.date)             t += `Fecha: ${formatDate(creditNote.date, 'short')}\n`;
+  t += sep + '\n';
+
+  t += 'MOTIVO:\n';
+  wrap(reason, width).forEach(l => (t += l + '\n'));
+  t += sep + '\n';
+
+  if (items.length > 0) {
+    const qW = 4, pW = 8, tW = 9;
+    const dW = Math.max(6, width - qW - pW - tW - 3);
+
+    t += padLeft('CANT', qW) + ' ' + padRight('DESC', dW) + ' ' + padLeft('P.UNT', pW) + ' ' + padLeft('TOTAL', tW) + '\n';
+    t += sep + '\n';
+
+    items.forEach(item => {
+      const qty   = Number(item.quantity ?? item.qty ?? 1);
+      const desc  = String(item.description || 'Producto').toUpperCase();
+      const price = Number(item.unit_price ?? item.price ?? 0);
+      const tot   = Number(item.subtotal   ?? qty * price);
+
+      const descLines = wrap(desc, dW);
+      t += padLeft(String(qty), qW) + ' ' + padRight(descLines[0] || '', dW) + ' ' + padLeft(formatMoney(price), pW) + ' ' + padLeft(formatMoney(tot), tW) + '\n';
+      for (let i = 1; i < descLines.length; i++) {
+        t += ' '.repeat(qW + 1) + padRight(descLines[i], dW) + '\n';
+      }
+    });
+    t += sep + '\n';
+  }
+
+  const mW   = 12;
+  const labW = width - mW;
+  const row  = (label, val) => padRight(label, labW) + padLeft(formatMoney(val), mW) + '\n';
+
+  t += row('SUBTOTAL:', subtotal);
+  t += row('IVA 15%:',  iva);
+  t += line + '\n';
+  t += row('TOTAL A ACREDITAR:', total);
+  t += line + '\n';
+
+  if (printerFooter) t += padCenter(printerFooter, width) + '\n';
+  t += padCenter('Original: Adquirente / Copia: Emisor', width) + '\n';
+  t += line + '\n\n';
+
+  return t;
+}
+
+/**
+ * CUENTA POR COBRAR
+ */
+function formatCreditReceivableTicket(data, width = 42) {
+  const {
+    bizInfo,
+    orden        = 'N/A',
+    customer     = {},
+    items        = [],
+    subtotal     = 0,
+    tax          = 0,
+    total        = 0,
+    vencimiento  = null,
+    printerFooter,
+  } = data;
+
+  const line = '='.repeat(width);
+  const sep  = '-'.repeat(width);
+  let t = '';
+
+  if (bizInfo?.trade_name) wrap(bizInfo.trade_name.toUpperCase(), width).forEach(l => (t += padCenter(l, width) + '\n'));
+  if (bizInfo?.company_name && bizInfo.company_name !== bizInfo.trade_name)
+    wrap(bizInfo.company_name, width).forEach(l => (t += padCenter(l, width) + '\n'));
+  if (bizInfo?.ruc)     t += padCenter(`RUC: ${bizInfo.ruc}`, width) + '\n';
+  if (bizInfo?.address) wrap(bizInfo.address, width).forEach(l => (t += padCenter(l, width) + '\n'));
+  t += line + '\n';
+
+  t += padCenter('*** CUENTA POR COBRAR ***', width) + '\n';
+  t += sep + '\n';
+
+  const now   = new Date();
+  const fecha = now.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Guayaquil' });
+  const hora  = now.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Guayaquil' });
+
+  t += `No. ORDEN: ${orden}\n`;
+  if (customer.name) t += `CLIENTE: ${customer.name}\n`;
+  t += `CI/RUC: ${customer.id || '9999999999'}\n`;
+  t += `FECHA: ${fecha}   HORA: ${hora}\n`;
+  if (vencimiento) t += `VENCE: ${formatDate(vencimiento, 'short')}\n`;
+  t += sep + '\n';
+
+  const cW = 4, pW = 8, tW = 9;
+  const dW = Math.max(6, width - cW - pW - tW - 3);
+
+  t += padLeft('CANT', cW) + ' ' + padRight('DESC', dW) + ' ' + padLeft('P.UNT', pW) + ' ' + padLeft('TOTAL', tW) + '\n';
+  t += sep + '\n';
+
+  items.forEach(item => {
+    const qty   = Number(item.quantity || 1);
+    const desc  = String(item.description || 'Producto').toUpperCase();
+    const price = Number(item.price || 0);
+    const tot   = Number(item.total ?? (qty * price));
+
+    const descLines = wrap(desc, dW);
+    t += padLeft(String(qty), cW) + ' ' + padRight(descLines[0] || '', dW) + ' ' + padLeft(formatMoney(price), pW) + ' ' + padLeft(formatMoney(tot), tW) + '\n';
+    for (let i = 1; i < descLines.length; i++) t += ' '.repeat(cW + 1) + padRight(descLines[i], dW) + '\n';
+  });
+
+  t += line + '\n';
+
+  const mW   = 10;
+  const labW = width - mW;
+  const row  = (label, val) => padRight(label, labW) + padLeft(formatMoney(val), mW) + '\n';
+
+  if (subtotal > 0) t += row('SUBTOTAL:', subtotal);
+  if (tax > 0) t += row('IVA:', tax);
+  t += row('TOTAL:', total);
+  t += sep + '\n';
+
+  t += padCenter('*** PENDIENTE DE PAGO ***', width) + '\n';
+  if (vencimiento) t += padCenter(`Vence el ${formatDate(vencimiento, 'short')}`, width) + '\n';
+  t += padCenter('No incluye intereses por mora', width) + '\n';
+  t += line + '\n';
+
+  if (printerFooter) t += padCenter(printerFooter, width) + '\n';
+  t += '\n\n';
+
+  return t;
 }

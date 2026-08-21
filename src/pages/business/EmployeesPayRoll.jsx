@@ -1,12 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSession } from '../../context/SessionContext'; // ✅ AGREGADO
 import PageTemplate from '../../components/PageTemplate';
 import PayrollPrintModal from '../../components/PayrollPrintModal';
+import Table from '../../components/General/Table';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import CustomCombobox from '../../components/General/CustomCombobox';
+import Modal from '../../components/General/Modal';
+import { useConfirm } from '../../context/ConfirmContext';
 import {
-  RefreshCw, DollarSign, Clock, Archive, List, Users, TrendingUp, Eye
+  RefreshCw, DollarSign, Clock, Archive, List, Users, TrendingUp, Eye, X, CheckSquare, Square
 } from 'react-feather';
 import '../../styles/PayrollPro.css';
 
-import { fetchWithAuth } from '../../config/apiBase';
+import { fetchWithAuth } from '../../config/api'; // ✅ CORREGIDO
 import { usePrinterService } from '../../services/usePrinterService';
 import { useAlert } from '../../components/ConfirmContext';
 
@@ -19,17 +25,17 @@ function getBusinessInfo() {
 }
 
 export default function EmployeesPayRollPage() {
-
+  const { user } = useSession(); // ✅ AGREGADO
   const { print, openCashDrawer, getPrinterConfig } = usePrinterService();
   const alert = useAlert();
+  const { showConfirm } = useConfirm();
   
   // Estados para filtros y datos
-  const [type, setType] = useState('monthly');
-  const [paymentType, setPaymentType] = useState('hourly');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isGenerated, setIsGenerated] = useState(false);
 
   // Estados para selección de empleados
   const [availableEmployees, setAvailableEmployees] = useState([]);
@@ -73,13 +79,26 @@ export default function EmployeesPayRollPage() {
   const lastPayTime = useRef({});
   const processingIds = useRef(new Set());
 
-  // Función auxiliar para convertir a número
+  // ─── Estados para el filtro de fechas ──────────────────────────────────
+  const [dateRange, setDateRange] = useState('all');
+  const [selectedDays, setSelectedDays] = useState([]);
+  const [availableDays, setAvailableDays] = useState([]);
+  const [showDaySelector, setShowDaySelector] = useState(false);
+
   const n = v => {
     const num = Number(v);
     return isNaN(num) ? 0 : num;
   };
 
-  // Cargar configuración de la impresora desde el servicio
+  // ─── Opciones de fechas ──────────────────────────────────────────────
+  const dateOptions = [
+    { label: 'Hoy', value: 'day' },
+    { label: 'Esta semana', value: 'week' },
+    { label: 'Este mes', value: 'month' },
+    { label: 'Personalizado', value: 'custom' }
+  ];
+
+  // Cargar configuración de la impresora
   useEffect(() => {
     const loadPrinterConfig = async () => {
       try {
@@ -92,15 +111,12 @@ export default function EmployeesPayRollPage() {
           });
         }
       } catch (error) {
-
+        // Silenciar error
       }
     };
     loadPrinterConfig();
   }, [getPrinterConfig]);
 
-  /**
-   * Función para formatear fechas correctamente a YYYY-MM-DD
-   */
   const formatDate = (dateString) => {
     if (!dateString) return '';
     try {
@@ -110,38 +126,31 @@ export default function EmployeesPayRollPage() {
       const month = String(ecuadorDate.getMonth() + 1).padStart(2, '0');
       const day = String(ecuadorDate.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
-    } catch (error) {
+    } catch {
       return dateString;
     }
   };
 
-  /**
-   * Obtener fecha actual de Ecuador
-   */
+  // ─── Función para obtener fecha actual en Ecuador ──────────────────────
+  const getEcuadorDate = () => {
+    const now = new Date();
+    const ecuadorDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+    const year = ecuadorDate.getFullYear();
+    const month = String(ecuadorDate.getMonth() + 1).padStart(2, '0');
+    const day = String(ecuadorDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   useEffect(() => {
-    const getEcuadorDate = () => {
-      const now = new Date();
-      const ecuadorDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-      const year = ecuadorDate.getFullYear();
-      const month = String(ecuadorDate.getMonth() + 1).padStart(2, '0');
-      const day = String(ecuadorDate.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
     const today = getEcuadorDate();
     setStart(today);
     setEnd(today);
   }, []);
 
-  /**
-   * Cargar empleados activos al montar el componente
-   */
   useEffect(() => {
     loadAvailableEmployees();
   }, []);
 
-  /**
-   * Calcular días trabajados en el período seleccionado
-   */
   const getDaysWorked = () => {
     if (!start) return 1;
     const startDate = new Date(start);
@@ -158,19 +167,154 @@ export default function EmployeesPayRollPage() {
     }
   };
 
-  /**
-   * Cargar empleados activos para selección
-   */
+  // ─── Generar días disponibles para la semana o mes ────────────────────
+  const generateAvailableDays = useCallback((rangeType) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let days = [];
+    let startDate, endDate;
+
+    if (rangeType === 'week') {
+      const weekStart = new Date(today);
+      const day = weekStart.getDay();
+      const diff = day === 0 ? 6 : day - 1;
+      weekStart.setDate(weekStart.getDate() - diff);
+      startDate = new Date(weekStart);
+      endDate = new Date(weekStart);
+      endDate.setDate(weekStart.getDate() + 6);
+    } else if (rangeType === 'month') {
+      startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    }
+
+    if (startDate && endDate) {
+      const current = new Date(startDate);
+      while (current <= endDate) {
+        const dateStr = current.toISOString().split('T')[0];
+        if (current <= today) {
+          days.push(dateStr);
+        }
+        current.setDate(current.getDate() + 1);
+      }
+    }
+
+    return days;
+  }, []);
+
+  // ─── Calcular rango de fechas según selección ──────────────────────────
+  const getDateRange = useCallback(() => {
+    if (dateRange === 'all') {
+      return { startDate: null, endDate: null };
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let startDate = null;
+    let endDate = null;
+
+    if (dateRange === 'day') {
+      startDate = new Date(today);
+      endDate = new Date(today);
+    } else if (dateRange === 'week') {
+      const weekStart = new Date(today);
+      const day = weekStart.getDay();
+      const diff = day === 0 ? 6 : day - 1;
+      weekStart.setDate(weekStart.getDate() - diff);
+      startDate = new Date(weekStart);
+      endDate = new Date(weekStart);
+      endDate.setDate(weekStart.getDate() + 6);
+    } else if (dateRange === 'month') {
+      startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    }
+
+    return { startDate, endDate };
+  }, [dateRange]);
+
+  const handleDateRangeChange = (value) => {
+    setDateRange(value);
+    setSelectedDays([]);
+    
+    if (value === 'custom') {
+      setStart('');
+      setEnd('');
+      setAvailableDays([]);
+    } else if (value === 'day') {
+      const { startDate } = getDateRange();
+      if (startDate) {
+        const dateStr = startDate.toISOString().split('T')[0];
+        setStart(dateStr);
+        setEnd(dateStr);
+        setAvailableDays([]);
+        setSelectedDays([dateStr]);
+      }
+    } else if (value === 'week' || value === 'month') {
+      const days = generateAvailableDays(value);
+      setAvailableDays(days);
+      setSelectedDays([...days]);
+      if (days.length > 0) {
+        setStart(days[0]);
+        setEnd(days[days.length - 1]);
+      }
+    }
+  };
+
+  // ─── Toggle para seleccionar/deseleccionar un día ──────────────────────
+  const toggleDay = (day) => {
+    if (selectedDays.includes(day)) {
+      const newSelected = selectedDays.filter(d => d !== day);
+      setSelectedDays(newSelected);
+      if (newSelected.length > 0) {
+        setStart(newSelected[0]);
+        setEnd(newSelected[newSelected.length - 1]);
+      } else {
+        setStart('');
+        setEnd('');
+      }
+    } else {
+      const newSelected = [...selectedDays, day].sort();
+      setSelectedDays(newSelected);
+      setStart(newSelected[0]);
+      setEnd(newSelected[newSelected.length - 1]);
+    }
+  };
+
+  // ─── Seleccionar/Deseleccionar todos los días ──────────────────────────
+  const toggleAllDays = () => {
+    if (selectedDays.length === availableDays.length) {
+      setSelectedDays([]);
+      setStart('');
+      setEnd('');
+    } else {
+      setSelectedDays([...availableDays]);
+      if (availableDays.length > 0) {
+        setStart(availableDays[0]);
+        setEnd(availableDays[availableDays.length - 1]);
+      }
+    }
+  };
+
+  const formatDateDisplay = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return `${parseInt(parts[2])} ${meses[parseInt(parts[1]) - 1]}`;
+  };
+
+  const isDayInRange = (day) => {
+    if (selectedDays.length === 0) return false;
+    return selectedDays.includes(day);
+  };
+
   async function loadAvailableEmployees() {
     if (loadingEmployees || loading) return;
-
     try {
       setLoadingEmployees(true);
-      const res = await fetchWithAuth('/api/employees');
+      // ✅ SIN /api
+      const res = await fetchWithAuth('/employees');
       const json = await res.json();
       setAvailableEmployees(Array.isArray(json) ? json : []);
     } catch (error) {
-
       setAvailableEmployees([]);
       await alert.error('Error al cargar empleados: ' + error.message);
     } finally {
@@ -178,9 +322,6 @@ export default function EmployeesPayRollPage() {
     }
   }
 
-  /**
-   * Manejar selección/deselección de empleados
-   */
   const handleEmployeeSelection = (employeeId) => {
     const id = String(employeeId);
     const newSelected = new Set(selectedEmployees);
@@ -192,9 +333,6 @@ export default function EmployeesPayRollPage() {
     setSelectedEmployees(newSelected);
   };
 
-  /**
-   * Seleccionar/deseleccionar todos los empleados
-   */
   const handleSelectAllEmployees = () => {
     if (selectedEmployees.size === availableEmployees.length) {
       setSelectedEmployees(new Set());
@@ -203,9 +341,6 @@ export default function EmployeesPayRollPage() {
     }
   };
 
-  /**
-   * Generar nómina (previsualización)
-   */
   async function generate() {
     if (!start) {
       await alert.warning('Selecciona la fecha de inicio');
@@ -216,35 +351,34 @@ export default function EmployeesPayRollPage() {
       return;
     }
     if (isGenerating || loading) return;
-    
+
     const now = Date.now();
     if (now - lastGenerateTime.current < 2000) return;
-    
+
     const endDate = end || start;
-    
+
     try {
       setIsGenerating(true);
       setLoading(true);
       lastGenerateTime.current = now;
-      
-      const res = await fetchWithAuth('/api/payroll/generate', {
+
+      // ✅ SIN /api
+      const res = await fetchWithAuth('/payroll/generate', {
         method: 'POST',
-        body: JSON.stringify({ 
-          start, 
-          end: endDate, 
-          type,
-          payment_type: paymentType,
+        body: JSON.stringify({
+          start,
+          end: endDate,
           employee_ids: Array.from(selectedEmployees)
         })
       });
       const json = await res.json();
       setData(Array.isArray(json) ? json : []);
-      
+      setIsGenerated(true);
+
       if (json.length === 0) {
         await alert.warning('No se encontraron datos para los empleados seleccionados');
       }
     } catch (error) {
-
       setData([]);
       await alert.error('Error al generar nómina: ' + error.message);
     } finally {
@@ -253,59 +387,53 @@ export default function EmployeesPayRollPage() {
     }
   }
 
-  /**
-   * Guardar la nómina generada
-   */
   async function savePayroll() {
     if (isSaving || loading) return;
-    
-    // Filtrar solo los empleados seleccionados
+
     const selectedData = data.filter(emp => selectedEmployees.has(String(emp.employee_id)));
-    
+
     if (selectedData.length === 0) {
-      await alert.warning('No hay empleados seleccionados para guardar');
+      await alert.warning('No hay Colaboradores/as seleccionados para guardar');
       return;
     }
-    
+
     const now = Date.now();
     if (now - lastSaveTime.current < 3000) {
       await alert.warning('Por favor espera unos segundos antes de guardar nuevamente');
       return;
     }
-    
+
     const endDate = end || start;
-    
+
     try {
       setIsSaving(true);
       setLoading(true);
       lastSaveTime.current = now;
-      
-      const res = await fetchWithAuth('/api/payroll', {
+
+      // ✅ SIN /api
+      const res = await fetchWithAuth('/payroll', {
         method: 'POST',
-        body: JSON.stringify({ 
-          rows: selectedData, 
-          start, 
-          end: endDate, 
-          type,
-          payment_type: paymentType
+        body: JSON.stringify({
+          rows: selectedData,
+          start,
+          end: endDate
         })
       });
       const result = await res.json();
-      
+
       if (result.success) {
-        await alert.success(`Nómina guardada correctamente para ${selectedData.length} empleado(s)`);
-        
-        // Remover los empleados guardados de la lista de datos
+        await alert.success(
+          `Nómina guardada correctamente para ${selectedData.length} colaborador(es)`,
+          'Nómina Guardada'
+        );
         const remainingData = data.filter(emp => !selectedEmployees.has(emp.employee_id));
         setData(remainingData);
-        
-        // Limpiar la selección
         setSelectedEmployees(new Set());
+        setIsGenerated(false);
       } else {
         await alert.error(result.message || 'Error al guardar la nómina');
       }
     } catch (error) {
-
       await alert.error('Error al guardar la nómina: ' + error.message);
     } finally {
       setLoading(false);
@@ -313,18 +441,13 @@ export default function EmployeesPayRollPage() {
     }
   }
 
-  /**
-   * Ver todas las nóminas guardadas
-   */
   async function viewSavedPayroll() {
     if (isLoadingSaved) return;
-
     try {
       setIsLoadingSaved(true);
-
-      const res = await fetchWithAuth(`/api/payroll/all-saved`);
+      // ✅ SIN /api
+      const res = await fetchWithAuth('/payroll/all-saved');
       const json = await res.json();
-
       const processed = Array.isArray(json) ? json.map(payroll => ({
         ...payroll,
         start_date: formatDate(payroll.start_date),
@@ -332,7 +455,6 @@ export default function EmployeesPayRollPage() {
         total_amount: Number(payroll.total_amount) || 0,
         total_employees: Number(payroll.total_employees) || 0
       })) : [];
-
       setSavedPayrolls(processed);
       setShowSaved(true);
     } catch (error) {
@@ -347,7 +469,8 @@ export default function EmployeesPayRollPage() {
     if (isLoadingPaid) return;
     try {
       setIsLoadingPaid(true);
-      const res = await fetchWithAuth('/api/payroll/all-paid');
+      // ✅ SIN /api
+      const res = await fetchWithAuth('/payroll/all-paid');
       const json = await res.json();
       const processed = Array.isArray(json) ? json.map(p => ({
         ...p,
@@ -367,18 +490,13 @@ export default function EmployeesPayRollPage() {
     }
   }
 
-  /**
-   * Ver detalle de una nómina específica por fecha
-   */
   async function viewPayrollDetails(payrollGroup) {
     if (isLoadingDetails) return;
-
     try {
       setIsLoadingDetails(true);
-
-      const res = await fetchWithAuth(`/api/payroll/saved-by-date?start_date=${payrollGroup.start_date}&end_date=${payrollGroup.end_date}`);
+      // ✅ SIN /api
+      const res = await fetchWithAuth(`/payroll/saved-by-date?start_date=${payrollGroup.start_date}&end_date=${payrollGroup.end_date}`);
       const details = await res.json();
-
       setSelectedPayrollDetails({
         ...payrollGroup,
         employees: Array.isArray(details) ? details : []
@@ -391,12 +509,8 @@ export default function EmployeesPayRollPage() {
     }
   }
 
-  /**
-   * Mostrar modal de impresión
-   */
   async function handleShowPrintModal(emp) {
     try {
-      // Asegurar que los datos del empleado tengan todos los campos necesarios
       const employeeData = {
         payroll_id: emp.payroll_id,
         employee_id: emp.employee_id,
@@ -408,230 +522,425 @@ export default function EmployeesPayRollPage() {
         daily_rate: emp.daily_rate || 0,
         total_pay: emp.total_pay || 0
       };
-      
-      const res = await fetchWithAuth(`/api/payroll/details/${emp.payroll_id}`);
+
+      // ✅ SIN /api
+      const res = await fetchWithAuth(`/payroll/details/${emp.payroll_id}`);
       const details = await res.json();
       setToPrintPayroll(employeeData);
       setToPrintDetails(Array.isArray(details) ? details : []);
       setShowPrint(true);
     } catch (error) {
-
       await alert.error('Error cargando detalle de nómina');
     }
   }
 
-  /**
-   * Abrir modal de selección de método de pago
-   */
   const handlePayClick = (emp) => {
     setSelectedEmployee(emp);
     setPaymentMethod('cash');
     setShowPaymentMethodModal(true);
   };
 
-  /**
-   * Confirmar y procesar el pago con el método seleccionado
-   */
   const confirmPay = async () => {
-  if (!selectedEmployee) return;
-  
-  const emp = selectedEmployee;
-  
-  if (isPaying || loading) {
-    await alert.warning('Por favor espera, ya se está procesando un pago');
-    return;
-  }
-  
-  const processingKey = `${emp.payroll_id}`;
-  if (processingIds.current.has(processingKey)) return;
-  
-  const now = Date.now();
-  const lastPayForKey = lastPayTime.current[processingKey];
-  if (lastPayForKey && (now - lastPayForKey) < 5000) {
-    await alert.warning('Por favor espera unos segundos antes de pagar nuevamente');
-    return;
-  }
-  
-  setShowPaymentMethodModal(false);
-  
-  try {
-    setIsPaying(true);
-    setLoading(true);
-    processingIds.current.add(processingKey);
-    
-    if (!lastPayTime.current) lastPayTime.current = {};
-    lastPayTime.current[processingKey] = now;
-    
-    const operador = JSON.parse(localStorage.getItem('idonUser') || '{}');
-    if (!operador?.id) {
-      await alert.error('No se encontró información del usuario. Inicia sesión nuevamente.');
+    if (!selectedEmployee) return;
+
+    const emp = selectedEmployee;
+
+    if (isPaying || loading) {
+      await alert.warning('Por favor espera, ya se está procesando un pago');
       return;
     }
-    
-    // ========= NUEVO CÓDIGOS PARA REGISTRAR PAGO EN BACKEND ==========    
-    const payRes = await fetchWithAuth('/api/payroll/pay', {
-      method: 'POST',
-      body: JSON.stringify({
-        payroll_id: emp.payroll_id,
-        employee_id: emp.employee_id,
-        employee_name: emp.full_name,
-        amount: n(emp.total_pay),
-        payment_method: paymentMethod,
-        user_id: operador.id
-      })
-    });
 
-    if (!payRes.ok) {
-      const errorData = await payRes.json();
-      throw new Error(errorData.error || 'Error registrando pago');
+    const processingKey = `${emp.payroll_id}`;
+    if (processingIds.current.has(processingKey)) return;
+
+    const now = Date.now();
+    const lastPayForKey = lastPayTime.current[processingKey];
+    if (lastPayForKey && (now - lastPayForKey) < 5000) {
+      await alert.warning('Por favor espera unos segundos antes de pagar nuevamente');
+      return;
     }
 
-    // Abrir cajón si es efectivo
-    if (paymentMethod === 'cash') {
-      await openCashDrawer().catch(() => {});
-    }
+    setShowPaymentMethodModal(false);
 
-    await alert.success(`Pago registrado correctamente para ${emp.full_name} (${paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'})`);
-    // ========== FIN DEL NUEVO CÓDIGO ==========
-    
-    // Actualizar el estado local si el modal de detalles está abierto
-    if (selectedPayrollDetails) {
-      const updatedEmployees = selectedPayrollDetails.employees.filter(e => e.payroll_id !== emp.payroll_id);
-      setSelectedPayrollDetails({
-        ...selectedPayrollDetails,
-        employees: updatedEmployees,
-        total_amount: updatedEmployees.reduce((acc, e) => acc + n(e.total_pay), 0)
+    try {
+      setIsPaying(true);
+      setLoading(true);
+      processingIds.current.add(processingKey);
+
+      if (!lastPayTime.current) lastPayTime.current = {};
+      lastPayTime.current[processingKey] = now;
+
+      const operador = JSON.parse(localStorage.getItem('idonUser') || '{}');
+      if (!operador?.id) {
+        await alert.error('No se encontró información del usuario. Inicia sesión nuevamente.');
+        return;
+      }
+
+      const confirmed = await showConfirm({
+        title: 'Confirmar Pago',
+        message: `¿Registrar pago de $${n(emp.total_pay).toFixed(2)} para ${emp.full_name}?`,
+        confirmText: 'Confirmar Pago',
+        cancelText: 'Cancelar',
+        danger: false,
       });
+
+      if (!confirmed) {
+        setSelectedEmployee(null);
+        setIsPaying(false);
+        setLoading(false);
+        processingIds.current.delete(processingKey);
+        return;
+      }
+
+      // ✅ SIN /api
+      const payRes = await fetchWithAuth('/payroll/pay', {
+        method: 'POST',
+        body: JSON.stringify({
+          payroll_id: emp.payroll_id,
+          employee_id: emp.employee_id,
+          employee_name: emp.full_name,
+          amount: n(emp.total_pay),
+          payment_method: paymentMethod,
+          user_id: operador.id
+        })
+      });
+
+      if (!payRes.ok) {
+        const errorData = await payRes.json();
+        throw new Error(errorData.error || 'Error registrando pago');
+      }
+
+      if (paymentMethod === 'cash') {
+        await openCashDrawer().catch(() => {});
+      }
+
+      await alert.success(`Pago registrado correctamente para ${emp.full_name} (${paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'})`);
+
+      if (selectedPayrollDetails) {
+        const updatedEmployees = selectedPayrollDetails.employees.filter(e => e.payroll_id !== emp.payroll_id);
+        setSelectedPayrollDetails({
+          ...selectedPayrollDetails,
+          employees: updatedEmployees,
+          total_amount: updatedEmployees.reduce((acc, e) => acc + n(e.total_pay), 0)
+        });
+      }
+
+    } catch (error) {
+      await alert.error('Error registrando pago: ' + error.message);
+    } finally {
+      setLoading(false);
+      setIsPaying(false);
+      processingIds.current.delete(processingKey);
+      setSelectedEmployee(null);
     }
-    
-  } catch (error) {
+  };
 
-    await alert.error('Error registrando pago: ' + error.message);
-  } finally {
-    setLoading(false);
-    setIsPaying(false);
-    processingIds.current.delete(processingKey);
-    setSelectedEmployee(null);
-  }
-};
-
-  // Calcular totales
   const totalPayroll = data.reduce((acc, e) => acc + n(e.total_pay), 0);
   const totalHours = data.reduce((acc, e) => acc + n(e.total_hours), 0);
   const totalExtraHours = data.reduce((acc, e) => acc + n(e.extra_hours), 0);
   const totalEmployees = data.length;
-  
+
   const daysInPeriod = getDaysWorked();
   const periodText = end && end !== start ? `${start} al ${end} (${daysInPeriod} días)` : `${start} (1 día)`;
 
   const isAnyActionInProgress = isGenerating || isSaving || isPaying || isLoadingSaved || isLoadingDetails || loadingEmployees;
 
-  const headerAction = (
-    <div className="pay-toolbar">
-      <button className="pay-btn" onClick={generate} disabled={isAnyActionInProgress || loading || isGenerating || selectedEmployees.size === 0}>
-        <RefreshCw size={14}/> {isGenerating ? 'Generando...' : 'Generar'}
-      </button>
-      <button className="pay-btn-print" onClick={savePayroll} disabled={isAnyActionInProgress || loading || isSaving || selectedEmployees.size === 0 || data.length === 0}>
-        <DollarSign size={14}/> {isSaving ? 'Guardando...' : 'Guardar'}
-      </button>
-      <button 
-        className="pay-btn-print" 
-        style={{background:'#f9edcc',color:'#542'}} 
-        onClick={viewSavedPayroll}
-        disabled={isAnyActionInProgress || loading || isLoadingSaved}
-      >
-        <Archive size={18}/> {isLoadingSaved ? 'Cargando...' : 'Ver Nóminas'}
-      </button>
-      <button 
-        className="pay-btn" 
-        style={{background:'#e3f2fd',color:'#1976d2'}} 
-        onClick={loadAvailableEmployees}
-        disabled={isAnyActionInProgress || loading || loadingEmployees}
-      >
-        <Users size={14}/> {loadingEmployees ? 'Cargando...' : 'Recargar Empleados'}
-      </button>
+  // ─── Columnas para la tabla ──────────────────────────────────────────────
+  const columns = [
+    {
+      accessor: 'full_name',
+      label: 'EMPLEADO',
+      render: (item) => <span className="font-medium">{item.full_name}</span>
+    },
+    {
+      accessor: 'total_hours',
+      label: 'HORAS',
+      render: (item) => <span className="text-center">{n(item.total_hours).toFixed(2)}</span>
+    },
+    {
+      accessor: 'extra_hours',
+      label: 'H. EXTRAS',
+      render: (item) => (
+        <span className={`text-center ${n(item.extra_hours) > 0 ? 'extra-hours' : ''}`}>
+          {n(item.extra_hours).toFixed(2)}
+        </span>
+      )
+    },
+    {
+      accessor: 'days_worked',
+      label: 'DÍAS',
+      render: (item) => <span className="text-center">{n(item.days_worked || daysInPeriod).toFixed(0)}</span>
+    },
+    {
+      accessor: 'rate',
+      label: 'VALOR / TIPO',
+      render: (item) => {
+        const empPaymentType = item.emp_payment_type || 'hourly';
+        
+        if (empPaymentType === 'daily') {
+          return (
+            <span className="text-center">
+              <span>
+                ${n(item.daily_rate || (item.total_pay / (item.days_worked || 1))).toFixed(2)}/día
+              </span>
+            </span>
+          );
+        } else {
+          return (
+            <span className="text-center">
+              <span>
+                ${n(item.hourly_rate || (item.total_pay / (item.total_hours || 1))).toFixed(2)}/h
+              </span>
+            </span>
+          );
+        }
+      }
+    },
+    {
+      accessor: 'total_pay',
+      label: 'TOTAL A PAGAR',
+      render: (item) => (
+        <span>${n(item.total_pay).toFixed(2)}</span>
+      )
+    }
+  ];
+
+  // Render de fila con acciones
+  const renderRow = (item) => (
+    <tr key={item.employee_id}>
+      {columns.map((col, idx) => (
+        <td key={idx} className="table-cell" data-label={col.label}>
+          {col.render ? col.render(item) : item[col.accessor]}
+        </td>
+      ))}
+      <td className="table-cell table-actions-cell">
+        <ButtonGroup>
+          <IconTextButton
+            variant="blue"
+            size="sm"
+            inline={true}
+            icon={<List size={12} />}
+            onClick={() => handleShowPrintModal(item)}
+            title="Ver/Imprimir recibo"
+          >
+            Ver
+          </IconTextButton>
+        </ButtonGroup>
+      </td>
+    </tr>
+  );
+
+  // ─── Toolbar de la tabla ──────────────────────────────────────────────────
+  const toolbar = (
+    <div className="users-toolbar">
+      <div style={{ minWidth: '130px', maxWidth: '150px'  }}>
+        <CustomCombobox
+          options={dateOptions}
+          value={dateRange}
+          onChange={handleDateRangeChange}
+          placeholder="Seleccionar período"
+          size="sm"
+          filterable={false}
+        />
+        
+        {dateRange === 'custom' && (
+          <div className="payroll-date-range">
+            <input 
+              type="date" 
+              className="payroll-date-input"
+              value={start} 
+              onChange={e => handleStartChange(e.target.value)} 
+              disabled={isAnyActionInProgress}
+            />
+            <span className="payroll-date-separator">→</span>
+            <input 
+              type="date" 
+              className="payroll-date-input"
+              value={end} 
+              onChange={e => setEnd(e.target.value)} 
+              placeholder="Opcional" 
+              disabled={isAnyActionInProgress}
+            />
+          </div>
+        )}
+
+        {(dateRange === 'week' || dateRange === 'month') && availableDays.length > 0 && (
+          <button
+            className="payroll-open-days-selector-btn"
+            onClick={() => setShowDaySelector(true)}
+            disabled={isAnyActionInProgress}
+          >
+            {selectedDays.length > 0 
+              ? `${selectedDays.length} día${selectedDays.length > 1 ? 's' : ''} seleccionado${selectedDays.length > 1 ? 's' : ''}`
+              : 'Seleccionar días'}
+          </button>
+        )}
+      </div>
+      <ButtonGroup>
+        {!isGenerated ? (
+          <IconTextButton
+            variant="primary"
+            size="md"
+            icon={<RefreshCw size={14} />}
+            onClick={generate}
+            disabled={isAnyActionInProgress || loading || isGenerating || selectedEmployees.size === 0 || selectedDays.length === 0}
+            loading={isGenerating}
+          >
+            {isGenerating ? 'Generando...' : 'Generar'}
+          </IconTextButton>
+        ) : (
+          <IconTextButton
+            variant="success"
+            size="md"
+            icon={<DollarSign size={14} />}
+            onClick={savePayroll}
+            disabled={isAnyActionInProgress || loading || isSaving || selectedEmployees.size === 0 || data.length === 0}
+            loading={isSaving}
+          >
+            {isSaving ? 'Guardando...' : 'Guardar'}
+          </IconTextButton>
+        )}
+        <IconTextButton
+          variant="warning"
+          size="md"
+          icon={<Archive size={18} />}
+          onClick={viewSavedPayroll}
+          disabled={isAnyActionInProgress || loading || isLoadingSaved}
+          loading={isLoadingSaved}
+        >
+          {isLoadingSaved ? 'Cargando...' : 'Ver Nóminas'}
+        </IconTextButton>
+      </ButtonGroup>
     </div>
   );
 
-  const selectedBusiness = JSON.parse(localStorage.getItem('selectedBusiness') || 'null');
-  const businessInfo = { name: selectedBusiness?.name || "Mi Negocio" };
+  // ─── Header Actions ─────────────────────────────────────────────────────
+  const refreshButton = (
+    <button
+      onClick={loadAvailableEmployees}
+      className="dashboard-refresh-btn-header"
+      disabled={loadingEmployees || isAnyActionInProgress}
+      title="Actualizar empleados"
+    >
+      <RefreshCw size={18} className={loadingEmployees ? 'spinning' : ''} />
+      <span>{loadingEmployees ? 'Cargando...' : 'Actualizar'}</span>
+    </button>
+  );
+
+  const headerActions = (
+    <div className="payroll-header-actions">
+      <ButtonGroup>
+        {refreshButton}
+      </ButtonGroup>
+    </div>
+  );
+
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   return (
     <PageTemplate
       title="Nómina Inteligente"
-      subtitle={`${paymentType === 'hourly' ? '💰 Pago por horas trabajadas' : '💰 Pago diario (sueldo fijo)'} - ${periodText}`}
-      headerAction={headerAction}
+      subtitle={periodText}
       loading={loading || isAnyActionInProgress}
+      headerAction={headerActions}
     >
+      {/* ─── MODAL SELECTOR DE DÍAS ─── */}
+      <Modal
+        isOpen={showDaySelector}
+        onClose={() => setShowDaySelector(false)}
+        title="Seleccionar días del período"
+        size="xs"
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+            <ButtonGroup>
+              <IconTextButton
+                variant=""
+                size="md"
+                onClick={() => setShowDaySelector(false)}
+                >
+                  Cancelar
+              </IconTextButton>
+              <IconTextButton
+                variant="success"
+                size="md"
+                onClick={() => setShowDaySelector(false)}
+                >
+                  Aplicar a ({selectedDays.length} día{selectedDays.length > 1 ? 's' : ''})
+              </IconTextButton>
+              <IconTextButton
+                variant="info"
+                size="md"
+                onClick={toggleAllDays}
+                disabled={isAnyActionInProgress}
+                >
+                  {selectedDays.length === availableDays.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+              </IconTextButton>
+            </ButtonGroup>
+          </div>
+        }
+      >
+        <div className="payroll-days-selector-modal">
+          <div className="payroll-days-grid">
+            {availableDays.map(day => {
+              const isSelected = selectedDays.includes(day);
+              const date = new Date(day + 'T00:00:00');
+              const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+              
+              return (
+                <button
+                  key={day}
+                  className={`payroll-day-btn-modal ${isSelected ? 'selected' : ''} ${isWeekend ? 'weekend' : ''}`}
+                  onClick={() => toggleDay(day)}
+                  disabled={isAnyActionInProgress}
+                >
+                  <span className="payroll-day-check">
+                    {isSelected ? '✓' : ''}
+                  </span>
+                  <span className="payroll-day-number">{date.getDate()}</span>
+                  <span className="payroll-day-name">
+                    {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][date.getDay()]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="payroll-days-summary">
+            {selectedDays.length > 0 ? (
+              <span>
+                {selectedDays.length} día{selectedDays.length > 1 ? 's' : ''} seleccionado{selectedDays.length > 1 ? 's' : ''}
+                {' ('}{selectedDays[0]}{selectedDays.length > 1 ? ` → ${selectedDays[selectedDays.length - 1]}` : ''}{')'}
+              </span>
+            ) : (
+              <span className="text-muted">No hay días seleccionados</span>
+            )}
+          </div>
+        </div>
+      </Modal>
 
-      {/* Modal de selección de método de pago */}
+      {/* Modal de método de pago */}
       {showPaymentMethodModal && selectedEmployee && (
-        <div className="pay-modal-backdrop" style={{ zIndex: 10001 }}>
-          <div className="pay-modal payment-method-modal" style={{ maxWidth: 400, textAlign: 'center' }}>
-            <div style={{ marginBottom: 20 }}>
-              <h3 style={{ color: '#10b981', marginBottom: 10 }}>💰 Seleccionar Método de Pago</h3>
-              <p style={{ color: '#a0a0b0', fontSize: 14 }}>
-                Empleado: <strong>{selectedEmployee.full_name}</strong><br/>
-                Monto: <strong style={{ color: '#10b981' }}>${n(selectedEmployee.total_pay).toFixed(2)}</strong>
+        <div className="pay-modal-backdrop pay-modal-z-high">
+          <div className="pay-modal payment-method-modal">
+            <div className="payment-method-header">
+              <h3>Seleccionar Método de Pago</h3>
+              <p>
+                Colaborador/a: <strong>{selectedEmployee.full_name}</strong><br/>
+                Monto: <strong className="text-success">${n(selectedEmployee.total_pay).toFixed(2)}</strong>
               </p>
             </div>
-            
-            <div style={{ display: 'flex', gap: 16, marginBottom: 24, justifyContent: 'center' }}>
-              <button
-                onClick={() => setPaymentMethod('cash')}
-                className="payment-method-btn"
-                style={{
-                  padding: '12px 24px',
-                  borderRadius: 10,
-                  border: paymentMethod === 'cash' ? '2px solid #10b981' : '1px solid rgba(255,255,255,0.1)',
-                  background: paymentMethod === 'cash' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)',
-                  color: paymentMethod === 'cash' ? '#10b981' : '#a0a0b0',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  fontWeight: 600
-                }}
-              >
-                💵 Efectivo
+            <div className="payment-method-options">
+              <button onClick={() => setPaymentMethod('cash')} className={`payment-method-btn ${paymentMethod === 'cash' ? 'active-cash' : ''}`}>
+                Efectivo
               </button>
-              <button
-                onClick={() => setPaymentMethod('transfer')}
-                className="payment-method-btn"
-                style={{
-                  padding: '12px 24px',
-                  borderRadius: 10,
-                  border: paymentMethod === 'transfer' ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.1)',
-                  background: paymentMethod === 'transfer' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.03)',
-                  color: paymentMethod === 'transfer' ? '#3b82f6' : '#a0a0b0',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  fontWeight: 600
-                }}
-              >
-                🏦 Transferencia
+              <button onClick={() => setPaymentMethod('transfer')} className={`payment-method-btn ${paymentMethod === 'transfer' ? 'active-transfer' : ''}`}>
+                Transferencia
               </button>
             </div>
-            
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button
-                className="btn-cancelar"
-                onClick={() => {
-                  setShowPaymentMethodModal(false);
-                  setSelectedEmployee(null);
-                }}
-                style={{ flex: 1 }}
-              >
+            <div className="payment-method-actions">
+              <button className="btn-cancelar" onClick={() => { setShowPaymentMethodModal(false); setSelectedEmployee(null); }}>
                 Cancelar
               </button>
-              <button
-                className="btn-confirmar"
-                onClick={confirmPay}
-                disabled={isPaying}
-                style={{ flex: 1, background: '#10b981', color: 'white', border: 'none', borderRadius: 8, padding: '10px', fontWeight: 600, cursor: 'pointer' }}
-              >
+              <button className="btn-confirmar" onClick={confirmPay} disabled={isPaying}>
                 {isPaying ? 'Procesando...' : `Pagar con ${paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}`}
               </button>
             </div>
@@ -648,41 +957,121 @@ export default function EmployeesPayRollPage() {
         start={start}
         end={end || start}
         business={getBusinessInfo()}
-        paymentType={paymentType}
+        paymentType="mixed"
         printerTicket={printerConfig}
+      />
+
+      {/* Selección de empleados */}
+      <div className="employee-selection-section">
+        <div className="employee-selection-header">
+          <h3>Seleccionar Colaboradores/as ({selectedEmployees.size} de {availableEmployees.length})</h3>
+          <button className="pay-btn-small select-all-btn" onClick={handleSelectAllEmployees} disabled={isAnyActionInProgress || loadingEmployees}>
+            {selectedEmployees.size === availableEmployees.length ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
+          </button>
+        </div>
+        <div className="employee-selection-container">
+          {loadingEmployees ? (
+            <div className="employee-selection-loading">
+              <div className="spinner"></div> Cargando empleados...
+            </div>
+          ) : availableEmployees.length === 0 ? (
+            <div className="employee-selection-empty">No hay empleados activos disponibles</div>
+          ) : (
+            availableEmployees.map(emp => (
+              <div key={emp.id} className={`employee-card ${selectedEmployees.has(emp.id) ? 'selected' : ''}`} onClick={() => handleEmployeeSelection(emp.id)}>
+                <input type="checkbox" checked={selectedEmployees.has(emp.id)} onChange={() => handleEmployeeSelection(emp.id)} />
+                <div className="employee-card-info">
+                  <div className="employee-name">{emp.full_name || emp.name}</div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Tarjetas de estadísticas */}
+      <div className="pay-stats">
+        <div className="pay-card">
+          <DollarSign size={20}/>
+          <div>
+            <span>${totalPayroll.toFixed(2)}</span>
+            <p>Total Nómina</p>
+          </div>
+        </div>
+        <div className="pay-card">
+          <Clock size={20}/>
+          <div>
+            <span>{totalHours.toFixed(1)} h</span>
+            <p>Horas Totales</p>
+          </div>
+        </div>
+        <div className="pay-card extra">
+          <TrendingUp size={20}/>
+          <div>
+            <span>{totalExtraHours.toFixed(1)} h</span>
+            <p>Horas Extras</p>
+          </div>
+        </div>
+        <div className="pay-card">
+          <Users size={20}/>
+          <div>
+            <span>{totalEmployees}</span>
+            <p>Colaboradores/as</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabla principal usando el componente Table */}
+      <Table
+        data={data}
+        columns={columns}
+        keyField="employee_id"
+        renderRow={renderRow}
+        title="Resultado de Nómina"
+        subtitle={`${data.length} ${data.length === 1 ? 'Colaborador/a' : 'Colaboradores/as'} procesados`}
+        toolbar={toolbar}
+        searchable={true}
+        searchPlaceholder="Buscar Colaborador/a..."
+        searchFields={['full_name']}
+        pagination={true}
+        itemsPerPage={itemsPerPage}
+        itemsPerPageOptions={[10, 15]}
+        onItemsPerPageChange={(newPerPage) => setItemsPerPage(newPerPage)}
+        loading={loading}
+        emptyMessage={loading ? 'Calculando nómina...' : 'No hay datos. Selecciona Colaborador/a, configura fechas y genera nómina.'}
+        striped={true}
+        hoverable={true}
+        bordered={false}
+        compact={false}
       />
 
       {/* MODAL DE NÓMINAS GUARDADAS */}
       {showSaved && (
-        <div className="pay-modal-backdrop" style={{ zIndex: 2000 }}>
-          <div className="pay-modal" style={{ minWidth: savedPayrolls.length === 0 ? 420 : 700, maxWidth: '90%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <b>📋 Nóminas por Pagar</b>
-              <button onClick={() => setShowSaved(false)} style={{ fontSize: 22, background: 'none', border: 'none', cursor: 'pointer' }}>&times;</button>
+        <div className="pay-modal-backdrop pay-modal-z-saved">
+          <div className="pay-modal saved-payrolls-modal">
+            <div className="pay-modal-header">
+              <b>Nóminas por Pagar</b>
+              <button className="pay-modal-close" onClick={() => setShowSaved(false)}>
+                <X size={20} />
+              </button>
             </div>
-
             {savedPayrolls.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-                <div style={{ fontWeight: 700, fontSize: 16, color: '#10b981', marginBottom: 6 }}>Todo al día</div>
-                <div style={{ color: '#aaa', fontSize: 13 }}>No hay nóminas pendientes de pago.<br />Genera y guarda una nómina para verla aquí.</div>
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 24 }}>
+              <div className="pay-modal-empty">
+                <div className="empty-icon">✅</div>
+                <div className="empty-title">Todo al día</div>
+                <div className="empty-description">No hay nóminas pendientes de pago.</div>
+                <div className="empty-actions">
                   <button className="pay-btn" onClick={() => setShowSaved(false)}>Cerrar</button>
-                  <button
-                    className="pay-btn"
-                    style={{ background: '#1e3a5f', color: '#60a5fa', border: '1px solid #2563eb' }}
-                    onClick={() => { setShowSaved(false); viewPaidPayrolls(); }}
-                    disabled={isLoadingPaid}
-                  >
+                  <button className="pay-btn-paid" onClick={() => { setShowSaved(false); viewPaidPayrolls(); }} disabled={isLoadingPaid}>
                     {isLoadingPaid ? 'Cargando...' : '📂 Ver Nóminas Pagadas'}
                   </button>
                 </div>
               </div>
             ) : (
               <>
-                <table className="pay-table" style={{ margin: '10px 0' }}>
+                <table className="pay-table">
                   <thead>
-                    <tr><th>Fecha</th><th>Período</th><th>Tipo de Pago</th><th>Colaboradores</th><th>Total</th><th>Acción</th></tr>
+                    <tr><th>Fecha</th><th>Período</th><th>Tipo</th><th>Colaboradores</th><th>Total</th><th>Acción</th></tr>
                   </thead>
                   <tbody>
                     {savedPayrolls.map((payroll, idx) => (
@@ -690,21 +1079,29 @@ export default function EmployeesPayRollPage() {
                         <td>{payroll.start_date}</td>
                         <td>{payroll.start_date === payroll.end_date ? payroll.start_date : `${payroll.start_date} → ${payroll.end_date}`}</td>
                         <td>{payroll.payment_type === 'hourly' ? '⏱️ Por Horas' : '📅 Pago Diario'}</td>
-                        <td style={{ textAlign: 'center' }}>{payroll.total_employees}</td>
-                        <td style={{ fontWeight: 600, color: '#10b981', textAlign: 'right' }}>${payroll.total_amount.toFixed(2)}</td>
-                        <td><button className="pay-btn-small" onClick={() => viewPayrollDetails(payroll)} disabled={isLoadingDetails}><Eye size={14} /> {isLoadingDetails ? '...' : 'Ver Detalle'}</button></td>
+                        <td className="text-center">{payroll.total_employees}</td>
+                        <td className="text-right text-success font-bold">${payroll.total_amount.toFixed(2)}</td>
+                        <td>
+                          <button className="pay-btn-small" onClick={() => viewPayrollDetails(payroll)} disabled={isLoadingDetails}>
+                            <Eye size={14} /> {isLoadingDetails ? '...' : 'Ver Detalle'}
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td colSpan={4} style={{ textAlign: 'right' }}><strong>TOTAL GENERAL</strong></td>
-                      <td style={{ fontWeight: 800, color: '#10b981', textAlign: 'right' }}><strong>${savedPayrolls.reduce((acc, e) => acc + (e.total_amount || 0), 0).toFixed(2)}</strong></td>
+                      <td colSpan={4} className="text-right"><strong>TOTAL GENERAL</strong></td>
+                      <td className="text-right text-success font-bold">
+                        <strong>${savedPayrolls.reduce((acc, e) => acc + (e.total_amount || 0), 0).toFixed(2)}</strong>
+                      </td>
                       <td></td>
                     </tr>
                   </tfoot>
                 </table>
-                <div style={{ textAlign: 'right' }}><button className="pay-btn" onClick={() => setShowSaved(false)}>Cerrar</button></div>
+                <div className="text-right">
+                  <button className="pay-btn" onClick={() => setShowSaved(false)}>Cerrar</button>
+                </div>
               </>
             )}
           </div>
@@ -713,65 +1110,71 @@ export default function EmployeesPayRollPage() {
 
       {/* MODAL NÓMINAS PAGADAS */}
       {showPaid && (
-        <div className="pay-modal-backdrop" style={{ zIndex: 2500 }}>
-          <div className="pay-modal" style={{ minWidth: paidPayrolls.length === 0 ? 420 : 700, maxWidth: '90%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <b>📂 Nóminas Pagadas</b>
-              <button onClick={() => setShowPaid(false)} style={{ fontSize: 22, background: 'none', border: 'none', cursor: 'pointer' }}>&times;</button>
+        <div className="pay-modal-backdrop pay-modal-z-paid">
+          <div className="pay-modal paid-payrolls-modal">
+            <div className="pay-modal-header">
+              <b>Nóminas Pagadas</b>
+              <button className="pay-modal-close" onClick={() => setShowPaid(false)}>
+                <X size={20} />
+              </button>
             </div>
-
             {paidPayrolls.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
-                <div style={{ color: '#aaa', fontSize: 13 }}>No hay nóminas pagadas aún.</div>
-                <button className="pay-btn" onClick={() => setShowPaid(false)} style={{ marginTop: 20 }}>Cerrar</button>
+              <div className="pay-modal-empty">
+                <div className="empty-icon">📭</div>
+                <div className="empty-description">No hay nóminas pagadas aún.</div>
+                <button className="pay-btn" onClick={() => setShowPaid(false)}>Cerrar</button>
               </div>
             ) : (
               <>
-                <table className="pay-table" style={{ margin: '10px 0' }}>
+                <table className="pay-table">
                   <thead>
                     <tr><th>Fecha de Pago</th><th>Período</th><th>Tipo</th><th>Empleados</th><th>Total Pagado</th></tr>
                   </thead>
                   <tbody>
                     {paidPayrolls.map((p, idx) => (
                       <tr key={idx}>
-                        <td style={{ color: '#10b981', fontWeight: 600 }}>{p.payment_date || '—'}</td>
+                        <td className="text-success font-bold">{p.payment_date || '—'}</td>
                         <td>{p.start_date === p.end_date ? p.start_date : `${p.start_date} → ${p.end_date}`}</td>
                         <td>{p.payment_type === 'hourly' ? '⏱️ Por Horas' : '📅 Pago Diario'}</td>
-                        <td style={{ textAlign: 'center' }}>{p.total_employees}</td>
-                        <td style={{ fontWeight: 700, color: '#10b981', textAlign: 'right' }}>${p.total_amount.toFixed(2)}</td>
+                        <td className="text-center">{p.total_employees}</td>
+                        <td className="text-right text-success font-bold">${p.total_amount.toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td colSpan={4} style={{ textAlign: 'right' }}><strong>TOTAL</strong></td>
-                      <td style={{ fontWeight: 800, color: '#10b981', textAlign: 'right' }}>
+                      <td colSpan={4} className="text-right"><strong>TOTAL</strong></td>
+                      <td className="text-right text-success font-bold">
                         <strong>${paidPayrolls.reduce((acc, p) => acc + p.total_amount, 0).toFixed(2)}</strong>
                       </td>
                     </tr>
                   </tfoot>
                 </table>
-                <div style={{ textAlign: 'right' }}><button className="pay-btn" onClick={() => setShowPaid(false)}>Cerrar</button></div>
+                <div className="text-right">
+                  <button className="pay-btn" onClick={() => setShowPaid(false)}>Cerrar</button>
+                </div>
               </>
             )}
           </div>
         </div>
       )}
 
-      {/* MODAL DE DETALLE DE NÓMINA POR FECHA */}
+      {/* MODAL DE DETALLE DE NÓMINA */}
       {showDetails && selectedPayrollDetails && (
-        <div className="pay-modal-backdrop" style={{ zIndex: 3000 }}>
-          <div className="pay-modal" style={{minWidth: 800, maxWidth: '95%'}}>
-            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 10}}>
-              <b>📋 Detalle de Nómina - {selectedPayrollDetails.start_date}</b>
-              <button onClick={() => setShowDetails(false)} style={{fontSize: 22, background: 'none', border: 'none', cursor: 'pointer'}}>&times;</button>
+        <div className="pay-modal-backdrop pay-modal-z-details">
+          <div className="pay-modal details-modal">
+            <div className="pay-modal-header">
+              <b>Detalle de Nómina - {selectedPayrollDetails.start_date}</b>
+              <button className="pay-modal-close" onClick={() => setShowDetails(false)}>
+                <X size={20} />
+              </button>
             </div>
-            <div style={{marginBottom: 10, fontSize: 12, color: '#aaa'}}>
-              Período: {selectedPayrollDetails.start_date === selectedPayrollDetails.end_date ? selectedPayrollDetails.start_date : `${selectedPayrollDetails.start_date} al ${selectedPayrollDetails.end_date}`} - 
+            <div className="details-period-info">
+              Período: {selectedPayrollDetails.start_date === selectedPayrollDetails.end_date 
+                ? selectedPayrollDetails.start_date 
+                : `${selectedPayrollDetails.start_date} al ${selectedPayrollDetails.end_date}`} - 
               Tipo: {selectedPayrollDetails.payment_type === 'hourly' ? 'Pago por Horas' : 'Pago Diario'}
             </div>
-            
             <table className="pay-table">
               <thead>
                 <tr>
@@ -797,200 +1200,69 @@ export default function EmployeesPayRollPage() {
               <tbody>
                 {selectedPayrollDetails.employees.map(emp => (
                   <tr key={emp.payroll_id}>
-                    <td style={{fontWeight: 500}}>{emp.full_name}</td>
+                    <td className="font-medium">{emp.full_name}</td>
                     {selectedPayrollDetails.payment_type === 'hourly' ? (
                       <>
-                        <td style={{textAlign: 'center'}}>
+                        <td className="text-center">
                           {n(emp.ordinary_hours || 0).toFixed(0)}h<br/>
-                          <small style={{color: '#666'}}>@${n(emp.hourly_rate).toFixed(2)}</small>
+                          <small className="text-muted">@${n(emp.hourly_rate).toFixed(2)}</small>
                         </td>
-                        <td style={{textAlign: 'center', backgroundColor: '#fef3c7'}}>
+                        <td className="text-center bg-supplementary">
                           {n(emp.supplementary_hours || 0).toFixed(0)}h<br/>
-                          <small style={{color: '#666'}}>@${(n(emp.hourly_rate) * 1.5).toFixed(2)}</small>
+                          <small className="text-muted">@${(n(emp.hourly_rate) * 1.5).toFixed(2)}</small>
                         </td>
-                        <td style={{textAlign: 'center', backgroundColor: '#fecaca'}}>
+                        <td className="text-center bg-extraordinary">
                           {n(emp.extraordinary_hours || 0).toFixed(0)}h<br/>
-                          <small style={{color: '#666'}}>@${(n(emp.hourly_rate) * 2.0).toFixed(2)}</small>
+                          <small className="text-muted">@${(n(emp.hourly_rate) * 2.0).toFixed(2)}</small>
                         </td>
-                        <td style={{textAlign: 'center', backgroundColor: '#bfdbfe'}}>
+                        <td className="text-center bg-night">
                           {n(emp.night_hours || 0).toFixed(0)}h<br/>
-                          <small style={{color: '#666'}}>@${(n(emp.hourly_rate) * 1.25).toFixed(2)}</small>
+                          <small className="text-muted">@${(n(emp.hourly_rate) * 1.25).toFixed(2)}</small>
                         </td>
                       </>
                     ) : (
                       <>
-                        <td style={{textAlign: 'center'}}>{n(emp.total_hours).toFixed(2)}</td>
-                        <td style={{textAlign: 'center'}}>{n(emp.days_worked || 1).toFixed(0)}</td>
+                        <td className="text-center">{n(emp.total_hours).toFixed(2)}</td>
+                        <td className="text-center">{n(emp.days_worked || 1).toFixed(0)}</td>
                       </>
                     )}
-                    <td style={{fontWeight: 600, color: '#10b981', textAlign: 'right'}}>${n(emp.total_pay).toFixed(2)}</td>
-                    <td style={{textAlign: 'center'}}>
+                    <td className="text-right text-success font-bold">${n(emp.total_pay).toFixed(2)}</td>
+                    <td className="text-center">
                       <button className="pay-btn-small" onClick={() => handlePayClick(emp)} disabled={isPaying}>💰 Pagar</button>
                     </td>
-                    <td style={{textAlign: 'center'}}>
-                      <button className="pay-btn-small" onClick={() => handleShowPrintModal(emp)}><List size={14}/> Imprimir</button>
+                    <td className="text-center">
+                      <button className="pay-btn-small" onClick={() => handleShowPrintModal(emp)}>
+                        <List size={14}/> Imprimir
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={selectedPayrollDetails.payment_type === 'hourly' ? 5 : 3} style={{textAlign: 'right'}}><strong>TOTAL GENERAL</strong></td>
-                  <td style={{fontWeight: 800, color: '#10b981', textAlign: 'right'}}><strong>${selectedPayrollDetails.employees.reduce((acc, e) => acc + n(e.total_pay || 0), 0).toFixed(2)}</strong></td>
+                  <td colSpan={selectedPayrollDetails.payment_type === 'hourly' ? 5 : 3} className="text-right">
+                    <strong>TOTAL GENERAL</strong>
+                  </td>
+                  <td className="text-right text-success font-bold">
+                    <strong>${selectedPayrollDetails.employees.reduce((acc, e) => acc + n(e.total_pay || 0), 0).toFixed(2)}</strong>
+                  </td>
                   <td></td>
                   <td></td>
                 </tr>
               </tfoot>
             </table>
-            <div style={{textAlign:'right'}}><button className="pay-btn" onClick={() => setShowDetails(false)}>Cerrar</button></div>
+            <div className="text-right">
+              <button className="pay-btn" onClick={() => setShowDetails(false)}>Cerrar</button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* FILTROS */}
-      <div className="pay-filters">
-        <select className="payment-type-select" value={paymentType} onChange={e => setPaymentType(e.target.value)} disabled={isAnyActionInProgress}>
-          <option value="hourly">⏱️ Pago por Horas</option>
-          <option value="daily">📅 Pago Diario (Sueldo Fijo)</option>
-        </select>
-        <select value={type} onChange={e => setType(e.target.value)} disabled={isAnyActionInProgress}>
-          <option value="weekly">📅 Semanal</option>
-          <option value="biweekly">📅 Quincenal</option>
-          <option value="monthly">📅 Mensual</option>
-        </select>
-        <div className="date-range">
-          <input type="date" value={start} onChange={e => handleStartChange(e.target.value)} disabled={isAnyActionInProgress}/>
-          <span className="date-separator">→</span>
-          <input type="date" value={end} onChange={e => setEnd(e.target.value)} placeholder="Opcional" disabled={isAnyActionInProgress}/>
-        </div>
-      </div>
-
-      {/* SELECCIÓN DE EMPLEADOS */}
-      <div className="employee-selection-section" style={{marginBottom: 20}}>
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10}}>
-          <h3 style={{color: '#10b981', margin: 0}}>👥 Seleccionar Empleados ({selectedEmployees.size} de {availableEmployees.length})</h3>
-          <button 
-            className="pay-btn-small" 
-            onClick={handleSelectAllEmployees}
-            disabled={isAnyActionInProgress || loadingEmployees}
-            style={{background: selectedEmployees.size === availableEmployees.length ? '#10b981' : '#f0f0f0', color: selectedEmployees.size === availableEmployees.length ? 'white' : '#333'}}
-          >
-            {selectedEmployees.size === availableEmployees.length ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
-          </button>
-        </div>
-        
-        <div className="employee-selection-grid" style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-          gap: 10,
-          maxHeight: 300,
-          overflowY: 'auto',
-          padding: 10,
-          border: '1px solid #e0e0e0',
-          borderRadius: 8,
-          background: '#fafafa'
-        }}>
-          {loadingEmployees ? (
-            <div style={{gridColumn: '1 / -1', textAlign: 'center', padding: 40}}>
-              <div className="spinner"></div> Cargando empleados...
-            </div>
-          ) : availableEmployees.length === 0 ? (
-            <div style={{gridColumn: '1 / -1', textAlign: 'center', padding: 40, color: '#888'}}>
-              No hay empleados activos disponibles
-            </div>
-          ) : (
-            availableEmployees.map(emp => (
-              <div 
-                key={emp.id} 
-                className="employee-card"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: 12,
-                  border: selectedEmployees.has(emp.id) ? '2px solid #10b981' : '1px solid #ddd',
-                  borderRadius: 8,
-                  background: selectedEmployees.has(emp.id) ? 'rgba(16, 185, 129, 0.1)' : 'white',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onClick={() => handleEmployeeSelection(emp.id)}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedEmployees.has(emp.id)}
-                  onChange={() => handleEmployeeSelection(emp.id)}
-                  style={{marginRight: 10, transform: 'scale(1.2)'}}
-                />
-                <div style={{flex: 1}}>
-                  <div style={{fontWeight: 600, color: '#333'}}>{emp.full_name || emp.name}</div>
-                  <div style={{fontSize: 12, color: '#666'}}>
-                    {paymentType === 'hourly' ? `$${n(emp.hourly_rate).toFixed(2)}/hora` : `$${n(emp.daily_rate).toFixed(2)}/día`}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* TARJETAS DE ESTADÍSTICAS */}
-      <div className="pay-stats">
-        <div className="pay-card"><DollarSign size={20}/><div><span>${totalPayroll.toFixed(2)}</span><p>Total Nómina</p></div></div>
-        <div className="pay-card"><Clock size={20}/><div><span>{totalHours.toFixed(1)} h</span><p>Horas Totales</p></div></div>
-        {paymentType === 'hourly' && (<div className="pay-card extra"><TrendingUp size={20}/><div><span>{totalExtraHours.toFixed(1)} h</span><p>Horas Extras</p></div></div>)}
-        <div className="pay-card"><Users size={20}/><div><span>{totalEmployees}</span><p>Empleados</p></div></div>
-      </div>
-
-      {/* TABLA PRINCIPAL */}
-      <div className="pay-table-wrapper">
-        <table className="pay-table">
-          <thead>
-            <tr><th>Empleado</th><th>Horas</th><th>H. Extras</th><th>Días</th>
-            <th>{paymentType === 'hourly' ? 'Valor Hora' : 'Sueldo Diario'}</th>
-            <th>Total a Pagar</th><th>Acción</th>
-          </tr>
-          </thead>
-          <tbody>
-            {loading && !isAnyActionInProgress ? (
-              <tr><td colSpan={7} style={{textAlign: 'center', padding: 40}}><div className="spinner"></div> Calculando nómina...</td></tr>
-            ) : data.length === 0 ? (
-              <tr><td colSpan={7} style={{textAlign: 'center', padding: 40, color: '#888'}}>
-                No hay datos. Selecciona empleados, configura fechas y genera nómina.
-              </td></tr>
-            ) : (
-              data.map((emp, idx) => (
-                <tr key={emp.employee_id || idx}>
-                  <td style={{fontWeight: 500}}>{emp.full_name}</td>
-                  <td style={{textAlign: 'center'}}>{n(emp.total_hours).toFixed(2)}</td>
-                  <td className={n(emp.extra_hours) > 0 ? 'extra-hours' : ''} style={{textAlign: 'center'}}>{n(emp.extra_hours).toFixed(2)}</td>
-                  <td style={{textAlign: 'center'}}>{n(emp.days_worked || daysInPeriod).toFixed(0)}</td>
-                  <td style={{textAlign: 'center'}}>
-                    {paymentType === 'hourly' ? `$${n(emp.hourly_rate).toFixed(2)}` : `$${n(emp.daily_rate).toFixed(2)}`}
-                  </td>
-                  <td style={{fontWeight: 700, color: '#10b981', textAlign: 'right'}}>${n(emp.total_pay).toFixed(2)}</td>
-                  <td style={{textAlign: 'center'}}>
-                    <button className="pay-btn-small" onClick={() => handleShowPrintModal(emp)}><List size={14}/> Ver</button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-          {data.length > 0 && (
-            <tfoot>
-              <tr><td colSpan={5} style={{textAlign: 'right'}}><strong>TOTAL GENERAL</strong></td>
-              <td style={{fontWeight: 800, fontSize: 18, color: '#10b981', textAlign: 'right'}}><strong>${totalPayroll.toFixed(2)}</strong></td>
-              <td></td>
-            </tr>
-            </tfoot>
-          )}
-        </table>
-      </div>
-
       <div className="pay-legend">
         <small>
-          {paymentType === 'hourly' 
-            ? '📊 Ley de Ecuador: Ordinarias ($2.01/h) | Suplementarias ($3.01/h +50%) | Extraordinarias ($4.02/h +100%) | Nocturnas ($2.51/h +25%)'
-            : '💰 El pago es el sueldo fijo diario configurado en la base de datos.'}
+          El tipo de pago (Por Horas o Diario) se define por cada colaborador en su perfil.
+          {data.some(item => item.emp_payment_type === 'hourly') && 
+            ' Horas: Ordinarias (0%) | Suplementarias (+50%) | Extraordinarias (+100%) | Nocturnas (+25%)'}
         </small>
       </div>
     </PageTemplate>

@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import PageTemplate from '../../components/PageTemplate';
+import { useConfirm, useAlert } from '../../context/ConfirmContext';
+import Table from '../../components/General/Table';
+import Modal from '../../components/General/Modal';
+import CustomCombobox from '../../components/General/CustomCombobox';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import Input from '../../components/General/Input';
 import {
-  FiMail, FiPlus, FiEdit2, FiTrash2, FiRefreshCw, FiEye, FiCode,
+  FiPlus, FiEdit2, FiTrash2, FiRefreshCw, FiEye, FiCode,
+  FiCheck, FiAlertCircle, 
 } from 'react-icons/fi';
-import { useConfirm } from '../../context/ConfirmContext';
-import { useAlert } from '../../components/ConfirmContext';
-import { adminApiService } from '../../services/apiService';
-import '../../styles/AdminPages.css';
+import { adminApi } from '../../config/api';
 
 const TYPE_COLORS = {
   bienvenida:        '#22c55e',
@@ -21,15 +25,18 @@ export default function EmailTemplatesPage() {
   const { showConfirm } = useConfirm();
   const alert = useAlert();
   const [templates, setTemplates] = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState(null);
-  const [editModal, setEditModal] = useState(null); // null | 'new' | template
-  const [deleting,  setDeleting]  = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [editModal, setEditModal] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('todos');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
-      const r = await adminApiService.get('/admin/email-templates');
+      const r = await adminApi.get('/admin/email-templates');
       setTemplates(r.data || r || []);
       setError(null);
     } catch (e) {
@@ -37,18 +44,31 @@ export default function EmailTemplatesPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
   };
 
-  useEffect(() => { load(); }, []);
-
-  const handleDelete = async (type) => {
-    if (!await showConfirm(`¿Eliminar la plantilla "${type}"? Esta acción no se puede deshacer.`)) return;
+  const handleDelete = async (type, label) => {
+    if (!await showConfirm({
+      title: '⚠️ Eliminar plantilla',
+      message: `¿Eliminar la plantilla "${label}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      danger: true,
+    })) return;
     setDeleting(type);
     try {
-      await adminApiService.delete(`/admin/email-templates/${type}`);
+      await adminApi.delete(`/admin/email-templates/${type}`);
       await load();
+      alert.success('Plantilla eliminada correctamente', '✅ Éxito');
     } catch (e) {
-      await alert.error('Error: ' + e.message);
+      alert.error('Error: ' + e.message);
     } finally {
       setDeleting(null);
     }
@@ -56,130 +76,217 @@ export default function EmailTemplatesPage() {
 
   const handleToggle = async (tpl) => {
     try {
-      await adminApiService.put(`/admin/email-templates/${tpl.type}`, {
+      await adminApi.put(`/admin/email-templates/${tpl.type}`, {
         ...tpl, is_active: !tpl.is_active,
       });
       await load();
+      alert.success(
+        tpl.is_active ? 'Plantilla desactivada' : 'Plantilla activada',
+        '✅ Éxito'
+      );
     } catch (e) {
-      await alert.error('Error: ' + e.message);
+      alert.error('Error: ' + e.message);
     }
   };
 
-  return (
-    <PageTemplate theme="admin" title="Plantillas de Email" subtitle="Edita y gestiona los correos enviados a dueños de negocios sobre pagos y suscripciones" loading={loading} error={error} onRetry={load} headerAction={
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button className="admin-btn admin-btn-secondary" onClick={load}>
-          <FiRefreshCw size={14} /> Actualizar
-        </button>
-        <button
-          className="admin-btn admin-btn-primary"
-          onClick={() => setEditModal('new')}
-          style={{ background: 'linear-gradient(135deg,#818cf8,#6366f1)', color: '#fff', border: 'none' }}
-        >
-          <FiPlus size={14} /> Nueva plantilla
-        </button>
-      </div>
-    }>
-      <div className="admin-card">
-        <div className="admin-card-header"><h2>Plantillas ({templates.length})</h2></div>
-        <div className="admin-card-body">
-          {loading ? (
-            <div className="admin-loading"><div className="admin-spinner" />Cargando...</div>
-          ) : templates.length === 0 ? (
-            <div className="admin-empty">
-              <div className="admin-empty-icon"><FiMail size={36} /></div>
-              <p className="admin-empty-title">Sin plantillas</p>
-              <p className="admin-empty-subtitle">Crea tu primera plantilla de email</p>
-            </div>
-          ) : (
-            <div className="admin-table-wrapper">
-              <table className="admin-table">
-                <thead><tr>
-                  <th>Tipo</th><th>Nombre</th><th>Asunto</th>
-                  <th>Variables</th><th>Estado</th><th>Actualizado</th><th>Acciones</th>
-                </tr></thead>
-                <tbody>
-                  {templates.map((t, i) => {
-                    const clr = colorFor(t.type, i);
-                    return (
-                      <tr key={t.type}>
-                        <td>
-                          <span style={{
-                            display: 'inline-block', padding: '3px 10px', borderRadius: 20,
-                            fontSize: 11, fontWeight: 700,
-                            background: `${clr}18`, color: clr, border: `1px solid ${clr}44`,
-                          }}>{t.type}</span>
-                        </td>
-                        <td>
-                          <strong style={{ fontSize: 13 }}>{t.label}</strong>
-                          {t.description && (
-                            <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 2 }}>
-                              {t.description}
-                            </div>
-                          )}
-                        </td>
-                        <td style={{
-                          fontSize: 12, color: 'var(--admin-text-muted)',
-                          maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                        }}>
-                          {t.subject || '—'}
-                        </td>
-                        <td>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                            {(t.variables || []).map(v => (
-                              <span key={v} style={{
-                                fontSize: 10, padding: '2px 6px', borderRadius: 4,
-                                background: 'rgba(100,116,139,.1)', color: '#64748b', fontFamily: 'monospace',
-                              }}>
-                                {`{{${v}}}`}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td>
-                          <button
-                            onClick={() => handleToggle(t)}
-                            style={{
-                              padding: '3px 12px', borderRadius: 20, fontSize: 11,
-                              fontWeight: 700, cursor: 'pointer',
-                              background: t.is_active ? 'rgba(34,197,94,.1)' : 'rgba(156,163,175,.1)',
-                              color: t.is_active ? '#22c55e' : '#9ca3af',
-                              border: `1px solid ${t.is_active ? 'rgba(34,197,94,.3)' : 'rgba(156,163,175,.3)'}`,
-                            }}
-                          >
-                            {t.is_active ? '✓ Activa' : '✗ Inactiva'}
-                          </button>
-                        </td>
-                        <td style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>
-                          {new Date(t.updated_at).toLocaleDateString('es-EC')}
-                        </td>
-                        <td>
-                          <div className="admin-table-actions">
-                            <button
-                              className="admin-table-btn"
-                              onClick={() => setEditModal(t)}
-                              style={{ color: '#6366f1' }}
-                            >
-                              <FiEdit2 size={13} /> Editar
-                            </button>
-                            <button
-                              className="admin-table-btn admin-table-btn-danger"
-                              onClick={() => handleDelete(t.type)}
-                              disabled={deleting === t.type}
-                            >
-                              <FiTrash2 size={13} /> Eliminar
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+  const filteredTemplates = useMemo(() => {
+    let result = templates;
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(t =>
+        t.type?.toLowerCase().includes(term) ||
+        t.label?.toLowerCase().includes(term) ||
+        t.subject?.toLowerCase().includes(term) ||
+        t.description?.toLowerCase().includes(term)
+      );
+    }
+
+    if (filterStatus === 'active') {
+      result = result.filter(t => t.is_active !== false);
+    } else if (filterStatus === 'inactive') {
+      result = result.filter(t => t.is_active === false);
+    }
+
+    return result;
+  }, [templates, searchTerm, filterStatus]);
+
+  const statusOptions = [
+    { value: 'todos', label: `Todos (${templates.length})` },
+    { value: 'active', label: `Activos (${templates.filter(t => t.is_active !== false).length})` },
+    { value: 'inactive', label: `Inactivos (${templates.filter(t => t.is_active === false).length})` },
+  ];
+
+  const columns = [
+    {
+      accessor: 'type',
+      label: 'Tipo',
+      render: (item, index) => {
+        const clr = colorFor(item.type, index);
+        return (
+          <span className="email-type-badge" style={{ background: `${clr}18`, color: clr, borderColor: `${clr}44` }}>
+            {item.type}
+          </span>
+        );
+      },
+    },
+    {
+      accessor: 'label',
+      label: 'Nombre',
+      render: (item) => (
+        <div>
+          <strong>{item.label}</strong>
+          {item.description && (
+            <div className="email-template-desc">{item.description}</div>
           )}
         </div>
-      </div>
+      ),
+    },
+    {
+      accessor: 'subject',
+      label: 'Asunto',
+      render: (item) => (
+        <span className="email-template-subject">{item.subject || '—'}</span>
+      ),
+    },
+    {
+      accessor: 'variables',
+      label: 'Variables',
+      render: (item) => (
+        <div className="email-template-vars">
+          {(item.variables || []).map(v => (
+            <span key={v} className="email-template-var">{`{{${v}}}`}</span>
+          ))}
+        </div>
+      ),
+    },
+    {
+      accessor: 'is_active',
+      label: 'Estado',
+      render: (item) => (
+        <button
+          onClick={() => handleToggle(item)}
+          className={`email-status-btn ${item.is_active !== false ? 'active' : 'inactive'}`}
+        >
+          {item.is_active !== false ? '✓ Activa' : '✗ Inactiva'}
+        </button>
+      ),
+    },
+    {
+      accessor: 'updated_at',
+      label: 'Actualizado',
+      render: (item) => (
+        <span className="email-template-updated">
+          {item.updated_at ? new Date(item.updated_at).toLocaleDateString('es-EC') : '—'}
+        </span>
+      ),
+    },
+    {
+      accessor: 'actions',
+      label: 'Acciones',
+      align: 'center',
+      render: (item) => (
+        <ButtonGroup>
+          <IconTextButton
+            variant="info"
+            size="sm"
+            inline={true}
+            icon={<FiEdit2 size={13} />}
+            onClick={() => setEditModal(item)}
+          >
+            Editar
+          </IconTextButton>
+          <IconTextButton
+            variant="danger"
+            size="sm"
+            inline={true}
+            icon={<FiTrash2 size={13} />}
+            onClick={() => handleDelete(item.type, item.label)}
+            disabled={deleting === item.type}
+          >
+            Eliminar
+          </IconTextButton>
+        </ButtonGroup>
+      ),
+    },
+  ];
+
+  const toolbar = (
+    <div className="email-templates-toolbar">
+      <CustomCombobox
+        options={statusOptions}
+        value={filterStatus}
+        onChange={setFilterStatus}
+        placeholder="Filtrar por estado"
+        filterable={false}
+        size="sm"
+        className="email-templates-filter"
+      />
+      <ButtonGroup>
+        <IconTextButton
+          variant="primary"
+          size="md"
+          icon={<FiPlus size={13} />}
+          onClick={() => setEditModal('new')}
+        >
+          Nueva plantilla
+        </IconTextButton>
+      </ButtonGroup>
+    </div>
+  );
+
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
+  return (
+    <PageTemplate
+      title="PLANTILLAS DE EMAIL"
+      subtitle="Edita y gestiona los correos enviados a dueños de negocios sobre pagos y suscripciones"
+      theme="admin"
+      loading={loading}
+      error={error}
+      onRetry={load}
+      headerAction={refreshButton}
+    >
+      {error && (
+        <div className="alert alert-error">
+          <FiAlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      <Table
+        data={filteredTemplates}
+        columns={columns}
+        keyField="type"
+        title="Plantillas de Email"
+        subtitle={`${filteredTemplates.length} ${filteredTemplates.length === 1 ? 'plantilla' : 'plantillas'} encontradas`}
+        toolbar={toolbar}
+        searchable={true}
+        searchPlaceholder="Buscar por tipo, nombre, asunto o descripción..."
+        searchFields={['type', 'label', 'subject', 'description']}
+        pagination={true}
+        itemsPerPage={10}
+        itemsPerPageOptions={[10, 25, 50, 100]}
+        loading={loading}
+        emptyMessage={
+          searchTerm || filterStatus !== 'todos'
+            ? 'No hay plantillas que coincidan con los filtros aplicados'
+            : 'No hay plantillas registradas'
+        }
+        striped={true}
+        hoverable={true}
+        bordered={false}
+        compact={false}
+      />
 
       {editModal && (
         <EditModal
@@ -193,6 +300,7 @@ export default function EmailTemplatesPage() {
 }
 
 function EditModal({ tpl, onClose, onSaved }) {
+  const alert = useAlert();
   const isNew = !tpl;
   const [form, setForm] = useState({
     type:        tpl?.type        || '',
@@ -202,29 +310,35 @@ function EditModal({ tpl, onClose, onSaved }) {
     body:        tpl?.body        || '',
     is_active:   tpl?.is_active   !== false,
   });
-  const [tab,    setTab]    = useState('edit');
+  const [tab, setTab] = useState('edit');
   const [saving, setSaving] = useState(false);
-  const [error,  setError]  = useState(null);
+  const [error, setError] = useState(null);
 
   const detectedVars = [...new Set(
     (form.body.match(/\{\{(\w+)\}\}/g) || []).map(v => v.slice(2, -2))
   )];
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const setFormField = (key, value) => setForm(f => ({ ...f, [key]: value }));
 
   const handleSave = async () => {
     if (!form.label.trim() || !form.subject.trim() || !form.body.trim()) {
-      return setError('Nombre, asunto y cuerpo son requeridos');
+      setError('❌ Nombre, asunto y cuerpo son requeridos');
+      return;
     }
-    if (isNew && !form.type.trim()) return setError('El tipo es requerido');
+    if (isNew && !form.type.trim()) {
+      setError('❌ El tipo es requerido');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
       const payload = { ...form, variables: detectedVars };
       if (isNew) {
-        await adminApiService.post('/admin/email-templates', payload);
+        await adminApi.post('/admin/email-templates', payload);
+        alert.success('Plantilla creada correctamente', '✅ Éxito');
       } else {
-        await adminApiService.put(`/admin/email-templates/${tpl.type}`, payload);
+        await adminApi.put(`/admin/email-templates/${tpl.type}`, payload);
+        alert.success('Plantilla actualizada correctamente', '✅ Éxito');
       }
       onSaved();
     } catch (e) {
@@ -234,190 +348,161 @@ function EditModal({ tpl, onClose, onSaved }) {
     }
   };
 
-  const inp = {
-    width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 13,
-    background: 'var(--admin-bg-primary)', border: '1px solid var(--admin-border-light)',
-    color: 'var(--admin-text-primary)', boxSizing: 'border-box',
-  };
-  const lbl = {
-    display: 'block', marginBottom: 5, fontSize: 11, fontWeight: 700,
-    textTransform: 'uppercase', color: '#8CB79B',
-  };
+  const footer = (
+    <>
+      {error && (
+        <div className="modal-error-text">
+          <FiAlertCircle size={16} /> {error}
+        </div>
+      )}
+      <ButtonGroup>
+        <IconTextButton
+          variant="secondary"
+          size="md"
+          onClick={onClose}
+          disabled={saving}
+        >
+          Cancelar
+        </IconTextButton>
+        <IconTextButton
+          variant="primary"
+          size="md"
+          icon={<FiCheck size={14} />}
+          onClick={handleSave}
+          disabled={saving || !form.label || !form.subject || !form.body || (isNew && !form.type)}
+          loading={saving}
+        >
+          {saving ? 'Guardando...' : isNew ? 'Crear plantilla' : 'Guardar cambios'}
+        </IconTextButton>
+      </ButtonGroup>
+    </>
+  );
 
   return (
-    <div className="admin-modal-overlay" onClick={onClose}>
-      <div
-        className="admin-modal"
-        style={{ maxWidth: 800, width: '95vw' }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="admin-modal-header">
-          <h2>
-            <FiMail size={17} style={{ marginRight: 8, color: '#6366f1' }} />
-            {isNew ? 'Nueva plantilla' : `Editar: ${tpl.label}`}
-          </h2>
-          <button className="admin-modal-close" onClick={onClose}>✕</button>
-        </div>
-
-        <div className="admin-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-          {/* Row 1: type (solo nuevo) + label + estado */}
-          <div className={isNew ? 'admin-col-3-140' : 'admin-col-1-140'} style={{ gap: 12 }}>
-            {isNew && (
-              <div>
-                <label style={lbl}>Tipo / clave única</label>
-                <input
-                  style={inp}
-                  value={form.type}
-                  onChange={e => set('type', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
-                  placeholder="ej: recordatorio_pago"
-                />
-              </div>
-            )}
-            <div>
-              <label style={lbl}>Nombre visible</label>
-              <input
-                style={inp}
-                value={form.label}
-                onChange={e => set('label', e.target.value)}
-                placeholder="ej: Recordatorio de pago"
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={isNew ? 'Nueva Plantilla' : `Editar: ${tpl?.label}`}
+      size="lg"
+      className="email-templates-modal"
+      footer={footer}
+    >
+      <div className="email-templates-form">
+        <div className="email-templates-form-row">
+          {isNew && (
+            <div className="email-templates-form-group">
+              <label>Tipo / clave única *</label>
+              <Input
+                type="text"
+                value={form.type}
+                onChange={(value) => setFormField('type', value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
+                placeholder="ej: recordatorio_pago"
+                size="md"
+                required
               />
             </div>
-            <div>
-              <label style={lbl}>Estado</label>
+          )}
+          <div className="email-templates-form-group">
+            <label>Nombre visible *</label>
+            <Input
+              type="text"
+              value={form.label}
+              onChange={(value) => setFormField('label', value)}
+              placeholder="ej: Recordatorio de pago"
+              size="md"
+              required
+            />
+          </div>
+          <div className="email-templates-form-group">
+            <label>Estado</label>
+            <button
+              type="button"
+              onClick={() => setFormField('is_active', !form.is_active)}
+              className={`email-status-toggle ${form.is_active !== false ? 'active' : 'inactive'}`}
+            >
+              {form.is_active !== false ? '✓ Activa' : '✗ Inactiva'}
+            </button>
+          </div>
+        </div>
+
+        <div className="email-templates-form-group">
+          <label>Descripción</label>
+          <Input
+            type="text"
+            value={form.description}
+            onChange={(value) => setFormField('description', value)}
+            placeholder="¿Cuándo se usa esta plantilla?"
+            size="md"
+          />
+        </div>
+
+        <div className="email-templates-form-group">
+          <label>Asunto del email *</label>
+          <Input
+            type="text"
+            value={form.subject}
+            onChange={(value) => setFormField('subject', value)}
+            placeholder="ej: Recordatorio de pago — {{business_name}}"
+            size="md"
+            required
+          />
+        </div>
+
+        <div className="email-templates-vars-hint">
+          <span className="email-templates-vars-label">Disponibles:</span>
+          {['owner_name', 'business_name', 'amount', 'due_date'].map(v => (
+            <span key={v} className="email-templates-var-hint">{`{{${v}}}`}</span>
+          ))}
+          {detectedVars.length > 0 && (
+            <>
+              <span className="email-templates-vars-separator">· Detectadas en cuerpo:</span>
+              {detectedVars.map(v => (
+                <span key={v} className="email-templates-var-detected">{`{{${v}}}`}</span>
+              ))}
+            </>
+          )}
+        </div>
+
+        <div className="email-templates-body-section">
+          <div className="email-templates-body-header">
+            <label>Cuerpo HTML *</label>
+            <div className="email-templates-tabs">
               <button
                 type="button"
-                onClick={() => set('is_active', !form.is_active)}
-                style={{
-                  width: '100%', height: 38, borderRadius: 8, fontSize: 13,
-                  cursor: 'pointer', fontWeight: 700,
-                  background: form.is_active ? 'rgba(34,197,94,.1)' : 'rgba(156,163,175,.1)',
-                  color:  form.is_active ? '#22c55e' : '#9ca3af',
-                  border: `1px solid ${form.is_active ? 'rgba(34,197,94,.3)' : 'rgba(156,163,175,.3)'}`,
-                }}
+                className={`email-templates-tab ${tab === 'edit' ? 'active' : ''}`}
+                onClick={() => setTab('edit')}
               >
-                {form.is_active ? '✓ Activa' : '✗ Inactiva'}
+                <FiCode size={11} /> Código
+              </button>
+              <button
+                type="button"
+                className={`email-templates-tab ${tab === 'preview' ? 'active' : ''}`}
+                onClick={() => setTab('preview')}
+              >
+                <FiEye size={11} /> Vista previa
               </button>
             </div>
           </div>
 
-          {/* Row 2: description */}
-          <div>
-            <label style={lbl}>Descripción</label>
-            <input
-              style={inp}
-              value={form.description}
-              onChange={e => set('description', e.target.value)}
-              placeholder="¿Cuándo se usa esta plantilla?"
+          {tab === 'edit' ? (
+            <textarea
+              className="email-templates-textarea"
+              value={form.body}
+              onChange={(e) => setFormField('body', e.target.value)}
+              placeholder="<p>Estimado <strong>{{owner_name}}</strong>, ...</p>"
+              spellCheck={false}
             />
-          </div>
-
-          {/* Row 3: subject */}
-          <div>
-            <label style={lbl}>Asunto del email</label>
-            <input
-              style={inp}
-              value={form.subject}
-              onChange={e => set('subject', e.target.value)}
-              placeholder="ej: Recordatorio de pago — {{business_name}}"
-            />
-          </div>
-
-          {/* Variables hint */}
-          <div style={{
-            padding: '8px 12px', borderRadius: 8,
-            background: 'rgba(99,102,241,.06)', border: '1px solid rgba(99,102,241,.2)',
-            fontSize: 12, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4,
-          }}>
-            <span style={{ color: '#8b5cf6', fontWeight: 700 }}>Disponibles:</span>
-            {['owner_name','business_name','amount','due_date'].map(v => (
-              <span key={v} style={{
-                padding: '1px 7px', borderRadius: 4,
-                background: 'rgba(99,102,241,.12)', color: '#6366f1',
-                fontFamily: 'monospace', fontSize: 11,
-              }}>{`{{${v}}}`}</span>
-            ))}
-            {detectedVars.length > 0 && (
-              <>
-                <span style={{ color: 'var(--admin-text-muted)', marginLeft: 4 }}>· Detectadas en cuerpo:</span>
-                {detectedVars.map(v => (
-                  <span key={v} style={{
-                    padding: '1px 7px', borderRadius: 4,
-                    background: 'rgba(34,197,94,.12)', color: '#16a34a',
-                    fontFamily: 'monospace', fontSize: 11,
-                  }}>{`{{${v}}}`}</span>
-                ))}
-              </>
-            )}
-          </div>
-
-          {/* Body editor / preview */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-              <label style={{ ...lbl, margin: 0 }}>Cuerpo HTML</label>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button
-                  type="button"
-                  className={`admin-filter-btn ${tab === 'edit' ? 'active' : ''}`}
-                  onClick={() => setTab('edit')}
-                  style={{ padding: '3px 12px', fontSize: 11 }}
-                >
-                  <FiCode size={11} /> Código
-                </button>
-                <button
-                  type="button"
-                  className={`admin-filter-btn ${tab === 'preview' ? 'active' : ''}`}
-                  onClick={() => setTab('preview')}
-                  style={{ padding: '3px 12px', fontSize: 11 }}
-                >
-                  <FiEye size={11} /> Vista previa
-                </button>
-              </div>
-            </div>
-            {tab === 'edit' ? (
-              <textarea
-                style={{ ...inp, minHeight: 280, fontFamily: 'monospace', fontSize: 12, resize: 'vertical' }}
-                value={form.body}
-                onChange={e => set('body', e.target.value)}
-                placeholder="<p>Estimado <strong>{{owner_name}}</strong>, ...</p>"
-                spellCheck={false}
+          ) : (
+            <div className="email-templates-preview">
+              <iframe
+                title="email-preview"
+                srcDoc={form.body}
+                className="email-templates-iframe"
               />
-            ) : (
-              <div style={{
-                border: '1px solid var(--admin-border-light)', borderRadius: 8,
-                overflow: 'hidden', minHeight: 280, background: '#fff',
-              }}>
-                <iframe
-                  title="email-preview"
-                  srcDoc={form.body}
-                  style={{ width: '100%', minHeight: 280, border: 'none', display: 'block' }}
-                />
-              </div>
-            )}
-          </div>
-
-          {error && (
-            <div style={{
-              padding: '10px 14px', borderRadius: 8, fontSize: 13,
-              background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.3)', color: '#dc2626',
-            }}>
-              {error}
             </div>
           )}
         </div>
-
-        <div className="admin-modal-footer">
-          <button className="admin-btn admin-btn-secondary" onClick={onClose}>Cancelar</button>
-          <button
-            className="admin-btn admin-btn-primary"
-            disabled={saving}
-            onClick={handleSave}
-            style={{ background: 'linear-gradient(135deg,#818cf8,#6366f1)', color: '#fff', border: 'none' }}
-          >
-            {saving ? 'Guardando...' : isNew ? 'Crear plantilla' : 'Guardar cambios'}
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

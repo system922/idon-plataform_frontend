@@ -1,0 +1,2132 @@
+/* ============================================================
+   PACIENTES.CSS - TEMA CLARO ODONTOLÓGICO
+   ============================================================
+   
+   ÍNDICE:
+   1.  VARIABLES GLOBALES
+   2.  ESTADÍSTICAS (PacienteStats)
+   3.  FILTROS Y BÚSQUEDA (PacienteTable)
+   4.  TABLA DE PACIENTES (PacienteTable)
+   5.  FILAS DE TABLA (PacienteRow)
+   6.  BOTONES DE ACCIÓN
+   7.  BADGES Y ESTADOS
+   8.  MODAL PRINCIPAL (PacienteModal)
+   9.  FORMULARIO - CÉDULA
+   10. FORMULARIO - FOTO UPLOAD
+   11. FORMULARIO - GRIDS
+   12. MODAL DE DETALLE (PacienteDetailModal)
+   13. MODAL DE CÁMARA (CameraModal)
+   14. AVATAR (PacienteAvatar)
+   15. HEADER ACTIONS - BÚSQUEDA Y BOTONES (NUEVO)
+   16. ANIMACIONES
+   17. RESPONSIVE
+   ============================================================ */
+
+/* ============================================================
+   1. VARIABLES GLOBALES
+   ============================================================ */
+
+
+/* ============================================================
+   2. ESTADÍSTICAS - PacienteStats
+   ============================================================ */
+.odont-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+.odont-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+}
+
+.odont-stat-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-4px);
+}
+
+.odont-stat-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 28px;
+  transition: var(--transition);
+}
+
+.odont-stat-icon.pacientes {
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.25);
+}
+
+.odont-stat-icon.citas {
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25);
+}
+
+.odont-stat-icon.tratamientos {
+  background: var(--primary-gradient);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
+}
+
+.odont-stat-icon.recetas {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(96, 165, 250, 0.25);
+}
+
+.odont-stat-card:hover .odont-stat-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.odont-stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.odont-stat-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.odont-stat-label {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ============================================================
+   3. FILTROS Y BÚSQUEDA 
+   ============================================================ */
+.odont-filters {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  background: var(--bg-card);
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+}
+
+.odont-filters-empty {
+  flex: 1;
+}
+
+.odont-btn-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--primary-gradient);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: var(--transition);
+  white-space: nowrap;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.odont-btn-add:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+}
+
+.odont-btn-add:active {
+  transform: translateY(0);
+}
+
+.odont-btn-add svg {
+  font-size: 18px;
+}
+
+.odont-btn-add .spin {
+  animation: spin 0.8s linear infinite;
+}
+
+.odont-btn-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============================================================
+   4. TABLA DE PACIENTES - PacienteTable
+   ============================================================ */
+.odont-table-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-top: 0;
+  box-shadow: var(--shadow);
+}
+
+.odont-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.odont-table thead tr {
+ background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.odont-table th {
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-bottom: none;
+}
+
+.odont-table td {
+  padding: 16px 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  border-bottom: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.odont-table tbody tr {
+  transition: var(--transition);
+}
+
+.odont-table tbody tr:hover {
+  background: var(--primary-bg);
+}
+
+.odont-table tbody tr:hover td {
+  color: var(--text-primary);
+}
+
+.odont-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.odont-table .center {
+  text-align: center;
+}
+
+.odont-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.odont-table-info {
+  padding: 16px 24px;
+  font-size: 14px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  font-weight: 500;
+}
+
+/* ============================================================
+   5. FILAS DE TABLA - PacienteRow
+   ============================================================ */
+.paciente-cell-with-avatar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.paciente-cell-with-avatar span {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   6. BOTONES DE ACCIÓN
+   ============================================================ */
+.odont-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.odont-btn-icon {
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 16px;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.odont-btn-icon:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--shadow);
+}
+
+.odont-btn-icon.edit:hover {
+  background: var(--primary-bg);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.odont-btn-icon.delete:hover {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.odont-btn-icon.view:hover {
+  background: var(--info-bg);
+  border-color: var(--info);
+  color: var(--info);
+}
+
+.odont-btn-icon:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ============================================================
+   7. BADGES Y ESTADOS
+   ============================================================ */
+.birthday-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--primary-bg);
+  color: var(--primary-dark);
+}
+
+.birthday-badge.soon {
+  background: var(--warning-bg);
+  color: #d97706;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.odont-status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.odont-status-active {
+  background: var(--primary-bg);
+  color: var(--primary-dark);
+}
+
+.odont-status-inactive {
+  background: var(--border-color);
+  color: var(--text-muted);
+}
+
+.odont-status-draft {
+  background: var(--warning-bg);
+  color: #d97706;
+}
+
+.odont-status-completed {
+  background: var(--primary-bg);
+  color: var(--primary-dark);
+}
+
+.odont-status-cancelled {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.odont-status-scheduled {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.odont-status-in-progress {
+  background: rgba(139, 92, 246, 0.08);
+  color: #7c3aed;
+}
+
+/* ============================================================
+   8. MODAL PRINCIPAL - PacienteModal
+   ============================================================ */
+.odont-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  animation: fadeIn 0.25s ease;
+}
+
+.odont-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  max-width: 650px;
+  width: 100%;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-modal);
+  animation: slideUp 0.3s ease;
+}
+
+.odont-modal-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--info);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #1a56db 0%, #2563eb 100%);
+}
+
+.odont-modal-header div {
+  flex: 1;
+}
+
+.odont-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.odont-modal-header p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.odont-modal-close {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 8px;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.odont-modal-close:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+  transform: rotate(90deg);
+}
+
+.odont-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.odont-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.odont-modal-body::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.odont-modal-body::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.odont-modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+.odont-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+/* BOTONES DEL MODAL */
+.odont-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--primary-gradient);
+  color: var(--text-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.odont-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.odont-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.odont-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.odont-btn-secondary:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   9. FORMULARIO - CÉDULA
+   ============================================================ */
+.form-row-compact {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  background: transparent;
+  margin-bottom: 16px;
+}
+
+.cedula-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  transition: var(--transition);
+  flex: 1;
+}
+
+.cedula-section:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.cedula-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cedula-label svg {
+  color: var(--primary);
+  font-size: 12px;
+}
+
+.cedula-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.cedula-input-wrapper .cedula-icon {
+  position: absolute;
+  left: 6px;
+  color: var(--text-dim);
+  font-size: 12px;
+  transition: var(--transition);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cedula-input-wrapper:focus-within .cedula-icon {
+  color: var(--primary);
+}
+
+.cedula-input-wrapper.success .cedula-icon {
+  color: var(--primary);
+}
+
+.cedula-input-wrapper.error .cedula-icon {
+  color: var(--danger);
+}
+
+.cedula-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 5px 45px 5px 25px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.cedula-input:focus {
+  outline: none;
+}
+
+.cedula-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cedula-counter {
+  position: absolute;
+  right: 26px;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-dim);
+  transition: var(--transition);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cedula-counter.complete {
+  color: var(--primary);
+}
+
+.cedula-spinner {
+  position: absolute;
+  right: 6px;
+  color: var(--warning);
+  animation: spin 0.8s linear infinite;
+  z-index: 2;
+  font-size: 14px;
+}
+
+.cedula-success-icon {
+  position: absolute;
+  right: 6px;
+  color: var(--primary);
+  z-index: 2;
+  font-size: 14px;
+}
+
+.cedula-error-icon {
+  position: absolute;
+  right: 6px;
+  color: var(--danger);
+  z-index: 2;
+  font-size: 14px;
+}
+
+.cedula-input-wrapper.success {
+  border-color: var(--primary);
+  background: var(--primary-bg);
+}
+
+.cedula-input-wrapper.error {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.cedula-input-wrapper.searching {
+  border-color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.cedula-message {
+  margin-top: 4px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  animation: slideDown 0.3s ease;
+}
+
+.cedula-message.success {
+  color: var(--primary-dark);
+  background: var(--primary-bg);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.cedula-message.error {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+/* ============================================================
+   10. FORMULARIO - FOTO UPLOAD
+   ============================================================ */
+.image-upload-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-tertiary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  transition: var(--transition);
+  flex: 1.5;
+}
+
+.image-upload-container:hover {
+  border-color: var(--border-hover);
+  background: var(--primary-bg);
+}
+
+.image-upload-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.image-preview-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-upload-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.odont-btn-upload,
+.odont-btn-camera,
+.odont-btn-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-white);
+}
+
+.odont-btn-upload {
+  background: var(--primary-gradient);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+.odont-btn-upload:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.odont-btn-camera {
+  background: var(--info);
+}
+
+.odont-btn-camera:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.odont-btn-remove {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 0 8px;
+}
+
+.odont-btn-remove:hover {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ============================================================
+   11. FORMULARIO - GRIDS
+   ============================================================ */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  transition: var(--transition);
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--text-dim);
+}
+
+.form-group input.field-found {
+  border-color: var(--primary);
+  background: var(--primary-bg);
+}
+
+.form-group select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+.form-group select option {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+/* GRIDS */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-row-three {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.7fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-row-custom {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-row-address {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-row-allergies {
+  display: grid;
+  grid-template-columns: 0.7fr 0.5fr 2fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-row-hc {
+  display: grid;
+  grid-template-columns: 2fr 0.7fr;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.form-row:last-child,
+.form-row-three:last-child,
+.form-row-custom:last-child,
+.form-row-address:last-child,
+.form-row-allergies:last-child,
+.form-row-hc:last-child {
+  margin-bottom: 0;
+}
+
+.form-group-hc {
+  max-width: 200px;
+}
+
+.form-group-hc input {
+  font-size: 12px;
+  padding: 8px 10px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.error-message {
+  background: var(--danger-bg);
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+  font-size: 13px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ============================================================
+   12. MODAL DE DETALLE - PacienteDetailModal
+   ============================================================ */
+.detail-modal {
+  max-width: 750px !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.detail-header {
+  background: linear-gradient(135deg, #1a56db 0%, #2563eb 100%);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  padding: 20px 24px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0; /* ← Evita que el header se encoja */
+}
+
+.detail-header-profile {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+}
+
+.detail-avatar-wrapper {
+  flex-shrink: 0;
+}
+
+.detail-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-profile-name {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff !important;
+  letter-spacing: -0.5px;
+}
+
+.detail-profile-document {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.detail-profile-document svg {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.detail-profile-hc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.detail-profile-hc svg {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.detail-profile-hc strong {
+  color: #ffffff !important;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.detail-profile-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.birthday-soon-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: #92400e;
+  background: #fef3c7;
+  padding: 2px 12px;
+  border-radius: 12px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* 🔥 BODY CON SCROLL - CLAVE PARA EL SCROLL */
+.detail-modal-body {
+  padding: 20px 24px !important;
+  background: #ffffff !important;
+  overflow-y: auto !important;  /* ← Scroll vertical */
+  flex: 1 !important;          /* ← Ocupa el espacio restante */
+  min-height: 0 !important;    /* ← Permite que flex funcione */
+}
+
+/* Scrollbar personalizado para el body */
+.detail-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detail-modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.detail-modal-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.detail-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.detail-section {
+  margin-bottom: 24px;
+  background: #ffffff !important;
+  padding: 4px 0;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.detail-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.section-icon {
+  color: #2563eb !important;
+  font-size: 18px;
+}
+
+.detail-section-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a !important;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.detail-grid-three {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+.detail-grid-two {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+/* 🔥 LABELS - Visibles */
+.detail-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  margin-bottom: 2px !important;
+}
+
+.detail-label svg {
+  color: #475569 !important;
+  font-size: 14px !important;
+  flex-shrink: 0 !important;
+}
+
+.detail-label span {
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+/* 🔥 VALORES - Visibles */
+.detail-value {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #0f172a !important;
+  padding: 4px 0 !important;
+}
+
+/* Forzar en todos los contextos */
+.detail-modal .detail-label,
+.detail-modal .detail-label *,
+.odont-modal.detail-modal .detail-label,
+.odont-modal.detail-modal .detail-label * {
+  color: #1e293b !important;
+}
+
+.blood-type {
+  display: inline-block;
+  padding: 2px 12px;
+  background: #dbeafe !important;
+  color: #1e40af !important;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.allergy-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.allergy-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid #fecaca;
+}
+
+.medical-history-text {
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155 !important;
+  border: 1px solid #e2e8f0;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.detail-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.detail-stat-card {
+  background: #f8fafc;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.detail-stat-card .stat-number {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a !important;
+}
+
+.detail-stat-card .stat-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-timeline {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timeline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2563eb;
+  flex-shrink: 0;
+}
+
+.timeline-content {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.timeline-label {
+  font-weight: 500;
+  color: #64748b !important;
+}
+
+.timeline-value {
+  color: #0f172a !important;
+  font-weight: 500;
+}
+
+/* 🔥 FOOTER - Fijo */
+.detail-footer {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 16px 24px !important;
+  background: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+  border-radius: 0 0 var(--radius) var(--radius) !important;
+  flex-shrink: 0 !important; /* ← Evita que el footer se encoja */
+}
+
+.footer-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.detail-footer .odont-btn-secondary {
+  background: #f3f4f6 !important;
+  color: #1f2937 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.detail-footer .odont-btn-secondary:hover {
+  background: #e5e7eb !important;
+}
+
+.detail-footer .odont-btn-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #1a56db 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.detail-footer .odont-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* ============================================================
+   13. MODAL DE CÁMARA - CameraModal
+   ============================================================ */
+.camera-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.camera-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  max-width: 640px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-modal);
+  animation: slideUp 0.3s ease;
+  overflow: hidden;
+}
+
+.camera-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.camera-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.camera-modal-close {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 6px;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-modal-close:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+  transform: rotate(90deg);
+}
+
+.camera-modal-body {
+  flex: 1;
+  padding: 16px;
+  overflow: hidden;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-viewport {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: #000;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.camera-captured {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.camera-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--text-muted);
+  min-height: 200px;
+}
+
+.camera-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.camera-error {
+  text-align: center;
+  color: var(--danger);
+  padding: 20px;
+}
+
+.camera-error p {
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.camera-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: var(--primary-bg);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  color: var(--primary-dark);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: var(--transition);
+}
+
+.camera-retry-btn:hover {
+  background: var(--primary);
+  color: var(--text-white);
+}
+
+.camera-modal-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+}
+
+.camera-capture-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--border-color);
+  background: var(--primary-gradient);
+  color: #fff;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-capture-btn:hover {
+  transform: scale(1.08);
+  border-color: var(--primary);
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+}
+
+.camera-capture-btn:active {
+  transform: scale(0.95);
+}
+
+.camera-retake-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: var(--transition);
+}
+
+.camera-retake-btn:hover {
+  background: var(--border-color);
+}
+
+.camera-accept-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: var(--primary-gradient);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-white);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  transition: var(--transition);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.camera-accept-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+}
+
+/* ============================================================
+   14. AVATAR - PacienteAvatar
+   ============================================================ */
+.paciente-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 700;
+  color: #ffffff;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  transition: var(--transition);
+  overflow: hidden;
+  position: relative;
+}
+
+.paciente-avatar:hover {
+  transform: scale(1.05);
+}
+
+.paciente-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.paciente-avatar.bordered-primary {
+  border: 3px solid var(--primary);
+}
+
+.paciente-avatar.shadow-md {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+/* ============================================================
+   15. HEADER ACTIONS - BÚSQUEDA Y BOTONES (Página Principal)
+   ============================================================ */
+.pto-header-actions-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* BÚSQUEDA EN EL HEADER */
+.pto-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  min-width: 240px;
+}
+
+.pto-search-wrapper:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.pto-search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-dim);
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.pto-search-input {
+  width: 100%;
+  padding: 10px 36px 10px 38px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+
+.pto-search-input::placeholder {
+  color: var(--text-dim);
+}
+
+.pto-search-clear {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.pto-search-clear:hover {
+  color: var(--text-primary);
+  background: var(--border-color);
+}
+
+/* BOTONES DEL HEADER - Usan las clases de PageTemplateOdontologia */
+.pto-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--primary-gradient);
+  color: var(--text-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: var(--transition);
+  white-space: nowrap;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.pto-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+}
+
+.pto-btn-primary:active {
+  transform: translateY(0);
+}
+
+.pto-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pto-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.pto-btn-secondary:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+.pto-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pto-btn-secondary .spin {
+  animation: spin 0.8s linear infinite;
+}
+
+/* ============================================================
+   16. ANIMACIONES
+   ============================================================ */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ============================================================
+   17. RESPONSIVE
+   ============================================================ */
+
+/* TABLETS Y PANTALLAS MEDIANAS */
+@media (max-width: 1024px) {
+  .odont-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .detail-grid-three {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .pto-header-actions-wrapper {
+    gap: 8px;
+  }
+  
+  .pto-search-wrapper {
+    min-width: 180px;
+  }
+}
+
+/* MÓVILES */
+@media (max-width: 768px) {
+  /* Estadísticas */
+  .odont-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .odont-stat-card {
+    padding: 16px 18px;
+  }
+  
+  .odont-stat-value {
+    font-size: 24px;
+  }
+  
+  .odont-stat-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+  
+  /* Filtros - Tabla */
+  .odont-filters {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 16px;
+  }
+  
+  .odont-filters-empty {
+    display: none;
+  }
+  
+  .odont-btn-add {
+    align-self: center;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  /* Tabla */
+  .odont-table-container {
+    overflow-x: auto;
+  }
+  
+  .odont-table {
+    min-width: 600px;
+    font-size: 13px;
+  }
+  
+  .odont-table th,
+  .odont-table td {
+    padding: 12px 14px;
+  }
+  
+  /* HEADER ACTIONS - Responsive */
+  .pto-header-actions-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+  
+  .pto-search-wrapper {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .pto-search-input {
+    font-size: 15px;
+    padding: 12px 36px 12px 38px;
+  }
+  
+  .pto-btn-primary,
+  .pto-btn-secondary {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+  }
+  
+  /* Modales */
+  .odont-modal {
+    max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - 48px);
+  }
+  
+  .odont-modal-header {
+    padding: 14px 18px;
+  }
+  
+  .odont-modal-header h3 {
+    font-size: 16px;
+  }
+  
+  .odont-modal-body {
+    padding: 14px 18px;
+  }
+  
+  .odont-modal-footer {
+    padding: 12px 18px;
+    flex-wrap: wrap;
+  }
+  
+  .odont-modal-footer button {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  /* Formulario - todos los grids a 1 columna */
+  .form-row,
+  .form-row-three,
+  .form-row-custom,
+  .form-row-address,
+  .form-row-allergies,
+  .form-row-hc {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+  
+  .form-row-compact {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .cedula-section {
+    padding: 8px 12px;
+  }
+  
+  .cedula-input {
+    font-size: 14px;
+    padding: 6px 45px 6px 28px;
+  }
+  
+  .image-upload-container {
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 10px 14px;
+  }
+  
+  .image-upload-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  /* Detail Modal */
+  .detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 18px;
+  }
+  
+  .detail-header-profile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .detail-profile-name {
+    font-size: 18px;
+  }
+  
+  .detail-modal-body {
+    padding: 14px 18px !important;
+  }
+  
+  .detail-grid,
+  .detail-grid-three,
+  .detail-grid-two {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .detail-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .detail-footer {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .footer-actions {
+    width: 100%;
+  }
+  
+  .footer-actions button {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  /* Camera Modal */
+  .camera-modal {
+    max-width: 100%;
+  }
+}
+
+/* MÓVILES PEQUEÑOS */
+@media (max-width: 480px) {
+  .odont-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  
+  .odont-modal {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 92dvh;
+  }
+  
+  .odont-modal-header h3 {
+    font-size: 15px;
+  }
+  
+  .odont-modal-body {
+    padding: 12px 14px;
+  }
+  
+  .odont-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  
+  .odont-stat-card {
+    padding: 12px 14px;
+    gap: 12px;
+  }
+  
+  .odont-stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+  
+  .odont-stat-value {
+    font-size: 20px;
+  }
+  
+  .odont-stat-label {
+    font-size: 12px;
+  }
+  
+  .odont-filters {
+    padding: 10px 12px;
+  }
+  
+  .odont-btn-add {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  
+  .image-preview-wrapper .paciente-avatar {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 14px !important;
+  }
+  
+  .cedula-section {
+    padding: 6px 10px;
+  }
+  
+  .cedula-input {
+    font-size: 13px;
+    padding: 5px 40px 5px 24px;
+  }
+  
+  .camera-modal {
+    border-radius: 16px 16px 0 0;
+  }
+  
+  .pto-search-input {
+    font-size: 14px;
+    padding: 10px 32px 10px 34px;
+  }
+  
+  .pto-btn-primary,
+  .pto-btn-secondary {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+}
+
+/* ============================================================
+   TABLA → TARJETAS EN MÓVIL (OPCIONAL)
+   ============================================================ */
+@media (max-width: 600px) {
+  .odont-table-container {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  
+  .odont-table thead {
+    display: none;
+  }
+  
+  .odont-table,
+  .odont-table tbody {
+    display: block;
+    width: 100%;
+  }
+  
+  .odont-table tbody tr {
+    display: block;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    padding: 4px 14px;
+    box-shadow: var(--shadow);
+  }
+  
+  .odont-table tbody tr:hover {
+    background: var(--bg-card);
+  }
+  
+  .odont-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 13px;
+    gap: 12px;
+  }
+  
+  .odont-table td:last-child {
+    border-bottom: none;
+  }
+  
+  .odont-table td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    flex-shrink: 0;
+    min-width: 72px;
+  }
+  
+  .odont-empty-state {
+    display: block;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  
+  .odont-actions {
+    justify-content: flex-end;
+  }
+  
+  .paciente-cell-with-avatar {
+    justify-content: flex-start;
+  }
+}

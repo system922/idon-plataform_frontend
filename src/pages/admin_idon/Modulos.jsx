@@ -1,29 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { useConfirm } from '../../context/ConfirmContext';
-import { useAlert } from '../../components/ConfirmContext';
+import { useConfirm, useAlert } from '../../context/ConfirmContext';
+import Table from '../../components/General/Table';
+import Modal from '../../components/General/Modal';
+import CustomCombobox from '../../components/General/CustomCombobox';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import Input from '../../components/General/Input';
 import {
-  FiBox, FiPlus, FiEdit2, FiTrash2, FiCheck, FiX,
-  FiRefreshCw, FiSettings, FiDollarSign,
+  FiPlus, FiEdit2, FiTrash2, FiCheck,
+  FiRefreshCw, FiSettings, FiAlertCircle
 } from 'react-icons/fi';
-import { adminApiService } from '../../services/apiService';
-import '../../styles/AdminPages.css';
-
-const inp = { width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px', background: 'var(--admin-bg-primary)', border: '1px solid var(--admin-border-light)', color: 'var(--admin-text-primary)' };
-const Lbl = ({ children }) => <label style={{ display: 'block', marginBottom: 5, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: '#8CB79B' }}>{children}</label>;
+import { adminApi } from '../../config/api';
 
 export default function AdminModulos() {
   const { showConfirm } = useConfirm();
   const alert = useAlert();
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
-  const [modal,   setModal]   = useState(null); // null | 'new' | item
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [modal, setModal] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('todos');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
-      const r = await adminApiService.get('/admin/modules');
+      const r = await adminApi.get('/admin/modules');
       setModules(Array.isArray(r.data) ? r.data : []);
       setError(null);
     } catch (e) {
@@ -31,181 +34,436 @@ export default function AdminModulos() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
   };
 
-  useEffect(() => { load(); }, []);
-
-  const handleDelete = async (id) => {
-    if (!await showConfirm('¿Eliminar este módulo?')) return;
+  const handleDelete = async (id, name) => {
+    if (!await showConfirm({
+      title: 'Eliminar módulo',
+      message: `¿Eliminar el módulo "${name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      danger: true,
+    })) return;
     try {
-      await adminApiService.delete(`/admin/modules/${id}`);
-      load();
+      await adminApi.delete(`/admin/modules/${id}`);
+      await load();
+      alert.success('Módulo eliminado correctamente', '✅ Éxito');
     } catch (e) {
-      await alert.error('Error: ' + e.message);
+      alert.error('Error: ' + e.message);
     }
   };
 
-  const totalMens = modules.reduce((s, m) => s + parseFloat(m.price_monthly || 0), 0);
-  const totalAnu  = modules.reduce((s, m) => s + parseFloat(m.price_annual  || 0), 0);
+  const filteredModules = useMemo(() => {
+    let result = modules;
 
-  const headerAction = (
-    <div style={{ display: 'flex', gap: 8 }}>
-      <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /></button>
-      <button className="admin-btn admin-btn-primary" onClick={() => setModal('new')}><FiPlus size={15} /> Nuevo módulo</button>
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(m =>
+        m.name?.toLowerCase().includes(term) ||
+        m.code?.toLowerCase().includes(term) ||
+        m.description?.toLowerCase().includes(term)
+      );
+    }
+
+    if (filterStatus === 'active') {
+      result = result.filter(m => m.is_active !== false);
+    } else if (filterStatus === 'inactive') {
+      result = result.filter(m => m.is_active === false);
+    }
+
+    return result;
+  }, [modules, searchTerm, filterStatus]);
+
+  const statusOptions = [
+    { value: 'todos', label: `Todos (${modules.length})` },
+    { value: 'active', label: `Activos (${modules.filter(m => m.is_active !== false).length})` },
+    { value: 'inactive', label: `Inactivos (${modules.filter(m => m.is_active === false).length})` },
+  ];
+
+  const columns = [
+    {
+      accessor: 'name',
+      label: 'Nombre',
+      render: (item) => (
+        <div className="modulo-name">
+          <div className="modulo-icon">
+            <FiSettings size={14} />
+          </div>
+          <div>
+            <strong>{item.name}</strong>
+            {item.description && (
+              <div className="modulo-description">{item.description}</div>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessor: 'code',
+      label: 'Código',
+      render: (item) => (
+        <code className="modulo-code">{item.code}</code>
+      ),
+    },
+    {
+      accessor: 'price_monthly',
+      label: 'Precio/mes',
+      align: 'right',
+      render: (item) => (
+        <span className="modulo-price-monthly">
+          ${parseFloat(item.price_monthly || 0).toFixed(2)}
+        </span>
+      ),
+    },
+    {
+      accessor: 'price_annual',
+      label: 'Precio/año',
+      align: 'right',
+      render: (item) => (
+        <span className="modulo-price-annual">
+          ${parseFloat(item.price_annual || 0).toFixed(2)}
+        </span>
+      ),
+    },
+    {
+      accessor: 'sort_order',
+      label: 'Orden',
+      align: 'center',
+      render: (item) => (
+        <span className="modulo-sort-order">{item.sort_order}</span>
+      ),
+    },
+    {
+      accessor: 'is_active',
+      label: 'Estado',
+      render: (item) => (
+        item.is_active !== false
+          ? <span className="admin-badge admin-badge-success"><FiCheck size={11} /> Activo</span>
+          : <span className="admin-badge admin-badge-warning">Inactivo</span>
+      ),
+    },
+    {
+      accessor: 'actions',
+      label: 'Acciones',
+      align: 'center',
+      render: (item) => (
+        <ButtonGroup>
+          <IconTextButton
+            variant="blue"
+            size="sm"
+            inline={true}
+            icon={<FiEdit2 size={13} />}
+            onClick={() => setModal(item)}
+          >
+            Editar
+          </IconTextButton>
+          <IconTextButton
+            variant="danger"
+            size="sm"
+            inline={true}
+            icon={<FiTrash2 size={13} />}
+            onClick={() => handleDelete(item.id, item.name)}
+          >
+            Eliminar
+          </IconTextButton>
+        </ButtonGroup>
+      ),
+    },
+  ];
+
+  const toolbar = (
+    <div className="modulos-toolbar">
+      <CustomCombobox
+        options={statusOptions}
+        value={filterStatus}
+        onChange={setFilterStatus}
+        placeholder="Filtrar por estado"
+        filterable={false}
+        size="sm"
+        className="modulos-filter"
+      />
+      <ButtonGroup>
+        <IconTextButton
+          variant="success"
+          size="md"
+          icon={<FiPlus size={13} />}
+          onClick={() => setModal('new')}
+        >
+          Nuevo módulo
+        </IconTextButton>
+      </ButtonGroup>
     </div>
   );
 
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
   return (
-    <PageTemplate theme="admin" title="Módulos" subtitle="Gestiona los módulos del sistema y sus precios" loading={loading} error={error} onRetry={load} headerAction={headerAction}>
-      {/* Resumen de precios */}
-      <div className="admin-stats-3" style={{ gap: 12, marginBottom: 20 }}>
-        {[
-          { label: 'Total módulos',   val: modules.length,            color: '#ff8c42', fmt: v => v },
-          { label: 'Precio total/mes',val: totalMens,                  color: '#22c55e', fmt: v => `$${v.toFixed(2)}` },
-          { label: 'Precio total/año',val: totalAnu,                   color: '#3b82f6', fmt: v => `$${v.toFixed(2)}` },
-        ].map(s => (
-          <div key={s.label} className="admin-card" style={{ padding: '14px 18px' }}>
-            <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{s.label}</p>
-            <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: s.color }}>{s.fmt(s.val)}</p>
-          </div>
-        ))}
-      </div>
-
-      {error && <div className="admin-card" style={{ marginBottom: 16, borderLeft: '4px solid #ef4444' }}><div className="admin-card-body"><p style={{ color: '#ef4444', margin: 0 }}>Error: {error}</p></div></div>}
-
-      <div className="admin-card">
-        <div className="admin-card-header">
-          <h2>Módulos ({modules.length})</h2>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /></button>
-            <button className="admin-btn admin-btn-primary" onClick={() => setModal('new')}><FiPlus size={15} /> Nuevo módulo</button>
-          </div>
+    <PageTemplate
+      title="MÓDULOS"
+      subtitle="Gestiona los módulos del sistema y sus precios"
+      theme="admin"
+      loading={loading}
+      error={error}
+      onRetry={load}
+      headerAction={refreshButton}
+    >
+      {error && (
+        <div className="alert alert-error">
+          <FiAlertCircle size={16} /> {error}
         </div>
-        <div className="admin-card-body">
-          {loading ? <div className="admin-loading"><div className="admin-spinner" />Cargando...</div>
-          : modules.length === 0 ? (
-            <div className="admin-empty">
-              <div className="admin-empty-icon"><FiBox size={36} /></div>
-              <p className="admin-empty-title">Sin módulos registrados</p>
-            </div>
-          ) : (
-            <div className="admin-table-wrapper">
-              <table className="admin-table">
-                <thead><tr><th>Nombre</th><th>Código</th><th style={{ textAlign: 'right' }}>Precio/mes</th><th style={{ textAlign: 'right' }}>Precio/año</th><th>Orden</th><th>Estado</th><th>Acciones</th></tr></thead>
-                <tbody>
-                  {modules.map(m => (
-                    <tr key={m.id}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(255,140,66,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff8c42', flexShrink: 0 }}>
-                            <FiSettings size={14} />
-                          </div>
-                          <div>
-                            <strong style={{ fontSize: 13 }}>{m.name}</strong>
-                            {m.description && <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 1 }}>{m.description}</div>}
-                          </div>
-                        </div>
-                      </td>
-                      <td><code style={{ fontSize: 11, background: 'rgba(255,140,66,.1)', color: '#ff8c42', padding: '2px 7px', borderRadius: 4 }}>{m.code}</code></td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, color: '#ff8c42' }}>${parseFloat(m.price_monthly || 0).toFixed(2)}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, color: '#8CB79B' }}>${parseFloat(m.price_annual  || 0).toFixed(2)}</td>
-                      <td style={{ textAlign: 'center', fontSize: 12 }}>{m.sort_order}</td>
-                      <td>{m.is_active !== false ? <span className="admin-badge admin-badge-success"><FiCheck size={11} /> Activo</span> : <span className="admin-badge admin-badge-warning">Inactivo</span>}</td>
-                      <td>
-                        <div className="admin-table-actions">
-                          <button className="admin-table-btn" onClick={() => setModal(m)}><FiEdit2 size={13} /> Editar</button>
-                          <button className="admin-table-btn admin-table-btn-danger" onClick={() => handleDelete(m.id)}><FiTrash2 size={13} /> Eliminar</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
-      {modal && <ModuloModal item={modal === 'new' ? null : modal} onClose={() => setModal(null)} onSaved={load} />}
+      <Table
+        data={filteredModules}
+        columns={columns}
+        keyField="id"
+        title="Módulos del Sistema"
+        subtitle={`${filteredModules.length} ${filteredModules.length === 1 ? 'módulo' : 'módulos'} encontrados`}
+        toolbar={toolbar}
+        searchable={true}
+        searchPlaceholder="Buscar por nombre, código o descripción..."
+        searchFields={['name', 'code', 'description']}
+        pagination={true}
+        itemsPerPage={10}
+        itemsPerPageOptions={[10, 25, 50, 100]}
+        loading={loading}
+        emptyMessage={
+          searchTerm || filterStatus !== 'todos'
+            ? 'No hay módulos que coincidan con los filtros aplicados'
+            : 'No hay módulos registrados'
+        }
+        striped={true}
+        hoverable={true}
+        bordered={false}
+        compact={false}
+      />
+
+      {modal && (
+        <ModuloModal
+          item={modal === 'new' ? null : modal}
+          onClose={() => setModal(null)}
+          onSaved={load}
+        />
+      )}
     </PageTemplate>
   );
 }
 
 function ModuloModal({ item, onClose, onSaved }) {
+  const alert = useAlert();
   const [form, setForm] = useState({
-    code: item?.code || '', name: item?.name || '', description: item?.description || '',
-    price_monthly: item?.price_monthly || 0, price_annual: item?.price_annual || 0,
-    icon: item?.icon || '', sort_order: item?.sort_order || 0, is_active: item?.is_active !== false,
+    code: item?.code || '',
+    name: item?.name || '',
+    description: item?.description || '',
+    price_monthly: item?.price_monthly || 0,
+    price_annual: item?.price_annual || 0,
+    icon: item?.icon || '',
+    sort_order: item?.sort_order || 0,
+    is_active: item?.is_active !== false,
   });
   const [saving, setSaving] = useState(false);
-  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.code || !form.name) return await alert.error('Código y nombre son requeridos');
+    if (!form.code || !form.name) {
+      setError('Código y nombre son requeridos');
+      return;
+    }
     setSaving(true);
+    setError('');
     try {
       if (item) {
-        await adminApiService.put(`/admin/modules/${item.id}`, form);
+        await adminApi.put(`/admin/modules/${item.id}`, form);
+        alert.success('Módulo actualizado correctamente', 'Actualización Exitosa');
       } else {
-        await adminApiService.post('/admin/modules', form);
+        await adminApi.post('/admin/modules', form);
+        alert.success('Módulo creado correctamente', 'Creación Exitosa');
       }
-      onSaved(); onClose();
+      onSaved();
+      onClose();
     } catch (e) {
-      await alert.error('Error: ' + e.message);
+      setError(e.message || 'Error al guardar');
     } finally {
       setSaving(false);
     }
   };
 
-  return (
-    <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal" style={{ maxWidth: 540, width: '95vw' }} onClick={e => e.stopPropagation()}>
-        <div className="admin-modal-header">
-          <h2><FiSettings size={17} style={{ marginRight: 8, color: '#ff8c42' }} />{item ? 'Editar' : 'Nuevo'} Módulo</h2>
-          <button className="admin-modal-close" onClick={onClose}>✕</button>
+  const monthly = parseFloat(form.price_monthly || 0);
+  const annual = parseFloat(form.price_annual || 0);
+  const savingAmount = monthly > 0 && annual > 0 ? (monthly * 12 - annual) : 0;
+
+  const footer = (
+    <>
+      {error && (
+        <div className="modal-error-text">
+          <FiAlertCircle size={16} /> {error}
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="admin-modal-body">
-            <div className="admin-col-2" style={{ gap: 14 }}>
-              <div className="admin-form-group"><Lbl>Nombre *</Lbl><input style={inp} value={form.name} onChange={set('name')} required /></div>
-              <div className="admin-form-group"><Lbl>Código *</Lbl><input style={inp} value={form.code} onChange={set('code')} disabled={!!item} required /></div>
-              <div className="admin-form-group">
-                <Lbl>Precio mensual ($)</Lbl>
-                <input style={inp} type="number" step="0.01" min="0" value={form.price_monthly} onChange={set('price_monthly')} />
-              </div>
-              <div className="admin-form-group">
-                <Lbl>Precio anual ($)</Lbl>
-                <input style={inp} type="number" step="0.01" min="0" value={form.price_annual} onChange={set('price_annual')} />
-              </div>
-              <div className="admin-form-group"><Lbl>Ícono (código)</Lbl><input style={inp} value={form.icon} onChange={set('icon')} placeholder="shopping-cart" /></div>
-              <div className="admin-form-group"><Lbl>Orden de aparición</Lbl><input style={inp} type="number" min="0" value={form.sort_order} onChange={set('sort_order')} /></div>
+      )}
+      <ButtonGroup>
+        <IconTextButton
+          variant=""
+          size="md"
+          onClick={onClose}
+          disabled={saving}
+        >
+          Cancelar
+        </IconTextButton>
+        <IconTextButton
+          variant="success"
+          size="md"
+          icon={<FiCheck size={14} />}
+          onClick={handleSubmit}
+          disabled={saving || !form.name || !form.code}
+          loading={saving}
+        >
+          {saving ? 'Guardando...' : item ? 'Guardar cambios' : 'Crear módulo'}
+        </IconTextButton>
+      </ButtonGroup>
+    </>
+  );
+
+  return (
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={item ? 'Editar Módulo' : 'Nuevo Módulo'}
+      size="md"
+      className="modulos-modal"
+      footer={footer}
+    >
+      <form onSubmit={handleSubmit}>
+        <div className="modulos-form">
+          <div className="modulos-form-row">
+            <div className="modulos-form-group">
+              <label>Nombre *</label>
+              <Input
+                type="text"
+                value={form.name}
+                onChange={(value) => setForm(f => ({ ...f, name: value }))}
+                placeholder="Ej: Punto de Venta, Inventario..."
+                size="md"
+                autoFocus
+                required
+              />
             </div>
-            <div className="admin-form-group" style={{ marginTop: 4 }}>
-              <Lbl>Descripción</Lbl>
-              <textarea style={{ ...inp, resize: 'vertical' }} rows={2} value={form.description} onChange={set('description')} />
+            <div className="modulos-form-group">
+              <label>Código *</label>
+              <Input
+                type="text"
+                value={form.code}
+                onChange={(value) => setForm(f => ({ ...f, code: value }))}
+                placeholder="pos, inventory..."
+                size="md"
+                disabled={!!item}
+                required
+              />
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, marginTop: 8 }}>
-              <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
-              Módulo activo
-            </label>
-            {/* Preview precio */}
-            {(parseFloat(form.price_monthly) > 0 || parseFloat(form.price_annual) > 0) && (
-              <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 8, background: 'rgba(255,140,66,.06)', border: '1px solid rgba(255,140,66,.2)', fontSize: 12, display: 'flex', gap: 20 }}>
-                <span>Mensual: <strong style={{ color: '#ff8c42' }}>${parseFloat(form.price_monthly || 0).toFixed(2)}</strong></span>
-                <span>Anual: <strong style={{ color: '#8CB79B' }}>${parseFloat(form.price_annual || 0).toFixed(2)}</strong></span>
-                {parseFloat(form.price_monthly) > 0 && parseFloat(form.price_annual) > 0 && (
-                  <span style={{ color: '#22c55e' }}>Ahorro anual: <strong>${(parseFloat(form.price_monthly) * 12 - parseFloat(form.price_annual)).toFixed(2)}</strong></span>
-                )}
-              </div>
-            )}
           </div>
-          <div className="admin-modal-footer">
-            <button type="button" className="admin-btn admin-btn-secondary" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="admin-btn admin-btn-primary" disabled={saving}><FiCheck size={15} /> {saving ? 'Guardando...' : 'Guardar'}</button>
+
+          <div className="modulos-form-row">
+            <div className="modulos-form-group">
+              <label>Precio mensual ($)</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.price_monthly}
+                onChange={(value) => setForm(f => ({ ...f, price_monthly: value }))}
+                placeholder="0.00"
+                size="md"
+              />
+            </div>
+            <div className="modulos-form-group">
+              <label>Precio anual ($)</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.price_annual}
+                onChange={(value) => setForm(f => ({ ...f, price_annual: value }))}
+                placeholder="0.00"
+                size="md"
+              />
+            </div>
           </div>
-        </form>
-      </div>
-    </div>
+
+          <div className="modulos-form-row">
+            <div className="modulos-form-group">
+              <label>Ícono (código)</label>
+              <Input
+                type="text"
+                value={form.icon}
+                onChange={(value) => setForm(f => ({ ...f, icon: value }))}
+                placeholder="shopping-cart"
+                size="md"
+              />
+            </div>
+            <div className="modulos-form-group">
+              <label>Orden de aparición</label>
+              <Input
+                type="number"
+                min="0"
+                value={form.sort_order}
+                onChange={(value) => setForm(f => ({ ...f, sort_order: value }))}
+                placeholder="0"
+                size="md"
+              />
+            </div>
+          </div>
+
+          <div className="modulos-form-group full-width">
+            <label>Descripción</label>
+            <Input
+              type="textarea"
+              value={form.description}
+              onChange={(value) => setForm(f => ({ ...f, description: value }))}
+              placeholder="Descripción del módulo"
+              size="md"
+              rows={2}
+            />
+          </div>
+
+          <label className="modulos-checkbox">
+            <input
+              type="checkbox"
+              checked={form.is_active}
+              onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))}
+            />
+            Módulo activo
+          </label>
+
+          {(monthly > 0 || annual > 0) && (
+            <div className="modulos-preview">
+              <span>Mensual: <strong className="modulos-preview-monthly">${monthly.toFixed(2)}</strong></span>
+              <span>Anual: <strong className="modulos-preview-annual">${annual.toFixed(2)}</strong></span>
+              {monthly > 0 && annual > 0 && (
+                <span className="modulos-preview-saving">
+                  Ahorro anual: <strong>${savingAmount.toFixed(2)}</strong>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </form>
+    </Modal>
   );
 }

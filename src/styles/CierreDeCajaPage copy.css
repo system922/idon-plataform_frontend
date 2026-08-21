@@ -1,0 +1,966 @@
+/* ============================================
+   CIERRE DE CAJA - ESTILOS COMPLETOS
+   Paleta: Naranja (#f97316) / Verde (#10b981)
+   ============================================ */
+
+/* ──────────────────────────────────────────────
+   MODAL OVERLAY
+────────────────────────────────────────────── */
+.cierre-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ──────────────────────────────────────────────
+   MODAL CONTAINER
+────────────────────────────────────────────── */
+.cierre-modal-container {
+  background: linear-gradient(135deg, #0f0f1a 0%, #0a0a12 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  width: 100%;
+  max-width: 1200px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.25s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ──────────────────────────────────────────────
+   HEADER
+────────────────────────────────────────────── */
+.cierre-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(249, 115, 22, 0.15);
+  background: rgba(249, 115, 22, 0.03);
+}
+
+.cierre-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cierre-header-title h2 {
+  color: #f0f0f8;
+  font-size: 1.3rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.cierre-close-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  color: #a0a0b0;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  transition: all 0.2s;
+}
+
+.cierre-close-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* ──────────────────────────────────────────────
+   CONTENT
+────────────────────────────────────────────── */
+.cierre-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+/* Scrollbar */
+.cierre-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+.cierre-modal-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+}
+.cierre-modal-content::-webkit-scrollbar-thumb {
+  background: rgba(249, 115, 22, 0.3);
+  border-radius: 10px;
+}
+.cierre-modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(249, 115, 22, 0.5);
+}
+
+/* ──────────────────────────────────────────────
+   TARJETAS HORIZONTALES (3 columnas)
+────────────────────────────────────────────── */
+.cards-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.card-info {
+  background: rgba(18, 18, 28, 0.6);
+  border-radius: 16px;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.card-info:hover {
+  border-color: rgba(249, 115, 22, 0.25);
+  background: rgba(18, 18, 28, 0.7);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.1);
+}
+
+.card-header .card-icon {
+  font-size: 18px;
+  color: #f97316;
+}
+
+.card-header h4 {
+  color: #f0f0f8;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.card-body {
+  padding: 12px 16px;
+}
+
+.card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.card-row:last-child {
+  border-bottom: none;
+}
+
+.card-row .label {
+  color: #a0a0b0;
+}
+
+.card-row .value {
+  color: #f0f0f8;
+  font-weight: 500;
+}
+
+.card-row .value.total {
+  color: #f97316;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.card-row .value.expected {
+  color: #10b981;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.card-row .value.negative {
+  color: #ef4444;
+}
+
+.card-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  margin: 8px 0;
+}
+
+.card-info.highlight {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.03);
+}
+
+/* ──────────────────────────────────────────────
+   SECCIONES GENERALES
+────────────────────────────────────────────── */
+.cierre-section {
+  background: rgba(18, 18, 28, 0.5);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(249, 115, 22, 0.08);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(249, 115, 22, 0.12);
+}
+
+.section-icon {
+  color: #f97316;
+  font-size: 18px;
+}
+
+.section-header h3 {
+  color: #f0f0f8;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* ──────────────────────────────────────────────
+   DENOMINACIONES
+────────────────────────────────────────────── */
+.denom-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.denom-group {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.denom-title {
+  color: #a0a0b0;
+  margin-bottom: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.denom-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+  justify-items: center;
+}
+
+@media (max-width: 1000px) {
+  .denom-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 800px) {
+  .denom-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 650px) {
+  .denom-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 450px) {
+  .denom-grid { grid-template-columns: repeat(1, 1fr); }
+}
+
+.denom-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+}
+
+.denom-input-group label {
+  color: #a0a0b0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.denom-input {
+  background: #1a1a2e;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  border-radius: 8px;
+  padding: 8px 6px;
+  color: #f97316;
+  font-size: 0.9rem;
+  font-weight: 700;
+  width: 70px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.denom-input:focus {
+  outline: none;
+  border-color: #f97316;
+  background: #252542;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+}
+
+.denom-input:not(:placeholder-shown) {
+  background: #ffffff;
+  border-color: #000000;
+  color: #000000;
+}
+
+.denom-input::placeholder {
+  color: #5a5a7a;
+  font-weight: normal;
+  font-size: 0.75rem;
+}
+
+.denom-input::-webkit-inner-spin-button,
+.denom-input::-webkit-outer-spin-button {
+  opacity: 0.4;
+}
+
+.denom-subtotal {
+  font-size: 0.7rem;
+  color: #10b981;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.total-efectivo {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(249, 115, 22, 0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.total-efectivo strong {
+  font-size: 1rem;
+  color: #f97316;
+}
+
+/* ──────────────────────────────────────────────
+   LAYOUT 2 COLUMNAS
+────────────────────────────────────────────── */
+.two-columns-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Tarjetas de Métodos */
+.metodos-card,
+.ingreso-card,
+.comparativa-card,
+.observaciones-card {
+  background: rgba(18, 18, 28, 0.5);
+  border-radius: 16px;
+  padding: 16px 20px;
+  border: 1px solid rgba(249, 115, 22, 0.08);
+}
+
+.metodos-card .card-header,
+.ingreso-card .card-header,
+.comparativa-card .card-header,
+.observaciones-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(249, 115, 22, 0.12);
+  background: transparent;
+  padding: 0 0 10px 0;
+}
+
+.metodos-card .card-header h3,
+.ingreso-card .card-header h3,
+.comparativa-card .card-header h3,
+.observaciones-card .card-header h3 {
+  font-size: 0.9rem;
+  margin: 0;
+  color: #f0f0f8;
+  font-weight: 600;
+}
+
+.metodos-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.metodo-input {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.metodo-input label {
+  font-size: 0.8rem;
+  color: #a0a0b0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 110px;
+}
+
+.metodo-input-field,
+.ingreso-input-field {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #f0f0f8;
+  font-size: 0.85rem;
+  width: 130px;
+  text-align: right;
+}
+
+.metodo-input-field:focus,
+.ingreso-input-field:focus {
+  outline: none;
+  border-color: #f97316;
+}
+
+.ingreso-input {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.ingreso-input label {
+  font-size: 0.8rem;
+  color: #a0a0b0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 110px;
+}
+
+/* Comparativa */
+.comparativa-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.comparativa-row:last-child {
+  border-bottom: none;
+}
+
+.comparativa-row .label {
+  color: #a0a0b0;
+}
+
+.comparativa-row .value {
+  color: #f0f0f8;
+  font-weight: 500;
+}
+
+.comparativa-row.highlight {
+  background: rgba(249, 115, 22, 0.08);
+  margin: 6px -8px;
+  padding: 8px 8px;
+  border-radius: 10px;
+}
+
+.comparativa-row .total-value {
+  font-size: 0.9rem;
+  color: #f97316;
+  font-weight: 700;
+}
+
+.diferencia-row {
+  font-weight: 700;
+  padding-top: 8px;
+  margin-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.diferencia-row.positive {
+  color: #10b981;
+}
+
+.diferencia-row.negative {
+  color: #ef4444;
+}
+
+.alerta-descuadre {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fca5a5;
+  border-left: 3px solid #ef4444;
+  font-size: 0.7rem;
+}
+
+.propina-extra-row {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(16, 185, 129, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #10b981;
+  font-weight: 500;
+}
+
+/* Observaciones */
+.observaciones-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: #f0f0f8;
+  font-size: 0.85rem;
+  resize: vertical;
+  font-family: inherit;
+  min-height: 80px;
+}
+
+.observaciones-input:focus {
+  outline: none;
+  border-color: #f97316;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Alertas */
+.alert-error {
+  background: rgba(239, 68, 68, 0.1);
+  border-left: 3px solid #ef4444;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: #fca5a5;
+  font-size: 0.8rem;
+  margin-bottom: 16px;
+}
+
+.alert-info {
+  background: rgba(16, 185, 129, 0.08);
+  border-left: 3px solid #10b981;
+  padding: 12px 16px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #86efac;
+  font-size: 0.8rem;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* ──────────────────────────────────────────────
+   BOTONES PRINCIPALES (Cancelar y Guardar)
+────────────────────────────────────────────── */
+.cierre-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(249, 115, 22, 0.1);
+}
+
+/* Botón Cancelar */
+.btn-cancelar {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 24px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #a0a0b0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-cancelar:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f0f0f8;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Botón Guardar Cierre */
+.btn-guardar {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border: none;
+  border-radius: 10px;
+  padding: 10px 24px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  min-width: 140px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-guardar:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+}
+
+.btn-guardar:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Botones deshabilitados */
+.btn-cancelar:disabled,
+.btn-guardar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Spinner dentro del botón */
+.btn-guardar .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.5s linear infinite;
+}
+
+/* ──────────────────────────────────────────────
+   BOTONES DE IMPRESIÓN Y PDF MODERNOS
+────────────────────────────────────────────── */
+.print-buttons-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Botón Imprimir - Moderno Verde */
+.btn-print-modern {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.5px;
+}
+
+.btn-print-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-print-modern:hover::before {
+  left: 100%;
+}
+
+.btn-print-modern:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.btn-print-modern:active {
+  transform: translateY(0);
+}
+
+/* Botón PDF - Moderno Rojo */
+.btn-pdf-modern {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: none;
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.5px;
+}
+
+.btn-pdf-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-pdf-modern:hover::before {
+  left: 100%;
+}
+
+.btn-pdf-modern:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35);
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.btn-pdf-modern:active {
+  transform: translateY(0);
+}
+
+/* Versiones pequeñas */
+.btn-print-small-modern {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-print-small-modern:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-pdf-small-modern {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: none;
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-pdf-small-modern:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Iconos en botones */
+.btn-print-modern svg,
+.btn-pdf-modern svg,
+.btn-print-small-modern svg,
+.btn-pdf-small-modern svg {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.btn-print-modern:hover svg,
+.btn-pdf-modern:hover svg {
+  transform: scale(1.05);
+}
+
+/* Spinner */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.5s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Resultado y Loading */
+.cierre-resultado {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px;
+  text-align: center;
+}
+
+.cierre-resultado h3 {
+  margin: 20px 0 10px;
+  color: #f0f0f8;
+  font-size: 1.2rem;
+}
+
+.cierre-resultado p {
+  color: #a0a0b0;
+  font-size: 0.85rem;
+}
+
+.cierre-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px;
+  gap: 15px;
+}
+
+.cierre-loading p {
+  color: #a0a0b0;
+  font-size: 0.85rem;
+}
+
+/* ──────────────────────────────────────────────
+   RESPONSIVE
+────────────────────────────────────────────── */
+@media (max-width: 1000px) {
+  .cards-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .two-columns-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 650px) {
+  .cards-row {
+    grid-template-columns: 1fr;
+  }
+  .cierre-modal-content {
+    padding: 16px;
+  }
+  .cierre-buttons {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .btn-cancelar,
+  .btn-guardar {
+    width: 100%;
+    min-width: unset;
+    justify-content: center;
+  }
+  .metodo-input, .ingreso-input {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  .metodo-input-field, .ingreso-input-field {
+    width: 100%;
+  }
+  .alert-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .print-buttons-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  .btn-print-modern,
+  .btn-pdf-modern,
+  .btn-print-small-modern,
+  .btn-pdf-small-modern {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .cierre-modal-header {
+    padding: 12px 16px;
+  }
+  .cierre-header-title h2 {
+    font-size: 1rem;
+  }
+  .denom-input {
+    width: 60px;
+    font-size: 0.8rem;
+  }
+  .card-header h4 {
+    font-size: 0.8rem;
+  }
+  .card-body {
+    padding: 10px 12px;
+  }
+}

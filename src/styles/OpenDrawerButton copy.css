@@ -1,0 +1,217 @@
+/* ── Overlay ──────────────────────────────────────────────────────────────── */
+.odr-modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Caja del modal ───────────────────────────────────────────────────────── */
+.odr-modal-form {
+  background: #13132a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  width: 100%;
+  min-width: 340px;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  animation: odr-fadein .2s ease;
+}
+
+@keyframes odr-fadein {
+  from { opacity: 0; transform: translateY(-10px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);   }
+}
+
+/* ── Título ───────────────────────────────────────────────────────────────── */
+.odr-modal-form h3 {
+  margin: 0 0 18px 0;
+  color: #f0f0f8;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* ── Select e inputs globales ─────────────────────────────────────────────── */
+.odr-modal-form select,
+.odr-modal-form input,
+.odr-modal-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #1e1e3a;
+  color: #f0f0f8;
+  font-weight: 500;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s;
+  margin-bottom: 14px;
+  appearance: auto;
+}
+
+.odr-modal-form select:focus,
+.odr-modal-form input:focus,
+.odr-modal-form textarea:focus {
+  border-color: #10b981;
+}
+
+.odr-modal-form select option {
+  background: #1e1e3a;
+  color: #f0f0f8;
+}
+
+.odr-modal-form input::placeholder {
+  color: #5a5a7a;
+}
+
+.odr-modal-form textarea {
+  resize: none;
+}
+
+/* ── Labels inline de los extras ─────────────────────────────────────────── */
+.odr-modal-form label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #a0a0b0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 5px;
+}
+
+/* ── Mensaje de info (egreso_compra) ──────────────────────────────────────── */
+.odr-modal-info {
+  font-size: 13px;
+  color: #f39c12;
+  background: rgba(243, 156, 18, 0.08);
+  border: 1px solid rgba(243, 156, 18, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+/* ── Error ────────────────────────────────────────────────────────────────── */
+.odr-error {
+  color: #f87171;
+  font-size: 12px;
+  margin: 4px 0 10px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+}
+
+/* ── Botones ──────────────────────────────────────────────────────────────── */
+.odr-modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.odr-modal-form button[type="submit"] {
+  flex: 1;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  border: 0;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.odr-modal-form button[type="submit"]:hover:not(:disabled) {
+  opacity: 0.88;
+}
+.odr-modal-form button[type="submit"]:disabled {
+  background: #1e3a2e;
+  color: #4a7a62;
+  cursor: not-allowed;
+}
+
+.odr-modal-form button[type="button"] {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #a0a0b0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.odr-modal-form button[type="button"]:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f0f0f8;
+}
+
+/* ── Botón principal "Abrir Caja" ─────────────────────────────────────────── */
+.open-drawer-btn {
+  display: inline-block;
+  position: relative;
+}
+
+.open-drawer-btn > button {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 8px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
+}
+.open-drawer-btn > button:hover:not(:disabled) {
+  opacity: 0.9;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+}
+.open-drawer-btn > button:disabled {
+  background: #1e3a2e;
+  color: #4a7a62;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.open-drawer-btn .odr-error-msg {
+  font-size: 12px;
+  color: #f87171;
+  margin-top: 4px;
+}
+
+@keyframes pulse-bubble {
+  0%, 100% { box-shadow: 0 6px 24px rgba(243,156,18,0.5); transform: scale(1); }
+  50%       { box-shadow: 0 8px 32px rgba(243,156,18,0.8); transform: scale(1.05); }
+}
+
+@media (max-width: 480px) {
+  .open-drawer-btn > button {
+    padding: 4px 9px;
+    font-size: 9px;
+  }
+  .odr-modal-form {
+    min-width: unset;
+    width: calc(100vw - 24px);
+    padding: 18px 16px 16px;
+    border-radius: 14px;
+  }
+}

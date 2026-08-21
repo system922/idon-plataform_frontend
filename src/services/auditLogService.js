@@ -1,10 +1,10 @@
-import { fetchWithAuth } from '../config/apiBase';
+import { fetchWithAuth } from '../config/api';
 
 export const auditLogService = {
   async register(data, token) {
     try {
       // Usar fetchWithAuth en lugar de fetch
-      const response = await fetchWithAuth('/api/audit/log', {
+      const response = await fetchWithAuth('/audit/log', {
         method: 'POST',
         body: JSON.stringify(data),
       });

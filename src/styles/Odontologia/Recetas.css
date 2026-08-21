@@ -1,0 +1,1453 @@
+/* ============================================================
+   RECETAS.CSS - TEMA CLARO ODONTOLÓGICO
+   ============================================================ */
+
+/* ============================================================
+   1. VARIABLES GLOBALES
+   ============================================================ */
+
+
+/* ============================================================
+   2. ESTADÍSTICAS - RecetaStats
+   ============================================================ */
+.pto-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+.pto-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+}
+
+.pto-stat-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-4px);
+}
+
+.pto-stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 24px;
+  transition: var(--transition);
+}
+
+.pto-stat-icon.plantillas {
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25);
+}
+
+.pto-stat-icon.recetas {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(96, 165, 250, 0.25);
+}
+
+.pto-stat-icon.vigentes {
+  background: var(--primary-gradient);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
+}
+
+.pto-stat-icon.vencidas {
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.25);
+}
+
+.pto-stat-icon.sin-vencimiento {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.25);
+}
+
+.pto-stat-icon.pacientes {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
+}
+
+.pto-stat-card:hover .pto-stat-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.pto-stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pto-stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.pto-stat-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ============================================================
+   3. FILTROS
+   ============================================================ */
+.pto-filters-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  background: var(--bg-card);
+  padding: 14px 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+}
+
+.pto-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pto-filter-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pto-filter-select {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  transition: var(--transition);
+  cursor: pointer;
+  min-width: 140px;
+}
+
+.pto-filter-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.pto-filter-stats {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ============================================================
+   4. HEADER ACTIONS
+   ============================================================ */
+.pto-header-actions-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pto-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  min-width: 240px;
+}
+
+.pto-search-wrapper:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.pto-search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-dim);
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.pto-search-input {
+  width: 100%;
+  padding: 10px 36px 10px 38px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+
+.pto-search-input::placeholder {
+  color: var(--text-dim);
+}
+
+.pto-search-clear {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.pto-search-clear:hover {
+  color: var(--text-primary);
+  background: var(--border-color);
+}
+
+.pto-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--primary-gradient);
+  color: var(--text-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: var(--transition);
+  white-space: nowrap;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.pto-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+}
+
+.pto-btn-primary:active {
+  transform: translateY(0);
+}
+
+.pto-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pto-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.pto-btn-secondary:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+.pto-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pto-btn-secondary .spin {
+  animation: spin 0.8s linear infinite;
+}
+
+/* ============================================================
+   5. TABLA DE RECETAS
+   ============================================================ */
+.pto-table-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-top: 0;
+  box-shadow: var(--shadow);
+}
+
+.pto-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.pto-table thead tr {
+  background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.pto-table th {
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-bottom: none;
+}
+
+.pto-table td {
+  padding: 16px 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  border-bottom: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.pto-table tbody tr {
+  transition: var(--transition);
+}
+
+.pto-table tbody tr:hover {
+  background: var(--primary-bg);
+}
+
+.pto-table tbody tr:hover td {
+  color: var(--text-primary);
+}
+
+.pto-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.pto-table .center {
+  text-align: center;
+}
+
+.pto-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.pto-cell-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pto-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.pto-badge-plantilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #2C5282;
+  background: #EBF8FF;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.pto-medicamentos-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pto-med-count {
+  background: #EDF2F7;
+  color: #4A5568;
+  border-radius: 10px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+/* ============================================================
+   6. BADGES Y ESTADOS
+   ============================================================ */
+.pto-tipo-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tipo-antibiotico {
+  background: #FED7D7;
+  color: #9B2C2C;
+}
+
+.tipo-analgesico {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.tipo-corticoide {
+  background: #E9D8FD;
+  color: #553C9A;
+}
+
+.tipo-antifungico {
+  background: #F0FFF4;
+  color: #276749;
+}
+
+.tipo-antiviral {
+  background: #EBF8FF;
+  color: #2A69AC;
+}
+
+.tipo-combinacion {
+  background: #FEEBC8;
+  color: #C05621;
+}
+
+.tipo-otro {
+  background: #EDF2F7;
+  color: #4A5568;
+}
+
+.pto-expiry-date {
+  font-size: 13px;
+}
+
+.pto-expiry-date.valid {
+  color: #276749;
+}
+
+.pto-expiry-date.expired {
+  color: #C53030;
+  font-weight: 500;
+}
+
+.pto-expiry-none {
+  color: #A0AEC0;
+}
+
+/* ============================================================
+   7. BOTONES DE ACCIÓN
+   ============================================================ */
+.pto-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.pto-btn-icon {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 14px;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.pto-btn-icon:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--shadow);
+}
+
+.pto-btn-icon.view:hover {
+  background: var(--info-bg);
+  border-color: var(--info);
+  color: var(--info);
+}
+
+.pto-btn-icon.edit:hover {
+  background: var(--primary-bg);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.pto-btn-icon.delete:hover {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ============================================================
+   8. MODAL DE PLANTILLAS
+   ============================================================ */
+.odont-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  animation: fadeIn 0.25s ease;
+}
+
+.odont-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  max-width: 750px;
+  width: 100%;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-modal);
+  animation: slideUp 0.3s ease;
+}
+
+.plantilla-selector-modal {
+  max-width: 800px;
+  max-height: 90vh;
+}
+
+.odont-modal-header {
+  padding: 18px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.odont-modal-header div {
+  flex: 1;
+}
+
+.odont-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.odont-modal-header p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.odont-modal-close {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  color: #ffffff;
+  padding: 8px;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.odont-modal-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg);
+}
+
+.odont-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.odont-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.odont-modal-body::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.odont-modal-body::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.odont-modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+.odont-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+/* ============================================================
+   9. SELECTOR DE PLANTILLAS
+   ============================================================ */
+.plantilla-search {
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.pto-plantilla-categorias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.pto-cat-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.pto-cat-btn:hover {
+  background: #F7FAFC;
+  border-color: var(--primary);
+}
+
+.pto-cat-btn.active {
+  background: var(--primary-gradient);
+  color: white;
+  border-color: var(--primary);
+}
+
+.pto-plantilla-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.pto-plantilla-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pto-plantilla-grid::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.pto-plantilla-grid::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.pto-plantilla-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.pto-plantilla-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-bg);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.pto-plantilla-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.pto-plantilla-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.pto-plantilla-title h4 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.pto-plantilla-tipo {
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.pto-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--primary-gradient);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: var(--transition);
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.pto-apply-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.pto-plantilla-desc {
+  margin: 4px 0 8px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.pto-plantilla-meds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 4px 0;
+}
+
+.pto-med-tag {
+  background: #F7FAFC;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.pto-plantilla-duracion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.pto-plantilla-warning-mini {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
+  color: #92400E;
+  font-size: 12px;
+  background: #FEF3C7;
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   10. MODAL DE APLICAR PLANTILLA
+   ============================================================ */
+.aplicar-modal {
+  max-width: 600px;
+}
+
+.pto-plantilla-preview {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.pto-plantilla-preview h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.pto-preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pto-preview-meds {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pto-preview-med {
+  display: flex;
+  gap: 12px;
+  padding: 4px 8px;
+  background: white;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.pto-preview-med span:first-child {
+  font-weight: 500;
+  flex: 1;
+}
+
+.pto-preview-med span:last-child {
+  color: var(--text-muted);
+}
+
+.pto-preview-instructions {
+  font-size: 13px;
+}
+
+.pto-preview-instructions strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.pto-preview-instructions p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.pto-preview-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #FEF3C7;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #92400E;
+}
+
+.pto-preview-warning svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ============================================================
+   11. FORMULARIO
+   ============================================================ */
+.pto-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.pto-form-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pto-form-group input,
+.pto-form-group select,
+.pto-form-group textarea {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: var(--transition);
+  box-sizing: border-box;
+}
+
+.pto-form-group input:focus,
+.pto-form-group select:focus,
+.pto-form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.pto-form-group select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+.pto-form-help {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pto-medication-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.2fr 1.5fr auto;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.pto-medication-row input {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.pto-medication-row input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.pto-btn-remove-med {
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.pto-btn-remove-med:hover:not(:disabled) {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.pto-btn-remove-med:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.pto-btn-add-med {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--bg-tertiary);
+  border: 1.5px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.pto-btn-add-med:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-bg);
+}
+
+.pto-plantilla-info {
+  background: #F0F7FF;
+  border-left: 4px solid #4A90D9;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.pto-plantilla-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #2C5282;
+}
+
+.pto-plantilla-warning {
+  background: #FEF3C7;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: #92400E;
+}
+
+/* ============================================================
+   12. MODAL DE DETALLE
+   ============================================================ */
+.detail-modal {
+  max-width: 650px !important;
+}
+
+.detail-body {
+  padding: 20px !important;
+}
+
+.pto-detail-row {
+  display: flex;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.pto-detail-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 160px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.pto-detail-value {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.pto-detail-value.expired {
+  color: #C53030;
+  font-weight: 500;
+}
+
+.pto-detail-doc {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.pto-detail-section {
+  margin-top: 20px;
+}
+
+.pto-detail-section h4 {
+  font-size: 15px;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.pto-med-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pto-med-item-detail {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+}
+
+.pto-med-header strong {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.pto-med-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.pto-instructions-text {
+  background: var(--bg-tertiary);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  border: 1px solid var(--border-color);
+}
+
+.pto-detail-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  justify-content: flex-end;
+}
+
+/* ============================================================
+   13. BOTONES DEL MODAL
+   ============================================================ */
+.odont-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: var(--primary-gradient);
+  color: var(--text-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.odont-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.odont-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.odont-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.odont-btn-secondary:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   14. ANIMACIONES
+   ============================================================ */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================================
+   15. RESPONSIVE
+   ============================================================ */
+
+/* TABLETS */
+@media (max-width: 1024px) {
+  .pto-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .pto-filters-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .pto-filter-stats {
+    margin-left: 0;
+    text-align: center;
+  }
+}
+
+/* MÓVILES */
+@media (max-width: 768px) {
+  .pto-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  .pto-stat-card {
+    padding: 14px 16px;
+  }
+  
+  .pto-stat-value {
+    font-size: 22px;
+  }
+  
+  .pto-stat-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+  
+  .pto-header-actions-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+  
+  .pto-search-wrapper {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .pto-btn-primary,
+  .pto-btn-secondary {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+  }
+  
+  .odont-modal {
+    max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - 48px);
+  }
+  
+  .odont-modal-header {
+    padding: 14px 18px;
+  }
+  
+  .odont-modal-header h3 {
+    font-size: 16px;
+  }
+  
+  .odont-modal-body {
+    padding: 14px 18px;
+  }
+  
+  .odont-modal-footer {
+    padding: 12px 18px;
+    flex-wrap: wrap;
+  }
+  
+  .odont-modal-footer button {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .pto-medication-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  
+  .pto-medication-row input:last-of-type {
+    grid-column: 1 / -1;
+  }
+  
+  .pto-plantilla-categorias {
+    gap: 6px;
+  }
+  
+  .pto-cat-btn {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+  
+  .pto-plantilla-title h4 {
+    font-size: 13px;
+  }
+  
+  .pto-detail-row {
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 0;
+  }
+  
+  .pto-detail-label {
+    min-width: auto;
+  }
+  
+  .pto-detail-actions {
+    flex-direction: column;
+  }
+  
+  .pto-detail-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .pto-table-container {
+    overflow-x: auto;
+  }
+  
+  .pto-table {
+    min-width: 600px;
+    font-size: 13px;
+  }
+  
+  .pto-table th,
+  .pto-table td {
+    padding: 12px 14px;
+  }
+}
+
+/* MÓVILES PEQUEÑOS */
+@media (max-width: 480px) {
+  .odont-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  
+  .odont-modal {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 92dvh;
+  }
+  
+  .pto-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  
+  .pto-stat-card {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  
+  .pto-stat-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    border-radius: 12px;
+  }
+  
+  .pto-stat-value {
+    font-size: 18px;
+  }
+  
+  .pto-stat-label {
+    font-size: 11px;
+  }
+  
+  .pto-filters-row {
+    padding: 10px 14px;
+  }
+  
+  .pto-filter-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  
+  .pto-filter-select {
+    width: 100%;
+  }
+  
+  .pto-medication-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  
+  .pto-medication-row input {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  
+  .pto-plantilla-card {
+    padding: 10px 12px;
+  }
+  
+  .pto-plantilla-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  
+  .pto-apply-btn {
+    align-self: stretch;
+    justify-content: center;
+  }
+  
+  .odont-modal-header h3 {
+    font-size: 14px;
+  }
+  
+  .odont-modal-body {
+    padding: 10px 14px;
+  }
+  
+  .odont-modal-footer {
+    padding: 10px 14px;
+    flex-direction: column;
+  }
+  
+  .odont-modal-footer button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .pto-search-input {
+    font-size: 14px;
+    padding: 10px 32px 10px 34px;
+  }
+}

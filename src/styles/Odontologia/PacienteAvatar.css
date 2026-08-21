@@ -1,0 +1,419 @@
+/* styles/Odontologia/PacienteAvatar.css */
+
+/* ============================================
+   AVATAR BASE
+   ============================================ */
+.paciente-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #ffffff;
+  font-weight: 600;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  user-select: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+  position: relative;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1;
+}
+
+/* ============================================
+   AVATAR TAMAÑOS
+   ============================================ */
+.paciente-avatar.size-xs {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+
+.paciente-avatar.size-sm {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+}
+
+.paciente-avatar.size-md {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+
+.paciente-avatar.size-lg {
+  width: 56px;
+  height: 56px;
+  font-size: 22px;
+}
+
+.paciente-avatar.size-xl {
+  width: 72px;
+  height: 72px;
+  font-size: 28px;
+}
+
+.paciente-avatar.size-2xl {
+  width: 96px;
+  height: 96px;
+  font-size: 36px;
+}
+
+.paciente-avatar.size-3xl {
+  width: 120px;
+  height: 120px;
+  font-size: 48px;
+}
+
+/* ============================================
+   AVATAR CON IMAGEN
+   ============================================ */
+.paciente-avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.paciente-avatar-image:hover {
+  transform: scale(1.05);
+}
+
+/* ============================================
+   AVATAR CON BORDE
+   ============================================ */
+.paciente-avatar.bordered {
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.paciente-avatar.bordered-white {
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.paciente-avatar.bordered-primary {
+  border: 2px solid #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+}
+
+.paciente-avatar.bordered-success {
+  border: 2px solid #10b981;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.paciente-avatar.bordered-warning {
+  border: 2px solid #f59e0b;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+}
+
+.paciente-avatar.bordered-danger {
+  border: 2px solid #ef4444;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+}
+
+/* ============================================
+   AVATAR CON SOMBRA
+   ============================================ */
+.paciente-avatar.shadow-sm {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.paciente-avatar.shadow-md {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.paciente-avatar.shadow-lg {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.paciente-avatar.shadow-xl {
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+}
+
+/* ============================================
+   AVATAR CON ESTADO (ACTIVO/INACTIVO)
+   ============================================ */
+.paciente-avatar .status-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  background-color: #10b981;
+  transition: all 0.3s ease;
+}
+
+.paciente-avatar .status-indicator.inactive {
+  background-color: #ef4444;
+}
+
+.paciente-avatar .status-indicator.away {
+  background-color: #f59e0b;
+}
+
+.paciente-avatar .status-indicator.size-xs {
+  width: 6px;
+  height: 6px;
+  bottom: 0px;
+  right: 0px;
+}
+
+.paciente-avatar .status-indicator.size-sm {
+  width: 8px;
+  height: 8px;
+  bottom: 1px;
+  right: 1px;
+}
+
+/* ============================================
+   AVATAR CON BADGE (CONTADOR)
+   ============================================ */
+.paciente-avatar .avatar-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 50%;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+  font-family: 'Inter', sans-serif;
+}
+
+.paciente-avatar .avatar-badge.size-sm {
+  min-width: 14px;
+  height: 14px;
+  font-size: 8px;
+  top: -3px;
+  right: -3px;
+}
+
+.paciente-avatar .avatar-badge.size-lg {
+  min-width: 22px;
+  height: 22px;
+  font-size: 12px;
+  top: -5px;
+  right: -5px;
+}
+
+/* ============================================
+   AVATAR CLICKEABLE
+   ============================================ */
+.paciente-avatar.clickable {
+  cursor: pointer;
+}
+
+.paciente-avatar.clickable:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.paciente-avatar.clickable:active {
+  transform: scale(0.95);
+}
+
+/* ============================================
+   AVATAR GRUPO (MÚLTIPLES AVATARES JUNTOS)
+   ============================================ */
+.avatar-group {
+  display: flex;
+  align-items: center;
+}
+
+.avatar-group .paciente-avatar {
+  margin-right: -8px;
+  border: 2px solid #ffffff;
+  transition: margin-right 0.3s ease, transform 0.3s ease;
+}
+
+.avatar-group .paciente-avatar:last-child {
+  margin-right: 0;
+}
+
+.avatar-group .paciente-avatar:hover {
+  margin-right: 4px;
+  transform: translateY(-2px);
+  z-index: 10;
+}
+
+.avatar-group .paciente-avatar.size-xs {
+  margin-right: -4px;
+}
+
+.avatar-group .paciente-avatar.size-sm {
+  margin-right: -6px;
+}
+
+.avatar-group .paciente-avatar.size-lg {
+  margin-right: -12px;
+}
+
+.avatar-group .paciente-avatar.size-xl {
+  margin-right: -16px;
+}
+
+/* ============================================
+   AVATAR ANIMACIONES
+   ============================================ */
+.paciente-avatar.pulse {
+  animation: avatar-pulse 2s ease-in-out infinite;
+}
+
+@keyframes avatar-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+  }
+}
+
+.paciente-avatar.ring {
+  animation: avatar-ring 1.5s ease-in-out infinite;
+}
+
+@keyframes avatar-ring {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+}
+
+.paciente-avatar.bounce-in {
+  animation: avatar-bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes avatar-bounce-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.paciente-avatar.fade-in {
+  animation: avatar-fade-in 0.3s ease;
+}
+
+@keyframes avatar-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   AVATAR TOOLTIP
+   ============================================ */
+.paciente-avatar .avatar-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1f2937;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+  text-transform: none;
+}
+
+.paciente-avatar .avatar-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1f2937;
+}
+
+.paciente-avatar:hover .avatar-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ============================================
+   AVATAR CON GRADIENTE
+   ============================================ */
+.paciente-avatar.gradient-blue {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.paciente-avatar.gradient-green {
+  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+}
+
+.paciente-avatar.gradient-red {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.paciente-avatar.gradient-orange {
+  background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+}
+
+.paciente-avatar.gradient-purple {
+  background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  .paciente-avatar.size-2xl {
+    width: 72px;
+    height: 72px;
+    font-size: 28px;
+  }
+  
+  .paciente-avatar.size-3xl {
+    width: 96px;
+    height: 96px;
+    font-size: 36px;
+  }
+  
+  .paciente-avatar .avatar-tooltip {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .paciente-avatar.size-lg {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+  
+  .paciente-avatar.size-xl {
+    width: 56px;
+    height: 56px;
+    font-size: 22px;
+  }
+}

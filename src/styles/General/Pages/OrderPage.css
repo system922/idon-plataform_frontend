@@ -1,0 +1,1577 @@
+/* ============================================================
+   TAKEORDERPAGENEW.CSS - Estilos específicos para toma de órdenes POS
+   Solo clases que no están en componentes reutilizables
+   ============================================================ */
+
+/* ============================================================
+   CONTENEDOR PRINCIPAL
+   ============================================================ */
+
+.takeorder-shell {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 var(--space-2);
+}
+
+/* ============================================================
+   GRID PRINCIPAL DE LA ORDEN
+   ============================================================ */
+
+.order-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+
+.order-grid_1 {
+  display: grid;
+  grid-template-columns: 1.5fr 1.2fr;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+
+/* ============================================================
+   CARD
+   ============================================================ */
+
+.card-soft {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.card-soft:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
+  background: var(--bg-secondary);
+  transform: translateY(-2px);
+}
+
+.card-soft .card-head {
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-soft .card-head h3 {
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+.card-soft .card-head p {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  margin: var(--space-1) 0 0;
+}
+
+/* ============================================================
+   FORM GRID - 3 COLUMNAS
+   ============================================================ */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.form-grid-3col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr !important;
+  gap: var(--space-2);
+}
+
+.field-full {
+  grid-column: 1 / -1;
+}
+
+/* ============================================================
+   FIELD
+   ============================================================ */
+
+.field label {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   CUSTOM COMBOBOX
+   ============================================================ */
+
+.custom-combobox > div {
+  background: var(--bg-input) !important;
+  border-color: var(--border-color) !important;
+}
+
+.custom-combobox input {
+  color: var(--text-primary) !important;
+}
+
+.custom-combobox input::placeholder {
+  color: var(--text-placeholder) !important;
+}
+
+/* ============================================================
+   COLLAPSIBLE LABEL
+   ============================================================ */
+
+.collapsible-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: inherit;
+  transition: var(--transition-fast);
+}
+
+.collapsible-label:hover {
+  color: var(--primary);
+}
+
+.collapsible-label span {
+  flex: 1;
+  text-align: left;
+}
+
+.collapsible-label .chev-open {
+  transform: rotate(180deg);
+}
+
+.collapsible-label svg:last-child {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   CONTENIDO COLLAPSIBLE
+   ============================================================ */
+
+.collapsible-content {
+  animation: slideDown 0.25s ease forwards;
+  overflow: hidden;
+}
+
+/* ============================================================
+   CAMPO UBICACIÓN
+   ============================================================ */
+
+.order-field-ubicacion {
+  position: relative;
+}
+
+.order-field-ubicacion .collapsible-label {
+  margin-bottom: 0;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .form-grid-3col {
+    grid-template-columns: 1fr;
+  }
+  
+  .order-field-ubicacion {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ============================================================
+   ANIMACIONES
+   ============================================================ */
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   LISTA DE ÍTEMS
+   ============================================================ */
+.items-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  flex-wrap: nowrap;  /* ← Evita que se envuelva a varias líneas */
+}
+
+.items-head-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.items-head-center {
+  flex: 1;
+  text-align: center;
+}
+
+.items-head-center .items-counter {
+  white-space: nowrap;
+} 
+
+.items-body {
+  margin-top: var(--space-2);
+}
+
+.items-empty-panel {
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-color);
+  background: var(--bg-tertiary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  gap: var(--space-2);
+}
+
+.empty-state {
+  text-align: center;
+}
+
+.empty-icon {
+  color: var(--text-muted);
+  opacity: 0.5;
+  margin-bottom: var(--space-2);
+}
+
+.empty-title {
+  color: var(--text-muted);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+.empty-subtitle {
+  color: var(--text-dim);
+  font-size: var(--font-size-xs);
+  margin: var(--space-1) 0 0;
+}
+
+.items-list-modern {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* Estilo de fila de item */
+.item-row {
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  transition: var(--transition-fast);
+}
+
+.item-row:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-tertiary);
+}
+
+.item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-name {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-1);
+}
+
+.item-meta {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.item-price {
+  color: var(--success);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.item-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Estilo tipo comanda */
+.item-row.comanda-style {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  border-left: 3px solid var(--success);
+  padding: var(--space-2) var(--space-3);
+}
+
+.comanda-line-1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.comanda-left {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+
+.comanda-qty {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-extrabold);
+  font-size: var(--font-size-md);
+  flex-shrink: 0;
+}
+
+.comanda-nombre {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comanda-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.comanda-unitprice {
+  color: var(--text-dim);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.comanda-sub-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  padding-left: 28px;
+  font-size: var(--font-size-xs);
+}
+
+.comanda-tree {
+  color: var(--text-dim);
+  font-size: var(--font-size-xs);
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+}
+
+.comanda-extra {
+  color: var(--text-muted);
+}
+
+.comanda-nota {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.modal-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+/* ============================================================
+   STEPPER (Selector de cantidad)
+   ============================================================ */
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-input);
+}
+
+.stepper-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stepper-btn:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+
+.stepper-btn:active {
+  transform: scale(0.95);
+}
+
+/* ============================================================
+   ADD ITEM MODAL - Estilos específicos
+   ============================================================ */
+
+.add-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ============================================================
+   FILAS DEL FORMULARIO
+   ============================================================ */
+
+.add-item-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+.add-item-row--first {
+  gap: var(--space-2);
+}
+
+.add-item-row--second {
+  gap: var(--space-2);
+}
+
+/* ============================================================
+   CAMPOS DEL FORMULARIO - Proporciones
+   ============================================================ */
+
+.add-item-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.add-item-field label {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Categoría - fijo */
+.add-item-field--category {
+  flex: 0 0 140px;
+  min-width: 120px;
+}
+
+/* Producto - más ancho */
+.add-item-field--product {
+  flex: 2;
+  min-width: 180px;
+}
+
+/* Cantidad - más angosto */
+.add-item-field--quantity {
+  flex: 0 0 130px;
+  min-width: 90px;
+}
+
+/* Extras - más ancho */
+.add-item-field--extras {
+  flex: 2;
+  min-width: 200px;
+}
+
+/* Botón de extras - fijo */
+.add-item-field--extras-btn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 1px;
+}
+
+.add-item-field--extras-btn button {
+  white-space: nowrap;
+}
+
+/* Notas - ancho completo */
+.add-item-field--notes {
+  width: 100%;
+}
+
+.add-item-field--notes textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 40px;
+}
+
+/* ============================================================
+   STEPPER (dentro del modal)
+   ============================================================ */
+
+.add-item-content .stepper {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-input);
+  height: 36px;
+}
+
+.add-item-content .stepper-btn {
+  width: 32px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.add-item-content .stepper-btn:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+
+.add-item-content .stepper-btn:active {
+  transform: scale(0.95);
+}
+
+.add-item-content .stepper-input {
+  width: 40px !important;
+  height: 36px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  text-align: center !important;
+  font-weight: var(--font-weight-bold) !important;
+  font-size: var(--font-size-sm) !important;
+  background: transparent !important;
+  padding: 0 !important;
+  min-width: 30px !important;
+}
+
+.add-item-content .stepper-input::-webkit-inner-spin-button,
+.add-item-content .stepper-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.add-item-content .stepper-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* ============================================================
+   LISTA DE EXTRAS AGREGADOS (estilo tipo "tags")
+   ============================================================ */
+
+.add-item-extras-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border-color);
+  margin-top: var(--space-1);
+}
+
+.add-item-extra-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+  transition: var(--transition-fast);
+}
+
+.add-item-extra-item:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-secondary);
+}
+
+.add-item-extra-name {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.add-item-extra-price {
+  color: var(--success);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xs);
+}
+
+.add-item-extra-remove {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: var(--space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  transition: var(--transition-fast);
+  font-size: 12px;
+  line-height: 1;
+  width: 20px;
+  height: 20px;
+}
+
+.add-item-extra-remove:hover {
+  background: var(--danger);
+  color: white;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .add-item-row {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .add-item-row--first {
+    flex-wrap: wrap;
+  }
+
+  .add-item-row--second {
+    flex-wrap: wrap;
+  }
+
+  .add-item-field--category {
+    flex: 1 1 100%;
+    min-width: unset;
+  }
+
+  .add-item-field--product {
+    flex: 1 1 60%;
+    min-width: unset;
+  }
+
+  .add-item-field--quantity {
+    flex: 1 1 30%;
+    min-width: unset;
+  }
+
+  .add-item-field--extras {
+    flex: 1 1 70%;
+    min-width: unset;
+  }
+
+  .add-item-field--extras-btn {
+    flex: 1 1 auto;
+  }
+
+  .add-item-field--notes {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE COMPLETO - TODOS LOS DISPOSITIVOS
+   ============================================================ */
+
+/* ---------- Tablets y móviles grandes (≤ 1024px) ---------- */
+@media (max-width: 1024px) {
+  .takeorder-shell {
+    padding: 0 var(--space-2);
+  }
+
+  .order-grid {
+    grid-template-columns: 1fr;      /* Una sola columna */
+    gap: var(--space-3);
+  }
+
+  .order-grid_1 {
+    grid-template-columns: 1fr 1fr;  /* Dos columnas en tablet */
+    gap: var(--space-3);
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr 1fr;  /* Mantiene dos columnas en tablet */
+  }
+
+  .form-grid-3col {
+    grid-template-columns: 1fr 1fr !important; /* Pasa a 2 columnas */
+  }
+}
+
+/* ---------- Móviles (≤ 768px) ---------- */
+@media (max-width: 768px) {
+  .takeorder-shell {
+    padding: 0 var(--space-1);
+  }
+
+  .order-grid_1 {
+    grid-template-columns: 1fr;      /* Una columna en móvil */
+    gap: var(--space-2);
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;      /* Una columna */
+    gap: var(--space-2);
+  }
+
+  .form-grid-3col {
+    grid-template-columns: 1fr !important;
+  }
+
+  .card-soft {
+    padding: var(--space-2);
+  }
+
+  .card-soft .card-head h3 {
+    font-size: var(--font-size-sm);
+  }
+
+  .items-head {
+    flex-wrap: wrap;                /* Permite envolver en móvil */
+    gap: var(--space-1);
+  }
+
+  .items-head-center {
+    text-align: left;
+    flex: 1 1 100%;
+    order: 3;                       /* Mueve el contador abajo */
+  }
+
+  .item-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .item-right {
+    justify-content: flex-end;
+  }
+
+  .comanda-line-1 {
+    flex-wrap: wrap;
+  }
+
+  .comanda-nombre {
+    white-space: normal;            /* Permite saltos de línea */
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .comanda-sub-line {
+    padding-left: 0;
+  }
+
+  /* Modal */
+  .modal-form-grid {
+    grid-template-columns: 1fr;     /* Una columna en móvil */
+    gap: var(--space-2);
+  }
+
+  /* Campos del modal – apilados verticalmente */
+  .add-item-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .add-item-row--first,
+  .add-item-row--second {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Quitar anchos fijos y dar 100% */
+  .add-item-field--category,
+  .add-item-field--product,
+  .add-item-field--quantity,
+  .add-item-field--extras,
+  .add-item-field--extras-btn {
+    flex: 1 1 100% !important;
+    min-width: unset !important;
+    width: 100%;
+  }
+
+  .add-item-field--extras-btn {
+    align-items: stretch;
+    padding-bottom: 0;
+  }
+
+  .add-item-field--extras-btn button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Stepper en modal */
+  .add-item-content .stepper {
+    height: 44px;                  /* Más alto para táctil */
+  }
+
+  .add-item-content .stepper-btn {
+    width: 44px;
+    height: 44px;
+    font-size: var(--font-size-xl);
+  }
+
+  .add-item-content .stepper-input {
+    width: 50px !important;
+    height: 44px !important;
+    font-size: var(--font-size-md) !important;
+  }
+
+  .add-item-extras-list {
+    gap: var(--space-1);
+  }
+}
+
+/* ---------- Móviles muy pequeños (≤ 480px) ---------- */
+@media (max-width: 480px) {
+  .takeorder-shell {
+    padding: 0 var(--space-1);
+  }
+
+  .card-soft {
+    padding: var(--space-2) var(--space-1);
+    border-radius: var(--radius-sm);
+  }
+
+  .items-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
+  }
+
+  .items-head-left,
+  .items-head-center {
+    flex: 1 1 auto;
+    text-align: left;
+  }
+
+  .items-head-center {
+    order: 2;
+  }
+
+  .comanda-left {
+    flex-wrap: wrap;
+  }
+
+  .comanda-qty {
+    font-size: var(--font-size-sm);
+  }
+
+  .comanda-nombre {
+    font-size: var(--font-size-xs);
+  }
+
+  .comanda-unitprice {
+    font-size: var(--font-size-xxs);
+  }
+
+  .add-item-extra-item {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-xxs);
+  }
+
+  .empty-title {
+    font-size: var(--font-size-xs);
+  }
+
+  .empty-subtitle {
+    font-size: var(--font-size-xxs);
+  }
+}
+
+/* ============================================================
+   RESPONSIVE - OrderHeader y ItemsSection
+   ============================================================ */
+
+/* ---------- Tablets y móviles grandes (≤ 1024px) ---------- */
+@media (max-width: 1024px) {
+  /* Mantenemos el grid principal en una columna si quieres */
+  .order-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Pero el grid de 3 columnas del header lo dejamos en 2 columnas */
+  .form-grid-3col {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* El campo de Ubicación (tercero) ocupará toda la fila */
+  .order-field-ubicacion {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+/* ---------- Móviles (≤ 768px) ---------- */
+@media (max-width: 768px) {
+  .takeorder-shell {
+    padding: 0 var(--space-1);
+  }
+
+  /* ---- Ajustes para OrderHeader ---- */
+  /* El grid de 3 columnas se convierte en 2 columnas (Tipo y Mesa) */
+  .form-grid-3col {
+    grid-template-columns: 1fr 1fr !important;
+    gap: var(--space-2);
+  }
+
+  /* Ubicación (tercer elemento) ocupa toda la fila */
+  .order-field-ubicacion {
+    grid-column: 1 / -1 !important;
+    margin-top: var(--space-1);
+  }
+
+  /* Aseguramos que el input de mesa no se desborde */
+  .form-grid-3col .field input,
+  .form-grid-3col .field .custom-combobox > div {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Notas: ya está en .form-grid, que en móvil pasa a 1 columna */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .form-grid .field-full {
+    grid-column: 1 / -1;
+  }
+
+  /* ---- Ajustes para ItemsSection ---- */
+  /* Cabecera de items: mantenemos todo en una línea */
+  .items-head {
+    flex-wrap: nowrap !important;
+    gap: var(--space-1);
+  }
+
+  /* El contenedor izquierdo (título + contador) ocupa el espacio necesario */
+  .items-head-left {
+    flex: 0 1 auto;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  /* El botón (o contenedor derecho) se empuja a la derecha */
+  .items-head .btn-add-item,
+  .items-head-right {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  /* Si el contador está en el centro, lo ocultamos o lo movemos */
+  .items-head-center {
+    display: none; /* o si quieres mostrarlo junto al título, puedes quitarlo */
+  }
+
+  /* Ajuste de padding en cards */
+  .card-soft {
+    padding: var(--space-2);
+  }
+
+  .card-soft .card-head h3 {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* ---------- Móviles muy pequeños (≤ 480px) ---------- */
+@media (max-width: 480px) {
+  .form-grid-3col {
+    gap: var(--space-1);
+  }
+
+  .form-grid-3col .field label {
+    font-size: var(--font-size-xs);
+  }
+
+  .items-head {
+    gap: var(--space-1);
+  }
+
+  .items-head-left {
+    gap: var(--space-1);
+  }
+
+  .btn-add-item {
+    font-size: var(--font-size-sm);
+    padding: var(--space-1) var(--space-2);
+  }
+}
+
+/* ============================================================
+   RESPONSIVE UNIFICADO - TODOS LOS DISPOSITIVOS
+   ============================================================ */
+
+/* ---------- Tablets y móviles grandes (≤ 1024px) ---------- */
+@media (max-width: 1024px) {
+  .takeorder-shell {
+    padding: 0 var(--space-2);
+  }
+
+  .order-grid {
+    grid-template-columns: 1fr;          /* Una columna en tablets */
+    gap: var(--space-3);
+  }
+
+  .order-grid_1 {
+    grid-template-columns: 1fr 1fr;      /* Dos columnas en tablet */
+  }
+
+  /* OrderHeader: Tipo y Mesa en la misma fila, Ubicación abajo */
+  .form-grid-3col {
+    grid-template-columns: 1fr 1fr !important;
+    gap: var(--space-2);
+  }
+
+  .form-grid-3col .order-field-ubicacion {
+    grid-column: 1 / -1 !important;
+    margin-top: var(--space-1);
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr 1fr;      /* Notas en dos columnas si hay otros campos */
+  }
+}
+
+/* ---------- Móviles (≤ 768px) ---------- */
+@media (max-width: 768px) {
+  .takeorder-shell {
+    padding: 0 var(--space-1);
+  }
+
+  .order-grid_1 {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  /* ---- OrderHeader ---- */
+  .form-grid-3col {
+    grid-template-columns: 1fr 1fr !important;  /* Tipo | Mesa */
+    gap: var(--space-2);
+  }
+
+  .form-grid-3col .order-field-ubicacion {
+    grid-column: 1 / -1 !important;
+    margin-top: var(--space-1);
+  }
+
+  /* Notas: siempre a una columna */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-2);
+  }
+
+  .form-grid .field-full {
+    grid-column: 1 / -1;
+  }
+
+  /* ---- ItemsSection: título y botón en la misma línea ---- */
+  .items-head {
+    flex-wrap: nowrap !important;      /* ← Fuerza una sola línea */
+    justify-content: space-between;
+    gap: var(--space-1);
+  }
+
+  .items-head-left {
+    flex: 0 1 auto;                   /* Solo ocupa el ancho necesario */
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  /* Botón (ButtonGroup) siempre a la derecha, sin encogerse */
+  .items-head .ButtonGroup,
+  .items-head > :last-child {          /* Selector de respaldo */
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+
+  /* Ocultamos el contador central si existe (ya que lo tienes en el título) */
+  .items-head-center {
+    display: none;
+  }
+
+  /* Ajustes de cards */
+  .card-soft {
+    padding: var(--space-2);
+  }
+
+  .card-soft .card-head h3 {
+    font-size: var(--font-size-sm);
+  }
+
+  /* ---- Resto de ajustes (items, comandas, modal, etc.) ---- */
+  .item-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .item-right {
+    justify-content: flex-end;
+  }
+
+  .comanda-line-1 {
+    flex-wrap: wrap;
+  }
+
+  .comanda-nombre {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .comanda-sub-line {
+    padding-left: 0;
+  }
+
+  .modal-form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  /* Campos del modal – apilados verticalmente */
+  .add-item-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .add-item-row--first,
+  .add-item-row--second {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .add-item-field--category,
+  .add-item-field--product,
+  .add-item-field--quantity,
+  .add-item-field--extras,
+  .add-item-field--extras-btn {
+    flex: 1 1 100% !important;
+    min-width: unset !important;
+    width: 100%;
+  }
+
+  .add-item-field--extras-btn {
+    align-items: stretch;
+    padding-bottom: 0;
+  }
+
+  .add-item-field--extras-btn button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .add-item-content .stepper {
+    height: 44px;
+  }
+
+  .add-item-content .stepper-btn {
+    width: 44px;
+    height: 44px;
+    font-size: var(--font-size-xl);
+  }
+
+  .add-item-content .stepper-input {
+    width: 50px !important;
+    height: 44px !important;
+    font-size: var(--font-size-md) !important;
+  }
+
+  .add-item-extras-list {
+    gap: var(--space-1);
+  }
+}
+
+/* ---------- Móviles muy pequeños (≤ 480px) ---------- */
+@media (max-width: 480px) {
+  .takeorder-shell {
+    padding: 0 var(--space-1);
+  }
+
+  .card-soft {
+    padding: var(--space-2) var(--space-1);
+    border-radius: var(--radius-sm);
+  }
+
+  .form-grid-3col {
+    gap: var(--space-1);
+  }
+
+  .form-grid-3col .field label {
+    font-size: var(--font-size-xs);
+  }
+
+  .items-head {
+    gap: var(--space-1);
+  }
+
+  .items-head-left {
+    gap: var(--space-1);
+  }
+
+  .items-title {
+    font-size: var(--font-size-sm);
+  }
+
+  /* Botón más pequeño */
+  .items-head .ButtonGroup button,
+  .items-head > :last-child button {
+    font-size: var(--font-size-xs);
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .comanda-left {
+    flex-wrap: wrap;
+  }
+
+  .comanda-qty {
+    font-size: var(--font-size-sm);
+  }
+
+  .comanda-nombre {
+    font-size: var(--font-size-xs);
+  }
+
+  .comanda-unitprice {
+    font-size: var(--font-size-xxs);
+  }
+
+  .add-item-extra-item {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-xxs);
+  }
+
+  .empty-title {
+    font-size: var(--font-size-xs);
+  }
+
+  .empty-subtitle {
+    font-size: var(--font-size-xxs);
+  }
+}
+
+@media (max-width: 768px) {
+  /* ── ItemsList ── */
+  /* Ocultamos los precios unitario y total, pero mantenemos los botones */
+  .comanda-right .comanda-unitprice {
+    display: none !important;
+  }
+
+  /* Aseguramos que el contenedor de acciones (botones) siga visible */
+  .comanda-right .item-actions {
+    display: flex !important;
+    margin-left: auto;    /* Empuja los botones a la derecha */
+  }
+
+  /* El contenedor derecho se mantiene visible, solo oculta precios */
+  .comanda-right {
+    display: flex !important;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  /* Extras y notas visibles */
+  .comanda-sub-line.comanda-extra {
+    display: flex !important;
+  }
+
+  .comanda-sub-line.comanda-nota {
+    display: flex !important;
+  }
+
+  /* La parte izquierda (cantidad + nombre) ocupa el espacio disponible */
+  .comanda-left {
+    flex: 1 1 auto;
+    gap: var(--space-2);
+  }
+
+  /* El nombre puede ocupar varias líneas */
+  .comanda-nombre {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  /* Ajuste de padding en el item */
+  .item-row.comanda-style {
+    padding: var(--space-2);
+  }
+
+  /* Opcional: hacer los botones más pequeños en móvil */
+  .item-actions .icon-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+}
+
+/* ============================================================
+   ORDERS HISTORY PAGE - RESPONSIVE
+   ============================================================ */
+
+/* ---------- Tablets y móviles (≤ 1024px) ---------- */
+@media (max-width: 1024px) {
+  .order-grid_1 {
+    grid-template-columns: 1fr !important;  /* Una sola columna */
+    gap: var(--space-3);
+  }
+
+  /* Ajustar altura de los paneles */
+  .orders-list,
+  .order-detail {
+    max-height: none !important;           /* Eliminar límites de altura fijos */
+    height: auto;
+  }
+
+  .order-detail {
+    max-height: 80vh !important;           /* Un poco más de espacio */
+  }
+}
+
+/* ---------- Móviles (≤ 768px) ---------- */
+@media (max-width: 768px) {
+  .order-grid_1 {
+    gap: var(--space-2);
+  }
+
+  /* ---- Panel izquierdo (lista de órdenes) ---- */
+  .orders-list .card-head h3 {
+    font-size: var(--font-size-md);
+  }
+  .orders-list .card-head p {
+    font-size: var(--font-size-xs);
+  }
+
+  /* ---- Tabla ---- */
+  .table-wrapper {
+    overflow-x: auto;                      /* Scroll horizontal si es necesario */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Las celdas de la tabla en móvil se vuelven etiquetadas (data-label) */
+  .table-cell {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) var(--space-1) !important;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .table-cell::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  /* Ocultar celdas que no queremos mostrar en móvil (ej: acciones) */
+  .table-actions-cell {
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  /* La fila de la tabla se vuelve vertical */
+  .table-row {
+    display: flex !important;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-2);
+    padding: var(--space-2);
+    background: var(--bg-secondary);
+    cursor: pointer;
+  }
+  .table-row.selected {
+    border-color: var(--primary);
+    background: var(--bg-tertiary);
+  }
+
+  /* Botones de acción dentro de la tabla se vuelven más compactos */
+  .table-actions-cell .ButtonGroup {
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+  .table-actions-cell .ButtonGroup button {
+    font-size: var(--font-size-xs);
+    padding: var(--space-1) var(--space-2);
+  }
+
+  /* ---- Toolbar (buscador, combos, limpiar) ---- */
+  .products-filter-actions {
+    flex-wrap: wrap !important;
+    gap: var(--space-1) !important;
+  }
+  .products-filter-actions .search-input-wrapper {
+    flex: 1 1 100% !important;          /* Buscador ocupa toda la fila */
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+  .products-filter-actions .combobox-compact {
+    flex: 1 1 45% !important;
+    min-width: 80px !important;
+    max-width: 100% !important;
+  }
+  .products-filter-actions .combobox-compact > div {
+    width: 100%;
+  }
+  .products-filter-actions button:last-child {
+    flex: 0 0 auto;
+  }
+
+  /* ---- Panel derecho (detalle de orden) ---- */
+  .order-detail {
+    max-height: none !important;
+    padding: var(--space-2);
+  }
+  .order-detail .card-head {
+    margin-bottom: var(--space-2);
+  }
+  .order-detail .order-header-info {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: var(--space-1);
+  }
+  .order-detail .order-header-info .order-mesa {
+    font-size: var(--font-size-md);
+  }
+  .order-detail .order-header-info .order-number {
+    font-size: var(--font-size-sm);
+  }
+
+  /* Barra de acciones de edición */
+  .edit-actions-bar {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .edit-actions-bar button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ---- ItemsList (dentro del detalle) ---- */
+  /* Ya tenemos estilos para ItemsList en móvil (ocultar precios, mostrar extras, notas y botones) */
+  /* Asegurar que el contenedor del ItemsList tenga scroll si es necesario */
+  .order-detail .items-list-modern {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  /* ---- Resumen (subtotal, IVA, total) ---- */
+  .summary-sticky {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-primary);
+    padding: var(--space-2) 0;
+    border-top: 1px solid var(--border-color);
+  }
+  .summary-row {
+    font-size: var(--font-size-sm) !important;
+  }
+  .summary-total {
+    font-size: var(--font-size-md) !important;
+  }
+
+  /* ---- Modal dividir orden ---- */
+  .modal-content {
+    padding: var(--space-2) !important;
+  }
+  .modal-footer {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .modal-footer button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Checklist dentro del modal */
+  .checklist-item {
+    padding: var(--space-2) !important;
+  }
+  .checklist-item .checklist-item-label {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* ---------- Móviles muy pequeños (≤ 480px) ---------- */
+@media (max-width: 480px) {
+  .order-grid_1 {
+    gap: var(--space-1);
+  }
+
+  .orders-list .table-cell {
+    font-size: var(--font-size-xs);
+  }
+  .table-actions-cell .ButtonGroup button {
+    font-size: var(--font-size-xxs);
+    padding: var(--space-1) var(--space-1);
+  }
+
+  .products-filter-actions .combobox-compact {
+    flex: 1 1 100% !important;
+  }
+
+  .order-detail .items-list-modern {
+    max-height: 200px;
+  }
+}

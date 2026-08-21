@@ -1,0 +1,474 @@
+/* ============================================================
+   ATTENDANCE PAGE - Estilos específicos
+   ============================================================ */
+
+/* ─── Toolbar ────────────────────────────────────────────────── */
+.att-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.att-toolbar-left {
+  flex: 1;
+  min-width: 200px;
+}
+
+.att-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.att-search-input {
+  min-width: 250px;
+  max-width: 400px;
+}
+
+/* ─── Stats Grid ────────────────────────────────────────────── */
+.att-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.att-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  transition: var(--transition);
+}
+
+.att-stat-card:hover {
+  box-shadow: var(--shadow);
+}
+
+.att-stat-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.att-stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+/* ─── Grid de tarjetas ──────────────────────────────────────── */
+.att-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+/* ─── Card de asistencia ────────────────────────────────────── */
+.att-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  transition: var(--transition);
+}
+
+.att-card:hover {
+  box-shadow: var(--shadow);
+  border-color: var(--border-hover);
+}
+
+.att-header {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.att-header h4 {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.att-header p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.att-avatar {
+  width: 36px;
+  height: 36px;
+  background: var(--primary);
+  color: var(--text-white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.att-cedula {
+  font-size: var(--font-size-xs);
+  margin: var(--space-2) 0;
+  color: var(--text-muted);
+}
+
+.att-times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  font-size: var(--font-size-sm);
+  gap: var(--space-2);
+  color: var(--text-secondary);
+}
+
+.att-times div {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.att-times svg {
+  flex-shrink: 0;
+}
+
+.att-status {
+  margin-top: var(--space-3);
+  font-weight: var(--font-weight-bold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.att-status.status-complete {
+  color: var(--success);
+}
+
+.att-status.status-progress {
+  color: var(--warning);
+}
+
+.att-status.status-none {
+  color: var(--danger);
+}
+
+/* ─── Empty state ───────────────────────────────────────────── */
+.att-empty {
+  grid-column: 1 / -1;
+  padding: var(--space-10);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--font-size-md);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-color);
+}
+
+/* ============================================================
+   MODAL DE REGISTRO - Estilos específicos
+   ============================================================ */
+
+.att-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+}
+
+/* ─── Form Group ────────────────────────────────────────────── */
+.att-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.att-form-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+/* ─── Error message ──────────────────────────────────────────── */
+.att-modal-error {
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+}
+
+.att-modal-error.error {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.att-modal-error.success {
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+/* ─── Loading ────────────────────────────────────────────────── */
+.att-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ─── Employee info ──────────────────────────────────────────── */
+.att-employee-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.att-employee-avatar {
+  width: 48px;
+  height: 48px;
+  background: var(--primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-white);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+}
+
+.att-employee-name {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+}
+
+.att-employee-detail {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+/* ─── Current time ───────────────────────────────────────────── */
+.att-current-time {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+/* ─── Estado de la jornada ───────────────────────────────────── */
+.att-status-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.att-status-badge {
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
+}
+
+.att-status-badge.complete {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.att-status-badge.progress {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.att-status-badge.none {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+/* ─── Type options ───────────────────────────────────────────── */
+.att-type-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.att-type-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+  transition: var(--transition);
+}
+
+.att-type-option:hover {
+  border-color: var(--primary);
+  background: var(--primary-bg);
+}
+
+.att-type-option.active {
+  border-color: var(--primary);
+  background: var(--primary-bg);
+  color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-bg);
+}
+
+/* ─── Complete message ───────────────────────────────────────── */
+.att-complete-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--success-bg);
+  border-radius: var(--radius-sm);
+  color: var(--success);
+  font-size: var(--font-size-sm);
+}
+
+/* ─── Summary ────────────────────────────────────────────────── */
+.att-summary {
+  padding: var(--space-3) var(--space-4);
+  background: var(--info-bg);
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--info);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   ANIMACIONES
+   ============================================================ */
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .att-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .att-toolbar-left {
+    min-width: unset;
+  }
+
+  .att-search-input {
+    min-width: unset;
+    max-width: 100%;
+  }
+
+  .att-toolbar-right {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .att-toolbar-right .button-group {
+    width: 100%;
+  }
+
+  .att-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .att-times {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .att-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .att-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .att-card {
+    padding: var(--space-3);
+  }
+
+  .att-employee-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .att-type-option {
+    justify-content: center;
+  }
+}
+
+/* ─── Reloj Digital ────────────────────────────────────────────────────────── */
+.att-clock-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.att-clock-digital {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.att-clock-icon {
+  font-size: var(--font-size-2xl);
+}
+
+.att-clock-time {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2px;
+}
+
+.att-clock-date {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  text-transform: capitalize;
+}

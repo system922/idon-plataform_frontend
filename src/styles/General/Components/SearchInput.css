@@ -1,0 +1,451 @@
+/* ============================================================
+   SEARCHINPUT.CSS - Componente de búsqueda
+   ============================================================ */
+
+/* ─── Contenedor principal ────────────────────────────────────── */
+
+.search-input-container {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  transition: var(--transition);
+}
+
+/* ─── Wrapper del input ──────────────────────────────────────── */
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  overflow: hidden;
+}
+
+.search-input-wrapper:hover:not(.search-input-disabled) {
+  border-color: var(--border-dark);
+}
+
+.search-input-focused .search-input-wrapper {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+/* ─── Icono de búsqueda ──────────────────────────────────────── */
+
+.search-input-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-3);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* ─── Input ───────────────────────────────────────────────────── */
+
+.search-input-field {
+  flex: 1;
+  padding: var(--space-2) 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  min-width: 0;
+  width: 100%;
+}
+
+.search-input-field::placeholder {
+  color: var(--text-dim);
+}
+
+.search-input-field:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ─── Tamaños ────────────────────────────────────────────────── */
+
+.search-input-sm .search-input-field {
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) 0;
+  min-height: 28px;
+}
+
+.search-input-sm .search-input-icon {
+  padding: 0 var(--space-2);
+}
+
+.search-input-sm .search-input-clear,
+.search-input-sm .search-input-filter-btn {
+  padding: var(--space-1);
+}
+
+.search-input-md .search-input-field {
+  font-size: var(--font-size-sm);
+  padding: var(--space-2) 0;
+  min-height: 36px;
+}
+
+.search-input-lg .search-input-field {
+  font-size: var(--font-size-base);
+  padding: var(--space-3) 0;
+  min-height: 44px;
+}
+
+/* ─── Variantes ───────────────────────────────────────────────── */
+
+/* Default */
+.search-input-default .search-input-wrapper {
+  background: var(--bg-input);
+  border-color: var(--border-color);
+}
+
+/* Primary */
+.search-input-primary .search-input-wrapper {
+  background: var(--primary-bg);
+  border-color: var(--border-primary);
+}
+
+.search-input-primary .search-input-wrapper:hover:not(.search-input-disabled) {
+  border-color: var(--primary);
+}
+
+.search-input-primary.search-input-focused .search-input-wrapper {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+/* Ghost */
+.search-input-ghost .search-input-wrapper {
+  background: transparent;
+  border-color: transparent;
+}
+
+.search-input-ghost .search-input-wrapper:hover:not(.search-input-disabled) {
+  border-color: var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.search-input-ghost.search-input-focused .search-input-wrapper {
+  border-color: var(--border-focus);
+  background: var(--bg-input);
+  box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+/* ─── Botón de limpiar ───────────────────────────────────────── */
+
+.search-input-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.search-input-clear:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* ─── Botón de filtros ───────────────────────────────────────── */
+
+.search-input-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  border-left: 1px solid var(--border-color);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.search-input-filter-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.search-input-filter-active {
+  color: var(--primary);
+}
+
+.search-input-filter-open {
+  background: var(--primary-bg);
+  color: var(--primary);
+}
+
+.search-input-filter-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background: var(--primary);
+  border-radius: 50%;
+  border: 2px solid var(--bg-input);
+}
+
+.search-input-filter-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  display: none;
+}
+
+/* Mostrar label en tamaño lg */
+.search-input-lg .search-input-filter-label {
+  display: inline;
+}
+
+/* ─── Hotkey hint ────────────────────────────────────────────── */
+
+.search-input-hotkey {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-dim);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xs);
+  padding: var(--space-1) var(--space-2);
+  margin-right: var(--space-2);
+  flex-shrink: 0;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.05em;
+}
+
+/* ─── Spinner de carga ───────────────────────────────────────── */
+
+.search-input-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.search-input-loading .search-input-icon {
+  color: var(--primary);
+}
+
+/* ─── Contador de resultados ────────────────────────────────── */
+
+.search-input-results-count {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  padding: 0 var(--space-2);
+}
+
+/* ─── Panel de filtros ────────────────────────────────────────── */
+
+.search-input-filters-panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  min-width: 300px;
+  max-width: 400px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-dropdown);
+  animation: slideDown 0.2s ease;
+  overflow: hidden;
+}
+
+.search-input-filters-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.search-input-filters-title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.search-input-filters-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: var(--transition);
+}
+
+.search-input-filters-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.search-input-filters-content {
+  padding: var(--space-4);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.search-input-filters-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-color);
+  gap: var(--space-2);
+}
+
+.search-input-filters-clear {
+  padding: var(--space-1) var(--space-3);
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.search-input-filters-clear:hover {
+  text-decoration: underline;
+}
+
+/* ─── Sugerencias ──────────────────────────────────────────────── */
+
+.search-input-suggestions-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.search-input-suggestions {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-dropdown);
+  max-height: 300px;
+  overflow-y: auto;
+  animation: slideDown 0.2s ease;
+}
+
+.search-suggestion-item {
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.search-suggestion-item:hover,
+.search-suggestion-selected {
+  background: var(--primary-bg);
+  color: var(--primary);
+}
+
+/* ─── Scrollbar personalizada ─────────────────────────────────── */
+
+.search-input-filters-content::-webkit-scrollbar,
+.search-input-suggestions::-webkit-scrollbar {
+  width: 4px;
+}
+
+.search-input-filters-content::-webkit-scrollbar-track,
+.search-input-suggestions::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+.search-input-filters-content::-webkit-scrollbar-thumb,
+.search-input-suggestions::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 99px;
+}
+
+.search-input-filters-content::-webkit-scrollbar-thumb:hover,
+.search-input-suggestions::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .search-input-container {
+    max-width: 100%;
+  }
+
+  .search-input-filters-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 90vw;
+    max-width: 90vw;
+    max-height: 80vh;
+    animation: scaleIn 0.2s ease;
+  }
+
+  .search-input-filter-label {
+    display: none !important;
+  }
+
+  .search-input-hotkey {
+    display: none !important;
+  }
+
+  .search-input-filters-content {
+    max-height: 50vh;
+  }
+}
+
+/* ─── Animaciones ───────────────────────────────────────────────── */
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}

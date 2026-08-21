@@ -1,0 +1,227 @@
+/* ============================================
+   USERS LIST - ESTILOS ESPECÍFICOS
+   ============================================ */
+
+/* ─── Toolbar ───────────────────────────────────────────────────────────── */
+.users-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.users-filter {
+  min-width: 180px;
+}
+
+/* ─── Tabla - Nombre de usuario ───────────────────────────────────────── */
+.user-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 140, 66, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff8c42;
+  flex-shrink: 0;
+}
+
+.user-avatar span {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.user-full-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.user-id {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ─── Tabla - Contacto ─────────────────────────────────────────────────── */
+.user-email {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.user-phone {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ─── Tabla - Fecha de registro ───────────────────────────────────────── */
+.user-created {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ─── MODAL EDITAR USUARIO ─────────────────────────────────────────────── */
+.users-edit-modal .modal-content {
+  max-width: 480px;
+  width: 95vw;
+}
+
+.users-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 0;
+}
+
+.users-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.users-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.users-edit-field label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.users-edit-field .input-container input {
+  width: 100%;
+}
+
+.users-edit-info {
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  border: 1px solid var(--border-color);
+  margin-top: 4px;
+}
+
+.users-edit-info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  font-size: 12px;
+}
+
+.users-edit-info-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.users-edit-info-value {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .users-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .users-filter {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .users-edit-row {
+    grid-template-columns: 1fr;
+  }
+
+  .users-edit-info {
+    grid-template-columns: 1fr;
+  }
+
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+  .user-avatar span {
+    font-size: 11px;
+  }
+
+  .user-full-name {
+    font-size: 12px;
+  }
+
+  .user-email {
+    font-size: 11px;
+  }
+
+  .user-phone {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-name {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .user-avatar {
+    width: 24px;
+    height: 24px;
+  }
+
+  .user-avatar span {
+    font-size: 10px;
+  }
+
+  .user-full-name {
+    font-size: 11px;
+  }
+
+  .user-id {
+    font-size: 9px;
+  }
+
+  .user-email {
+    font-size: 10px;
+  }
+
+  .user-phone {
+    font-size: 10px;
+  }
+
+  .user-created {
+    font-size: 10px;
+  }
+
+  .users-edit-info-item {
+    flex-direction: column;
+    gap: 2px;
+  }
+}

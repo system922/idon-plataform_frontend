@@ -1,0 +1,1223 @@
+/* ============================================================
+   ORDERS_KITCHEN_SCREEN.CSS - Pantalla de cocina
+   Versión 2.0 - Totalmente responsiva
+   ============================================================ */
+
+/* ============================================================
+   CONTENEDOR PRINCIPAL
+   ============================================================ */
+.kitchen-container {
+  display: flex;
+  height: calc(100vh - 60px); /* Ajusta según altura del header */
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  overflow: hidden;
+}
+
+/* ============================================================
+   PANEL IZQUIERDO - LISTA DE ÓRDENES
+   ============================================================ */
+.kitchen-panel {
+  width: 320px;
+  max-width: 320px;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+}
+
+/* Cabecera del panel */
+.kitchen-panel-header {
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: kFadeIn 0.4s ease both;
+  position: relative;
+  z-index: 1; /* Bajo para no superponerse al sidebar */
+  flex-shrink: 0; /* No se encoge */
+}
+
+.kitchen-panel-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0; /* Permite que el texto se recorte */
+}
+
+.kitchen-panel-icon {
+  width: 34px;
+  height: 34px;
+  background: var(--primary-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.kitchen-panel-icon svg {
+  color: var(--primary);
+}
+
+.kitchen-panel-title {
+  font-weight: var(--font-weight-extrabold);
+  font-size: var(--font-size-base);
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.kitchen-panel-subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kitchen-panel-subtitle .pending-count {
+  color: var(--warning);
+  transition: color 0.4s;
+}
+.kitchen-panel-subtitle .ready-count {
+  color: var(--success);
+  animation: kFadeIn 0.3s ease both;
+}
+
+/* Controles del panel (botones de sonido, refrescar) */
+.kitchen-panel-controls {
+  display: flex;
+  gap: 6px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Lista de órdenes (scroll) */
+.kitchen-order-list {
+  flex: 1 1 auto;
+  min-height: 0; /* Clave para que el scroll funcione en flexbox */
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-2);
+}
+
+/* ============================================================
+   TARJETA DE ORDEN (Lista)
+   ============================================================ */
+.kitchen-order-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-3);
+  margin-bottom: 7px;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease !important;
+  animation: kSlideLeft 0.32s ease both;
+}
+.kitchen-order-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+.kitchen-order-card:active {
+  transform: scale(0.98) translateY(0) !important;
+}
+/* Estado activo (seleccionado) */
+.kitchen-order-card.active {
+  background: var(--primary-bg);
+  border-color: var(--primary);
+}
+/* Estado en preparación */
+.kitchen-order-card.preparing {
+  background: rgba(245, 158, 11, 0.05);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.kitchen-order-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.kitchen-order-card-id {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.kitchen-order-card-id .table-icon {
+  color: var(--text-muted);
+}
+.kitchen-order-card-id .takeaway-icon {
+  color: var(--purple);
+}
+.kitchen-order-card-number {
+  font-size: 17px;
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-primary);
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kitchen-order-card-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.kitchen-order-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+.kitchen-order-card-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  transition: color 1s ease;
+}
+.kitchen-order-card-time.urgent { color: var(--danger); }
+.kitchen-order-card-time.warning { color: var(--warning); }
+.kitchen-order-card-time.normal { color: var(--success); }
+
+/* Nota de la orden (dentro de la tarjeta) */
+.kitchen-order-note {
+  margin-top: 7px;
+  font-size: var(--font-size-xs);
+  background: var(--warning-bg);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-radius: var(--radius-xs);
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kitchen-order-note svg {
+  color: var(--warning);
+  flex-shrink: 0;
+}
+.kitchen-order-note span {
+  color: var(--warning);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================
+   TARJETA DE ORDEN LISTA (Ready)
+   ============================================================ */
+.kitchen-ready-card {
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform 0.18s ease, opacity 0.18s ease, border-color 0.18s ease !important;
+  animation: kReadyIn 0.35s ease both;
+}
+.kitchen-ready-card:hover {
+  transform: translateX(3px) !important;
+  opacity: 1 !important;
+}
+.kitchen-ready-card.active {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1.5px solid var(--success);
+}
+.kitchen-ready-card.inactive {
+  background: rgba(16, 185, 129, 0.03);
+  border: 1.5px solid rgba(16, 185, 129, 0.12);
+  opacity: 0.8;
+}
+
+.kitchen-ready-card-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.kitchen-ready-card-left .table-icon,
+.kitchen-ready-card-left .takeaway-icon {
+  color: var(--success);
+}
+
+.kitchen-ready-card-info {
+  min-width: 0;
+}
+.kitchen-ready-card-info .table-number {
+  font-weight: var(--font-weight-extrabold);
+  font-size: var(--font-size-md);
+  color: var(--success);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kitchen-ready-card-info .order-ref {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.kitchen-ready-badge {
+  font-size: var(--font-size-xs);
+  background: var(--success-bg);
+  color: var(--success);
+  border-radius: 20px;
+  padding: 3px 8px;
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: 0.5px;
+  animation: kGlow 2.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   PANEL DERECHO - DETALLE DE ORDEN
+   ============================================================ */
+.kitchen-detail-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0; /* Evita desbordes por contenido largo */
+}
+
+/* Cabecera del detalle */
+.kitchen-detail-header {
+  padding: 18px 28px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.kitchen-detail-header-left {
+  flex: 1;
+  min-width: 0;
+}
+.kitchen-detail-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.kitchen-detail-title .table-icon {
+  color: var(--primary);
+}
+.kitchen-detail-title .takeaway-icon {
+  color: var(--purple);
+}
+.kitchen-detail-title .table-number {
+  font-size: 30px;
+  font-weight: var(--font-weight-extrabold);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.kitchen-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+.kitchen-detail-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.kitchen-detail-meta-item.time {
+  font-weight: var(--font-weight-bold);
+  transition: color 1s ease;
+}
+.kitchen-detail-meta-item.time.urgent { color: var(--danger); }
+.kitchen-detail-meta-item.time.warning { color: var(--warning); }
+.kitchen-detail-meta-item.time.normal { color: var(--success); }
+
+/* Nota del detalle */
+.kitchen-detail-note {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-md);
+  color: var(--warning);
+  background: var(--warning-bg);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-semibold);
+  animation: kFadeIn 0.4s ease both;
+}
+.kitchen-detail-note svg {
+  color: var(--warning);
+}
+
+/* Acciones del detalle (botones) */
+.kitchen-detail-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  animation: kFadeIn 0.4s ease both;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   LISTA DE ÍTEMS DEL DETALLE
+   ============================================================ */
+.kitchen-detail-items {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-5) 28px;
+}
+
+.kitchen-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-3);
+}
+
+/* ============================================================
+   TARJETA DE ÍTEM
+   ============================================================ */
+.kitchen-item-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  animation: kFadeUp 0.35s ease both;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.kitchen-item-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.25), var(--shadow-md) !important;
+}
+
+.kitchen-item-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.kitchen-item-quantity {
+  font-size: 22px;
+  font-weight: var(--font-weight-extrabold);
+  color: var(--primary);
+  line-height: 1;
+  flex-shrink: 0;
+}
+.kitchen-item-name {
+  font-size: 17px;
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.kitchen-item-extras {
+  padding-left: 4px;
+  margin-bottom: 6px;
+}
+.kitchen-item-extra {
+  font-size: var(--font-size-md);
+  color: var(--purple);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: var(--font-weight-medium);
+  animation: kFadeIn 0.3s ease both;
+}
+.kitchen-item-extra .plus {
+  color: var(--purple);
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
+}
+.kitchen-item-notes {
+  padding-left: 4px;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  font-style: italic;
+  animation: kFadeIn 0.3s ease both;
+}
+
+/* ============================================================
+   BOTONES (generales)
+   ============================================================ */
+.kitchen-btn {
+  padding: 11px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+  transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease !important;
+  border: 1.5px solid;
+}
+.kitchen-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.kitchen-btn:active {
+  transform: scale(0.96) translateY(0);
+  filter: brightness(0.95);
+}
+.kitchen-btn-primary {
+  background: var(--warning);
+  color: var(--text-strong);
+  border-color: var(--warning);
+}
+.kitchen-btn-success {
+  background: var(--success);
+  color: var(--text-white);
+  border-color: var(--success);
+}
+.kitchen-btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  border-color: var(--border-color);
+}
+
+/* ============================================================
+   BOTONES DE ÍCONO (sonido, refrescar, etc.)
+   ============================================================ */
+.kitchen-icon-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 7px 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s !important;
+}
+.kitchen-icon-btn:hover {
+  transform: scale(1.08);
+}
+.kitchen-icon-btn:active {
+  transform: scale(0.94);
+}
+.kitchen-icon-btn.active {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.kitchen-icon-btn.sound-active {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: var(--success);
+  color: var(--success);
+}
+.kitchen-icon-btn.spinning svg {
+  animation: kSpin 0.6s linear;
+}
+
+/* ============================================================
+   SOUND PICKER DROPDOWN
+   ============================================================ */
+.kitchen-sound-picker {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: var(--z-dropdown, 1000);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-2);
+  min-width: 210px;
+  box-shadow: var(--shadow-xl);
+  animation: kFadeUp 0.18s ease both;
+}
+.kitchen-sound-picker-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 8px 10px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 6px;
+}
+.kitchen-sound-picker-header svg {
+  color: var(--primary);
+}
+.kitchen-sound-picker-header span {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.kitchen-sound-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-bottom: 3px;
+  transition: background 0.15s, border-color 0.15s;
+  border: 1px solid transparent;
+}
+.kitchen-sound-option:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.kitchen-sound-option.active {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+.kitchen-sound-option-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kitchen-sound-option-info {
+  flex: 1;
+  min-width: 0;
+}
+.kitchen-sound-option-label {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+.kitchen-sound-option-label.active {
+  color: var(--primary);
+  font-weight: var(--font-weight-bold);
+}
+.kitchen-sound-option-desc {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.kitchen-sound-option-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================================
+   BADGE DE ESTADO
+   ============================================================ */
+.kitchen-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: var(--font-weight-extrabold);
+  font-size: 12px;
+  padding: 2px 5px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.kitchen-status-badge.large {
+  font-size: var(--font-size-sm);
+  padding: 5px 12px;
+}
+.kitchen-status-badge .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  display: inline-block;
+  opacity: 0.85;
+}
+.kitchen-status-badge.large .dot {
+  width: 6px;
+  height: 6px;
+}
+/* Estados específicos (sobrescriben el background) */
+.kitchen-status-badge.new {
+  background: var(--warning);
+  color: var(--text-white);
+  animation: kPulseRed 2s ease-in-out infinite;
+}
+.kitchen-status-badge.preparing {
+  background: var(--warning);
+  color: var(--text-strong);
+  animation: kBreath 1.6s ease-in-out infinite;
+}
+.kitchen-status-badge.ready {
+  background: var(--success);
+  color: var(--text-white);
+  animation: none;
+}
+
+/* ============================================================
+   ESTADOS DE CARGA Y VACÍO
+   ============================================================ */
+.kitchen-loading {
+  text-align: center;
+  color: var(--text-muted);
+  padding: var(--space-10);
+  font-size: var(--font-size-md);
+  animation: kFadeIn 0.4s ease;
+}
+.kitchen-loading svg {
+  color: var(--text-muted);
+  animation: kSpin 1s linear infinite;
+  margin-bottom: var(--space-2);
+}
+
+.kitchen-loading-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  gap: 14px;
+  animation: kFadeIn 0.3s ease;
+}
+.kitchen-loading-detail svg {
+  color: var(--text-muted);
+  animation: kSpin 0.9s linear infinite;
+}
+.kitchen-loading-detail span {
+  font-size: var(--font-size-md);
+}
+
+/* Estado vacío (lista) */
+.kitchen-empty {
+  text-align: center;
+  padding: 52px 20px;
+  animation: kPopIn 0.45s ease both;
+}
+.kitchen-empty-icon {
+  width: 60px;
+  height: 60px;
+  background: var(--success-bg);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  animation: kGlow 3s ease-in-out infinite;
+}
+.kitchen-empty-icon svg {
+  color: var(--success);
+}
+.kitchen-empty-title {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
+  color: var(--success);
+}
+.kitchen-empty-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* Detalle vacío (cuando no hay orden seleccionada) */
+.kitchen-detail-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: kPopIn 0.45s ease both;
+}
+.kitchen-detail-empty-icon {
+  width: 72px;
+  height: 72px;
+  background: var(--primary-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+.kitchen-detail-empty-icon svg {
+  color: var(--primary);
+}
+.kitchen-detail-empty-title {
+  font-size: 17px;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-muted);
+}
+.kitchen-detail-empty-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-top: var(--space-2);
+}
+
+/* Detalle con error */
+.kitchen-detail-error {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--danger);
+  font-size: var(--font-size-base);
+  gap: var(--space-2);
+  animation: kFadeIn 0.3s ease;
+}
+
+/* ============================================================
+   SEPARADOR DE LISTOS
+   ============================================================ */
+.kitchen-ready-divider {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 14px 8px 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: kFadeIn 0.3s ease both;
+}
+.kitchen-ready-divider svg {
+  color: var(--success);
+}
+
+/* ============================================================
+   KEYFRAMES - ANIMACIONES
+   ============================================================ */
+@keyframes kSlideLeft {
+  from { opacity: 0; transform: translateX(-18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes kFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes kSlideRight {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes kPopIn {
+  0%   { opacity: 0; transform: scale(0.85); }
+  65%  { transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes kFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes kPulseRed {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+  50%       { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+@keyframes kBreath {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+@keyframes kSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes kReadyIn {
+  from { opacity: 0; transform: translateX(-10px) scale(0.97); }
+  to   { opacity: 0.8; transform: translateX(0) scale(1); }
+}
+@keyframes kGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  50%       { box-shadow: 0 0 12px 2px rgba(16, 185, 129, 0.25); }
+}
+
+/* ============================================================
+   SCROLLBAR PERSONALIZADA
+   ============================================================ */
+.kitchen-order-list::-webkit-scrollbar,
+.kitchen-detail-items::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.kitchen-order-list::-webkit-scrollbar-track,
+.kitchen-detail-items::-webkit-scrollbar-track {
+  background: transparent;
+}
+.kitchen-order-list::-webkit-scrollbar-thumb,
+.kitchen-detail-items::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 99px;
+}
+.kitchen-order-list::-webkit-scrollbar-thumb:hover,
+.kitchen-detail-items::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
+/* ============================================================
+   RESPONSIVE - MEDIA QUERIES
+   ============================================================ */
+
+/* ---------- Tablets y pantallas medianas (≤ 1024px) ---------- */
+@media (max-width: 1024px) {
+  .kitchen-panel {
+    width: 200px;
+  }
+  .kitchen-detail-header {
+    padding: 14px 20px;
+  }
+  .kitchen-detail-items {
+    padding: var(--space-4) 20px;
+  }
+  .kitchen-detail-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-2);
+  }
+  .kitchen-detail-title .table-number {
+    font-size: 26px;
+  }
+  .kitchen-item-name {
+    font-size: 15px;
+  }
+}
+
+/* ---------- Móviles y tablets pequeñas (≤ 768px) ---------- */
+@media (max-width: 768px) {
+  .kitchen-container {
+    flex-direction: column;
+    height: calc(100vh - 56px); /* Ajusta según header */
+  }
+
+  .kitchen-panel {
+    width: 100%;
+    max-height: 45vh; /* Altura suficiente para varias órdenes */
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+  }
+
+  .kitchen-panel-header {
+    padding: var(--space-2) var(--space-3);
+    flex-wrap: nowrap;
+  }
+  .kitchen-panel-header-left {
+    flex: 1;
+    min-width: 0;
+  }
+  .kitchen-panel-title {
+    font-size: var(--font-size-md);
+  }
+  .kitchen-panel-subtitle {
+    font-size: var(--font-size-xs);
+  }
+
+  .kitchen-order-list {
+    padding: var(--space-2) var(--space-2);
+  }
+
+  /* Tarjetas de orden más compactas */
+  .kitchen-order-card {
+    padding: var(--space-2) var(--space-2);
+    margin-bottom: 6px;
+  }
+  .kitchen-order-card-number {
+    font-size: 15px;
+  }
+  .kitchen-order-card-details {
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+  .kitchen-order-card-meta {
+    font-size: var(--font-size-xs);
+  }
+  .kitchen-order-card-time {
+    font-size: var(--font-size-xs);
+  }
+  .kitchen-order-note {
+    font-size: var(--font-size-xs);
+    padding: 3px 6px;
+  }
+
+  /* Tarjetas listas */
+  .kitchen-ready-card {
+    padding: var(--space-2) var(--space-2);
+  }
+  .kitchen-ready-card-info .table-number {
+    font-size: var(--font-size-md);
+  }
+  .kitchen-ready-badge {
+    font-size: var(--font-size-xxs);
+    padding: 2px 6px;
+  }
+
+  /* Panel derecho (detalle) */
+  .kitchen-detail-panel {
+    flex: 1;
+    min-height: 40vh;
+    max-height: 55vh;
+  }
+
+  .kitchen-detail-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--space-3) var(--space-3);
+    gap: var(--space-2);
+  }
+  .kitchen-detail-title {
+    gap: var(--space-2);
+  }
+  .kitchen-detail-title .table-number {
+    font-size: 22px;
+  }
+  .kitchen-detail-meta {
+    font-size: var(--font-size-sm);
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .kitchen-detail-note {
+    font-size: var(--font-size-sm);
+    padding: 6px 10px;
+    width: 100%;
+  }
+  .kitchen-detail-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .kitchen-detail-actions .kitchen-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+    font-size: var(--font-size-md);
+  }
+
+  .kitchen-detail-items {
+    padding: var(--space-3) var(--space-3);
+  }
+  .kitchen-detail-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  /* Tarjetas de items */
+  .kitchen-item-card {
+    padding: 12px 14px;
+  }
+  .kitchen-item-quantity {
+    font-size: 20px;
+  }
+  .kitchen-item-name {
+    font-size: 15px;
+  }
+  .kitchen-item-extra {
+    font-size: var(--font-size-sm);
+  }
+
+  /* Dropdown de sonidos */
+  .kitchen-sound-picker {
+    right: 0;
+    left: auto;
+    min-width: 180px;
+    max-width: 90vw;
+  }
+
+  /* Estados vacíos */
+  .kitchen-empty {
+    padding: 30px 16px;
+  }
+  .kitchen-empty-icon {
+    width: 48px;
+    height: 48px;
+  }
+  .kitchen-empty-title {
+    font-size: var(--font-size-md);
+  }
+  .kitchen-empty-subtitle {
+    font-size: var(--font-size-sm);
+  }
+  .kitchen-detail-empty {
+    padding: 20px;
+  }
+  .kitchen-detail-empty-icon {
+    width: 56px;
+    height: 56px;
+  }
+  .kitchen-detail-empty-title {
+    font-size: 15px;
+  }
+  .kitchen-detail-empty-subtitle {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* ---------- Móviles pequeños (≤ 480px) ---------- */
+@media (max-width: 480px) {
+  .kitchen-container {
+    height: calc(100vh - 50px);
+  }
+  .kitchen-panel {
+    max-height: 40vh;
+  }
+  .kitchen-panel-header {
+    padding: var(--space-1) var(--space-2);
+    flex-wrap: nowrap;
+  }
+  .kitchen-panel-title {
+    font-size: var(--font-size-sm);
+  }
+  .kitchen-panel-subtitle {
+    font-size: var(--font-size-xxs);
+  }
+  .kitchen-order-card {
+    padding: var(--space-1) var(--space-2);
+  }
+  .kitchen-order-card-number {
+    font-size: 14px;
+  }
+  .kitchen-order-card-meta {
+    font-size: var(--font-size-xxs);
+  }
+  .kitchen-order-card-time {
+    font-size: var(--font-size-xxs);
+  }
+  .kitchen-ready-card {
+    padding: var(--space-1) var(--space-2);
+  }
+  .kitchen-ready-card-info .table-number {
+    font-size: var(--font-size-sm);
+  }
+  .kitchen-ready-badge {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+
+  .kitchen-detail-panel {
+    max-height: 60vh;
+  }
+  .kitchen-detail-header {
+    padding: var(--space-2) var(--space-2);
+  }
+  .kitchen-detail-title .table-number {
+    font-size: 20px;
+  }
+  .kitchen-detail-meta {
+    font-size: var(--font-size-xs);
+    gap: 4px;
+  }
+  .kitchen-detail-meta-item {
+    font-size: var(--font-size-xs);
+  }
+  .kitchen-detail-note {
+    font-size: var(--font-size-xs);
+    padding: 4px 8px;
+  }
+  .kitchen-detail-actions .kitchen-btn {
+    padding: 10px 12px;
+    font-size: var(--font-size-sm);
+  }
+  .kitchen-detail-items {
+    padding: var(--space-2) var(--space-2);
+  }
+  .kitchen-item-card {
+    padding: 10px 12px;
+  }
+  .kitchen-item-quantity {
+    font-size: 18px;
+  }
+  .kitchen-item-name {
+    font-size: 14px;
+  }
+  .kitchen-item-extra {
+    font-size: var(--font-size-xs);
+  }
+
+  /* Sound picker en móvil: ocupa todo el ancho desde abajo */
+  .kitchen-sound-picker {
+    right: 0;
+    left: 0;
+    min-width: unset;
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    bottom: 0;
+    top: auto;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+  }
+  .kitchen-sound-option {
+    padding: 12px 12px;
+  }
+  .kitchen-order-list::-webkit-scrollbar,
+  .kitchen-detail-items::-webkit-scrollbar {
+    width: 2px;
+  }
+}
+
+/* ---------- Móviles en landscape (altura reducida) ---------- */
+@media (max-height: 600px) and (orientation: landscape) {
+  .kitchen-panel {
+    max-height: 100vh;
+    width: 40%;
+  }
+  .kitchen-detail-panel {
+    max-height: 100vh;
+  }
+  .kitchen-detail-header {
+    padding: var(--space-2) var(--space-3);
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .kitchen-detail-title .table-number {
+    font-size: 20px;
+  }
+  .kitchen-detail-actions {
+    flex-direction: row;
+    width: auto;
+  }
+  .kitchen-detail-actions .kitchen-btn {
+    width: auto;
+    padding: 6px 12px;
+    font-size: var(--font-size-sm);
+  }
+  .kitchen-detail-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+  .kitchen-item-card {
+    padding: 8px 10px;
+  }
+  .kitchen-item-quantity {
+    font-size: 16px;
+  }
+  .kitchen-item-name {
+    font-size: 13px;
+  }
+}
+
+/* ---------- Soporte para dark mode (opcional) ---------- */
+@media (prefers-color-scheme: dark) {
+  .kitchen-panel {
+    background: var(--bg-tertiary);
+  }
+  .kitchen-detail-header {
+    background: var(--bg-secondary);
+  }
+}

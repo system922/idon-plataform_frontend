@@ -1,0 +1,273 @@
+/* ============================================================
+   ODONTO-BUTTONS.CSS - Botones (primarios, secundarios, iconos)
+   ============================================================ */
+/* BOTÓN PRINCIPAL - Para guardar, crear, aceptar */
+.odonto-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--primary-gradient);
+  color: var(--text-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: var(--transition);
+  white-space: nowrap;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.odonto-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+}
+
+.odonto-btn-primary:active {
+  transform: translateY(0);
+}
+
+.odonto-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* BOTÓN SECUNDARIO - Para cancelar, cerrar */
+.odonto-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.odonto-btn-secondary:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+.odonto-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.odonto-btn-secondary .spin {
+  animation: odonto-spin 0.8s linear infinite;
+}
+
+/* BOTÓN AGREGAR - Para crear nuevos registros */
+.odonto-btn-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--primary-gradient);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: var(--transition);
+  white-space: nowrap;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.odonto-btn-add:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+}
+
+.odonto-btn-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.odonto-btn-add .spin {
+  animation: odonto-spin 0.8s linear infinite;
+}
+
+/* BOTONES DE ACCIÓN - Íconos (editar, eliminar, ver) */
+.odonto-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.odonto-btn-icon {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 14px;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.odonto-btn-icon:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--shadow);
+}
+
+.odonto-btn-icon.view:hover {
+  background: var(--info-bg);
+  border-color: var(--info);
+  color: var(--info);
+}
+
+.odonto-btn-icon.edit:hover {
+  background: var(--primary-bg);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.odonto-btn-icon.delete:hover {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* BOTÓN APLICAR PLANTILLA */
+.odonto-btn-apply {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--primary-gradient);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: var(--transition);
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.odonto-btn-apply:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* BOTONES DE IMAGEN (upload, camera, remove) */
+.odonto-btn-upload,
+.odonto-btn-camera,
+.odonto-btn-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-white);
+}
+
+.odonto-btn-upload {
+  background: var(--primary-gradient);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+.odonto-btn-upload:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.odonto-btn-camera {
+  background: var(--info);
+}
+
+.odonto-btn-camera:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.odonto-btn-remove {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 0 8px;
+}
+
+.odonto-btn-remove:hover {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* BOTÓN AGREGAR MEDICAMENTO */
+.odonto-btn-add-med {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--bg-tertiary);
+  border: 1.5px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.odonto-btn-add-med:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-bg);
+}
+
+/* BOTÓN ELIMINAR MEDICAMENTO */
+.odonto-btn-remove-med {
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.odonto-btn-remove-med:hover:not(:disabled) {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.odonto-btn-remove-med:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}

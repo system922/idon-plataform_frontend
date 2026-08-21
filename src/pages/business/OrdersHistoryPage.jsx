@@ -1,22 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { Search, X, Printer, Edit2, Trash2, Save, Calendar, RefreshCw } from 'react-feather';
-import { useConfirm } from '../../context/ConfirmContext';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import { useSession } from '../../context/SessionContext';
+import { FiPlus, FiSave, FiEdit2, FiTrash2, FiPrinter, FiSearch, FiRefreshCw, FiCalendar, FiX, FiEye } from 'react-icons/fi';
 import PageTemplate from '../../components/PageTemplate';
-import { useBusinessContext } from '../../admin/config/BusinessContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import { usePrinterService } from '../../services/usePrinterService';
 import AddItemModal from '../../components/AddItemModal';
 import EditItemModal from '../../components/EditItemModal';
 import ItemsList from '../../components/ItemsList';
-import { fetchWithAuth } from '../../config/apiBase';
+import { fetchWithAuth } from '../../config/api';
 import { useRealtimeSync } from '../../hooks/useRealtimeSync';
-import '../../styles/OrdersHistoryPage.css';
-import '../../styles/CreateOrder.css';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import CustomCombobox from '../../components/General/CustomCombobox';
+import Table from '../../components/General/Table';
+import Modal from '../../components/General/Modal';
+import Checklist from '../../components/General/Checklist';
 
 const fmt = (n) => `$${parseFloat(n || 0).toFixed(2)}`;
 
 // --- Función para obtener fecha actual de Ecuador ---
 const getEcuadorDate = () => {
-  // Ecuador está en UTC-5 (todo el año, sin horario de verano)
   const now = new Date();
   const ecuadorDate = new Date(now.getTime() - (5 * 60 * 60 * 1000));
   return ecuadorDate.toISOString().split('T')[0];
@@ -25,7 +27,7 @@ const getEcuadorDate = () => {
 // --- Función para obtener precio actual de un producto ---
 const getProductPrice = async (productId) => {
   try {
-    const res = await fetchWithAuth(`/api/products/${productId}`);
+    const res = await fetchWithAuth(`/products/${productId}`);
     if (res.ok) {
       const product = await res.json();
       return Number(product.selling_price) || Number(product.price) || 0;
@@ -36,11 +38,69 @@ const getProductPrice = async (productId) => {
   }
 };
 
+// ─── Componente de selector de fechas personalizadas ─────────────────────────
+function DateRangePicker({ startDate, endDate, onApply, onClose }) {
+  const [localStart, setLocalStart] = useState(startDate || '');
+  const [localEnd, setLocalEnd] = useState(endDate || '');
+
+  const handleApply = () => {
+    if (localStart && localEnd) {
+      onApply(localStart, localEnd);
+    }
+  };
+
+  return (
+    <div className="report-date-range-picker">
+      <div className="report-date-range-inputs">
+        <input
+          type="date"
+          value={localStart}
+          onChange={(e) => setLocalStart(e.target.value)}
+          placeholder="Fecha inicial"
+        />
+        <span>a</span>
+        <input
+          type="date"
+          value={localEnd}
+          onChange={(e) => setLocalEnd(e.target.value)}
+          placeholder="Fecha final"
+        />
+      </div>
+      <div className="report-date-range-actions">
+        <button onClick={onClose} className="report-btn-cancel">Cancelar</button>
+        <button onClick={handleApply} className="report-btn-apply" disabled={!localStart || !localEnd}>
+          Aplicar
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function OrdersHistoryPage() {
-  const { selectedBusiness } = useBusinessContext();
+  const { user } = useSession();
+  const isSavingRef = useRef(false);
   const { print } = usePrinterService();
   const { showConfirm } = useConfirm();
+
+  // ─── Obtener businessId de forma robusta ──────────────────────────────────
+  const getBusinessId = useCallback(() => {
+    try {
+      const fromSession = sessionStorage.getItem('business_id');
+      if (fromSession) {
+        return fromSession;
+      }
+      if (user?.businessId) {
+        return user.businessId;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, [user]);
+
+  const businessId = getBusinessId();
+
+  // Estado principal
   const [orders, setOrders] = useState([]);
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -50,61 +110,159 @@ export default function OrdersHistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
-  // 🔥 FECHA INICIAL EN ECUADOR
-  const [filterDate, setFilterDate] = useState(() => getEcuadorDate());
-  
   const [statusFilter, setStatusFilter] = useState('active');
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+
+  // Estado para modales
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showEditItemModal, setShowEditItemModal] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [cantidadItem, setCantidadItem] = useState(1);
   const [notasItem, setNotasItem] = useState('');
   const [itemEditando, setItemEditando] = useState(null);
-  const [loadingOrders, setLoadingOrders] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [extrasItem, setExtrasItem] = useState([]);
+
+  // Estado para dividir orden
   const [showSplitModal, setShowSplitModal] = useState(false);
-  const [splitSelection, setSplitSelection] = useState(new Set());
+  const [selectedSplitItems, setSelectedSplitItems] = useState([]);
   const [isSplitting, setIsSplitting] = useState(false);
 
+  // Estado para filtros de fecha
+  const [dateRange, setDateRange] = useState('all');
+  const [showCustomDate, setShowCustomDate] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
-  useEffect(() => {
-    loadOrders();
-    loadProductos();
-    loadCategorias();
-  }, [selectedBusiness, filterDate, statusFilter]);
+  // Opciones de fecha
+  const dateOptions = useMemo(() => ([
+    { value: 'all', label: 'Todas las fechas' },
+    { value: 'day', label: 'Hoy' },
+    { value: 'week', label: 'Esta semana' },
+    { value: 'month', label: 'Este mes' },
+    { value: 'custom', label: 'Personalizado' }
+  ]), []);
 
-  const loadProductos = async () => {
+  // ── Carga inicial ─────────────────────────────────────────────────────────
+  const loadOrders = useCallback(async () => {
+    if (!businessId) {
+      setOrders([]);
+      setLoadingOrders(false);
+      return;
+    }
+
+    setLoadingOrders(true);
     try {
-      const res = await fetchWithAuth('/api/products');
+      let url = `/ordenes?businessId=${businessId}`;
+      if (statusFilter) url += `&status=${statusFilter}`;
+
+      const response = await fetchWithAuth(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+      let ordersArray = Array.isArray(data) ? data : (data?.data || data?.ordenes || data?.orders);
+
+      if (!Array.isArray(ordersArray)) {
+        throw new Error('La respuesta no contiene un array de órdenes');
+      }
+
+      // Filtrar por fecha
+      let filtered = ordersArray;
+
+      if (dateRange === 'day') {
+        const today = getEcuadorDate();
+        filtered = ordersArray.filter(order => {
+          const fecha = order.sale_date || order.created_at;
+          if (!fecha) return false;
+          const orderDate = new Date(fecha).toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
+          return orderDate === today;
+        });
+      } else if (dateRange === 'week') {
+        const now = new Date();
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        filtered = ordersArray.filter(order => {
+          const fecha = order.sale_date || order.created_at;
+          if (!fecha) return false;
+          const orderDate = new Date(fecha);
+          return orderDate >= weekAgo && orderDate <= now;
+        });
+      } else if (dateRange === 'month') {
+        const now = new Date();
+        const monthAgo = new Date(now);
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        filtered = ordersArray.filter(order => {
+          const fecha = order.sale_date || order.created_at;
+          if (!fecha) return false;
+          const orderDate = new Date(fecha);
+          return orderDate >= monthAgo && orderDate <= now;
+        });
+      } else if (dateRange === 'custom' && customStartDate && customEndDate) {
+        const start = new Date(customStartDate);
+        const end = new Date(customEndDate);
+        end.setHours(23, 59, 59, 999);
+        filtered = ordersArray.filter(order => {
+          const fecha = order.sale_date || order.created_at;
+          if (!fecha) return false;
+          const orderDate = new Date(fecha);
+          return orderDate >= start && orderDate <= end;
+        });
+      }
+
+      setOrders(filtered);
+    } catch (err) {
+      setError(`Error al cargar órdenes: ${err.message}`);
+      setTimeout(() => setError(''), 3000);
+      setOrders([]);
+    } finally {
+      setLoadingOrders(false);
+    }
+  }, [businessId, statusFilter, dateRange, customStartDate, customEndDate]);
+
+  const loadProductos = useCallback(async () => {
+    if (!businessId) return;
+    try {
+      const res = await fetchWithAuth(`/products?businessId=${businessId}`);
       const data = await res.json();
       setProductos(Array.isArray(data) ? data : data?.productos ?? data?.data ?? []);
     } catch (err) {
-
       setError('Error al cargar productos');
       setTimeout(() => setError(''), 3000);
     }
-  };
+  }, [businessId]);
 
-  const loadCategorias = async () => {
+  const loadCategorias = useCallback(async () => {
+    if (!businessId) return;
     try {
-      const res = await fetchWithAuth('/api/categories');
+      const res = await fetchWithAuth(`/categories?businessId=${businessId}`);
       const data = await res.json();
       setCategorias(Array.isArray(data) ? data : []);
     } catch (err) {
-
       setError('Error al cargar categorías');
       setTimeout(() => setError(''), 3000);
     }
-  };
+  }, [businessId]);
 
+  // ── useEffect para carga inicial ──────────────────────────────────────────
+  useEffect(() => {
+    if (businessId) {
+      loadOrders();
+      loadProductos();
+      loadCategorias();
+    } else {
+      setLoadingOrders(false);
+    }
+  }, [businessId, loadOrders, loadProductos, loadCategorias]);
+
+  useRealtimeSync('orders', loadOrders);
+
+  // ── Enriquecer items con precios ─────────────────────────────────────────
   const enrichOrderItemsWithPrices = async (order) => {
     if (!order || !order.items) return order;
-    
+
     const enrichedItems = await Promise.all(order.items.map(async (item) => {
       const producto = productos.find(p => p.id === item.product_id);
-      
+
       if (producto) {
         return {
           ...item,
@@ -115,7 +273,7 @@ export default function OrdersHistoryPage() {
           extras: item.extras || [],
         };
       }
-      
+
       try {
         const price = await getProductPrice(item.product_id);
         return {
@@ -137,56 +295,25 @@ export default function OrdersHistoryPage() {
         };
       }
     }));
-    
+
     return {
       ...order,
       items: enrichedItems,
     };
   };
 
-  // 🔥 FUNCIÓN CORREGIDA - Filtra por fecha usando comparación directa
-  const loadOrders = async () => {
-    setLoadingOrders(true);
-    try {
-      const url = statusFilter ? `/api/ordenes?status=${statusFilter}` : '/api/ordenes';
-      const response = await fetchWithAuth(url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
-      const data = await response.json();
-      let ordersArray = Array.isArray(data) ? data : (data?.data || data?.ordenes || data?.orders);
-      
-      if (!Array.isArray(ordersArray)) {
-        throw new Error('La respuesta no contiene un array de órdenes');
-      }
-
-      // 🔥 Filtrar por fecha usando comparación directa de strings YYYY-MM-DD
-      const filtered = ordersArray.filter(order => {
-        const fecha = order.sale_date || order.created_at;
-        if (!fecha) return false;
-        
-        // Convertir a fecha Ecuador (UTC-5) para comparar correctamente
-        const orderDate = new Date(fecha).toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
-        return orderDate === filterDate;
-      });
-      
-      setOrders(filtered);
-    } catch (err) {
-
-      setError(`Error al cargar órdenes: ${err.message}`);
-      setTimeout(() => setError(''), 3000);
-      setOrders([]);
-    } finally {
-      setLoadingOrders(false);
-    }
-  };
-
-  useRealtimeSync('orders', loadOrders);
-
+  // ── Seleccionar orden ─────────────────────────────────────────────────────
   const handleSelectOrder = async (order) => {
     if (editMode && selectedOrder?.id === order.id) return;
 
+    if (editMode) {
+      setEditMode(false);
+      setEditItems([]);
+      setSelectedOrder(null);
+    }
+
     try {
-      const res = await fetchWithAuth(`/api/ordenes/${order.id}`);
+      const res = await fetchWithAuth(`/ordenes/${order.id}?businessId=${businessId}`);
       const fresh = res.ok ? await res.json() : order;
       const merged = { ...order, ...fresh, items: fresh.items || order.items || [] };
       const enrichedOrder = await enrichOrderItemsWithPrices(merged);
@@ -195,14 +322,13 @@ export default function OrdersHistoryPage() {
       const enrichedOrder = await enrichOrderItemsWithPrices(order);
       setSelectedOrder(enrichedOrder);
     }
-    setEditMode(false);
-    setEditItems([]);
   };
 
+  // ── Editar orden ─────────────────────────────────────────────────────────
   const handleEditOrder = async (order) => {
     let fresh = order;
     try {
-      const res = await fetchWithAuth(`/api/ordenes/${order.id}`);
+      const res = await fetchWithAuth(`/ordenes/${order.id}?businessId=${businessId}`);
       if (res.ok) {
         const data = await res.json();
         fresh = { ...order, ...data, items: data.items || order.items || [] };
@@ -212,7 +338,6 @@ export default function OrdersHistoryPage() {
     setSelectedOrder(enrichedOrder);
     setEditMode(true);
 
-    // Agrupar items: los __EXT__: se adjuntan como extras del item anterior
     const rawItems = enrichedOrder.items || [];
     const grouped = [];
     rawItems.forEach(dbItem => {
@@ -247,54 +372,45 @@ export default function OrdersHistoryPage() {
     setEditItems(grouped);
   };
 
+  // ── Cancelar edición ─────────────────────────────────────────────────────
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setEditItems([]);
+    setSelectedOrder(null);
+    setSuccess('Edición cancelada');
+    setTimeout(() => setSuccess(''), 2000);
+  };
+
+  // ── Actualizar ──────────────────────────────────────────────────────────
   const handleRefresh = () => {
     loadOrders();
-    if (selectedOrder) {
+    if (selectedOrder && !editMode) {
       handleSelectOrder(selectedOrder);
     }
     setSuccess('Órdenes actualizadas');
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  const groupItemsForPrint = (rawItems = []) => {
-    const grouped = [];
-    rawItems.forEach(dbItem => {
-      const notes = dbItem.notes || dbItem.notas || '';
-      if (notes.startsWith('__EXT__:')) {
-        if (grouped.length > 0) grouped[grouped.length - 1].extras.push({ name: dbItem.product_name });
-      } else {
-        grouped.push({
-          nombre: dbItem.product_name, cantidad: dbItem.quantity || 1,
-          notas: notes, extras: [],
-        });
-      }
-    });
-    return grouped;
-  };
-
+  // ── Reimprimir ────────────────────────────────────────────────────────────
   const handlePrintOriginalOrder = async (order) => {
     let items = Array.isArray(order.items) ? order.items : [];
 
-    // Buscar orden completa con items si el listado no los trae
     if (items.length === 0) {
       try {
-        const res = await fetchWithAuth(`/api/ordenes/${order.id}`);
+        const res = await fetchWithAuth(`/ordenes/${order.id}?businessId=${businessId}`);
         if (res.ok) {
           const data = await res.json();
-          // el backend puede devolver la orden anidada o plana
           const fetched = data.order || data.pedido || data;
           items = fetched.items || fetched.pedido?.items || data.items || [];
         }
-      } catch (e) {
-
-      }
+      } catch (e) {}
     }
 
     const result = await print('printer_ticket', 'comanda', {
       comanda: { number: order.order_number || order.id },
-      table:   order.mesa_numero ?? order.numero_mesa,
+      table: order.mesa_numero ?? order.numero_mesa,
       items,
-      notes:   order.notas || order.notes || '',
+      notes: order.notas || order.notes || '',
     });
 
     if (result?.success === false) {
@@ -303,10 +419,17 @@ export default function OrdersHistoryPage() {
     }
   };
 
+  // ── Eliminar ──────────────────────────────────────────────────────────────
   const handleDeleteOrder = async (orderId) => {
-    if (!await showConfirm('¿Seguro que deseas eliminar la orden?')) return;
+    if (!await showConfirm({
+      title: 'Confirmar eliminación',
+      message: `¿Seguro que deseas eliminar la orden?`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      danger: true,
+    })) return;
     try {
-      const res = await fetchWithAuth(`/api/ordenes/${orderId}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/ordenes/${orderId}?businessId=${businessId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Error al eliminar');
       setSuccess('Orden eliminada correctamente');
       setTimeout(() => setSuccess(''), 3000);
@@ -318,10 +441,7 @@ export default function OrdersHistoryPage() {
     }
   };
 
-  // ============================================
-  // FUNCIONES DE EDICIÓN
-  // ============================================
-  
+  // ── Separar productos por unidad ────────────────────────────────────────
   const separarProductosPorUnidad = async () => {
     if (!editMode) {
       setError('Primero debes entrar en modo edición');
@@ -329,7 +449,7 @@ export default function OrdersHistoryPage() {
       return;
     }
 
-    const itemsConMultiplesUnidades = editItems.filter(item => 
+    const itemsConMultiplesUnidades = editItems.filter(item =>
       !item._remove && (item.cantidad || item.quantity || 1) > 1
     );
 
@@ -340,18 +460,15 @@ export default function OrdersHistoryPage() {
     }
 
     const confirmar = await showConfirm(
-      `¿Separar ${itemsConMultiplesUnidades.length} producto(s) en unidades individuales? Esta operación solo guardará los cambios, NO imprimirá comanda.`
+      `¿Separar ${itemsConMultiplesUnidades.length} producto(s) en unidades individuales?`
     );
 
     if (!confirmar) return;
 
     const nuevosItems = [];
-    
     editItems.forEach(item => {
       if (item._remove) return;
-      
       const cantidad = item.cantidad || item.quantity || 1;
-      
       if (cantidad > 1) {
         const precioUnitario = item.precio || item.unit_price || 0;
         for (let i = 0; i < cantidad; i++) {
@@ -371,106 +488,99 @@ export default function OrdersHistoryPage() {
         nuevosItems.push(item);
       }
     });
-    
+
     setEditItems(nuevosItems);
-    setSuccess(`✅ ${itemsConMultiplesUnidades.length} producto(s) separados en ${nuevosItems.length} unidades`);
+    setSuccess(`${itemsConMultiplesUnidades.length} producto(s) separados en ${nuevosItems.length} unidades`);
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  const separarProductoIndividual = async (item) => {
-    if (!editMode) return;
-    
-    const cantidad = item.cantidad || item.quantity || 1;
-    if (cantidad <= 1) {
-      setError('Este producto ya está como unidad individual');
-      setTimeout(() => setError(''), 3000);
-      return;
-    }
-    
-    const confirmar = await showConfirm(
-      `¿Separar "${item.nombre}" (${cantidad} unidades) en ${cantidad} items individuales? Esta operación solo guardará los cambios, NO imprimirá comanda.`
-    );
-
-    if (!confirmar) return;
-    
-    const nuevosItems = [];
-    const precioUnitario = item.precio || item.unit_price || 0;
-    
-    for (let i = 0; i < cantidad; i++) {
-      nuevosItems.push({
-        ...item,
-        id: Date.now() + i + Math.random(),
-        cantidad: 1,
-        quantity: 1,
-        subtotal: precioUnitario,
-        line_total: precioUnitario,
-        precio: precioUnitario,
-        unit_price: precioUnitario,
-        _separado: true,
-      });
-    }
-    
-    const nuevosEditItems = editItems.filter(it => it.id !== item.id);
-    setEditItems([...nuevosEditItems, ...nuevosItems]);
-    
-    setSuccess(`✅ "${item.nombre}" separado en ${cantidad} unidades`);
-    setTimeout(() => setSuccess(''), 3000);
-  };
-
+  // ── Dividir orden ────────────────────────────────────────────────────────
   const abrirDividirOrden = () => {
-    setSplitSelection(new Set());
+    setSelectedSplitItems([]);
     setShowSplitModal(true);
   };
 
-  const toggleSplitItem = (itemId) => {
-    setSplitSelection(prev => {
-      const next = new Set(prev);
-      if (next.has(itemId)) next.delete(itemId);
-      else next.add(itemId);
-      return next;
-    });
-  };
-
-  const confirmarDivision = async () => {
-    if (splitSelection.size === 0) {
+  const confirmarDivision = async (selectedItemIds) => {
+    if (!selectedItemIds || selectedItemIds.length === 0) {
       setError('Selecciona al menos un producto para la nueva orden');
       setTimeout(() => setError(''), 3000);
+      setGuardando(false);
       return;
     }
 
-    const itemsParaNueva = activeEditItems.filter(i => splitSelection.has(i.id));
-    const itemsQueQuedan = activeEditItems.filter(i => !splitSelection.has(i.id));
+    const activeEditItems = editItems.filter(i => !i._remove);
 
-    if (itemsQueQuedan.length === 0) {
+    if (selectedItemIds.length === activeEditItems.length) {
       setError('Debes dejar al menos un producto en la orden original');
       setTimeout(() => setError(''), 3000);
+      setGuardando(false);
       return;
     }
+
+    const itemsParaNueva = activeEditItems.filter(i => selectedItemIds.includes(i.id));
+    const itemsQueQuedan = activeEditItems.filter(i => !selectedItemIds.includes(i.id));
 
     try {
       setIsSplitting(true);
+      setGuardando(true);
 
       const toItems = (list) => list.flatMap(item => {
-        const base = { product_id: item.product_id, quantity: item.quantity || item.cantidad || 1, notes: item.notas || null };
+        const quantity = item.quantity || item.cantidad || 1;
+        const unitPrice = Number(item.selling_price) || 0;
+        const taxRate = Number(item.tax_rate) || 0;
+        const productName = item.nombre || item.product_name || 'Producto';
+
+        const base = {
+          product_id: item.product_id,
+          product_name: productName,
+          quantity: quantity,
+          unit_price: unitPrice,
+          tax_rate: taxRate,
+          iva_amount: taxRate * quantity,
+          line_total: (unitPrice + taxRate) * quantity,
+          notes: item.notas || null,
+        };
+
         const extras = (item.extras || []).map(e => ({
           product_id: e.id || e.product_id,
-          quantity: item.quantity || item.cantidad || 1,
+          product_name: e.name || 'Extra',
+          quantity: quantity,
+          unit_price: Number(e.selling_price) || Number(e.price) || 0,
+          tax_rate: Number(e.tax_rate) || 0,
+          iva_amount: (Number(e.tax_rate) || 0) * quantity,
+          line_total: ((Number(e.selling_price) || Number(e.price) || 0) + (Number(e.tax_rate) || 0)) * quantity,
           notes: `__EXT__: + ${e.name}${e.nota ? ': ' + e.nota : ''}`,
         }));
+
         return [base, ...extras];
       });
 
       const calcTotals = (list) => {
-        const subtotal = list.reduce((s, i) => s + (Number(i.selling_price) || 0) * (i.cantidad || i.quantity || 1), 0);
-        const iva = list.reduce((s, i) => s + (Number(i.tax_rate) || 0) * (i.cantidad || i.quantity || 1), 0);
+        const subtotal = list.reduce((s, i) => {
+          const qty = i.cantidad || i.quantity || 1;
+          const base = (Number(i.selling_price) || 0) * qty;
+          const extrasBase = (i.extras || []).reduce((es, e) =>
+            es + (Number(e.selling_price) || Number(e.price) || 0), 0
+          ) * qty;
+          return s + base + extrasBase;
+        }, 0);
+
+        const iva = list.reduce((s, i) => {
+          const qty = i.cantidad || i.quantity || 1;
+          const iva = (Number(i.tax_rate) || 0) * qty;
+          const extrasIva = (i.extras || []).reduce((es, e) =>
+            es + (Number(e.tax_rate) || 0), 0
+          ) * qty;
+          return s + iva + extrasIva;
+        }, 0);
+
         return { subtotal, iva, total: subtotal + iva };
       };
 
       const nuevaTotals = calcTotals(itemsParaNueva);
       const quedaTotals = calcTotals(itemsQueQuedan);
 
-      // 1. Crear nueva orden
-      const resNueva = await fetchWithAuth('/api/ordenes', {
+      const resNueva = await fetchWithAuth(`/ordenes?businessId=${businessId}`, {
         method: 'POST',
         body: JSON.stringify({
           mesa_numero: selectedOrder.mesa_numero,
@@ -489,8 +599,7 @@ export default function OrdersHistoryPage() {
         throw new Error(d.error || 'Error al crear nueva orden');
       }
 
-      // 2. Actualizar orden original
-      const resOriginal = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}`, {
+      const resOriginal = await fetchWithAuth(`/ordenes/${selectedOrder.id}?businessId=${businessId}`, {
         method: 'PATCH',
         body: JSON.stringify({
           items: toItems(itemsQueQuedan),
@@ -503,9 +612,9 @@ export default function OrdersHistoryPage() {
       if (!resOriginal.ok) throw new Error('Error al actualizar orden original');
 
       setEditItems(itemsQueQuedan);
-      setSplitSelection(new Set());
+      setSelectedSplitItems([]);
       setShowSplitModal(false);
-      setSuccess(`✅ Orden dividida. Nueva orden creada con ${itemsParaNueva.length} producto(s)`);
+      setSuccess(`Orden dividida. Nueva orden creada con ${itemsParaNueva.length} producto(s)`);
       setTimeout(() => setSuccess(''), 5000);
       await loadOrders();
     } catch (err) {
@@ -513,9 +622,11 @@ export default function OrdersHistoryPage() {
       setTimeout(() => setError(''), 4000);
     } finally {
       setIsSplitting(false);
+      setGuardando(false);
     }
   };
 
+  // ── Editar item ──────────────────────────────────────────────────────────
   const abrirEditarItem = (item) => {
     setItemEditando(item);
     setProductoSeleccionado({
@@ -532,28 +643,28 @@ export default function OrdersHistoryPage() {
   };
 
   const guardarEdicionItem = () => {
-    if (isSaving) return;
+    if (guardando) return;
     if (!productoSeleccionado || cantidadItem <= 0) {
       setError('Selecciona un producto y cantidad válida');
       setTimeout(() => setError(''), 3000);
       return;
     }
     const sellingPrice = Number(productoSeleccionado.selling_price || productoSeleccionado.price) || 0;
-    const taxRate      = Number(productoSeleccionado.tax_rate) || 0;
-    const cantidad     = parseInt(cantidadItem, 10);
+    const taxRate = Number(productoSeleccionado.tax_rate) || 0;
+    const cantidad = parseInt(cantidadItem, 10);
 
     setEditItems(prev => prev.map(item => item.id === itemEditando.id ? {
       ...itemEditando,
-      nombre:        productoSeleccionado.name,
-      product_name:  productoSeleccionado.name,
-      product_id:    productoSeleccionado.id,
+      nombre: productoSeleccionado.name,
+      product_name: productoSeleccionado.name,
+      product_id: productoSeleccionado.id,
       cantidad,
-      quantity:      cantidad,
+      quantity: cantidad,
       selling_price: sellingPrice,
-      tax_rate:      taxRate,
-      notas:         notasItem,
-      extras:        extrasItem,
-      _modified:     true,
+      tax_rate: taxRate,
+      notas: notasItem,
+      extras: extrasItem,
+      _modified: true,
     } : item));
 
     setShowEditItemModal(false);
@@ -566,6 +677,7 @@ export default function OrdersHistoryPage() {
     setTimeout(() => setSuccess(''), 2000);
   };
 
+  // ── Agregar item en edición ─────────────────────────────────────────────
   const agregarItem = () => {
     if (!productoSeleccionado || cantidadItem <= 0) {
       setError('Selecciona un producto y cantidad válida');
@@ -573,21 +685,21 @@ export default function OrdersHistoryPage() {
       return;
     }
     const sellingPrice = Number(productoSeleccionado.selling_price || productoSeleccionado.price) || 0;
-    const taxRate      = Number(productoSeleccionado.tax_rate) || 0;
-    const cantidad     = parseInt(cantidadItem, 10);
+    const taxRate = Number(productoSeleccionado.tax_rate) || 0;
+    const cantidad = parseInt(cantidadItem, 10);
 
     setEditItems(prev => [...prev, {
-      id:            Date.now(),
-      nombre:        productoSeleccionado.name,
-      product_name:  productoSeleccionado.name,
-      product_id:    productoSeleccionado.id,
+      id: Date.now(),
+      nombre: productoSeleccionado.name,
+      product_name: productoSeleccionado.name,
+      product_id: productoSeleccionado.id,
       cantidad,
-      quantity:      cantidad,
+      quantity: cantidad,
       selling_price: sellingPrice,
-      tax_rate:      taxRate,
-      notas:         notasItem,
-      extras:        extrasItem,
-      _added:        true,
+      tax_rate: taxRate,
+      notas: notasItem,
+      extras: extrasItem,
+      _added: true,
     }]);
 
     setShowAddItemModal(false);
@@ -599,93 +711,116 @@ export default function OrdersHistoryPage() {
     setTimeout(() => setSuccess(''), 2000);
   };
 
+  // ── Guardar cambios editados ─────────────────────────────────────────────
   const handleSaveEdit = async () => {
-    if (isSaving) return;
-    
+    if (guardando || isSavingRef.current) return;
+
     const originalItems = selectedOrder.items || [];
     const remainingItems = editItems.filter(i => !i._remove);
-    
-    const removedItems = originalItems.filter(orig => 
+
+    const removedItems = originalItems.filter(orig =>
       !remainingItems.some(curr => curr.id === orig.id)
     );
     const addedItems = remainingItems.filter(curr => curr._added);
     const modifiedItems = remainingItems.filter(curr => curr._modified);
-    
+
     const hasChanges = removedItems.length > 0 || addedItems.length > 0 || modifiedItems.length > 0;
-    
+
     if (!hasChanges) {
       setError('No hay cambios para guardar');
       setTimeout(() => setError(''), 3000);
       return;
     }
-    
-    try {
-      setIsSaving(true);
 
-      // Aplanar extras como items independientes (igual que al crear orden)
+    try {
+      isSavingRef.current = true;
+      setGuardando(true);
+
       const itemsToSend = remainingItems.flatMap(item => {
+        const quantity = item.quantity || item.cantidad || 1;
+        const unitPrice = Number(item.selling_price) || 0;
+        const taxRate = Number(item.tax_rate) || 0;
+        const productName = item.nombre || item.product_name || 'Producto';
+
         const base = {
           product_id: item.product_id,
-          quantity:   item.quantity || item.cantidad,
-          notes:      item.notas || null,
+          product_name: productName,
+          quantity: quantity,
+          unit_price: unitPrice,
+          tax_rate: taxRate,
+          iva_amount: taxRate * quantity,
+          line_total: (unitPrice + taxRate) * quantity,
+          notes: item.notas || null,
         };
+
         const extras = (item.extras || []).map(e => ({
           product_id: e.id || e.product_id,
-          quantity:   item.quantity || item.cantidad,
-          notes:      `__EXT__: + ${e.name}${e.nota ? ': ' + e.nota : ''}`,
+          product_name: e.name || 'Extra',
+          quantity: quantity,
+          unit_price: Number(e.selling_price) || Number(e.price) || 0,
+          tax_rate: Number(e.tax_rate) || 0,
+          iva_amount: (Number(e.tax_rate) || 0) * quantity,
+          line_total: ((Number(e.selling_price) || Number(e.price) || 0) + (Number(e.tax_rate) || 0)) * quantity,
+          notes: `__EXT__: + ${e.name}${e.nota ? ': ' + e.nota : ''}`,
         }));
+
         return [base, ...extras];
       });
 
-      const res = await fetchWithAuth(`/api/ordenes/${selectedOrder.id}`, {
+      const editSubtotal = remainingItems.reduce((s, item) => {
+        const qty = item.cantidad || item.quantity || 1;
+        const base = (Number(item.selling_price) || 0) * qty;
+        const extrasBase = (item.extras || []).reduce((es, e) => es + (Number(e.selling_price) || Number(e.price) || 0), 0) * qty;
+        return s + base + extrasBase;
+      }, 0);
+
+      const editIva = remainingItems.reduce((s, item) => {
+        const qty = item.cantidad || item.quantity || 1;
+        const iva = (Number(item.tax_rate) || 0) * qty;
+        const extrasIva = (item.extras || []).reduce((es, e) => es + (Number(e.tax_rate) || 0), 0) * qty;
+        return s + iva + extrasIva;
+      }, 0);
+
+      const editTotal = editSubtotal + editIva;
+
+      const res = await fetchWithAuth(`/ordenes/${selectedOrder.id}?businessId=${businessId}`, {
         method: 'PATCH',
         body: JSON.stringify({
-          items:      itemsToSend,
-          subtotal:   editSubtotal,
+          items: itemsToSend,
+          subtotal: editSubtotal,
           tax_amount: editIva,
-          total:      editTotal,
+          total: editTotal,
         }),
       });
 
       if (!res.ok) throw new Error('Error al actualizar orden');
 
       const resData = await res.json();
-      const updatedOrder = {
-        ...selectedOrder,
-        subtotal:   resData.subtotal   ?? selectedOrder.subtotal,
-        tax_amount: resData.tax_amount ?? selectedOrder.tax_amount,
-        total:      resData.total      ?? selectedOrder.total,
-        items:      remainingItems,
-      };
-
-      // Guardar datos de la orden antes de limpiar el estado
       const orderSnapshot = { ...selectedOrder };
 
       setEditMode(false);
       setEditItems([]);
       setSelectedOrder(null);
-      setSuccess('✅ Orden guardada correctamente');
+      setSuccess('Orden guardada correctamente');
       setTimeout(() => setSuccess(''), 4000);
 
-      // Recargar el listado y esperar a que termine
       await loadOrders();
 
-      // Preguntar si desea imprimir la comanda modificada
       const imprimirMod = await showConfirm('¿Deseas imprimir la comanda modificada?', {
-        title:       'Imprimir comanda',
-        danger:      false,
+        title: 'Imprimir comanda',
+        danger: false,
         confirmText: 'Imprimir',
-        cancelText:  'No imprimir',
+        cancelText: 'No imprimir',
       });
 
       if (imprimirMod) {
         const tipoOrden = orderSnapshot.order_type === 'dine_in' ? 'LOCAL'
           : orderSnapshot.order_type === 'take_away' ? 'LLEVAR' : 'DELIVERY';
         const printResult = await print('printer_ticket', 'comanda-mod', {
-          mesa:      orderSnapshot.mesa_numero,
-          orden:     orderSnapshot.order_number || orderSnapshot.id.slice(0, 8),
+          mesa: orderSnapshot.mesa_numero,
+          orden: orderSnapshot.order_number || orderSnapshot.id.slice(0, 8),
           tipoOrden,
-          items:     remainingItems,
+          items: remainingItems,
         });
         if (printResult?.success === false) {
           setError('⚠️ No se pudo imprimir — verifica que QZ Tray esté activo');
@@ -693,439 +828,674 @@ export default function OrdersHistoryPage() {
         }
       }
     } catch (err) {
-
       setError('Error al guardar cambios');
       setTimeout(() => setError(''), 3000);
     } finally {
-      setIsSaving(false);
+      setGuardando(false);
+      isSavingRef.current = false;
     }
   };
 
+  // ── Totales editados ──────────────────────────────────────────────────────
   const activeEditItems = editItems.filter(i => !i._remove);
+  const editSubtotal = useMemo(() => {
+    return activeEditItems.reduce((s, item) => {
+      const qty = item.cantidad || item.quantity || 1;
+      const base = (Number(item.selling_price) || 0) * qty;
+      const extrasBase = (item.extras || []).reduce((es, e) => es + (Number(e.selling_price) || Number(e.price) || 0), 0) * qty;
+      return s + base + extrasBase;
+    }, 0);
+  }, [activeEditItems]);
 
-  const editSubtotal = activeEditItems.reduce((s, item) => {
-    const qty        = item.cantidad || item.quantity || 1;
-    const base       = (Number(item.selling_price) || 0) * qty;
-    const extrasBase = (item.extras || []).reduce((es, e) => es + (Number(e.selling_price) || Number(e.price) || 0), 0) * qty;
-    return s + base + extrasBase;
-  }, 0);
-
-  const editIva = activeEditItems.reduce((s, item) => {
-    const qty       = item.cantidad || item.quantity || 1;
-    const iva       = (Number(item.tax_rate) || 0) * qty;
-    const extrasIva = (item.extras || []).reduce((es, e) => es + (Number(e.tax_rate) || 0), 0) * qty;
-    return s + iva + extrasIva;
-  }, 0);
+  const editIva = useMemo(() => {
+    return activeEditItems.reduce((s, item) => {
+      const qty = item.cantidad || item.quantity || 1;
+      const iva = (Number(item.tax_rate) || 0) * qty;
+      const extrasIva = (item.extras || []).reduce((es, e) => es + (Number(e.tax_rate) || 0), 0) * qty;
+      return s + iva + extrasIva;
+    }, 0);
+  }, [activeEditItems]);
 
   const editTotal = editSubtotal + editIva;
 
-  const filteredOrders = orders.filter(order =>
-    (order.mesa_numero?.toString() || '').includes(searchTerm) ||
-    (order.order_number?.toString() || '').includes(searchTerm) ||
-    order.id.toString().includes(searchTerm)
-  );
+  // ── Filtros ──────────────────────────────────────────────────────────────
+  const filteredOrders = orders.filter(order => {
+    const search = searchTerm.toLowerCase().trim();
+    if (!search) return true;
+
+    const mesaStr = order.mesa_numero?.toString() || '';
+    const ordenStr = order.order_number?.toString() || '';
+
+    return mesaStr.toLowerCase().includes(search) ||
+          ordenStr.toLowerCase().includes(search);
+  });
 
   const estadosDisponibles = [
-    { value: 'active',    label: 'Activas',           color: 'info'    },
-    { value: 'pending',   label: 'Pendientes',        color: 'warning' },
-    { value: 'sent',      label: 'En preparación',    color: 'info'    },
-    { value: 'completed', label: 'Listas para mesa',  color: 'purple'  },
-    { value: 'cancelled', label: 'Canceladas',        color: 'danger'  },
-    { value: 'paid',      label: 'Pagadas',            color: 'success' },
-    { value: '',          label: 'Todas',              color: 'info'    },
+    { value: 'active', label: 'Activas' },
+    { value: 'pending', label: 'Pendientes' },
+    { value: 'sent', label: 'En preparación' },
+    { value: 'completed', label: 'Listas para mesa' },
+    { value: 'cancelled', label: 'Canceladas' },
+    { value: 'paid', label: 'Pagadas' },
+    { value: '', label: 'Todos los estados' },
   ];
 
   const STATUS_LABEL = {
-    pending:   'Pendiente',
-    sent:      'En cocina',
+    pending: 'Pendiente',
+    sent: 'En cocina',
     completed: 'Lista ✓',
-    paid:      'Pagada',
+    paid: 'Pagada',
     cancelled: 'Cancelada',
-    draft:     'Borrador',
-  };
-  const STATUS_COLOR = {
-    pending:   'warning',
-    sent:      'info',
-    completed: 'purple',
-    paid:      'success',
-    cancelled: 'danger',
-    draft:     'secondary',
+    draft: 'Borrador',
   };
 
-  const getItemTotal = (item) => {
-    return Number(item.line_total) || Number(item.subtotal) || 0;
+  // ── Handlers para filtros de fecha ──────────────────────────────────────
+  const handleDateRangeChange = useCallback((value) => {
+    setDateRange(value);
+    if (value !== 'custom') {
+      setShowCustomDate(false);
+      setCustomStartDate('');
+      setCustomEndDate('');
+    }
+    if (value === 'custom') {
+      setShowCustomDate(true);
+    }
+  }, []);
+
+  const handleApplyCustomDate = useCallback((start, end) => {
+    setCustomStartDate(start);
+    setCustomEndDate(end);
+    setDateRange('custom');
+    setShowCustomDate(false);
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setSearchTerm('');
+    setStatusFilter('active');
+    setDateRange('all');
+    setCustomStartDate('');
+    setCustomEndDate('');
+    setShowCustomDate(false);
+  }, []);
+
+  // ── Columnas de la tabla ──────────────────────────────────────────────────
+  const columns = [
+    { key: 'mesa', label: 'MESA' },
+    { key: 'orden', label: 'ORDEN' },
+    { key: 'estado', label: 'ESTADO' },
+    { key: 'items', label: 'ITEMS', align: 'center' },
+    { key: 'acciones', label: 'ACCIONES', align: 'center' },
+  ];
+
+  // ── Render personalizado para cada fila ──────────────────────────────────
+  const renderRow = (item) => {
+    const orderNumber = item.order_number || item.id.slice(0, 8);
+    const match = String(orderNumber).match(/\d+$/);
+    const displayNumber = match ? match[0] : orderNumber;
+
+    return (
+      <tr
+        key={item.id}
+        className={`table-row ${selectedOrder?.id === item.id ? 'selected' : ''}`}
+        onClick={() => handleSelectOrder(item)}
+        style={{ cursor: 'pointer' }}
+      >
+        <td className="table-cell" data-label="MESA">
+          {item.mesa_numero != null ? `Mesa ${item.mesa_numero}` : 'S/Mesa'}
+        </td>
+        <td className="table-cell" data-label="ORDEN">
+          <small>#{displayNumber}</small>
+        </td>
+        <td className="table-cell" data-label="ESTADO">
+          <span>
+            {STATUS_LABEL[item.status] || item.status || '—'}
+          </span>
+        </td>
+        <td className="table-cell" data-label="ITEMS" style={{ textAlign: 'center' }}>
+          {item.items?.filter(i => !(i.notes || '').startsWith('__EXT__:')).length || 0}
+        </td>
+        <td className="table-cell table-actions-cell">
+          <ButtonGroup>
+            <IconTextButton
+              variant="blue"
+              size="sm"
+              inline={true}
+              icon={<FiEdit2 size={12} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditOrder(item);
+              }}
+              disabled={editMode}
+              title="Editar orden"
+            >
+              Editar
+            </IconTextButton>
+            <IconTextButton
+              variant="danger"
+              size="sm"
+              inline={true}
+              icon={<FiTrash2 size={12} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteOrder(item.id);
+              }}
+              title="Eliminar orden"
+            >
+              Eliminar
+            </IconTextButton>
+            <IconTextButton
+              variant=""
+              size="sm"
+              inline={true}
+              icon={<FiPrinter size={12} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePrintOriginalOrder(item);
+              }}
+              title="Reimprimir comanda"
+            >
+              Imprimir
+            </IconTextButton>
+          </ButtonGroup>
+        </td>
+      </tr>
+    );
   };
 
+  // ── Preparar items para el Checklist de división ────────────────────────
+  const splitChecklistItems = activeEditItems.map(item => ({
+    id: item.id,
+    label: item.nombre || item.product_name || 'Producto sin nombre',
+    badge: `x${item.cantidad || item.quantity || 1}`,
+    _item: item,
+  }));
+
+  // ── Render personalizado para cada item del checklist ──────────────────
+  const renderSplitItem = (item) => {
+    const originalItem = item._item;
+    const qty = originalItem.cantidad || originalItem.quantity || 1;
+    const price = Number(originalItem.selling_price) || 0;
+    const tax = Number(originalItem.tax_rate) || 0;
+    const subtotal = (price + tax) * qty;
+    const hasExtras = (originalItem.extras || []).length > 0;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <span style={{ fontWeight: 500 }}>{item.label}</span>
+          <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
+            {fmt(subtotal)}
+          </span>
+        </div>
+        {hasExtras && (
+          <div style={{ fontSize: '0.8rem', color: '#6ee7b7', marginTop: '2px' }}>
+            + {originalItem.extras.map(e => e.name).join(', ')}
+          </div>
+        )}
+        {originalItem.notas && (
+          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
+            {originalItem.notas}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ── Calcular total de items seleccionados para división ─────────────────
+  const selectedSplitTotal = useMemo(() => {
+    const selectedItems = activeEditItems.filter(item =>
+      selectedSplitItems.includes(item.id)
+    );
+    return selectedItems.reduce((sum, item) => {
+      const qty = item.cantidad || item.quantity || 1;
+      const price = Number(item.selling_price) || 0;
+      const tax = Number(item.tax_rate) || 0;
+      return sum + (price + tax) * qty;
+    }, 0);
+  }, [selectedSplitItems, activeEditItems]);
+
+  const allItemsSelected = selectedSplitItems.length === activeEditItems.length;
+  const someItemsSelected = selectedSplitItems.length > 0;
+
+  // ── Footer del modal de división ────────────────────────────────────────
+  const splitModalFooter = (
+    <ButtonGroup
+      style={{
+        display: 'flex',
+        gap: 'var(--space-2)',
+        justifyContent: 'flex-end',
+      }}
+    >
+      <IconTextButton
+        variant=""
+        size="md"
+        onClick={() => {
+          setShowSplitModal(false);
+          setGuardando(false);
+          setIsSplitting(false);
+        }}
+        disabled={isSplitting}
+      >
+        Cancelar
+      </IconTextButton>
+      <IconTextButton
+        variant="success"
+        size="md"
+        onClick={() => confirmarDivision(selectedSplitItems)}
+        disabled={
+          isSplitting ||
+          selectedSplitItems.length === 0 ||
+          selectedSplitItems.length === activeEditItems.length
+        }
+      >
+        {isSplitting ? 'Creando orden...' : `Crear Nueva Orden (${selectedSplitItems.length})`}
+      </IconTextButton>
+    </ButtonGroup>
+  );
+
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  // ─── Toolbar ─────────────────────────────────────────────────────────────
+  const toolbar = useMemo(() => (
+    <div>
+      <div className="products-toolbar-right">
+        <div className="products-filter-actions" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          flexWrap: 'nowrap',
+          flex: 1,
+          minWidth: 0,
+        }}>
+          {/* Buscador en el toolbar */}
+          <div className="search-input-wrapper" style={{
+            position: 'relative',
+            minWidth: '40px',
+            maxWidth: '220px',
+            flex: '1 1 120px',
+            flexShrink: 1,
+          }}>
+            <FiSearch size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar..."
+              style={{
+                padding: '6px 12px 6px 34px',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                width: '100%',
+                minWidth: '40px',
+                fontSize: '12px',
+                background: 'var(--bg-input)',
+                color: 'var(--text-primary)',
+                outline: 'none',
+                transition: 'border-color 0.2s, width 0.2s',
+                height: '34px'
+              }}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                style={{
+                  position: 'absolute',
+                  right: '6px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  padding: '2px',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <FiX size={14} />
+              </button>
+            )}
+          </div>
+
+          <CustomCombobox
+            options={dateOptions}
+            value={dateRange}
+            onChange={handleDateRangeChange}
+            placeholder="Todas las fechas"
+            filterable={false}
+            forceDropup={false}
+            className="combobox-compact"
+            style={{ flexShrink: 1, minWidth: '80px', maxWidth: '150px' }}
+          />
+
+          <CustomCombobox
+            options={estadosDisponibles}
+            value={statusFilter}
+            onChange={setStatusFilter}
+            placeholder="Todos los estados"
+            filterable={false}
+            forceDropup={false}
+            className="combobox-compact"
+            style={{ flexShrink: 1, minWidth: '80px', maxWidth: '150px' }}
+          />
+
+          <IconTextButton
+            variant=""
+            size="sm"
+            icon={<FiRefreshCw size={14} />}
+            onClick={handleClearFilters}
+            style={{ flexShrink: 0 }}
+          >
+            Limpiar
+          </IconTextButton>
+        </div>
+      </div>
+    </div>
+  ), [dateRange, statusFilter, searchTerm, handleDateRangeChange, handleClearFilters, dateOptions, estadosDisponibles]);
+
+  // Botón de refrescar
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={loadingOrders}
+      title="Actualizar datos"
+    >
+      <FiRefreshCw size={18} className={loadingOrders ? 'spinning' : ''} />
+      <span>{loadingOrders ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <PageTemplate
       title="Historial de Órdenes"
-      subtitle={`${filteredOrders.length} orden${filteredOrders.length !== 1 ? 'es' : ''} encontradas • Fecha: ${filterDate}`}
-      headerAction={
-        <button className="btn-refresh" onClick={handleRefresh} disabled={loadingOrders}>
-          <RefreshCw size={16} className={loadingOrders ? 'spin' : ''} />
-          Actualizar
-        </button>
-      }
+      subtitle={`${filteredOrders.length} orden${filteredOrders.length !== 1 ? 'es' : ''} encontradas`}
+      theme="business"
+      loading={loadingOrders}
+      headerAction={refreshButton}
     >
-      <div className="checkout-shell">
+      <div className="takeorder-shell">
         {error && (
           <div className="alert alert-error">
-            <X size={16} />
+            <FiX size={16} />
             {error}
           </div>
         )}
         {success && (
           <div className="alert alert-success">
-            <RefreshCw size={16} />
+            <FiRefreshCw size={16} />
             {success}
           </div>
         )}
 
-        <div className="order-grid">
+        <div className="order-grid_1">
           {/* Panel Izquierdo - Lista de órdenes */}
-          <div className="card-soft orders-list">
-            <div className="card-head">
-              <h3>📋 Historial de órdenes</h3>
-              <p>Órdenes registradas en el sistema</p>
-            </div>
+          <section className="card card-soft orders-list" style={{
+              maxHeight: '100vh',
+              display: 'flex',
+              flexDirection: 'column',
+              flex: '0 0 100%',
+              minWidth: '0',
+              maxWidth: '100%',
+            }}>
 
-            <div className="filters-container">
-              <div className="filter-date-container">
-                <Calendar size={16} />
-                <input
-                  type="date"
-                  className="filter-input"
-                  value={filterDate}
-                  onChange={e => setFilterDate(e.target.value)}
-                />
-              </div>
+            {/* Contenedor con scroll para la tabla */}
+            <Table
+                data={filteredOrders}
+                columns={columns}
+                keyField="id"
+                loading={loadingOrders}
+                emptyMessage={`No hay órdenes para los filtros seleccionados`}
+                searchable={false}
+                pagination={true}
+                itemsPerPage={itemsPerPage}
+                itemsPerPageOptions={[5]}
+                onItemsPerPageChange={(newPerPage) => setItemsPerPage(newPerPage)}
+                renderRow={renderRow}
+                onRowClick={(item) => handleSelectOrder(item)}
+                hoverable={true}
+                striped={true}
+                compact={false}
+                toolbar={toolbar}
+              />
 
-              <div className="filter-status-container">
-                <select
-                  className="filter-input"
-                  value={statusFilter}
-                  onChange={e => setStatusFilter(e.target.value)}
-                >
-                  {estadosDisponibles.map(estado => (
-                    <option key={estado.value || 'all'} value={estado.value}>
-                      {estado.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="search-box">
-                <Search size={16} />
-                <input
-                  type="text"
-                  placeholder="Buscar mesa o #orden..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="orders-table">
-              {loadingOrders ? (
-                <div className="empty-state"><p>Cargando órdenes...</p></div>
-              ) : filteredOrders.length === 0 ? (
-                <div className="empty-state">
-                  <p>No hay órdenes para el día {filterDate}</p>
-                </div>
-              ) : (
-                <table>
-                  <thead>
-                    <tr>
-                      <th>MESA</th>
-                      <th>ORDEN</th>
-                      <th>ESTADO</th>
-                      <th>ITEMS</th>
-                      <th>ACCIONES</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredOrders.map(order => (
-                      <tr
-                        key={order.id}
-                        className={selectedOrder?.id === order.id ? 'selected' : ''}
-                        onClick={() => handleSelectOrder(order)}
-                      >
-                        <td className="mesa-num" data-label="Mesa">
-                          {order.mesa_numero != null ? `Mesa ${order.mesa_numero}` : 'S/Mesa'}
-                        </td>
-                        <td data-label="Orden">
-                          <small>#{order.order_number || order.id.slice(0,8)}</small>
-                        </td>
-                        <td data-label="Estado">
-                          <span className={`badge badge-${STATUS_COLOR[order.status] || 'secondary'}`}>
-                            {STATUS_LABEL[order.status] || order.status || '—'}
-                          </span>
-                        </td>
-                        <td data-label="Items">{order.items?.filter(i => !(i.notes||'').startsWith('__EXT__:')).length || 0}</td>
-                        <td data-label="Acciones" onClick={e => e.stopPropagation()}>
-                          <div className="action-buttons">
-                            <button
-                              className="btn-action btn-edit"
-                              onClick={() => handleEditOrder(order)}
-                              disabled={editMode}
-                            >
-                              <Edit2 size={13} /><span>Editar</span>
-                            </button>
-                            <button className="btn-action btn-delete" onClick={() => handleDeleteOrder(order.id)}>
-                              <Trash2 size={13} /><span>Eliminar</span>
-                            </button>
-                            <button className="btn-action btn-reprint" onClick={() => handlePrintOriginalOrder(order)}>
-                              <Printer size={13} /><span>Reimprimir</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
+          </section>
 
           {/* Panel Derecho - Detalle de orden */}
-          <div className="card-soft order-detail">
+          <section className="card card-soft order-detail" style={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
             <div className="card-head">
-              <h3>📄 Detalle de la orden</h3>
-              <p>{selectedOrder ? `Orden ${selectedOrder.order_number || selectedOrder.id.slice(0,8)}` : 'Selecciona una orden'}</p>
+              <h3>Detalle de Orden</h3>
             </div>
 
             {selectedOrder ? (
-              <>
-                <div className="order-header-info">
-                  <div className="order-mesa">
+              <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                <div className="order-header-info" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
+                  <div className="order-mesa" style={{ fontWeight: 600, fontSize: 'var(--font-md)' }}>
                     {selectedOrder.mesa_numero != null ? `Mesa ${selectedOrder.mesa_numero}` : 'Sin Mesa'}
                   </div>
-                  <div className="order-number">
-                    #{selectedOrder.order_number || selectedOrder.id.slice(0,8)}
+                  <div className="order-number" style={{ color: 'var(--text-muted)', fontSize: 'var(--font-sm)' }}>
+                    Orden #{selectedOrder ? (() => {
+                      const orderNumber = selectedOrder.order_number || selectedOrder.id.slice(0, 8);
+                      const match = String(orderNumber).match(/\d+$/);
+                      const displayNumber = match ? match[0] : orderNumber;
+                      return displayNumber;
+                    })() : 'Selecciona una orden'}
                   </div>
-                  {editMode && <span className="edit-badge">✏️ Modo edición</span>}
+                  {editMode && <span className="edit-badge" style={{ background: 'var(--bg-primary)', color: 'var(--text-muted)', padding: '2px 10px', fontSize: 'var(--font-xs)', fontWeight: 600 }}>(Modo edición)</span>}
                 </div>
 
                 {editMode && (
-                  <div className="edit-actions-bar">
-                    <button className="btn-add-product" onClick={() => setShowAddItemModal(true)}>
-                      + Agregar producto
-                    </button>
-                    <button
-                      className="btn-separar-productos"
+                  <div className="edit-actions-bar" style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
+                    <IconTextButton
+                      variant="success"
+                      size="sm"
+                      icon={<FiPlus size={14} />}
+                      onClick={() => setShowAddItemModal(true)}
+                    >
+                      Agregar producto
+                    </IconTextButton>
+                    <IconTextButton
+                      variant=""
+                      size="sm"
                       onClick={separarProductosPorUnidad}
                       title="Convertir productos con cantidad > 1 en items individuales"
                     >
-                      🔄 Separar productos por unidad
-                    </button>
-                    <button
-                      className="btn-separar-productos"
+                      Separar por unidad
+                    </IconTextButton>
+                    <IconTextButton
+                      variant="info"
+                      size="sm"
                       onClick={abrirDividirOrden}
                       title="Dividir esta orden en dos órdenes separadas"
-                      style={{ background: 'rgba(104,66,254,0.15)', borderColor: 'rgba(104,66,254,0.4)', color: '#a78bfa' }}
                     >
-                      ✂️ Dividir orden
-                    </button>
+                      Dividir orden
+                    </IconTextButton>
                   </div>
                 )}
 
-                <ItemsList
-                  items={editMode
-                    ? activeEditItems
-                    : (() => {
-                        const grupos = [];
-                        (selectedOrder.items || []).forEach(dbItem => {
-                          const notes = dbItem.notes || dbItem.notas || '';
-                          if (notes.startsWith('__EXT__:')) {
-                            if (grupos.length > 0) grupos[grupos.length - 1].extras.push({
-                              id: dbItem.product_id, name: dbItem.product_name,
-                              selling_price: dbItem.selling_price, tax_rate: dbItem.tax_rate,
-                            });
-                          } else {
-                            grupos.push({
-                              id: dbItem.id, nombre: dbItem.product_name,
-                              product_name: dbItem.product_name, product_id: dbItem.product_id,
-                              cantidad: dbItem.quantity || 1, quantity: dbItem.quantity || 1,
-                              selling_price: Number(dbItem.selling_price) || 0,
-                              tax_rate: Number(dbItem.tax_rate) || 0,
-                              notas: dbItem.notes || '', extras: [],
-                            });
-                          }
-                        });
-                        return grupos;
-                      })()
-                  }
-                  eliminarItem={editMode
-                    ? (itemId) => setEditItems(prev => prev.map(it => it.id === itemId ? { ...it, _remove: true } : it))
-                    : () => {}
-                  }
-                  abrirEditarItem={editMode ? abrirEditarItem : () => {}}
-                />
+                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                  <ItemsList
+                    items={editMode
+                      ? activeEditItems
+                      : (() => {
+                          const grupos = [];
+                          (selectedOrder.items || []).forEach(dbItem => {
+                            const notes = dbItem.notes || dbItem.notas || '';
+                            if (notes.startsWith('__EXT__:')) {
+                              if (grupos.length > 0) grupos[grupos.length - 1].extras.push({
+                                id: dbItem.product_id,
+                                name: dbItem.product_name,
+                                selling_price: dbItem.selling_price,
+                                tax_rate: dbItem.tax_rate,
+                              });
+                            } else {
+                              grupos.push({
+                                id: dbItem.id,
+                                nombre: dbItem.product_name,
+                                product_name: dbItem.product_name,
+                                product_id: dbItem.product_id,
+                                cantidad: dbItem.quantity || 1,
+                                quantity: dbItem.quantity || 1,
+                                selling_price: Number(dbItem.selling_price) || 0,
+                                tax_rate: Number(dbItem.tax_rate) || 0,
+                                notas: dbItem.notes || '',
+                                extras: [],
+                              });
+                            }
+                          });
+                          return grupos;
+                        })()
+                    }
+                    eliminarItem={editMode
+                      ? (itemId) => setEditItems(prev => prev.map(it => it.id === itemId ? { ...it, _remove: true } : it))
+                      : () => {}
+                    }
+                    abrirEditarItem={editMode ? abrirEditarItem : () => {}}
+                  />
+                </div>
 
-                <div className="summary-sticky">
-                  <div className="summary-row">
-                    <span>Subtotal:</span>
+                <div className="summary-sticky" style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                  <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between', padding: 'var(--space-1) 0', fontSize: 'var(--font-sm)' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Subtotal:</span>
                     <span>{fmt(editMode ? editSubtotal : (selectedOrder.subtotal || 0))}</span>
                   </div>
-                  <div className="summary-row">
-                    <span>IVA:</span>
+                  <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between', padding: 'var(--space-1) 0', fontSize: 'var(--font-sm)' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>IVA:</span>
                     <span>{fmt(editMode ? editIva : (selectedOrder.tax_amount || 0))}</span>
                   </div>
-                  <div className="summary-total">
+                  <div className="summary-total" style={{ display: 'flex', justifyContent: 'space-between', padding: 'var(--space-2) 0', fontSize: 'var(--font-lg)', fontWeight: 700, borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 'var(--space-1)' }}>
                     <span>TOTAL:</span>
                     <span>{fmt(editMode ? editTotal : (selectedOrder.total || 0))}</span>
                   </div>
                 </div>
 
                 {editMode && (
-                  <div className="action-buttons-group">
-                    <button className="btn-save" onClick={handleSaveEdit} disabled={isSaving}>
-                      <Save size={14} /> {isSaving ? 'Guardando...' : 'Guardar Cambios'}
-                    </button>
-                    <button className="btn-cancel-edit" onClick={() => { setEditMode(false); setEditItems([]); }}>
-                      <X size={14} /> Cancelar
-                    </button>
-                  </div>
+                  <ButtonGroup>
+                    <IconTextButton
+                      variant=""
+                      size="md"
+                      icon={<FiX size={14} />}
+                      onClick={handleCancelEdit}
+                    >
+                      Cancelar
+                    </IconTextButton>
+                    <IconTextButton
+                      variant="success"
+                      size="md"
+                      icon={<FiSave size={14} />}
+                      onClick={handleSaveEdit}
+                      disabled={guardando}
+                    >
+                      {guardando ? 'Guardando...' : 'Guardar Cambios'}
+                    </IconTextButton>
+                  </ButtonGroup>
                 )}
-              </>
+              </div>
             ) : (
-              <div className="empty-panel">
+              <div className="empty-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 200, color: 'var(--text-muted)', flex: 1 }}>
                 <p>Selecciona una orden para ver, editar o imprimir</p>
               </div>
             )}
-          </div>
+          </section>
         </div>
 
         {/* MODAL DIVIDIR ORDEN */}
-        {showSplitModal && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <div style={{ background: '#111827', border: '1px solid #1e3a3a', borderRadius: 16, padding: 24, width: 500, maxWidth: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                <div>
-                  <h3 style={{ margin: 0, color: '#f1f5f9', fontSize: 17, fontWeight: 700 }}>✂️ Dividir Orden</h3>
-                  <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b' }}>
-                    Mesa {selectedOrder?.mesa_numero} · #{selectedOrder?.order_number || selectedOrder?.id?.slice(0,8)}
-                    &nbsp;·&nbsp;Selecciona los productos para la <strong style={{ color: '#a78bfa' }}>nueva orden</strong>
-                  </p>
-                </div>
-                <button onClick={() => setShowSplitModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: 2 }}>&times;</button>
-              </div>
-
-              {/* Controles selección */}
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => setSplitSelection(new Set(activeEditItems.map(i => i.id)))}
-                  style={{ fontSize: 12, padding: '5px 12px', background: 'rgba(104,66,254,0.12)', color: '#a78bfa', border: '1px solid rgba(104,66,254,0.3)', borderRadius: 6, cursor: 'pointer' }}
-                >
-                  Seleccionar todo
-                </button>
-                <button
-                  onClick={() => setSplitSelection(new Set())}
-                  style={{ fontSize: 12, padding: '5px 12px', background: 'rgba(100,116,139,0.12)', color: '#94a3b8', border: '1px solid rgba(100,116,139,0.25)', borderRadius: 6, cursor: 'pointer' }}
-                >
-                  Limpiar
-                </button>
-                <span style={{ marginLeft: 'auto', fontSize: 12, color: '#64748b', alignSelf: 'center' }}>
-                  {activeEditItems.length} producto(s) en total
+        <Modal
+          isOpen={showSplitModal}
+          onClose={() => setShowSplitModal(false)}
+          title="Dividir Orden"
+          size="sm"
+          footer={splitModalFooter}
+        >
+          <div style={{ padding: 'var(--space-2) 0' }}>
+            {/* Información de la orden */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 'var(--space-3)',
+              padding: 'var(--space-2) var(--space-3)',
+              background: 'rgba(255,255,255,0.03)',
+              borderRadius: '8px',
+            }}>
+              <div>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                  Mesa {selectedOrder?.mesa_numero || 'Sin mesa'}
                 </span>
               </div>
-
-              {/* Lista de items */}
-              <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {activeEditItems.map(item => {
-                  const selected = splitSelection.has(item.id);
-                  const qty = item.cantidad || item.quantity || 1;
-                  const subtotal = (Number(item.selling_price) || 0) * qty;
-                  const iva = (Number(item.tax_rate) || 0) * qty;
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => toggleSplitItem(item.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                        background: selected ? 'rgba(104,66,254,0.12)' : 'rgba(255,255,255,0.03)',
-                        border: `1.5px solid ${selected ? '#6842fe' : 'rgba(255,255,255,0.07)'}`,
-                        borderRadius: 10, cursor: 'pointer', transition: 'border-color 0.15s, background 0.15s',
-                      }}
-                    >
-                      <div style={{
-                        width: 20, height: 20, borderRadius: 5, border: `2px solid ${selected ? '#6842fe' : '#334155'}`,
-                        background: selected ? '#6842fe' : 'transparent',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      }}>
-                        {selected && <span style={{ color: '#fff', fontSize: 11, fontWeight: 900 }}>✓</span>}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {item.nombre || item.product_name}
-                        </div>
-                        {item.notas && (
-                          <div style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>{item.notas}</div>
-                        )}
-                        {(item.extras || []).length > 0 && (
-                          <div style={{ color: '#6ee7b7', fontSize: 11, marginTop: 2 }}>
-                            + {item.extras.map(e => e.name).join(', ')}
-                          </div>
-                        )}
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ color: '#94a3b8', fontSize: 11 }}>x{qty}</div>
-                        <div style={{ color: '#10b981', fontWeight: 700, fontSize: 13 }}>{fmt(subtotal + iva)}</div>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                  Orden #{selectedOrder?.order_number || selectedOrder?.id?.slice(0, 8)}
+                </span>
               </div>
-
-              {/* Resumen selección */}
-              {splitSelection.size > 0 && (() => {
-                const selItems = activeEditItems.filter(i => splitSelection.has(i.id));
-                const total = selItems.reduce((s, i) => {
-                  const qty = i.cantidad || i.quantity || 1;
-                  return s + (Number(i.selling_price) || 0) * qty + (Number(i.tax_rate) || 0) * qty;
-                }, 0);
-                return (
-                  <div style={{ background: 'rgba(104,66,254,0.1)', border: '1px solid rgba(104,66,254,0.25)', borderRadius: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                    <span style={{ color: '#a78bfa' }}>{splitSelection.size} producto(s) → nueva orden</span>
-                    <strong style={{ color: '#a78bfa' }}>{fmt(total)}</strong>
-                  </div>
-                );
-              })()}
-
-              {/* Acciones */}
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => setShowSplitModal(false)}
-                  disabled={isSplitting}
-                  style={{ padding: '10px 20px', background: 'rgba(100,116,139,0.15)', color: '#94a3b8', border: '1px solid rgba(100,116,139,0.25)', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={confirmarDivision}
-                  disabled={isSplitting || splitSelection.size === 0 || splitSelection.size === activeEditItems.length}
-                  style={{
-                    padding: '10px 20px',
-                    background: (isSplitting || splitSelection.size === 0 || splitSelection.size === activeEditItems.length) ? 'rgba(104,66,254,0.3)' : '#6842fe',
-                    color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13,
-                    cursor: (isSplitting || splitSelection.size === 0 || splitSelection.size === activeEditItems.length) ? 'default' : 'pointer',
-                    display: 'flex', alignItems: 'center', gap: 7,
-                  }}
-                >
-                  ✂️ {isSplitting ? 'Creando orden...' : `Crear Nueva Orden${splitSelection.size > 0 ? ` (${splitSelection.size})` : ''}`}
-                </button>
+              <div>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                  {activeEditItems.length} producto(s)
+                </span>
               </div>
-
-              {splitSelection.size === activeEditItems.length && activeEditItems.length > 0 && (
-                <p style={{ margin: 0, fontSize: 11, color: '#f87171', textAlign: 'center' }}>
-                  Debes dejar al menos un producto en la orden original
-                </p>
-              )}
             </div>
+
+            {/* Instrucciones */}
+            <p style={{
+              color: 'var(--text-muted)',
+              fontSize: '0.9rem',
+              marginBottom: 'var(--space-3)',
+              padding: 'var(--space-2)',
+              background: 'rgba(104,66,254,0.05)',
+              borderRadius: '6px',
+              border: '1px solid rgba(104,66,254,0.1)',
+            }}>
+              Selecciona los productos que deseas mover a la nueva orden.
+              Debes dejar al menos un producto en la orden original.
+            </p>
+
+            {/* Checklist de productos */}
+            <Checklist
+              items={splitChecklistItems}
+              value={selectedSplitItems}
+              onChange={setSelectedSplitItems}
+              mode="simple"
+              variant="default"
+              maxHeight={350}
+              selectAll={true}
+              renderItem={renderSplitItem}
+              emptyMessage="No hay productos para dividir"
+            />
+
+            {/* Resumen de selección */}
+            {someItemsSelected && (
+              <div style={{
+                marginTop: 'var(--space-3)',
+                padding: 'var(--space-2) var(--space-3)',
+                background: allItemsSelected
+                  ? 'rgba(239,68,68,0.1)'
+                  : 'rgba(104,66,254,0.1)',
+                border: `1px solid ${
+                  allItemsSelected
+                    ? 'rgba(239,68,68,0.2)'
+                    : 'rgba(104,66,254,0.2)'
+                }`,
+                borderRadius: '8px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}>
+                <span style={{
+                  color: allItemsSelected ? 'var(--text-muted)' : 'var(--text-muted)'
+                }}>
+                  {allItemsSelected
+                    ? 'Debes dejar al menos un producto en la orden original'
+                    : `${selectedSplitItems.length} producto(s) seleccionado(s) → Nueva orden`
+                  }
+                </span>
+                <strong style={{ color: allItemsSelected ? 'var(--text-muted)' : 'var(--text-muted)' }}>
+                  {fmt(selectedSplitTotal)}
+                </strong>
+              </div>
+            )}
           </div>
-        )}
+        </Modal>
 
         <AddItemModal
           showAddItemModal={showAddItemModal}
@@ -1158,6 +1528,23 @@ export default function OrdersHistoryPage() {
           extrasItem={extrasItem}
           setExtrasItem={setExtrasItem}
         />
+
+        {/* Modal de fechas personalizadas */}
+        {showCustomDate && (
+          <Modal
+            isOpen={true}
+            onClose={() => setShowCustomDate(false)}
+            title="Seleccionar fechas"
+            size="sm"
+          >
+            <DateRangePicker
+              startDate={customStartDate}
+              endDate={customEndDate}
+              onApply={handleApplyCustomDate}
+              onClose={() => setShowCustomDate(false)}
+            />
+          </Modal>
+        )}
       </div>
     </PageTemplate>
   );

@@ -25,7 +25,6 @@ export const ADMIN_MENU = [
       { label: 'Tipos de Negocios',  path: '/admin/business-types' },
       { label: 'Módulos',          path: '/admin/modules'        },
       { label: 'Funcionalidades',  path: '/admin/features'       },
-      { label: 'Plantillas',       path: '/admin/templates'      },
     ],
   },
   {
@@ -35,6 +34,7 @@ export const ADMIN_MENU = [
       { label: 'Planes',              path: '/admin/plans'            },
       { label: 'Pagos',               path: '/admin/payments'         },
       { label: 'Plantillas de Email', path: '/admin/email-templates'  },
+      { label: 'Idon News',           path: '/admin/idon_news'        },
     ],
   },
   {

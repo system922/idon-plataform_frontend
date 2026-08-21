@@ -1,0 +1,282 @@
+/* ============================================================
+   CHECKLIST - Componente reutilizable
+   ============================================================ */
+
+.checklist-container {
+  width: 100%;
+}
+
+/* ─── Acciones (Select all / Clear) ──────────────────────────── */
+
+.checklist-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.checklist-btn-select-all,
+.checklist-btn-clear {
+  padding: 4px 12px;
+  border: none;
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.checklist-btn-select-all {
+  background: var(--primary-bg);
+  color: var(--primary);
+}
+
+.checklist-btn-select-all:hover {
+  background: var(--primary);
+  color: var(--text-white);
+}
+
+.checklist-btn-clear {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+.checklist-btn-clear:hover {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+/* ─── Items ────────────────────────────────────────────────────── */
+
+.checklist-items {
+  overflow-y: auto;
+  padding: var(--space-1);
+}
+
+.checklist-items::-webkit-scrollbar {
+  width: 4px;
+}
+
+.checklist-items::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 99px;
+}
+
+.checklist-items::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 99px;
+}
+
+/* ─── Item wrapper ────────────────────────────────────────────── */
+
+.checklist-item-wrapper {
+  margin-bottom: 2px;
+}
+
+/* ─── Item principal ───────────────────────────────────────────── */
+
+.checklist-item {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  background: transparent;
+  min-height: 40px;
+}
+
+.checklist-item:hover {
+  background: var(--bg-hover);
+}
+
+.checklist-item.selected {
+  background: var(--primary-bg);
+}
+
+.checklist-item.selected .checklist-label {
+  color: var(--primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Checkbox */
+.checklist-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Icono */
+.checklist-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 16px;
+  width: 24px;
+  flex-shrink: 0;
+}
+
+/* Label */
+.checklist-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  transition: var(--transition-fast);
+}
+
+/* Badge */
+.checklist-badge {
+  font-size: var(--font-size-xs);
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* Premium star */
+.checklist-premium {
+  color: var(--warning);
+  flex-shrink: 0;
+}
+
+/* Expand button */
+.checklist-expand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: 50%;
+  transition: var(--transition-fast);
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.checklist-expand:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   HIJO (FEATURES) - CON CHECK Y TEXTO JUNTOS
+   ============================================================ */
+
+.checklist-children {
+  padding: var(--space-2) var(--space-2) var(--space-2) calc(var(--space-2) + 48px);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px 12px;
+}
+
+/* Cada feature/opción */
+.checklist-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 8px;
+  border-radius: 99px;
+  background: var(--bg-tertiary);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  min-height: 28px;
+  width: 100%;
+}
+
+.checklist-child:hover {
+  background: var(--bg-hover);
+}
+
+.checklist-child.selected {
+  background: var(--primary-bg);
+  border-color: var(--primary);
+}
+
+/* Checkbox del hijo - siempre visible */
+.checklist-child-checkbox {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* ★★★ TEXTO DEL HIJO - SIEMPRE VISIBLE ★★★ */
+.checklist-child-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-primary) !important;
+  font-weight: var(--font-weight-normal);
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  flex: 1;
+}
+
+/* Cuando el hijo está seleccionado */
+.checklist-child.selected .checklist-child-label {
+  color: var(--primary) !important;
+  font-weight: var(--font-weight-medium);
+}
+
+/* ─── Variantes ────────────────────────────────────────────────── */
+
+/* Compact */
+.checklist-compact .checklist-item {
+  padding: var(--space-1) var(--space-2);
+  min-height: 32px;
+  gap: var(--space-1);
+}
+
+.checklist-compact .checklist-label {
+  font-size: var(--font-size-xs);
+}
+
+.checklist-compact .checklist-child {
+  padding: 2px 8px 2px 6px;
+  font-size: 10px;
+  min-height: 22px;
+  gap: 4px;
+}
+
+.checklist-compact .checklist-child-label {
+  font-size: 10px;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .checklist-children {
+    grid-template-columns: 1fr 1fr;
+    padding-left: var(--space-2);
+  }
+
+  .checklist-actions {
+    flex-direction: column;
+  }
+
+  .checklist-btn-select-all,
+  .checklist-btn-clear {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .checklist-item {
+    grid-template-columns: auto auto 1fr auto;
+    gap: var(--space-1);
+  }
+}
+
+@media (max-width: 480px) {
+  .checklist-children {
+    grid-template-columns: 1fr;
+  }
+}

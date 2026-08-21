@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { Bell, Send, Trash2, Check, AlertCircle, Loader, RefreshCw } from 'react-feather';
-import { fetchWithAuth } from '../../config/apiBase';
+import { fetchWithAuth } from '../../config/apiBase_';
 import '../../styles/NotificationsPush.css';
 
 export default function NotificationsPush() {

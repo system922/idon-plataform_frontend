@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { useConfirm } from '../../context/ConfirmContext';
-import { useAlert } from '../../components/ConfirmContext';
+import { useConfirm, useAlert } from '../../context/ConfirmContext';
+import Table from '../../components/General/Table';
+import Modal from '../../components/General/Modal';
+import CustomCombobox from '../../components/General/CustomCombobox';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import Input from '../../components/General/Input';
 import {
-  FiCreditCard, FiRefreshCw, FiCheck, FiAlertCircle,
-  FiClock, FiXCircle, FiCheckCircle, FiCalendar, FiMail,
+  FiRefreshCw, FiCheck, FiAlertCircle,
+  FiXCircle, FiCheckCircle, FiCalendar, FiMail
 } from 'react-icons/fi';
-import { adminApiService } from '../../services/apiService';
-import '../../styles/AdminPages.css';
+import { adminApi } from '../../config/api';
 
 const SUB_BADGE = {
   active:             { cls: 'admin-badge-success', label: 'Activa' },
@@ -17,7 +20,7 @@ const SUB_BADGE = {
 
 function payInfo(nextBillingAt, status) {
   if (status === 'suspended') return { text: 'Suspendida', color: '#ef4444', bg: 'rgba(239,68,68,.1)' };
-  if (!nextBillingAt)          return { text: 'Sin fecha',  color: 'var(--admin-text-muted)', bg: 'transparent' };
+  if (!nextBillingAt)          return { text: 'Sin fecha',  color: 'var(--text-muted)', bg: 'transparent' };
   const days = Math.floor((new Date(nextBillingAt) - new Date()) / 86400000);
   if (days < 0)   return { text: `Vencido ${Math.abs(days)}d`, color: '#ef4444', bg: 'rgba(239,68,68,.1)' };
   if (days === 0) return { text: 'Vence hoy',                  color: '#ef4444', bg: 'rgba(239,68,68,.1)' };
@@ -29,18 +32,20 @@ function payInfo(nextBillingAt, status) {
 export default function Payments() {
   const { showConfirm } = useConfirm();
   const alert = useAlert();
-  const [data,     setData]     = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(null);
-  const [filter,   setFilter]   = useState('all');
-  const [acting,   setActing]   = useState(null);
-  const [payModal,   setPayModal]   = useState(null);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('all');
+  const [acting, setActing] = useState(null);
+  const [payModal, setPayModal] = useState(null);
   const [emailModal, setEmailModal] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
-      const r = await adminApiService.get('/admin/payments');
+      const r = await adminApi.get('/admin/payments');
       setData(r.data || r || []);
       setError(null);
     } catch (e) {
@@ -48,202 +53,468 @@ export default function Payments() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
 
   const handleMarkPaid = async (subId, notes) => {
     setActing(subId);
     try {
-      await adminApiService.post(`/admin/subscriptions/${subId}/mark-paid`, { notes });
+      await adminApi.post(`/admin/subscriptions/${subId}/mark-paid`, { notes });
       setPayModal(null);
       await load();
+      alert.success('Pago registrado correctamente', '✅ Éxito');
     } catch (e) {
-      await alert.error('Error: ' + e.message);
+      alert.error('Error: ' + e.message);
     } finally {
       setActing(null);
     }
   };
 
-  const handleSuspend = async (subId) => {
-    if (!await showConfirm('¿Suspender este negocio? El dueño no podrá iniciar sesión.')) return;
+  const handleSuspend = async (subId, businessName) => {
+    if (!await showConfirm({
+      title: '⚠️ Suspender negocio',
+      message: `¿Suspender el negocio "${businessName}"? El dueño no podrá iniciar sesión hasta que se reactive.`,
+      confirmText: 'Suspender',
+      cancelText: 'Cancelar',
+      danger: true,
+    })) return;
     setActing(subId);
     try {
-      await adminApiService.post(`/admin/subscriptions/${subId}/suspend`, {});
+      await adminApi.post(`/admin/subscriptions/${subId}/suspend`, {});
       await load();
+      alert.success('Negocio suspendido correctamente', '✅ Éxito');
     } catch (e) {
-      await alert.error('Error: ' + e.message);
+      alert.error('Error: ' + e.message);
+    } finally {
+      setActing(null);
+    }
+  };
+
+  const handleReactive = async (subId, businessName) => {
+    if (!await showConfirm({
+      title: '🔄 Reactivar negocio',
+      message: `¿Reactivar el negocio "${businessName}"? El dueño podrá iniciar sesión nuevamente.`,
+      confirmText: 'Reactivar',
+      cancelText: 'Cancelar',
+      danger: false,
+    })) return;
+    setActing(subId);
+    try {
+      await adminApi.post(`/admin/subscriptions/${subId}/reactivate`, {});
+      await load();
+      alert.success('Negocio reactivado correctamente', '✅ Éxito');
+    } catch (e) {
+      alert.error('Error: ' + e.message);
     } finally {
       setActing(null);
     }
   };
 
   const now = new Date();
-  const f = (row) => {
-    const days = row.next_billing_at ? Math.floor((new Date(row.next_billing_at) - now) / 86400000) : 9999;
-    if (filter === 'overdue')   return days < 0 && row.sub_status !== 'suspended';
-    if (filter === 'upcoming')  return days >= 0 && days <= 7;
-    if (filter === 'active')    return row.sub_status === 'active';
-    if (filter === 'suspended') return row.sub_status === 'suspended';
-    if (filter === 'no_sub')    return !row.sub_id;
-    return true;
-  };
-  const filtered = data.filter(f);
 
-  const counts = {
-    overdue:   data.filter(r => r.next_billing_at && Math.floor((new Date(r.next_billing_at)-now)/86400000) < 0 && r.sub_status !== 'suspended').length,
-    upcoming:  data.filter(r => { const d = r.next_billing_at ? Math.floor((new Date(r.next_billing_at)-now)/86400000) : 9999; return d>=0&&d<=7; }).length,
+  const filteredData = useMemo(() => {
+    let result = data;
+
+    if (filter === 'overdue') {
+      result = result.filter(r => {
+        const days = r.next_billing_at ? Math.floor((new Date(r.next_billing_at) - now) / 86400000) : 9999;
+        return days < 0 && r.sub_status !== 'suspended';
+      });
+    } else if (filter === 'upcoming') {
+      result = result.filter(r => {
+        const days = r.next_billing_at ? Math.floor((new Date(r.next_billing_at) - now) / 86400000) : 9999;
+        return days >= 0 && days <= 7;
+      });
+    } else if (filter === 'active') {
+      result = result.filter(r => r.sub_status === 'active');
+    } else if (filter === 'suspended') {
+      result = result.filter(r => r.sub_status === 'suspended');
+    } else if (filter === 'no_sub') {
+      result = result.filter(r => !r.sub_id);
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(r =>
+        r.business_name?.toLowerCase().includes(term) ||
+        r.owner_name?.toLowerCase().includes(term) ||
+        r.owner_email?.toLowerCase().includes(term) ||
+        r.slug?.toLowerCase().includes(term)
+      );
+    }
+
+    return result;
+  }, [data, filter, searchTerm]);
+
+  const counts = useMemo(() => ({
+    total: data.length,
+    overdue: data.filter(r => r.next_billing_at && Math.floor((new Date(r.next_billing_at)-now)/86400000) < 0 && r.sub_status !== 'suspended').length,
+    upcoming: data.filter(r => { const d = r.next_billing_at ? Math.floor((new Date(r.next_billing_at)-now)/86400000) : 9999; return d>=0&&d<=7; }).length,
     suspended: data.filter(r => r.sub_status === 'suspended').length,
-    no_sub:    data.filter(r => !r.sub_id).length,
-  };
+    no_sub: data.filter(r => !r.sub_id).length,
+  }), [data]);
 
-  return (
-    <PageTemplate theme="admin" title="Pagos y Suscripciones" subtitle="Control de facturación, fechas de pago y estado de negocios" loading={loading} error={error} onRetry={load} headerAction={
-      <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /> Actualizar</button>
-    }>
-      {/* Stats */}
-      <div className="admin-stats-5" style={{ gap: 12, marginBottom: 20 }}>
-        {[
-          { l: 'Total negocios',   v: data.length,       c: '#ff8c42' },
-          { l: 'Pagos vencidos',   v: counts.overdue,    c: '#ef4444' },
-          { l: 'Próximos 7 días',  v: counts.upcoming,   c: '#f59e0b' },
-          { l: 'Suspendidos',      v: counts.suspended,  c: '#9ca3af' },
-          { l: 'Sin suscripción',  v: counts.no_sub,     c: '#3b82f6' },
-        ].map(s => (
-          <div key={s.l} className="admin-card" style={{ padding: '13px 16px', borderLeft: `3px solid ${s.c}` }}>
-            <p style={{ margin: '0 0 3px', fontSize: 10, color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{s.l}</p>
-            <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: s.c }}>{s.v}</p>
+  const filterOptions = [
+    { value: 'all', label: `Todos (${counts.total})` },
+    { value: 'overdue', label: `Vencidos (${counts.overdue})` },
+    { value: 'upcoming', label: `Esta semana (${counts.upcoming})` },
+    { value: 'active', label: 'Activos' },
+    { value: 'suspended', label: `Suspendidos (${counts.suspended})` },
+    { value: 'no_sub', label: `Sin suscripción (${counts.no_sub})` },
+  ];
+
+  const columns = [
+    {
+      accessor: 'business_name',
+      label: 'Negocio',
+      render: (item) => (
+        <div>
+          <strong>{item.business_name}</strong>
+          <div className="payment-business-type">{item.business_type} · {item.slug}</div>
+          {!item.business_active && item.sub_status === 'suspended' && (
+            <span className="payment-login-blocked">LOGIN BLOQUEADO</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessor: 'owner_name',
+      label: 'Propietario',
+      render: (item) => (
+        <div>
+          <div>{item.owner_name || '—'}</div>
+          <div className="payment-owner-email">{item.owner_email}</div>
+        </div>
+      ),
+    },
+    {
+      accessor: 'subscription',
+      label: 'Suscripción',
+      render: (item) => {
+        const sbdg = SUB_BADGE[item.sub_status] || SUB_BADGE.pending_activation;
+        return item.sub_id ? (
+          <div>
+            <span className={`admin-badge ${sbdg.cls}`}>{sbdg.label}</span>
+            <div className="payment-billing-period">
+              {item.billing_period === 'monthly' ? 'Mensual' : 'Anual'}
+            </div>
           </div>
-        ))}
-      </div>
-
-      {error && <div className="admin-card" style={{ marginBottom: 16, borderLeft: '4px solid #ef4444' }}><div className="admin-card-body"><p style={{ color: '#ef4444', margin: 0 }}>Error: {error}</p></div></div>}
-
-      {/* Filtros */}
-      <div className="admin-filters" style={{ marginBottom: 16 }}>
-        {[
-          ['all',       `Todos (${data.length})`],
-          ['overdue',   `⚠ Vencidos (${counts.overdue})`],
-          ['upcoming',  `🕐 Esta semana (${counts.upcoming})`],
-          ['active',    '✓ Activos'],
-          ['suspended', `✗ Suspendidos (${counts.suspended})`],
-          ['no_sub',    `Sin suscripción (${counts.no_sub})`],
-        ].map(([k, l]) => (
-          <button key={k} className={`admin-filter-btn ${filter===k?'active':''}`} onClick={() => setFilter(k)}>{l}</button>
-        ))}
-      </div>
-
-      <div className="admin-card">
-        <div className="admin-card-header"><h2>Negocios ({filtered.length})</h2></div>
-        <div className="admin-card-body">
-          {loading ? <div className="admin-loading"><div className="admin-spinner" />Cargando...</div>
-          : filtered.length === 0 ? (
-            <div className="admin-empty"><div className="admin-empty-icon"><FiCreditCard size={36} /></div><p className="admin-empty-title">Sin resultados</p></div>
-          ) : (
-            <div className="admin-table-wrapper">
-              <table className="admin-table">
-                <thead><tr>
-                  <th>Negocio</th><th>Propietario</th><th>Suscripción</th>
-                  <th>Próximo cobro</th><th>Total</th><th>Estado de pago</th><th>Acciones</th>
-                </tr></thead>
-                <tbody>
-                  {filtered.map(r => {
-                    const pi   = payInfo(r.next_billing_at, r.sub_status);
-                    const sbdg = SUB_BADGE[r.sub_status] || SUB_BADGE.pending_activation;
-                    const busy = acting === r.sub_id;
-                    const isOver = r.next_billing_at && Math.floor((new Date(r.next_billing_at)-now)/86400000) < 0;
-                    return (
-                      <tr key={r.business_id} style={{ opacity: r.sub_status === 'suspended' ? .6 : 1, background: isOver && r.sub_status!=='suspended' ? 'rgba(239,68,68,.02)' : undefined }}>
-                        <td>
-                          <strong style={{ fontSize: 13 }}>{r.business_name}</strong>
-                          <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>{r.business_type} · {r.slug}</div>
-                          {!r.business_active && r.sub_status === 'suspended' && (
-                            <span style={{ fontSize: 10, color: '#ef4444', background: 'rgba(239,68,68,.1)', padding: '1px 5px', borderRadius: 4 }}>LOGIN BLOQUEADO</span>
-                          )}
-                        </td>
-                        <td style={{ fontSize: 12 }}>
-                          {r.owner_name || '—'}
-                          <div style={{ color: 'var(--admin-text-muted)', fontSize: 11 }}>{r.owner_email}</div>
-                        </td>
-                        <td>
-                          {r.sub_id
-                            ? <><span className={`admin-badge ${sbdg.cls}`}>{sbdg.label}</span>
-                                <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 2 }}>{r.billing_period === 'monthly' ? 'Mensual' : 'Anual'}</div></>
-                            : <span className="admin-badge admin-badge-warning">Sin suscripción</span>}
-                        </td>
-                        <td style={{ fontSize: 12 }}>
-                          {r.next_billing_at ? (
-                            <><FiCalendar size={11} style={{ marginRight: 4, color: 'var(--admin-text-muted)' }} />{new Date(r.next_billing_at).toLocaleDateString('es-EC')}</>
-                          ) : '—'}
-                          {r.last_paid_at && (
-                            <div style={{ fontSize: 11, color: '#22c55e', marginTop: 2 }}>
-                              <FiCheck size={10} /> Últ: {new Date(r.last_paid_at).toLocaleDateString('es-EC')}
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ fontWeight: 700, color: '#ff8c42', fontSize: 13 }}>
-                          {r.total_amount ? `$${parseFloat(r.total_amount).toFixed(2)}` : '—'}
-                          {r.discount_percentage > 0 && <div style={{ fontSize: 10, color: '#8CB79B' }}>-{r.discount_percentage}% dto.</div>}
-                        </td>
-                        <td>
-                          {r.sub_id ? (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, color: pi.color, background: pi.bg, border: `1px solid ${pi.color}33` }}>
-                              {pi.text}
-                            </span>
-                          ) : '—'}
-                        </td>
-                        <td>
-                          <div className="admin-table-actions" style={{ flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
-                            {r.sub_id && r.sub_status !== 'suspended' && (
-                              <button className="admin-table-btn admin-table-btn-success" onClick={() => setPayModal(r)} disabled={busy} style={{ fontSize: 11, background: 'rgba(34,197,94,.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,.3)' }}>
-                                <FiCheck size={12} /> Marcar pagado
-                              </button>
-                            )}
-                            {r.sub_id && r.sub_status === 'active' && (
-                              <button className="admin-table-btn admin-table-btn-danger" onClick={() => handleSuspend(r.sub_id)} disabled={busy} style={{ fontSize: 11 }}>
-                                <FiXCircle size={12} /> Suspender
-                              </button>
-                            )}
-                            {r.sub_status === 'suspended' && (
-                              <button className="admin-table-btn admin-table-btn-success" onClick={() => handleMarkPaid(r.sub_id, 'Reactivación manual')} disabled={busy} style={{ fontSize: 11 }}>
-                                <FiCheckCircle size={12} /> Reactivar
-                              </button>
-                            )}
-                            {r.owner_email && (
-                              <button className="admin-table-btn" onClick={() => setEmailModal(r)} disabled={busy} style={{ fontSize: 11, background: 'rgba(99,102,241,.1)', color: '#6366f1', border: '1px solid rgba(99,102,241,.3)' }}>
-                                <FiMail size={12} /> Enviar email
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+        ) : (
+          <span className="admin-badge admin-badge-warning">Sin suscripción</span>
+        );
+      },
+    },
+    {
+      accessor: 'next_billing_at',
+      label: 'Próximo cobro',
+      render: (item) => (
+        <div>
+          {item.next_billing_at ? (
+            <>
+              <FiCalendar size={11} className="payment-calendar-icon" />
+              {new Date(item.next_billing_at).toLocaleDateString('es-EC')}
+            </>
+          ) : '—'}
+          {item.last_paid_at && (
+            <div className="payment-last-paid">
+              <FiCheck size={10} /> Últ: {new Date(item.last_paid_at).toLocaleDateString('es-EC')}
             </div>
           )}
         </div>
-      </div>
+      ),
+    },
+    {
+      accessor: 'total_amount',
+      label: 'Total',
+      align: 'center',
+      render: (item) => (
+        <div>
+          <div className="payment-total-amount">
+            ${parseFloat(item.total_amount || 0).toFixed(2)}
+          </div>
+          {item.discount_percentage > 0 && (
+            <div className="payment-discount">-{item.discount_percentage}% dto.</div>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessor: 'payment_status',
+      label: 'Estado de pago',
+      render: (item) => {
+        const pi = payInfo(item.next_billing_at, item.sub_status);
+        return item.sub_id ? (
+          <span className="payment-status-badge" style={{ color: pi.color, background: pi.bg, borderColor: `${pi.color}33` }}>
+            {pi.text}
+          </span>
+        ) : '—';
+      },
+    },
+    {
+      accessor: 'actions',
+      label: 'Acciones',
+      align: 'center',
+      render: (item) => (
+        <div className="payment-actions">
+          {item.sub_id && item.sub_status !== 'suspended' && (
+            <IconTextButton
+              variant="success"
+              size="sm"
+              inline={true}
+              icon={<FiCheck size={12} />}
+              onClick={() => setPayModal(item)}
+              disabled={acting === item.sub_id}
+              className="payment-btn-paid"
+            >
+              Marcar pagado
+            </IconTextButton>
+          )}
+          {item.sub_id && item.sub_status === 'active' && (
+            <IconTextButton
+              variant="danger"
+              size="sm"
+              inline={true}
+              icon={<FiXCircle size={12} />}
+              onClick={() => handleSuspend(item.sub_id, item.business_name)}
+              disabled={acting === item.sub_id}
+            >
+              Suspender
+            </IconTextButton>
+          )}
+          {item.sub_status === 'suspended' && (
+            <IconTextButton
+              variant="success"
+              size="sm"
+              inline={true}
+              icon={<FiCheckCircle size={12} />}
+              onClick={() => handleReactive(item.sub_id, item.business_name)}
+              disabled={acting === item.sub_id}
+            >
+              Reactivar
+            </IconTextButton>
+          )}
+          {item.owner_email && (
+            <IconTextButton
+              variant="info"
+              size="sm"
+              inline={true}
+              icon={<FiMail size={12} />}
+              onClick={() => setEmailModal(item)}
+              disabled={acting === item.sub_id}
+              className="payment-btn-email"
+            >
+              Enviar email
+            </IconTextButton>
+          )}
+        </div>
+      ),
+    },
+  ];
 
-      {payModal   && <PayModal   row={payModal}   onClose={() => setPayModal(null)}   onConfirm={handleMarkPaid} />}
-      {emailModal && <EmailModal row={emailModal} onClose={() => setEmailModal(null)} />}
+  const toolbar = (
+    <div className="payments-toolbar">
+      <CustomCombobox
+        options={filterOptions}
+        value={filter}
+        onChange={setFilter}
+        placeholder="Filtrar por estado"
+        filterable={false}
+        size="sm"
+        className="payments-filter"
+      />
+    </div>
+  );
+
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
+  return (
+    <PageTemplate
+      title="PAGOS Y SUSCRIPCIONES"
+      subtitle="Control de facturación, fechas de pago y estado de negocios"
+      theme="admin"
+      loading={loading}
+      error={error}
+      onRetry={load}
+      headerAction={refreshButton}
+    >
+      {error && (
+        <div className="alert alert-error">
+          <FiAlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      <Table
+        data={filteredData}
+        columns={columns}
+        keyField="business_id"
+        title="Negocios"
+        subtitle={`${filteredData.length} ${filteredData.length === 1 ? 'negocio' : 'negocios'} encontrados`}
+        toolbar={toolbar}
+        searchable={true}
+        searchPlaceholder="Buscar por negocio, propietario o email..."
+        searchFields={['business_name', 'owner_name', 'owner_email', 'slug']}
+        pagination={true}
+        itemsPerPage={10}
+        itemsPerPageOptions={[10, 25, 50, 100]}
+        loading={loading}
+        emptyMessage={
+          searchTerm || filter !== 'all'
+            ? 'No hay negocios que coincidan con los filtros aplicados'
+            : 'No hay negocios registrados'
+        }
+        striped={true}
+        hoverable={true}
+        bordered={false}
+        compact={false}
+      />
+
+      {payModal && (
+        <PayModal
+          row={payModal}
+          onClose={() => setPayModal(null)}
+          onConfirm={handleMarkPaid}
+        />
+      )}
+
+      {emailModal && (
+        <EmailModal
+          row={emailModal}
+          onClose={() => setEmailModal(null)}
+        />
+      )}
     </PageTemplate>
   );
 }
 
+function PayModal({ row, onClose, onConfirm }) {
+  const alert = useAlert();
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleConfirm = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      await onConfirm(row.sub_id, notes);
+    } catch (e) {
+      setError(e.message || 'Error al registrar pago');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const footer = (
+    <>
+      {error && (
+        <div className="modal-error-text">
+          <FiAlertCircle size={16} /> {error}
+        </div>
+      )}
+      <ButtonGroup>
+        <IconTextButton
+          variant="secondary"
+          size="md"
+          onClick={onClose}
+          disabled={saving}
+        >
+          Cancelar
+        </IconTextButton>
+        <IconTextButton
+          variant="success"
+          size="md"
+          icon={<FiCheck size={14} />}
+          onClick={handleConfirm}
+          disabled={saving}
+          loading={saving}
+        >
+          {saving ? 'Registrando...' : 'Confirmar pago'}
+        </IconTextButton>
+      </ButtonGroup>
+    </>
+  );
+
+  return (
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Registrar Pago"
+      size="sm"
+      className="payments-pay-modal"
+      footer={footer}
+    >
+      <div className="payments-pay-body">
+        <p className="payments-pay-business"><strong>{row.business_name}</strong></p>
+
+        <div className="payments-pay-info">
+          <div className="payments-pay-amount">
+            <span className="payments-pay-label">Monto</span>
+            <span className="payments-pay-value">${parseFloat(row.total_amount || 0).toFixed(2)}</span>
+          </div>
+          <div className="payments-pay-due">
+            <span className="payments-pay-label">Vencimiento</span>
+            <span className="payments-pay-value">
+              {row.next_billing_at ? new Date(row.next_billing_at).toLocaleDateString('es-EC') : '—'}
+            </span>
+          </div>
+        </div>
+
+        <div className="payments-pay-notes">
+          <label>Notas / Referencia (opcional)</label>
+          <Input
+            type="textarea"
+            value={notes}
+            onChange={setNotes}
+            placeholder="Referencia de transferencia, comprobante, etc."
+            size="md"
+            rows={2}
+          />
+        </div>
+
+        <p className="payments-pay-hint">
+          Al confirmar se registrará el pago y se actualizará la próxima fecha de cobro.
+        </p>
+      </div>
+    </Modal>
+  );
+}
+
 const PALETTE = ['#22c55e','#f59e0b','#ef4444','#6366f1','#3b82f6','#8b5cf6'];
-const TYPE_COLORS = { bienvenida:'#22c55e', recordatorio_pago:'#f59e0b', suspension:'#ef4444', activacion:'#6366f1' };
+const TYPE_COLORS = {
+  bienvenida: '#22c55e',
+  recordatorio_pago: '#f59e0b',
+  suspension: '#ef4444',
+  activacion: '#6366f1'
+};
 
 function EmailModal({ row, onClose }) {
-  const [selected,    setSelected]    = useState(null);
-  const [sending,     setSending]     = useState(false);
-  const [result,      setResult]      = useState(null);
-  const [templates,   setTemplates]   = useState([]);
+  const alert = useAlert();
+  const [selected, setSelected] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+  const [templates, setTemplates] = useState([]);
   const [loadingTpls, setLoadingTpls] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    adminApiService.get('/admin/email-templates')
+    adminApi.get('/admin/email-templates')
       .then(r => setTemplates((r.data || r || []).filter(t => t.is_active)))
       .catch(() => setTemplates([]))
       .finally(() => setLoadingTpls(false));
@@ -253,156 +524,115 @@ function EmailModal({ row, onClose }) {
     if (!selected) return;
     setSending(true);
     setResult(null);
+    setError('');
     try {
-      await adminApiService.post('/admin/email/send-template', {
-        to:           row.owner_email,
-        templateKey:  selected,
+      await adminApi.post('/admin/email/send-template', {
+        to: row.owner_email,
+        templateKey: selected,
         businessName: row.business_name,
-        ownerName:    row.owner_name,
-        amount:       row.total_amount,
-        dueDate:      row.next_billing_at,
+        ownerName: row.owner_name,
+        amount: row.total_amount,
+        dueDate: row.next_billing_at,
       });
       setResult({ ok: true, msg: 'Correo enviado correctamente.' });
+      alert.success('Correo enviado correctamente', '✅ Éxito');
     } catch (e) {
       setResult({ ok: false, msg: e.message || 'Error al enviar.' });
+      setError(e.message || 'Error al enviar el correo');
     } finally {
       setSending(false);
     }
   };
 
-  return (
-    <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal" style={{ maxWidth: 480, width: '95vw' }} onClick={e => e.stopPropagation()}>
-        <div className="admin-modal-header">
-          <h2><FiMail size={17} style={{ marginRight: 8, color: '#6366f1' }} /> Enviar Email</h2>
-          <button className="admin-modal-close" onClick={onClose}>✕</button>
+  const footer = (
+    <>
+      {error && (
+        <div className="modal-error-text">
+          <FiAlertCircle size={16} /> {error}
         </div>
-        <div className="admin-modal-body">
-          <p style={{ margin: '0 0 4px', fontSize: 13 }}>
-            Para: <strong>{row.owner_name || '—'}</strong>
-          </p>
-          <p style={{ margin: '0 0 18px', fontSize: 12, color: 'var(--admin-text-muted)' }}>
-            {row.owner_email}
-          </p>
-
-          <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#8CB79B', letterSpacing: '.5px' }}>
-            Selecciona una plantilla
-          </p>
-
-          {loadingTpls ? (
-            <div className="admin-loading" style={{ padding: '20px 0' }}>
-              <div className="admin-spinner" />Cargando plantillas...
-            </div>
-          ) : templates.length === 0 ? (
-            <p style={{ color: 'var(--admin-text-muted)', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>
-              No hay plantillas activas. Créalas en <strong>Comercial → Plantillas de Email</strong>.
-            </p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {templates.map((t, i) => {
-                const color = TYPE_COLORS[t.type] || PALETTE[i % PALETTE.length];
-                const isSel = selected === t.type;
-                return (
-                  <div
-                    key={t.type}
-                    onClick={() => setSelected(t.type)}
-                    style={{
-                      padding: '12px 16px', borderRadius: 10, cursor: 'pointer',
-                      background: isSel ? `${color}14` : 'var(--admin-bg-primary)',
-                      border: `1.5px solid ${isSel ? color : 'var(--admin-border-light)'}`,
-                      display: 'flex', alignItems: 'center', gap: 12, transition: 'all .15s',
-                    }}
-                  >
-                    <div style={{
-                      width: 14, height: 14, borderRadius: '50%', flexShrink: 0,
-                      background: isSel ? color : 'transparent',
-                      border: `2px solid ${color}`, transition: 'background .15s',
-                    }} />
-                    <div>
-                      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: isSel ? color : 'var(--admin-text-primary)' }}>
-                        {t.label}
-                      </p>
-                      {t.description && (
-                        <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--admin-text-muted)' }}>{t.description}</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {result && (
-            <div style={{
-              marginTop: 14, padding: '10px 14px', borderRadius: 8, fontSize: 13,
-              background: result.ok ? 'rgba(34,197,94,.08)' : 'rgba(239,68,68,.08)',
-              border: `1px solid ${result.ok ? 'rgba(34,197,94,.3)' : 'rgba(239,68,68,.3)'}`,
-              color: result.ok ? '#16a34a' : '#dc2626',
-            }}>
-              {result.msg}
-            </div>
-          )}
-        </div>
-        <div className="admin-modal-footer">
-          <button className="admin-btn admin-btn-secondary" onClick={onClose}>
-            {result?.ok ? 'Cerrar' : 'Cancelar'}
-          </button>
-          {!result?.ok && (
-            <button
-              className="admin-btn admin-btn-primary"
-              disabled={!selected || sending || loadingTpls}
-              onClick={handleSend}
-              style={{ background: 'linear-gradient(135deg,#818cf8,#6366f1)', color: '#fff', border: 'none' }}
-            >
-              <FiMail size={14} /> {sending ? 'Enviando...' : 'Enviar correo'}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+      )}
+      <ButtonGroup>
+        <IconTextButton
+          variant=""
+          size="md"
+          onClick={onClose}
+          disabled={sending}
+        >
+          {result?.ok ? 'Cerrar' : 'Cancelar'}
+        </IconTextButton>
+        {!result?.ok && (
+          <IconTextButton
+            variant="success"
+            size="md"
+            icon={<FiMail size={14} />}
+            onClick={handleSend}
+            disabled={!selected || sending || loadingTpls}
+            loading={sending}
+          >
+            {sending ? 'Enviando...' : 'Enviar correo'}
+          </IconTextButton>
+        )}
+      </ButtonGroup>
+    </>
   );
-}
 
-function PayModal({ row, onClose, onConfirm }) {
-  const [notes, setNotes] = useState('');
-  const [saving, setSaving] = useState(false);
-  const inp = { width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 13, background: 'var(--admin-bg-primary)', border: '1px solid var(--admin-border-light)', color: 'var(--admin-text-primary)' };
   return (
-    <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal" style={{ maxWidth: 440, width: '95vw' }} onClick={e => e.stopPropagation()}>
-        <div className="admin-modal-header">
-          <h2><FiCreditCard size={17} style={{ marginRight: 8, color: '#22c55e' }} /> Registrar Pago</h2>
-          <button className="admin-modal-close" onClick={onClose}>✕</button>
-        </div>
-        <div className="admin-modal-body">
-          <p style={{ margin: '0 0 14px', fontSize: 14 }}><strong>{row.business_name}</strong></p>
-          <div className="admin-col-2" style={{ gap: 10, marginBottom: 16 }}>
-            <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(34,197,94,.08)', border: '1px solid rgba(34,197,94,.2)' }}>
-              <p style={{ margin: '0 0 3px', fontSize: 10, color: '#8CB79B', textTransform: 'uppercase' }}>Monto</p>
-              <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#22c55e' }}>${parseFloat(row.total_amount || 0).toFixed(2)}</p>
-            </div>
-            <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(255,140,66,.06)', border: '1px solid rgba(255,140,66,.2)' }}>
-              <p style={{ margin: '0 0 3px', fontSize: 10, color: '#ff8c42', textTransform: 'uppercase' }}>Vencimiento</p>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#ff8c42' }}>
-                {row.next_billing_at ? new Date(row.next_billing_at).toLocaleDateString('es-EC') : '—'}
-              </p>
-            </div>
-          </div>
-          <label style={{ display: 'block', marginBottom: 5, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#8CB79B' }}>Notas / Referencia (opcional)</label>
-          <textarea style={{ ...inp, resize: 'vertical' }} rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Referencia de transferencia, comprobante, etc." />
-          <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--admin-text-muted)' }}>
-            Al confirmar se registrará el pago y se actualizará la próxima fecha de cobro.
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Enviar Email"
+      size="sm"
+      className="payments-email-modal"
+      footer={footer}
+    >
+      <div className="payments-email-body">
+        <p className="payments-email-to">
+          Para: <strong>{row.owner_name || '—'}</strong>
+        </p>
+        <p className="payments-email-address">{row.owner_email}</p>
+
+        <p className="payments-email-templates-label">Selecciona una plantilla</p>
+
+        {loadingTpls ? (
+          <div className="payments-email-loading">Cargando plantillas...</div>
+        ) : templates.length === 0 ? (
+          <p className="payments-email-no-templates">
+            No hay plantillas activas. Créalas en <strong>Comercial → Plantillas de Email</strong>.
           </p>
-        </div>
-        <div className="admin-modal-footer">
-          <button className="admin-btn admin-btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="admin-btn admin-btn-primary" disabled={saving}
-            onClick={async () => { setSaving(true); await onConfirm(row.sub_id, notes); setSaving(false); }}
-            style={{ background: 'linear-gradient(135deg,#34d399,#22c55e)', color: '#fff', border: 'none' }}>
-            <FiCheck size={15} /> {saving ? 'Registrando...' : 'Confirmar pago'}
-          </button>
-        </div>
+        ) : (
+          <div className="payments-email-templates">
+            {templates.map((t, i) => {
+              const color = TYPE_COLORS[t.type] || PALETTE[i % PALETTE.length];
+              const isSel = selected === t.type;
+              return (
+                <div
+                  key={t.type}
+                  className={`payments-email-template ${isSel ? 'selected' : ''}`}
+                  style={{
+                    borderColor: isSel ? color : 'var(--border-color)',
+                    background: isSel ? `${color}14` : 'var(--bg-tertiary)'
+                  }}
+                  onClick={() => setSelected(t.type)}
+                >
+                  <div className="payments-email-template-dot" style={{ background: color }} />
+                  <div>
+                    <p className="payments-email-template-label">{t.label}</p>
+                    {t.description && (
+                      <p className="payments-email-template-desc">{t.description}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {result && (
+          <div className={`payments-email-result ${result.ok ? 'success' : 'error'}`}>
+            {result.msg}
+          </div>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -1,81 +1,438 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { FiRefreshCw, FiSearch, FiUser, FiMail, FiPhone, FiCheck, FiX } from 'react-icons/fi';
-import { adminApiService as apiService } from '../../services/apiService';
-import '../../styles/AdminPages.css';
+import { useConfirm, useAlert } from '../../context/ConfirmContext';
+import Table from '../../components/General/Table';
+import Modal from '../../components/General/Modal';
+import CustomCombobox from '../../components/General/CustomCombobox';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import Input from '../../components/General/Input';
+import {
+  FiRefreshCw, FiMail, FiPhone, FiCheck, FiX,
+  FiAlertCircle, FiEdit2, FiTrash2, FiLock, FiUnlock,
+  FiSave,
+} from 'react-icons/fi';
+import { adminApi } from '../../config/api';
 
 export default function UsersList() {
-  const [users,   setUsers]   = useState([]);
+  const { showConfirm } = useConfirm();
+  const alert = useAlert();
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
-  const [search,  setSearch]  = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('todos');
+  const [editModal, setEditModal] = useState(null);
 
-  const load = async () => {
-    try { setLoading(true); const r = await apiService.get('/admin/users'); setUsers(r.data || []); setError(null); }
-    catch (e) { setError(e.message); } finally { setLoading(false); }
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const r = await adminApi.get('/admin/users');
+      setUsers(r.data || []);
+      setError(null);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
   };
 
-  useEffect(() => { load(); }, []);
+  const handleToggleActive = async (user) => {
+    const isActive = user.is_active;
+    const action = isActive ? 'desactivar' : 'activar';
+    const actionPast = isActive ? 'desactivado' : 'activado';
+    
+    if (!await showConfirm({
+      title: isActive ? 'Desactivar usuario' : 'Activar usuario',
+      message: `¿Estás seguro de que deseas ${action} al usuario "${user.first_name} ${user.last_name}"?`,
+      confirmText: isActive ? 'Desactivar' : 'Activar',
+      cancelText: 'Cancelar',
+      danger: isActive,
+    })) return;
+    
+    try {
+      await adminApi.patch(`/admin/users/${user.id}/toggle-active`);
+      await load();
+      alert.success(
+        `Usuario ${actionPast} correctamente`,
+        isActive ? 'Usuario Desactivado' : 'Usuario Activado'
+      );
+    } catch (e) {
+      alert.error('Error: ' + e.message);
+    }
+  };
 
-  const filtered = users.filter(u =>
-    `${u.first_name||''} ${u.last_name||''} ${u.email||''}`.toLowerCase().includes(search.toLowerCase())
+  const handleDelete = async (user) => {
+    if (!await showConfirm({
+      title: 'Eliminar usuario',
+      message: `¿Eliminar permanentemente al usuario "${user.first_name} ${user.last_name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      danger: true,
+    })) return;
+    try {
+      await adminApi.delete(`/admin/users/${user.id}`);
+      await load();
+      alert.success('Usuario eliminado correctamente', '✅ Éxito');
+    } catch (e) {
+      alert.error('Error: ' + e.message);
+    }
+  };
+
+  const filteredUsers = useMemo(() => {
+    let result = users;
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(u =>
+        `${u.first_name || ''} ${u.last_name || ''} ${u.email || ''} ${u.document_number || ''}`
+          .toLowerCase().includes(term)
+      );
+    }
+
+    if (filterStatus === 'active') {
+      result = result.filter(u => u.is_active === true);
+    } else if (filterStatus === 'inactive') {
+      result = result.filter(u => u.is_active === false);
+    } else if (filterStatus === 'verified') {
+      result = result.filter(u => u.email_verified === true);
+    } else if (filterStatus === 'unverified') {
+      result = result.filter(u => u.email_verified === false);
+    }
+
+    return result;
+  }, [users, searchTerm, filterStatus]);
+
+  const statusOptions = [
+    { value: 'todos', label: `Todos (${users.length})` },
+    { value: 'active', label: `Activos (${users.filter(u => u.is_active).length})` },
+    { value: 'inactive', label: `Inactivos (${users.filter(u => !u.is_active).length})` },
+    { value: 'verified', label: `Verificados (${users.filter(u => u.email_verified).length})` },
+    { value: 'unverified', label: `No verificados (${users.filter(u => !u.email_verified).length})` },
+  ];
+
+  const columns = [
+    {
+      accessor: 'name',
+      label: 'Usuario',
+      render: (item) => (
+        <div className="user-name">
+          <div className="user-avatar">
+            <span>{(item.first_name || item.email || '?')[0].toUpperCase()}</span>
+          </div>
+          <div>
+            <div className="user-full-name">{item.first_name} {item.last_name}</div>
+            <div className="user-id">{item.id?.slice(0, 8)}…</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessor: 'contact',
+      label: 'Contacto',
+      render: (item) => (
+        <div>
+          <div className="user-email"><FiMail size={11} /> {item.email}</div>
+          {item.phone && (
+            <div className="user-phone"><FiPhone size={11} /> {item.phone}</div>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessor: 'is_active',
+      label: 'Activo',
+      align: 'center',
+      render: (item) => (
+        item.is_active
+          ? <span className="admin-badge admin-badge-success"><FiCheck size={11} /> Sí</span>
+          : <span className="admin-badge admin-badge-danger"><FiX size={11} /> No</span>
+      ),
+    },
+    {
+      accessor: 'email_verified',
+      label: 'Email verificado',
+      align: 'center',
+      render: (item) => (
+        item.email_verified
+          ? <span className="admin-badge admin-badge-success"><FiCheck size={11} /> Verificado</span>
+          : <span className="admin-badge admin-badge-warning">Pendiente</span>
+      ),
+    },
+    {
+      accessor: 'created_at',
+      label: 'Registrado',
+      render: (item) => (
+        <span className="user-created">
+          {item.created_at ? new Date(item.created_at).toLocaleDateString('es-EC') : '—'}
+        </span>
+      ),
+    },
+    {
+      accessor: 'actions',
+      label: 'Acciones',
+      align: 'center',
+      render: (item) => (
+        <ButtonGroup>
+          <IconTextButton
+            variant="blue"
+            size="sm"
+            inline={true}
+            icon={<FiEdit2 size={12} />}
+            onClick={() => setEditModal(item)}
+          >
+            Editar
+          </IconTextButton>
+          <IconTextButton
+            variant={item.is_active ? 'danger' : 'success'}
+            size="sm"
+            inline={true}
+            icon={item.is_active ? <FiLock size={12} /> : <FiUnlock size={12} />}
+            onClick={() => handleToggleActive(item)}
+          >
+            {item.is_active ? 'Desactivar' : 'Activar'}
+          </IconTextButton>
+          <IconTextButton
+            variant="danger"
+            size="sm"
+            inline={true}
+            icon={<FiTrash2 size={12} />}
+            onClick={() => handleDelete(item)}
+          >
+            Eliminar
+          </IconTextButton>
+        </ButtonGroup>
+      ),
+    },
+  ];
+
+  const toolbar = (
+    <div className="users-toolbar">
+      <CustomCombobox
+        options={statusOptions}
+        value={filterStatus}
+        onChange={setFilterStatus}
+        placeholder="Filtrar por estado"
+        filterable={false}
+        size="sm"
+        className="users-filter"
+      />
+    </div>
+  );
+
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
   );
 
   return (
-    <PageTemplate theme="admin" title="Usuarios" subtitle="Todos los usuarios registrados en el sistema" loading={loading} error={error} onRetry={load} headerAction={
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <div style={{ position: 'relative' }}>
-          <FiSearch size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--admin-text-muted)' }} />
-          <input placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)}
-            style={{ padding: '7px 10px 7px 30px', borderRadius: 8, fontSize: 13, background: 'var(--admin-bg-primary)', border: '1px solid var(--admin-border-light)', color: 'var(--admin-text-primary)', width: '100%', maxWidth: 200, outline: 'none' }} />
+    <PageTemplate
+      title="USUARIOS"
+      subtitle="Todos los usuarios registrados en el sistema"
+      theme="admin"
+      loading={loading}
+      error={error}
+      onRetry={load}
+      headerAction={refreshButton}
+    >
+      {error && (
+        <div className="alert alert-error">
+          <FiAlertCircle size={16} /> {error}
         </div>
-        <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /></button>
-      </div>
-    }>
-      <div className="admin-card">
-        <div className="admin-card-header">
-          <h2>Usuarios ({filtered.length})</h2>
-        </div>
-        <div className="admin-card-body">
-          {loading ? <div className="admin-loading"><div className="admin-spinner" />Cargando...</div>
-          : filtered.length === 0 ? (
-            <div className="admin-empty"><div className="admin-empty-icon"><FiUser size={36} /></div><p className="admin-empty-title">Sin usuarios</p></div>
-          ) : (
-            <div className="admin-table-wrapper">
-              <table className="admin-table">
-                <thead><tr><th>Usuario</th><th>Contacto</th><th>Documento</th><th>Activo</th><th>Email verificado</th><th>Registrado</th></tr></thead>
-                <tbody>
-                  {filtered.map(u => (
-                    <tr key={u.id}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,140,66,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff8c42', flexShrink: 0 }}>
-                            <span style={{ fontSize: 13, fontWeight: 700 }}>{(u.first_name || u.email || '?')[0].toUpperCase()}</span>
-                          </div>
-                          <div>
-                            <strong style={{ fontSize: 13 }}>{u.first_name} {u.last_name}</strong>
-                            <div style={{ fontSize: 10, color: 'var(--admin-text-muted)' }}>{u.id?.slice(0,8)}…</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ fontSize: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><FiMail size={11} />{u.email}</div>
-                        {u.phone && <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2, color: 'var(--admin-text-muted)' }}><FiPhone size={11} />{u.phone}</div>}
-                      </td>
-                      <td style={{ fontSize: 12 }}>
-                        {u.document_number ? <><span style={{ color: 'var(--admin-text-muted)', textTransform: 'capitalize' }}>{u.document_type}</span> {u.document_number}</> : '—'}
-                      </td>
-                      <td>{u.is_active ? <span className="admin-badge admin-badge-success"><FiCheck size={11} /> Sí</span> : <span className="admin-badge admin-badge-danger"><FiX size={11} /> No</span>}</td>
-                      <td>{u.email_verified ? <span className="admin-badge admin-badge-success"><FiCheck size={11} /> Verificado</span> : <span className="admin-badge admin-badge-warning">Pendiente</span>}</td>
-                      <td style={{ fontSize: 12, color: 'var(--admin-text-muted)' }}>{u.created_at ? new Date(u.created_at).toLocaleDateString('es-EC') : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
+
+      <Table
+        data={filteredUsers}
+        columns={columns}
+        keyField="id"
+        title="Usuarios del Sistema"
+        subtitle={`${filteredUsers.length} ${filteredUsers.length === 1 ? 'usuario' : 'usuarios'} encontrados`}
+        toolbar={toolbar}
+        searchable={true}
+        searchPlaceholder="Buscar por nombre, email..."
+        searchFields={['first_name', 'last_name', 'email']}
+        pagination={true}
+        itemsPerPage={10}
+        itemsPerPageOptions={[10, 25, 50, 100]}
+        loading={loading}
+        emptyMessage={
+          searchTerm || filterStatus !== 'todos'
+            ? 'No hay usuarios que coincidan con los filtros aplicados'
+            : 'No hay usuarios registrados'
+        }
+        striped={true}
+        hoverable={true}
+        bordered={false}
+        compact={false}
+      />
+
+      {editModal && (
+        <EditUserModal
+          user={editModal}
+          onClose={() => setEditModal(null)}
+          onSaved={load}
+        />
+      )}
     </PageTemplate>
+  );
+}
+
+function EditUserModal({ user, onClose, onSaved }) {
+  const alert = useAlert();
+  const [form, setForm] = useState({
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.first_name || !form.last_name || !form.email) {
+      setError('Nombre, apellido y email son requeridos');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await adminApi.put(`/admin/users/${user.id}`, form);
+      alert.success('Usuario actualizado correctamente', '✅ Éxito');
+      onSaved();
+      onClose();
+    } catch (e) {
+      setError(e.message || 'Error al guardar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const footer = (
+    <>
+      {error && (
+        <div className="modal-error-text">
+          <FiAlertCircle size={16} /> {error}
+        </div>
+      )}
+      <ButtonGroup>
+        <IconTextButton
+          variant=""
+          size="md"
+          onClick={onClose}
+          disabled={saving}
+        >
+          Cancelar
+        </IconTextButton>
+        <IconTextButton
+          variant="success"
+          size="md"
+          icon={<FiSave size={14} />}
+          onClick={handleSubmit}
+          disabled={saving || !form.first_name || !form.last_name || !form.email}
+          loading={saving}
+        >
+          {saving ? 'Guardando...' : 'Guardar cambios'}
+        </IconTextButton>
+      </ButtonGroup>
+    </>
+  );
+
+  return (
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Editar Usuario"
+      size="md"
+      className="users-edit-modal"
+      footer={footer}
+    >
+      <div className="users-edit-form">
+        <div className="users-edit-row">
+          <div className="users-edit-field">
+            <label>Nombre *</label>
+            <Input
+              type="text"
+              value={form.first_name}
+              onChange={(value) => setForm(f => ({ ...f, first_name: value }))}
+              placeholder="Nombre"
+              size="md"
+              autoFocus
+              required
+            />
+          </div>
+          <div className="users-edit-field">
+            <label>Apellido *</label>
+            <Input
+              type="text"
+              value={form.last_name}
+              onChange={(value) => setForm(f => ({ ...f, last_name: value }))}
+              placeholder="Apellido"
+              size="md"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="users-edit-field">
+          <label>Email *</label>
+          <Input
+            type="email"
+            value={form.email}
+            onChange={(value) => setForm(f => ({ ...f, email: value }))}
+            placeholder="correo@ejemplo.com"
+            size="md"
+            required
+          />
+        </div>
+
+        <div className="users-edit-field">
+          <label>Teléfono</label>
+          <Input
+            type="text"
+            value={form.phone}
+            onChange={(value) => setForm(f => ({ ...f, phone: value }))}
+            placeholder="0999999999"
+            size="md"
+          />
+        </div>
+
+        <div className="users-edit-info">
+          <div className="users-edit-info-item">
+            <span className="users-edit-info-label">Registrado:</span>
+            <span className="users-edit-info-value">
+              {user.created_at ? new Date(user.created_at).toLocaleDateString('es-EC') : '—'}
+            </span>
+          </div>
+          <div className="users-edit-info-item">
+            <span className="users-edit-info-label">Estado:</span>
+            <span className="users-edit-info-value" style={{ color: user.is_active ? '#22c55e' : '#ef4444' }}>
+              {user.is_active ? 'Activo' : 'Inactivo'}
+            </span>
+          </div>
+          <div className="users-edit-info-item">
+            <span className="users-edit-info-label">Email verificado:</span>
+            <span className="users-edit-info-value" style={{ color: user.email_verified ? '#22c55e' : '#f59e0b' }}>
+              {user.email_verified ? 'Verificado' : 'Pendiente'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </Modal>
   );
 }

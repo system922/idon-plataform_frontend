@@ -1,55 +1,39 @@
-/* ========================================================
+/* ============================================================
    APP LAYOUT STYLES - IDON
    Gestión del layout principal con sidebar
-   ======================================================== */
+   Usa variables de general-variables.css
+   ============================================================ */
 
 .app-layout {
   min-height: 100vh;
-  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-  color: var(--text-primary);
+  background: var(--bg-body, #f0f4f8);
+  color: var(--text-primary, #1A202C);
   display: flex;
   flex-direction: column;
 }
 
-/* Default main content (para páginas normales con sidebar) */
+/* ─── MAIN CONTENT ─── */
 .main-content {
-  transition: margin-left var(--transition-base);
-  padding: var(--spacing-lg);
+  transition: margin-left var(--transition, 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+  padding: var(--space-6, 24px);
   box-sizing: border-box;
   min-height: 100vh;
   background: transparent;
   flex: 1;
 }
 
-/* Contenedor máximo ancho centrado */
-
-
-/* ===== Excepción: LOGIN (pantalla completa) ===== */
-@supports selector(.main-content:has(.login-page)) {
-  .main-content:has(.login-page) {
-    padding: 0 !important;
-    min-height: auto;
-    background: transparent;
-  }
-}
-
+/* ─── PÁGINAS DE PANTALLA COMPLETA (Login, etc) ─── */
 .main-content.fullscreen-page {
   padding: 0 !important;
   min-height: auto;
   background: transparent;
 }
 
-/* ===== Small screens ===== */
+/* ─── RESPONSIVE ─── */
 @media (max-width: 900px) {
   .main-content {
     margin-left: 0 !important;
-    padding: var(--spacing-md);
-  }
-
-  @supports selector(.main-content:has(.login-page)) {
-    .main-content:has(.login-page) {
-      padding: 0 !important;
-    }
+    padding: var(--space-4, 16px);
   }
   
   .main-content.fullscreen-page {
@@ -59,37 +43,37 @@
 
 @media (max-width: 480px) {
   .main-content {
-    padding: var(--spacing-sm);
+    padding: var(--space-3, 12px);
   }
 }
 
+/* ─── TOAST NOTIFICATIONS ─── */
 .global-toast {
   position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 9999;
-  padding: 12px 18px;
-  border-radius: 10px;
+  top: var(--space-4, 16px);
+  right: var(--space-4, 16px);
+  z-index: var(--z-max, 9999);
+  padding: var(--space-3, 12px) var(--space-4, 18px);
+  border-radius: var(--radius-md, 10px);
   min-width: 220px;
-  color: white;
-  font-weight: 600;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-  transition: opacity 0.3s ease;
+  color: var(--text-white, #ffffff);
+  font-weight: var(--font-weight-semibold, 600);
+  box-shadow: var(--shadow-lg, 0 8px 20px rgba(0, 0, 0, 0.25));
+  transition: opacity var(--transition-fast, 0.3s ease);
 }
 
 .global-toast-info {
-  background: #0f62fe;
+  background: var(--info, #3b82f6);
 }
 
 .global-toast-warn {
-  background: #ffb020;
+  background: var(--warning, #f59e0b);
 }
 
 .global-toast-error {
-  background: #da1e28;
+  background: var(--danger, #ef4444);
 }
 
 .global-toast-success {
-  background: #2d9d78;
+  background: var(--success, #10b981);
 }
-

@@ -1,0 +1,1299 @@
+/* ============================================================
+   CASH REGISTER AUDIT PAGE - Estilos exclusivos
+   Prefijo: cash-audit-
+   100% Responsive con scroll horizontal en tabla
+   Versión: 2.2 - Combobox mejorado para móvil
+   ============================================================ */
+
+/* ─── Spinner ──────────────────────────────────────────────── */
+
+.cash-audit-spinning {
+  animation: cash-audit-spin 1s linear infinite;
+}
+
+@keyframes cash-audit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Alertas ──────────────────────────────────────────────── */
+
+.cash-audit-alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: var(--font-size-sm);
+}
+
+.cash-audit-alert-error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+/* ─── Wrapper principal ───────────────────────────────────── */
+
+.cash-audit-content-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 0 4px;
+}
+
+/* ─── Tabs - MEJORADOS ──────────────────────────────────────── */
+
+.cash-audit-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 16px;
+  padding: 4px;
+  background: #f3f4f6;
+  border-radius: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.cash-audit-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.cash-audit-tab-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-height: 36px;
+}
+
+.cash-audit-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-primary);
+}
+
+.cash-audit-tab-active {
+  background: #ffffff;
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.cash-audit-tab-badge {
+  background: #e5e7eb;
+  padding: 1px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.cash-audit-tab-active .cash-audit-tab-badge {
+  background: #dbeafe;
+  color: var(--text-primary);
+}
+
+/* ─── Toolbar ────────────────────────────────────────────────── */
+
+.cash-audit-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+.cash-audit-toolbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ─── Combobox mejorado ──────────────────────────────────────── */
+
+.cash-audit-combobox-wrapper {
+  position: relative;
+  min-width: 200px;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+.cash-audit-combobox-wrapper .cash-audit-combobox-select {
+  width: 100%;
+  padding: 8px 36px 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 14px;
+  color: var(--text-primary);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  box-sizing: border-box;
+}
+
+.cash-audit-combobox-wrapper .cash-audit-combobox-select:hover {
+  border-color: #9ca3af;
+}
+
+.cash-audit-combobox-wrapper .cash-audit-combobox-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.cash-audit-combobox-wrapper .cash-audit-combobox-select option {
+  padding: 8px 12px;
+  color: var(--text-primary);
+}
+
+/* ─── Toolbar alineado a la derecha ──────────────────────────── */
+
+.cash-audit-toolbar-right-align {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.cash-audit-toolbar-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.cash-audit-toolbar-filters .cash-audit-filter-input {
+  width: 200px;
+}
+
+/* ─── Date Input ────────────────────────────────────────────── */
+
+.cash-audit-date-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 40px;
+  min-width: 160px;
+  max-width: 100%;
+  transition: border-color 0.2s;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.cash-audit-date-input-wrapper:hover {
+  border-color: #9ca3af;
+}
+
+.cash-audit-date-input-wrapper:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.cash-audit-date-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.cash-audit-date-input-wrapper .cash-audit-date-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text-primary);
+  padding: 0;
+  height: 100%;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cash-audit-date-input-wrapper .cash-audit-date-input::-webkit-calendar-picker-indicator {
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+/* ─── TABLA - CONTENEDOR CON SCROLL HORIZONTAL ────────────── */
+
+.cash-audit-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 16px;
+  position: relative;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Scrollbar visible en pantallas grandes */
+.cash-audit-table-wrapper::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.cash-audit-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.cash-audit-table-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c7cd;
+  border-radius: 4px;
+}
+
+.cash-audit-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a0a7ae;
+}
+
+/* Firefox scrollbar */
+.cash-audit-table-wrapper {
+  scrollbar-width: auto;
+  scrollbar-color: #c1c7cd #f1f1f1;
+}
+
+/* La tabla ocupa todo el ancho necesario */
+.cash-audit-table-wrapper table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 14px;
+}
+
+/* ─── Columnas con ancho fijo para mejor visualización ────── */
+
+.cash-audit-table-wrapper table colgroup .col-date {
+  width: 100px;
+}
+
+.cash-audit-table-wrapper table colgroup .col-user {
+  width: 220px;
+}
+
+.cash-audit-table-wrapper table colgroup .col-amount {
+  width: 130px;
+}
+
+.cash-audit-table-wrapper table colgroup .col-observaciones {
+  width: 150px;
+}
+
+.cash-audit-table-wrapper table colgroup .col-created {
+  width: 160px;
+}
+
+/* ─── Celdas de tabla ──────────────────────────────────────── */
+
+.cash-audit-table-wrapper table td,
+.cash-audit-table-wrapper table th {
+  padding: 10px 12px;
+  vertical-align: middle;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cash-audit-table-wrapper table thead th {
+  background: #f9fafb;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.cash-audit-table-wrapper table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.2s;
+}
+
+.cash-audit-table-wrapper table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.cash-audit-table-wrapper table tbody tr:last-child {
+  border-bottom: none;
+}
+
+/* ─── Celdas de usuario ────────────────────────────────────── */
+
+.cash-audit-cell-user {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cash-audit-cell-user-name {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cash-audit-cell-user-email {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cash-audit-cell-user-id {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Celdas de montos ────────────────────────────────────── */
+
+.cash-audit-cell-amount {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.cash-audit-cell-success {
+  color: #059669;
+}
+
+.cash-audit-cell-info {
+  color: #2563eb;
+}
+
+.cash-audit-cell-primary {
+  color: #7c3aed;
+  font-weight: 700;
+}
+
+.cash-audit-cell-danger {
+  color: #dc2626;
+}
+
+.cash-audit-cell-muted {
+  color: var(--text-muted);
+}
+
+.cash-audit-cell-diff-total {
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.cash-audit-cell-observaciones {
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+  display: block;
+}
+
+.cash-audit-cell-created {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.cash-audit-cell-date {
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* ─── Tarjetas ────────────────────────────────────────────────── */
+
+.cash-audit-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cash-audit-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 15px;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.cash-audit-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.cash-audit-card-complete {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.cash-audit-card-pending {
+  border-color: var(--bg-secondary);
+  background: var(--bg-secondary);
+}
+
+.cash-audit-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cash-audit-card-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 0;
+  flex: 1;
+}
+
+.cash-audit-card-user-name {
+  font-size: 15px;
+  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+
+.cash-audit-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cash-audit-status-success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.cash-audit-status-warning {
+  background: #fef3c7;
+  color: var(--warning);
+}
+
+.cash-audit-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cash-audit-card-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  font-size: 13px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.cash-audit-card-closing {
+  background: #f0fdf4;
+}
+
+.cash-audit-card-no-closing {
+  background: #fef2f2;
+}
+
+.cash-audit-card-label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 56px;
+  flex-shrink: 0;
+}
+
+.cash-audit-card-value {
+  flex: 1;
+  color: var(--text-primary);
+  min-width: 0;
+  word-break: break-word;
+}
+
+.cash-audit-card-amount {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cash-audit-card-diff {
+  font-weight: 700;
+  font-size: 14px;
+  margin-left: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cash-audit-card-positive {
+  color: #10b981;
+}
+
+.cash-audit-card-negative {
+  color: #ef4444;
+}
+
+.cash-audit-card-pending-text {
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cash-audit-card-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.cash-audit-empty-cards {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+  gap: 12px;
+  width: 100%;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.cash-audit-empty-cards svg {
+  color: #d1d5db;
+  flex-shrink: 0;
+}
+
+/* ─── Modal de fechas personalizadas ────────────────────────── */
+
+.cash-audit-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: cash-audit-fade-in 0.2s ease-out;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+@keyframes cash-audit-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cash-audit-modal-box {
+  background: #ffffff;
+  border-radius: 12px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: cash-audit-slide-up 0.2s ease-out;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+@keyframes cash-audit-slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.cash-audit-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cash-audit-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cash-audit-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.cash-audit-modal-close:hover {
+  color: var(--text-primary);
+}
+
+.cash-audit-modal-body {
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* ─── Date Range Picker ────────────────────────────────────── */
+
+.cash-audit-date-range-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cash-audit-date-range-inputs {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cash-audit-date-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: #ffffff;
+  transition: border-color 0.2s;
+  min-width: 120px;
+  box-sizing: border-box;
+}
+
+.cash-audit-date-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.cash-audit-date-range-sep {
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.cash-audit-date-range-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.cash-audit-btn-cancel {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.cash-audit-btn-cancel:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.cash-audit-btn-apply {
+  padding: 8px 16px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.cash-audit-btn-apply:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.cash-audit-btn-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Responsive ────────────────────────────────────────────── */
+
+/* Tablets y pantallas medianas */
+@media (max-width: 1024px) {
+  .cash-audit-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  .cash-audit-table-wrapper table {
+    min-width: 800px;
+  }
+
+  .cash-audit-content-wrapper {
+    padding: 0 8px;
+  }
+}
+
+/* Móviles y pantallas pequeñas - TABS Y COMBOBOX MEJORADOS */
+@media (max-width: 768px) {
+  .cash-audit-content-wrapper {
+    padding: 0 4px;
+  }
+
+  /* Tabs estilo "pills" más compactos */
+  .cash-audit-tabs {
+    gap: 4px;
+    padding: 4px;
+    background: #f3f4f6;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .cash-audit-tab-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-height: 32px;
+    border-radius: 8px;
+    flex: 1;
+    min-width: 60px;
+    justify-content: center;
+  }
+
+  .cash-audit-tab-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .cash-audit-tab-btn .tab-text {
+    display: inline;
+  }
+
+  .cash-audit-tab-badge {
+    font-size: 9px;
+    padding: 1px 6px;
+  }
+
+  /* Toolbar en columna */
+  .cash-audit-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .cash-audit-toolbar-left {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  /* Combobox ocupa todo el ancho */
+  .cash-audit-combobox-wrapper {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .cash-audit-combobox-wrapper .cash-audit-combobox-select {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px; /* Previene zoom en iOS */
+    padding: 10px 36px 10px 14px;
+  }
+
+  /* Date input ocupa todo el ancho */
+  .cash-audit-date-input-wrapper {
+    min-width: 100%;
+    width: 100%;
+    height: 44px;
+  }
+
+  .cash-audit-date-input-wrapper .cash-audit-date-input {
+    font-size: 16px;
+  }
+
+  /* Inputs de texto ocupan todo el ancho */
+  .cash-audit-toolbar-left .cash-audit-filter-user-input,
+  .cash-audit-toolbar-left input[type="text"] {
+    width: 100%;
+    min-width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .cash-audit-toolbar-left .cash-audit-filter-combobox {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  /* Toolbar derecha */
+  .cash-audit-toolbar-right-align {
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .cash-audit-toolbar-filters {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .cash-audit-toolbar-filters .cash-audit-filter-input {
+    width: 100%;
+  }
+
+  /* Botón de limpiar filtros */
+  .cash-audit-toolbar-filters .cash-audit-btn-clear {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .cash-audit-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .cash-audit-card {
+    padding: 16px;
+  }
+
+  .cash-audit-card-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .cash-audit-card-user {
+    font-size: 14px;
+  }
+
+  .cash-audit-status-badge {
+    align-self: flex-start;
+  }
+
+  .cash-audit-card-info {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .cash-audit-card-label {
+    min-width: 48px;
+    font-size: 11px;
+  }
+
+  .cash-audit-card-amount {
+    font-size: 13px;
+  }
+
+  .cash-audit-card-diff {
+    margin-left: 0;
+    width: 100%;
+    text-align: right;
+    font-size: 13px;
+  }
+
+  .cash-audit-card-value {
+    font-size: 12px;
+  }
+
+  .cash-audit-card-footer {
+    font-size: 11px;
+  }
+
+  /* Tabla en móvil - scroll horizontal */
+  .cash-audit-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -4px;
+    padding: 0 4px;
+    border-radius: 6px;
+  }
+
+  .cash-audit-table-wrapper table {
+    min-width: 650px;
+    font-size: 13px;
+  }
+
+  .cash-audit-table-wrapper table td,
+  .cash-audit-table-wrapper table th {
+    padding: 8px 10px;
+  }
+
+  /* Modal en móvil */
+  .cash-audit-modal-overlay {
+    padding: 8px;
+  }
+
+  .cash-audit-modal-box {
+    margin: 0;
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    height: 100vh;
+  }
+
+  .cash-audit-modal-header {
+    padding: 14px 16px;
+  }
+
+  .cash-audit-modal-header h2 {
+    font-size: 16px;
+  }
+
+  .cash-audit-modal-body {
+    padding: 16px;
+  }
+
+  .cash-audit-date-range-inputs {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cash-audit-date-range-inputs .cash-audit-date-input {
+    width: 100%;
+    min-width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .cash-audit-date-range-sep {
+    align-self: center;
+  }
+
+  .cash-audit-date-range-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .cash-audit-btn-cancel,
+  .cash-audit-btn-apply {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+    min-height: 44px;
+  }
+
+  .cash-audit-cell-user-name {
+    font-size: 13px;
+  }
+
+  .cash-audit-cell-user-email {
+    font-size: 11px;
+  }
+
+  .cash-audit-cell-user-id {
+    font-size: 9px;
+  }
+
+  .cash-audit-cell-observaciones {
+    max-width: 80px;
+  }
+
+  .cash-audit-alert {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .cash-audit-empty-cards {
+    padding: 32px 16px;
+  }
+
+  .cash-audit-empty-cards svg {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 480px) {
+  .cash-audit-content-wrapper {
+    padding: 0 2px;
+  }
+
+  .cash-audit-tabs {
+    gap: 3px;
+    padding: 3px;
+    border-radius: 8px;
+  }
+
+  .cash-audit-tab-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    min-height: 28px;
+    border-radius: 6px;
+    min-width: 50px;
+    gap: 4px;
+  }
+
+  .cash-audit-tab-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .cash-audit-tab-btn .tab-text {
+    font-size: 10px;
+  }
+
+  .cash-audit-tab-badge {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+
+  .cash-audit-combobox-wrapper .cash-audit-combobox-select {
+    font-size: 14px;
+    padding: 8px 32px 8px 10px;
+    min-height: 38px;
+  }
+
+  .cash-audit-card {
+    padding: 12px;
+  }
+
+  .cash-audit-card-user-name {
+    font-size: 13px;
+  }
+
+  .cash-audit-card-info {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  .cash-audit-card-amount {
+    font-size: 12px;
+  }
+
+  .cash-audit-card-diff {
+    font-size: 12px;
+  }
+
+  .cash-audit-status-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .cash-audit-date-input-wrapper {
+    height: 40px;
+    padding: 0 10px;
+  }
+
+  .cash-audit-date-input-wrapper .cash-audit-date-input {
+    font-size: 14px;
+  }
+
+  .cash-audit-table-wrapper table {
+    min-width: 500px;
+    font-size: 12px;
+  }
+
+  .cash-audit-table-wrapper table td,
+  .cash-audit-table-wrapper table th {
+    padding: 6px 8px;
+  }
+
+  .cash-audit-cell-observaciones {
+    max-width: 50px;
+  }
+
+  .cash-audit-cell-created {
+    font-size: 10px;
+  }
+
+  .cash-audit-cell-date {
+    font-size: 12px;
+  }
+
+  .cash-audit-cell-user-name {
+    font-size: 12px;
+  }
+
+  .cash-audit-cell-user-email {
+    font-size: 10px;
+  }
+
+  .cash-audit-modal-box {
+    border-radius: 0;
+  }
+
+  .cash-audit-modal-header {
+    padding: 12px 14px;
+  }
+
+  .cash-audit-modal-body {
+    padding: 12px 14px;
+  }
+
+  .cash-audit-date-input {
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+}
+
+/* Orientación landscape en móviles */
+@media (max-height: 500px) and (orientation: landscape) {
+  .cash-audit-modal-overlay {
+    padding: 8px;
+  }
+
+  .cash-audit-modal-box {
+    max-height: 95vh;
+    height: auto;
+    border-radius: 12px;
+    margin: 8px;
+  }
+
+  .cash-audit-modal-body {
+    padding: 12px 16px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .cash-audit-modal-header {
+    padding: 10px 16px;
+  }
+
+  .cash-audit-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+
+/* ─── Scrollbar para la tabla (visible siempre) ────────────── */
+
+.cash-audit-table-wrapper::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+.cash-audit-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 5px;
+}
+
+.cash-audit-table-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c7cd;
+  border-radius: 5px;
+  border: 2px solid #f1f1f1;
+}
+
+.cash-audit-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a0a7ae;
+}
+
+/* Firefox scrollbar */
+.cash-audit-table-wrapper {
+  scrollbar-width: auto;
+  scrollbar-color: #c1c7cd #f1f1f1;
+}
+
+/* ─── Mejoras adicionales para UX ──────────────────────────── */
+
+/* Botones con tamaño táctil en móvil */
+@media (max-width: 768px) {
+  .cash-audit-btn-cancel,
+  .cash-audit-btn-apply,
+  .cash-audit-tab-btn {
+    min-height: 44px;
+  }
+
+  .cash-audit-date-input-wrapper {
+    min-height: 44px;
+  }
+}
+
+/* Espaciado para elementos táctiles */
+.cash-audit-card,
+.cash-audit-tab-btn,
+.cash-audit-btn-cancel,
+.cash-audit-btn-apply {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Sombra suave en scroll */
+.cash-audit-table-wrapper {
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.02);
+}

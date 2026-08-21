@@ -1,0 +1,184 @@
+/* ============================================
+   FEATURES - ESTILOS ESPECÍFICOS
+   ============================================ */
+
+/* ─── Toolbar ───────────────────────────────────────────────────────────── */
+.features-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.features-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.features-filter {
+  min-width: 180px;
+  flex: 1;
+  max-width: 280px;
+}
+
+.features-filter-status {
+  max-width: 180px;
+  flex: 0 1 auto;
+}
+
+/* ─── Tabla - Descripción ──────────────────────────────────────────────── */
+.feature-description {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* ─── Tabla - Código ───────────────────────────────────────────────────── */
+.feature-code {
+  font-size: 11px;
+  background: rgba(255, 140, 66, 0.1);
+  color: #ff8c42;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+/* ─── Tabla - Módulo ───────────────────────────────────────────────────── */
+.feature-module {
+  font-size: 12px;
+  background: rgba(140, 183, 155, 0.1);
+  color: #8CB79B;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.feature-module-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.feature-not-premium {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ─── MODAL ─────────────────────────────────────────────────────────────── */
+.features-modal .modal-content {
+  max-width: 500px;
+  width: 95vw;
+  max-height: 92vh;
+}
+
+.features-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 0;
+}
+
+.features-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.features-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.features-form-group label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.features-form-group .input-container textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.features-module-combobox .custom-combobox {
+  width: 100%;
+}
+
+.features-checkboxes {
+  display: flex;
+  gap: 20px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.features-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+
+.features-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.features-checkbox-star {
+  color: #f59e0b;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .features-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .features-filters {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .features-filter {
+    max-width: 100%;
+    min-width: unset;
+  }
+
+  .features-filter-status {
+    max-width: 100%;
+    flex: 1;
+  }
+
+  .features-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .features-checkboxes {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .feature-module {
+    font-size: 11px;
+    padding: 1px 7px;
+  }
+
+  .feature-code {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+}

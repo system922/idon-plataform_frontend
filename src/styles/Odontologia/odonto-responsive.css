@@ -1,0 +1,365 @@
+/* ============================================================
+   ODONTO-RESPONSIVE.CSS - Estilos responsive unificados
+   ============================================================ */
+
+/* TABLETS Y PANTALLAS MEDIANAS */
+@media (max-width: 1024px) {
+  .odonto-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .odonto-filters-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .odonto-filter-stats {
+    margin-left: 0;
+    text-align: center;
+  }
+}
+
+/* MÓVILES */
+@media (max-width: 768px) {
+  /* Estadísticas */
+  .odonto-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  .odonto-stat-card {
+    padding: 14px 16px;
+  }
+  
+  .odonto-stat-value {
+    font-size: 22px;
+  }
+  
+  .odonto-stat-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+  
+  /* Header actions */
+  .odonto-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+  
+  .odonto-search-wrapper {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .odonto-btn-primary,
+  .odonto-btn-secondary,
+  .odonto-btn-add {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+  }
+  
+  /* Tabla - scroll horizontal */
+  .odonto-table-container {
+    overflow-x: auto;
+  }
+  
+  .odonto-table {
+    min-width: 600px;
+    font-size: 13px;
+  }
+  
+  .odonto-table th,
+  .odonto-table td {
+    padding: 12px 14px;
+  }
+  
+  /* Modales */
+  .odonto-modal {
+    max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - 48px);
+  }
+  
+  .odonto-modal-header {
+    padding: 14px 18px;
+  }
+  
+  .odonto-modal-header h3 {
+    font-size: 16px;
+  }
+  
+  .odonto-modal-body {
+    padding: 14px 18px;
+  }
+  
+  .odonto-modal-footer {
+    padding: 12px 18px;
+    flex-wrap: wrap;
+  }
+  
+  .odonto-modal-footer button {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  /* Formularios - todos a 1 columna */
+  .odonto-form-row,
+  .odonto-form-row-three,
+  .odonto-form-row-custom,
+  .odonto-form-row-address,
+  .odonto-form-row-allergies,
+  .odonto-form-row-hc {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+  
+  .odonto-form-row-compact {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .odonto-cedula-section {
+    padding: 8px 12px;
+  }
+  
+  .odonto-cedula-input {
+    font-size: 14px;
+    padding: 6px 45px 6px 28px;
+  }
+  
+  .odonto-image-upload {
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 10px 14px;
+  }
+  
+  .odonto-image-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  /* Detail modal */
+  .odonto-detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 18px;
+  }
+  
+  .odonto-detail-header-profile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .odonto-detail-name {
+    font-size: 18px;
+  }
+  
+  .odonto-detail-body {
+    padding: 14px 18px !important;
+  }
+  
+  .odonto-detail-grid,
+  .odonto-detail-grid-three,
+  .odonto-detail-grid-two {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .odonto-detail-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* Medicamentos */
+  .odonto-medication-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  
+  .odonto-medication-row input:last-of-type {
+    grid-column: 1 / -1;
+  }
+  
+  /* Plantillas */
+  .odonto-cat-filters {
+    gap: 6px;
+  }
+  
+  .odonto-cat-btn {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+  
+  .odonto-plantilla-title h4 {
+    font-size: 13px;
+  }
+  
+  .odonto-plantilla-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  
+  .odonto-btn-apply {
+    align-self: stretch;
+    justify-content: center;
+  }
+}
+
+/* MÓVILES PEQUEÑOS */
+@media (max-width: 480px) {
+  .odonto-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  
+  .odonto-modal {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 92dvh;
+  }
+  
+  .odonto-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  
+  .odonto-stat-card {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  
+  .odonto-stat-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    border-radius: 12px;
+  }
+  
+  .odonto-stat-value {
+    font-size: 18px;
+  }
+  
+  .odonto-stat-label {
+    font-size: 11px;
+  }
+  
+  .odonto-modal-header h3 {
+    font-size: 14px;
+  }
+  
+  .odonto-modal-body {
+    padding: 10px 14px;
+  }
+  
+  .odonto-modal-footer {
+    padding: 10px 14px;
+    flex-direction: column;
+  }
+  
+  .odonto-modal-footer button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .odonto-search-input {
+    font-size: 14px;
+    padding: 10px 32px 10px 34px;
+  }
+  
+  .odonto-medication-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  
+  .odonto-medication-row input {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  
+  .odonto-plantilla-card {
+    padding: 10px 12px;
+  }
+}
+
+/* ============================================================
+   TABLA → TARJETAS EN MÓVIL (para mejor UX)
+   ============================================================ */
+@media (max-width: 600px) {
+  .odonto-table-container {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  
+  .odonto-table thead {
+    display: none;
+  }
+  
+  .odonto-table,
+  .odonto-table tbody {
+    display: block;
+    width: 100%;
+  }
+  
+  .odonto-table tbody tr {
+    display: block;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    padding: 4px 14px;
+    box-shadow: var(--shadow);
+  }
+  
+  .odonto-table tbody tr:hover {
+    background: var(--bg-card);
+  }
+  
+  .odonto-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 13px;
+    gap: 12px;
+  }
+  
+  .odonto-table td:last-child {
+    border-bottom: none;
+  }
+  
+  .odonto-table td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    flex-shrink: 0;
+    min-width: 72px;
+  }
+  
+  .odonto-empty-state {
+    display: block;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  
+  .odonto-actions {
+    justify-content: flex-end;
+  }
+  
+  .odonto-cell-with-avatar {
+    justify-content: flex-start;
+  }
+}

@@ -1,0 +1,2670 @@
+/* ============================================================
+   POS DISCOUNTS — Estilos para descuentos y promociones
+   ============================================================ */
+
+/* ─── Variables base ───────────────────────────────────────────── */
+:root {
+  --discount-card-min-width: 280px;
+  --discount-gap: 16px;
+  --discount-toolbar-gap: 12px;
+}
+
+/* ─── Toolbar ──────────────────────────────────────────────────── */
+.discounts-toolbar-wrapper {
+  margin-bottom: var(--space-4, 16px);
+}
+
+.users-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--discount-toolbar-gap);
+  padding: var(--space-3, 12px) 0;
+}
+
+.discounts-toolbar-filters {
+  flex: 0 0 auto;
+  min-width: 160px;
+  max-width: 220px;
+}
+
+.discount-filter-combobox {
+  width: 100%;
+}
+
+.discounts-toolbar-view {
+  display: flex;
+  gap: 2px;
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: var(--radius-sm, 8px);
+  padding: 2px;
+  background: var(--bg-tertiary, #f8fafc);
+  flex-shrink: 0;
+}
+
+.view-toggle-btn {
+  padding: var(--space-1, 4px) var(--space-2, 8px);
+  border-radius: var(--radius-xs, 4px);
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #6b7280);
+  cursor: pointer;
+  transition: var(--transition-fast, all 0.15s ease);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.view-toggle-btn:hover {
+  color: var(--text-primary, #1A202C);
+  background: var(--bg-hover, #f7fafc);
+}
+
+.view-toggle-btn.active {
+  background: var(--bg-card, #ffffff);
+  color: var(--primary, #f97316);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
+}
+
+.discounts-toolbar-actions {
+  display: flex;
+  gap: var(--space-1, 4px);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.discounts-toolbar-actions .btn-group {
+  display: flex;
+  gap: var(--space-1, 4px);
+  flex-wrap: wrap;
+}
+
+/* ─── Grid de tarjetas ─────────────────────────────────────────── */
+.discounts-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--discount-card-min-width), 1fr));
+  gap: var(--discount-gap);
+  margin-top: var(--space-4, 16px);
+}
+
+/* ─── Tarjeta ──────────────────────────────────────────────────── */
+.discount-card {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: var(--radius, 16px);
+  padding: var(--space-4, 16px);
+  transition: var(--transition, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+  position: relative;
+  overflow: hidden;
+  min-height: 180px;
+}
+
+.discount-card:hover {
+  border-color: var(--primary, #f97316);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
+}
+
+/* Barra de estado */
+.discount-card-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+.discount-card-bar.active {
+  background: var(--success, #10b981);
+}
+
+.discount-card-bar.inactive {
+  background: var(--danger, #ef4444);
+}
+
+/* Header de la tarjeta */
+.discount-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3, 12px);
+  margin-top: var(--space-1, 4px);
+}
+
+.discount-card-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md, 10px);
+  background: var(--bg-tertiary, #f8fafc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.discount-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.discount-card-name {
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--text-primary, #1A202C);
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.discount-card-description {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-muted, #6b7280);
+  margin-top: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.discount-card-status {
+  font-size: 10px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-weight: var(--font-weight-bold, 700);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.discount-card-status.active {
+  background: var(--success-bg, rgba(16, 185, 129, 0.08));
+  color: var(--success, #10b981);
+}
+
+.discount-card-status.inactive {
+  background: var(--danger-bg, rgba(239, 68, 68, 0.08));
+  color: var(--danger, #ef4444);
+}
+
+/* Valor del descuento */
+.discount-card-value {
+  font-size: 26px;
+  font-weight: var(--font-weight-extrabold, 800);
+  letter-spacing: -1px;
+  line-height: 1;
+  margin: var(--space-1, 4px) 0;
+}
+
+/* Detalles de la tarjeta */
+.discount-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-secondary, #4A5568);
+}
+
+.discount-card-detail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  flex-wrap: wrap;
+}
+
+.discount-card-detail svg {
+  flex-shrink: 0;
+  color: var(--text-muted, #6b7280);
+}
+
+/* Acciones de la tarjeta */
+.discount-card-actions {
+  margin-top: var(--space-2, 8px);
+  padding-top: var(--space-3, 12px);
+  border-top: 1px solid var(--border-color, #E2E8F0);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.discount-card-actions .btn-group {
+  display: flex;
+  gap: var(--space-1, 4px);
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.discount-card-actions .btn-group .btn {
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+  font-size: var(--font-size-xs, 12px);
+  padding: var(--space-1, 4px) var(--space-2, 8px);
+}
+
+/* ─── Estado vacío ──────────────────────────────────────────────── */
+.discounts-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted, #6b7280);
+  grid-column: 1 / -1;
+}
+
+.discounts-empty svg {
+  opacity: 0.3;
+  margin-bottom: var(--space-4, 16px);
+  color: var(--text-muted, #6b7280);
+  width: 48px;
+  height: 48px;
+}
+
+.discounts-empty p {
+  font-size: var(--font-size-lg, 18px);
+  margin-bottom: var(--space-4, 16px);
+}
+
+.discounts-empty-btn {
+  padding: var(--space-2, 8px) var(--space-5, 20px);
+  border-radius: var(--radius-sm, 8px);
+  border: none;
+  background: var(--primary, #f97316);
+  color: white;
+  cursor: pointer;
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  transition: var(--transition-fast, all 0.15s ease);
+}
+
+.discounts-empty-btn:hover {
+  background: var(--primary-dark, #ea580c);
+  transform: translateY(-1px);
+}
+
+/* ─── Wrapper de página ─────────────────────────────────────────── */
+.discounts-page-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.discounts-page-wrapper .table-container {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ─── Estilos para tabla en móvil ──────────────────────────────── */
+@media (max-width: 768px) {
+  .discounts-page-wrapper .table-container table {
+    min-width: 600px;
+  }
+}
+
+/* ─── Modal Tabs ────────────────────────────────────────────────── */
+.modal-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border-color, #E2E8F0);
+  padding: 0 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.modal-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-btn {
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary, #4A5568);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary, #1A202C);
+  background: var(--bg-hover, #f7fafc);
+}
+
+.tab-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--primary, #f97316);
+}
+
+/* ============================================================
+   BASIC TAB - Estilos para la pestaña básica de descuentos
+   ============================================================ */
+
+/* ─── Contenedor principal ────────────────────────────────────── */
+.basic-tab {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+/* ─── Botones de modo (Combo / Estándar) ─────────────────────── */
+.basic-tab-mode-buttons {
+  display: flex;
+  gap: var(--space-2, 8px);
+  margin-bottom: var(--space-3, 12px);
+}
+
+.basic-tab-mode-btn {
+  flex: 1;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border-radius: var(--radius-sm, 8px);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-semibold, 600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1, 4px);
+  transition: var(--transition-fast, all 0.15s ease);
+  background: var(--bg-secondary, #1a1a1a);
+  color: var(--text-secondary, #999);
+}
+
+.basic-tab-mode-btn--active {
+  background: var(--primary, #f97316);
+  color: var(--text-white, #ffffff);
+  border-color: var(--primary, #f97316);
+}
+
+.basic-tab-mode-btn--inactive {
+  background: var(--bg-secondary, #1a1a1a);
+  color: var(--text-secondary, #999);
+  border-color: var(--border-color, #404040);
+}
+
+.basic-tab-mode-btn--inactive:hover {
+  background: var(--bg-hover, #2a2a2a);
+  color: var(--text-primary, #e0e0e0);
+}
+
+/* ─── Labels ───────────────────────────────────────────────────── */
+.basic-tab-label {
+  display: block;
+  margin-bottom: var(--space-1, 4px);
+  font-size: var(--font-size-sm, 12px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-secondary, #4A5568);
+}
+
+.basic-tab-label--combo-count {
+  color: var(--text-muted, #6b7280);
+  text-transform: none;
+  font-weight: var(--font-weight-normal, 400);
+  margin-left: var(--space-2, 6px);
+}
+
+/* ─── Textarea ────────────────────────────────────────────────── */
+.basic-tab-textarea {
+  width: 100%;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border-radius: var(--radius-sm, 8px);
+  border: 1px solid var(--border-color, #E2E8F0);
+  background: var(--bg-input, #ffffff);
+  color: var(--text-primary, #1A202C);
+  font-size: var(--font-size-base, 14px);
+  font-family: var(--font-family, Inter);
+  transition: var(--transition-fast, all 0.15s ease);
+  resize: vertical;
+  min-height: 60px;
+}
+
+.basic-tab-textarea:focus {
+  outline: 2px solid var(--primary, #f97316);
+  outline-offset: 1px;
+  border-color: var(--primary, #f97316);
+}
+
+.basic-tab-textarea::placeholder {
+  color: var(--text-muted, #6b7280);
+}
+
+/* ─── Sección Combo ────────────────────────────────────────────── */
+.combo-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+}
+
+.combo-section__products-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 6px);
+  margin-bottom: var(--space-2, 8px);
+}
+
+.combo-section__product-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  background: var(--purple-bg, rgba(168, 85, 247, 0.07));
+  border: 1px solid var(--purple, rgba(168, 85, 247, 0.2));
+  border-radius: var(--radius-sm, 8px);
+  padding: var(--space-2, 8px) var(--space-3, 10px);
+}
+
+.combo-section__product-name {
+  flex: 1;
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-primary, #e0e0e0);
+}
+
+.combo-section__product-name strong {
+  color: var(--purple, #a855f7);
+}
+
+.combo-section__product-price {
+  font-size: var(--font-size-sm, 12px);
+  color: var(--text-muted, #6b7280);
+}
+
+.combo-section__product-qty-controls {
+  display: flex;
+  gap: var(--space-1, 4px);
+  align-items: center;
+}
+
+.combo-section__qty-btn {
+  background: var(--bg-secondary, #222);
+  border: 1px solid var(--border-color, #444);
+  border-radius: var(--radius-xs, 4px);
+  color: var(--text-secondary, #ccc);
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast, all 0.15s ease);
+}
+
+.combo-section__qty-btn:hover {
+  background: var(--bg-hover, #333);
+  border-color: var(--text-muted, #666);
+}
+
+.combo-section__qty-value {
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-primary, #fff);
+  min-width: 16px;
+  text-align: center;
+}
+
+.combo-section__remove-btn {
+  background: transparent;
+  border: none;
+  color: var(--danger, #ef4444);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 var(--space-1, 2px);
+  transition: var(--transition-fast, all 0.15s ease);
+}
+
+.combo-section__remove-btn:hover {
+  color: var(--danger-dark, #dc2626);
+  transform: scale(1.1);
+}
+
+.combo-section__summary {
+  font-size: var(--font-size-sm, 12px);
+  color: var(--text-muted, #6b7280);
+  text-align: right;
+  padding: var(--space-1, 2px) var(--space-2, 4px);
+}
+
+.combo-section__summary strong {
+  color: var(--text-secondary, #9ca3af);
+}
+
+.combo-section__summary .combo-price {
+  color: var(--purple, #a855f7);
+}
+
+.combo-section__summary .savings {
+  color: var(--success, #10b981);
+}
+
+.combo-section__summary .iva-note {
+  color: var(--text-muted, #555);
+  font-size: var(--font-size-xs, 11px);
+  margin-top: var(--space-1, 2px);
+}
+
+/* ─── Combo Add Row ────────────────────────────────────────────── */
+.combo-section__add-row {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: flex-end;
+}
+
+.combo-section__add-row .combo-section__product-select {
+  flex: 1;
+}
+
+.combo-section__add-row .combo-section__qty-input {
+  width: 70px;
+}
+
+.combo-section__add-row .combo-section__qty-input input {
+  text-align: center;
+}
+
+.combo-section__add-btn {
+  padding: 9px 14px;
+  border-radius: var(--radius-sm, 8px);
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-bold, 700);
+  border: none;
+  color: var(--text-white, #fff);
+  white-space: nowrap;
+  transition: var(--transition-fast, all 0.15s ease);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1, 4px);
+}
+
+.combo-section__add-btn--enabled {
+  background: var(--purple, #a855f7);
+  cursor: pointer;
+}
+
+.combo-section__add-btn--enabled:hover {
+  background: var(--purple-dark, #9333ea);
+  transform: translateY(-1px);
+}
+
+.combo-section__add-btn--disabled {
+  background: var(--bg-secondary, #333);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ─── Sección Estándar ─────────────────────────────────────────── */
+.standard-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+}
+
+.standard-section__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3, 12px);
+}
+
+.standard-section__row--full {
+  grid-template-columns: 1fr;
+}
+
+.standard-section__applies-to {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: center;
+}
+
+.standard-section__applies-to .custom-combobox {
+  flex: 1;
+}
+
+/* ─── Modos de categoría ───────────────────────────────────────── */
+.category-modes {
+  margin-bottom: var(--space-4, 16px);
+}
+
+.category-modes__label {
+  display: block;
+  margin-bottom: var(--space-2, 8px);
+  font-size: var(--font-size-sm, 12px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-secondary, #4A5568);
+}
+
+.category-modes__buttons {
+  display: flex;
+  gap: var(--space-2, 10px);
+  flex-wrap: wrap;
+}
+
+.category-modes__btn {
+  flex: 1;
+  padding: var(--space-3, 12px);
+  border-radius: var(--radius-sm, 8px);
+  cursor: pointer;
+  text-align: center;
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-semibold, 600);
+  transition: var(--transition-fast, all 0.2s);
+  border: 1px solid var(--border-color, #404040);
+  background: var(--bg-secondary, #1a1a1a);
+  color: var(--text-secondary, #999);
+  min-width: 0;
+}
+
+.category-modes__btn svg {
+  display: block;
+  margin: 0 auto var(--space-1, 4px);
+}
+
+.category-modes__btn--all {
+  border-color: var(--border-color, #404040);
+  background: var(--bg-secondary, #1a1a1a);
+  color: var(--text-secondary, #999);
+}
+
+.category-modes__btn--all.active {
+  border-color: var(--primary, #f97316);
+  background: var(--primary, #f97316);
+  color: var(--text-white, #ffffff);
+}
+
+.category-modes__btn--second {
+  border-color: var(--border-color, #404040);
+  background: var(--bg-secondary, #1a1a1a);
+  color: var(--text-secondary, #999);
+}
+
+.category-modes__btn--second.active {
+  border-color: var(--success, #10b981);
+  background: var(--success, #10b981);
+  color: var(--text-white, #ffffff);
+}
+
+.category-modes__btn--fixed {
+  border-color: var(--border-color, #404040);
+  background: var(--bg-secondary, #1a1a1a);
+  color: var(--text-secondary, #999);
+}
+
+.category-modes__btn--fixed.active {
+  border-color: var(--info, #3b82f6);
+  background: var(--info, #3b82f6);
+  color: var(--text-white, #ffffff);
+}
+
+.category-modes__btn-sub {
+  font-size: var(--font-size-xs, 11px);
+  opacity: 0.7;
+  margin-top: var(--space-1, 2px);
+}
+
+/* ─── Info boxes ────────────────────────────────────────────────── */
+.info-box {
+  border-radius: var(--radius-md, 10px);
+  padding: var(--space-3, 14px);
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-secondary, rgba(255, 255, 255, 0.75));
+  line-height: 1.7;
+  margin-bottom: var(--space-3, 12px);
+}
+
+.info-box--fixed-price {
+  background: var(--info-bg, rgba(59, 130, 246, 0.07));
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.info-box--second {
+  background: var(--success-bg, rgba(16, 185, 129, 0.07));
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.info-box__title {
+  font-weight: var(--font-weight-bold, 700);
+  margin-bottom: var(--space-2, 8px);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 6px);
+}
+
+.info-box__title--fixed {
+  color: var(--info, #3b82f6);
+}
+
+.info-box__title--second {
+  color: var(--success, #10b981);
+}
+
+.info-box__highlight {
+  padding: var(--space-2, 8px) var(--space-3, 10px);
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: var(--radius-sm, 7px);
+  margin-bottom: var(--space-2, 10px);
+}
+
+.info-box__highlight--second {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.info-box__block {
+  margin-bottom: var(--space-2, 6px);
+}
+
+.info-box__block:last-child {
+  margin-bottom: 0;
+}
+
+.info-box__label {
+  font-weight: var(--font-weight-bold, 700);
+}
+
+.info-box__label--info {
+  color: var(--info-light, #60a5fa);
+}
+
+.info-box__label--success {
+  color: var(--success-light, #34d399);
+}
+
+.info-box__label--warning {
+  color: var(--warning-light, #fbbf24);
+}
+
+.info-box__label--purple {
+  color: var(--purple-light, #a78bfa);
+}
+
+.info-box__text-muted {
+  color: var(--text-muted, rgba(255, 255, 255, 0.55));
+}
+
+.info-box__text-muted strong {
+  color: var(--primary, #f97316);
+}
+
+.info-box__text-muted .info-highlight {
+  color: var(--info, #3b82f6);
+}
+
+/* ─── Cupón Section ────────────────────────────────────────────── */
+.coupon-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 14px);
+  background: rgba(236, 72, 153, 0.05);
+  border: 1px solid rgba(236, 72, 153, 0.2);
+  border-radius: var(--radius-md, 10px);
+  padding: var(--space-3, 14px);
+  margin-bottom: var(--space-3, 12px);
+}
+
+.coupon-section__title {
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--danger, #ec4899);
+  font-size: var(--font-size-sm, 13px);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 6px);
+}
+
+.coupon-section__modes {
+  display: flex;
+  gap: var(--space-2, 8px);
+  flex-wrap: wrap;
+}
+
+.coupon-section__mode-btn {
+  flex: 1;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm, 8px);
+  font-size: var(--font-size-sm, 12px);
+  font-weight: var(--font-weight-bold, 700);
+  cursor: pointer;
+  transition: var(--transition-fast, all 0.15s ease);
+  border: 1px solid var(--border-color, #333);
+  background: var(--bg-secondary, #111);
+  color: var(--text-secondary, #666);
+  text-align: center;
+}
+
+.coupon-section__mode-btn svg {
+  display: block;
+  margin: 0 auto var(--space-1, 4px);
+}
+
+.coupon-section__mode-btn--active {
+  border-color: var(--danger, #ec4899);
+  background: rgba(236, 72, 153, 0.12);
+  color: var(--danger, #ec4899);
+}
+
+.coupon-section__mode-btn--inactive {
+  border-color: var(--border-color, #333);
+  background: var(--bg-secondary, #111);
+  color: var(--text-secondary, #666);
+}
+
+.coupon-section__mode-btn--inactive:hover {
+  border-color: var(--text-muted, #666);
+  color: var(--text-primary, #e0e0e0);
+}
+
+.coupon-section__mode-sub {
+  font-size: var(--font-size-xs, 10px);
+  font-weight: var(--font-weight-normal, 400);
+  margin-top: var(--space-1, 2px);
+  opacity: 0.8;
+}
+
+.coupon-section__product-list {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, #2a2a2a);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--bg-secondary, #0d0d0d);
+}
+
+.coupon-section__product-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 10px);
+  padding: 9px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color, #1a1a1a);
+  transition: var(--transition-fast, background 0.15s);
+}
+
+.coupon-section__product-item:last-child {
+  border-bottom: none;
+}
+
+.coupon-section__product-item--checked {
+  background: rgba(236, 72, 153, 0.1);
+}
+
+.coupon-section__product-item:hover {
+  background: var(--bg-hover, #1a1a1a);
+}
+
+.coupon-section__product-item input[type="checkbox"] {
+  accent-color: var(--danger, #ec4899);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.coupon-section__product-name {
+  flex: 1;
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-secondary, #ccc);
+}
+
+.coupon-section__product-name--checked {
+  color: #f9a8d4;
+}
+
+.coupon-section__product-price {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-muted, #666);
+}
+
+.coupon-section__selected-count {
+  margin-top: var(--space-2, 8px);
+  font-size: var(--font-size-sm, 12px);
+  color: var(--danger, #ec4899);
+  font-weight: var(--font-weight-bold, 700);
+}
+
+.coupon-section__product-info {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-sm, 8px);
+  padding: var(--space-3, 10px) var(--space-3, 12px);
+  font-size: var(--font-size-sm, 12px);
+  line-height: 1.7;
+}
+
+.coupon-section__product-info-title {
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--danger, #ec4899);
+  margin-bottom: var(--space-1, 4px);
+}
+
+.coupon-section__product-info-title svg {
+  display: inline;
+  margin-right: var(--space-1, 4px);
+}
+
+.coupon-section__product-info-text {
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+}
+
+.coupon-section__product-info-text strong {
+  color: var(--text-primary, #f1f5f9);
+}
+
+.coupon-section__product-info-text .pvp-highlight {
+  color: var(--success, #10b981);
+}
+
+.coupon-section__product-info-note {
+  color: var(--text-muted, rgba(255, 255, 255, 0.45));
+  font-size: var(--font-size-xs, 11px);
+  margin-top: var(--space-1, 4px);
+}
+
+.coupon-section__product-info-note strong {
+  color: var(--danger, #ec4899);
+}
+
+/* ─── Help text ────────────────────────────────────────────────── */
+.help-text {
+  display: block;
+  margin-top: var(--space-1, 4px);
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-muted, #6b7280);
+}
+
+/* ─── Input de tipo display (readonly) ────────────────────────── */
+.basic-tab-display-input {
+  width: 100%;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border-radius: var(--radius-sm, 8px);
+  border: 1px solid var(--border-color, #E2E8F0);
+  background: var(--bg-input, #ffffff);
+  color: var(--text-primary, #1A202C);
+  font-size: var(--font-size-base, 14px);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 6px);
+}
+
+.basic-tab-display-input--success {
+  color: var(--success, #10b981);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.basic-tab-display-input--info {
+  color: var(--info, #3b82f6);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.basic-tab-display-input svg {
+  flex-shrink: 0;
+}
+
+/* ─── Form group ────────────────────────────────────────────────── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+/* ─── Tablets (768px - 1024px) ────────────────────────────────── */
+@media (max-width: 1024px) {
+  .standard-section__row {
+    gap: var(--space-2, 10px);
+  }
+
+  .category-modes__btn {
+    font-size: var(--font-size-xs, 12px);
+    padding: var(--space-2, 10px);
+  }
+
+  .coupon-section__mode-btn {
+    font-size: var(--font-size-xs, 11px);
+    padding: 8px 6px;
+  }
+}
+
+/* ─── Tablets pequeñas y móviles grandes (640px - 768px) ──────── */
+@media (max-width: 768px) {
+  .basic-tab-mode-buttons {
+    flex-direction: column;
+    gap: var(--space-1, 6px);
+  }
+
+  .basic-tab-mode-btn {
+    padding: var(--space-2, 8px) var(--space-3, 12px);
+    font-size: var(--font-size-sm, 12px);
+  }
+
+  .standard-section__row {
+    grid-template-columns: 1fr;
+    gap: var(--space-2, 10px);
+  }
+
+  .category-modes__buttons {
+    flex-direction: column;
+    gap: var(--space-1, 6px);
+  }
+
+  .category-modes__btn {
+    padding: var(--space-2, 10px);
+    font-size: var(--font-size-sm, 12px);
+  }
+
+  .category-modes__btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .info-box {
+    padding: var(--space-2, 12px);
+    font-size: var(--font-size-xs, 12px);
+    line-height: 1.6;
+  }
+
+  .coupon-section__modes {
+    flex-direction: column;
+    gap: var(--space-1, 6px);
+  }
+
+  .coupon-section__mode-btn {
+    padding: 8px 8px;
+    font-size: var(--font-size-xs, 11px);
+  }
+
+  .combo-section__add-row {
+    flex-wrap: wrap;
+  }
+
+  .combo-section__add-row .combo-section__product-select {
+    flex: 1 1 100%;
+    order: 1;
+  }
+
+  .combo-section__add-row .combo-section__qty-input {
+    flex: 1;
+    order: 2;
+  }
+
+  .combo-section__add-btn {
+    flex: 1;
+    order: 3;
+    justify-content: center;
+  }
+
+  .combo-section__product-item {
+    flex-wrap: wrap;
+    gap: var(--space-1, 4px);
+  }
+
+  .combo-section__product-name {
+    flex: 1 1 100%;
+    font-size: var(--font-size-xs, 12px);
+  }
+
+  .combo-section__product-price {
+    font-size: var(--font-size-xs, 11px);
+  }
+
+  .basic-tab-label {
+    font-size: var(--font-size-xs, 11px);
+  }
+
+  .basic-tab-textarea {
+    font-size: var(--font-size-sm, 13px);
+    min-height: 50px;
+  }
+
+  .help-text {
+    font-size: var(--font-size-xs, 10px);
+  }
+}
+
+/* ─── Móviles pequeños (480px) ────────────────────────────────── */
+@media (max-width: 480px) {
+  .basic-tab {
+    gap: var(--space-1, 6px);
+  }
+
+  .basic-tab-mode-btn {
+    font-size: var(--font-size-xs, 11px);
+    padding: var(--space-1, 6px) var(--space-2, 10px);
+  }
+
+  .basic-tab-mode-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .standard-section__row {
+    gap: var(--space-1, 8px);
+  }
+
+  .category-modes__btn {
+    padding: var(--space-1, 8px);
+    font-size: var(--font-size-xs, 11px);
+  }
+
+  .category-modes__btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .category-modes__btn-sub {
+    font-size: var(--font-size-xs, 10px);
+  }
+
+  .info-box {
+    padding: var(--space-2, 10px);
+    font-size: var(--font-size-xs, 11px);
+    line-height: 1.5;
+    border-radius: var(--radius-sm, 8px);
+  }
+
+  .info-box__highlight {
+    padding: var(--space-1, 6px) var(--space-2, 8px);
+  }
+
+  .coupon-section {
+    padding: var(--space-2, 10px);
+    gap: var(--space-2, 10px);
+  }
+
+  .coupon-section__mode-btn {
+    padding: 6px 6px;
+    font-size: var(--font-size-xs, 10px);
+  }
+
+  .coupon-section__mode-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .coupon-section__mode-sub {
+    font-size: var(--font-size-xs, 9px);
+  }
+
+  .coupon-section__product-item {
+    padding: 6px 10px;
+    gap: var(--space-1, 6px);
+  }
+
+  .coupon-section__product-name {
+    font-size: var(--font-size-xs, 11px);
+  }
+
+  .coupon-section__product-price {
+    font-size: var(--font-size-xs, 10px);
+  }
+
+  .coupon-section__product-info {
+    padding: var(--space-2, 8px);
+    font-size: var(--font-size-xs, 11px);
+  }
+
+  .combo-section__product-item {
+    padding: var(--space-1, 6px) var(--space-2, 8px);
+  }
+
+  .combo-section__product-name {
+    font-size: var(--font-size-xs, 11px);
+  }
+
+  .combo-section__product-price {
+    font-size: var(--font-size-xs, 10px);
+  }
+
+  .combo-section__qty-btn {
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+  }
+
+  .combo-section__qty-value {
+    font-size: var(--font-size-xs, 11px);
+    min-width: 12px;
+  }
+
+  .combo-section__add-btn {
+    font-size: var(--font-size-xs, 11px);
+    padding: 6px 10px;
+  }
+
+  .combo-section__add-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .combo-section__summary {
+    font-size: var(--font-size-xs, 10px);
+  }
+
+  .combo-section__summary .iva-note {
+    font-size: var(--font-size-xs, 9px);
+  }
+
+  .basic-tab-textarea {
+    font-size: var(--font-size-xs, 12px);
+    min-height: 40px;
+    padding: var(--space-1, 6px) var(--space-2, 10px);
+  }
+
+  .basic-tab-display-input {
+    font-size: var(--font-size-sm, 12px);
+    padding: var(--space-1, 6px) var(--space-2, 10px);
+  }
+
+  .basic-tab-display-input svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .help-text {
+    font-size: var(--font-size-xs, 9px);
+  }
+
+  .basic-tab-label {
+    font-size: var(--font-size-xs, 10px);
+    margin-bottom: 2px;
+  }
+}
+
+/* ─── Móviles muy pequeños (< 360px) ───────────────────────────── */
+@media (max-width: 360px) {
+  .basic-tab-mode-btn {
+    font-size: var(--font-size-xs, 10px);
+    padding: var(--space-1, 4px) var(--space-1, 8px);
+    gap: var(--space-1, 2px);
+  }
+
+  .basic-tab-mode-btn svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .category-modes__btn {
+    font-size: var(--font-size-xs, 10px);
+    padding: var(--space-1, 6px);
+  }
+
+  .category-modes__btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .coupon-section__mode-btn {
+    font-size: var(--font-size-xs, 9px);
+    padding: 4px 4px;
+  }
+
+  .coupon-section__mode-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .info-box {
+    font-size: var(--font-size-xs, 10px);
+    padding: var(--space-1, 8px);
+  }
+
+  .combo-section__product-name {
+    font-size: var(--font-size-xs, 10px);
+  }
+
+  .combo-section__product-price {
+    font-size: var(--font-size-xs, 9px);
+  }
+
+  .combo-section__qty-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+  }
+
+  .combo-section__qty-value {
+    font-size: var(--font-size-xs, 10px);
+    min-width: 10px;
+  }
+
+  .combo-section__add-btn {
+    font-size: var(--font-size-xs, 10px);
+    padding: 4px 8px;
+  }
+
+  .coupon-section__product-item {
+    padding: 4px 8px;
+  }
+
+  .coupon-section__product-name {
+    font-size: var(--font-size-xs, 10px);
+  }
+
+  .basic-tab-textarea {
+    font-size: var(--font-size-xs, 11px);
+    min-height: 32px;
+    padding: var(--space-1, 4px) var(--space-1, 8px);
+  }
+}
+
+/* ─── Soporte para orientación landscape ───────────────────────── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .basic-tab {
+    gap: var(--space-1, 6px);
+  }
+
+  .basic-tab-mode-buttons {
+    flex-direction: row;
+    margin-bottom: var(--space-2, 8px);
+  }
+
+  .basic-tab-mode-btn {
+    padding: var(--space-1, 4px) var(--space-2, 10px);
+    font-size: var(--font-size-xs, 11px);
+  }
+
+  .category-modes__buttons {
+    flex-direction: row;
+  }
+
+  .category-modes__btn {
+    padding: var(--space-1, 6px);
+    font-size: var(--font-size-xs, 10px);
+  }
+
+  .coupon-section__modes {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .coupon-section__mode-btn {
+    flex: 1;
+    padding: 4px 6px;
+    font-size: var(--font-size-xs, 10px);
+  }
+
+  .standard-section__row {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-1, 8px);
+  }
+
+  .info-box {
+    padding: var(--space-1, 8px);
+    font-size: var(--font-size-xs, 11px);
+    margin-bottom: var(--space-2, 8px);
+  }
+}
+
+/* ─── Print ────────────────────────────────────────────────────── */
+@media print {
+  .basic-tab-mode-buttons,
+  .combo-section__add-row,
+  .category-modes__buttons,
+  .coupon-section__modes,
+  .combo-section__qty-controls {
+    display: none;
+  }
+
+  .basic-tab {
+    gap: var(--space-1, 4px);
+  }
+
+  .combo-section__product-item {
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+  }
+
+  .info-box {
+    border: 1px solid #ddd;
+    background: #f5f5f5;
+    color: #333;
+  }
+
+  .info-box__title--fixed,
+  .info-box__title--second {
+    color: #333;
+  }
+
+  .coupon-section {
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+  }
+
+  .coupon-section__title {
+    color: #333;
+  }
+}
+
+/* ============================================================
+   SCHEDULE TAB - Estilos para la pestaña de horarios
+   ============================================================ */
+
+/* ─── Contenedor principal ─────────────────────────────────────── */
+.schedule-tab {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 4px 0;
+}
+
+/* ─── Días de la semana ────────────────────────────────────────── */
+.schedule-days-group {
+  width: 100%;
+}
+
+.schedule-days-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.schedule-days-header .label {
+  margin-bottom: 0;
+  font-size: var(--font-size-base, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-secondary, #4A5568);
+}
+
+.schedule-select-all-btn {
+  background: none;
+  border: none;
+  color: var(--primary, #f97316);
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm, 6px);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.schedule-select-all-btn:hover {
+  background: var(--bg-hover, #f7fafc);
+  text-decoration: underline;
+}
+
+.schedule-select-all-btn:active {
+  transform: scale(0.95);
+}
+
+/* Grid de días - 7 columnas en pantallas grandes */
+.schedule-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+/* Estilo para cada checkbox de día */
+.schedule-day-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--bg-tertiary, #f8fafc);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: var(--font-size-sm, 13px);
+  user-select: none;
+  min-height: 32px;
+}
+
+.schedule-day-checkbox:hover {
+  background: var(--bg-hover, #f7fafc);
+  border-color: var(--bg-hover);
+}
+
+.schedule-day-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: var(--bg-tertiary);
+}
+
+.schedule-day-checkbox input[type="checkbox"]:checked + .schedule-day-label {
+  color: var(#ddd);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.schedule-day-checkbox:has(input:checked) {
+  background: var(--primary-light, rgba(249, 115, 22, 0.08));
+  border-color: var(--bg-tertiary);
+}
+
+.schedule-day-label {
+  font-size: var(--font-size-sm, 13px);
+  color: var(#fafafa);
+  transition: color 0.15s ease;
+  line-height: 1.2;
+}
+
+/* ─── Grid de fechas y horas ───────────────────────────────────── */
+.schedule-datetime-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+.schedule-datetime-grid .form-group {
+  margin-bottom: 0;
+}
+
+.schedule-datetime-grid .label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-primary, #4A5568);
+}
+
+.schedule-input {
+  width: 100%;
+}
+
+.schedule-datetime-grid .help-text {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-muted, #6b7280);
+}
+
+/* ─── Help text general ────────────────────────────────────────── */
+.help-text {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-muted, #6b7280);
+}
+
+/* ============================================================
+   SCHEDULE TAB - Estilos para la pestaña de horarios
+   ============================================================ */
+
+/* ─── Contenedor principal ─────────────────────────────────────── */
+.schedule-tab {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 4px 0;
+}
+
+/* ─── Días de la semana ────────────────────────────────────────── */
+.schedule-days-group {
+  width: 100%;
+}
+
+.schedule-days-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.schedule-days-header .label {
+  margin-bottom: 0;
+  font-size: var(--font-size-base, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-secondary, #4A5568);
+}
+
+.schedule-select-all-btn {
+  background: none;
+  border: none;
+  color: var(--primary, #f97316);
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm, 6px);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.schedule-select-all-btn:hover {
+  background: var(--bg-hover, #f7fafc);
+  text-decoration: underline;
+}
+
+.schedule-select-all-btn:active {
+  transform: scale(0.95);
+}
+
+/* Grid de días - 7 columnas en pantallas grandes */
+.schedule-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+/* Estilo para cada checkbox de día */
+.schedule-day-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--bg-tertiary, #f8fafc);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: var(--font-size-sm, 13px);
+  user-select: none;
+  min-height: 32px;
+}
+
+.schedule-day-checkbox:hover {
+  background: var(--bg-hover, #f7fafc);
+  border-color: var(--bg-hover);
+}
+
+.schedule-day-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: var(--bg-primary);
+}
+
+.schedule-day-checkbox input[type="checkbox"]:checked + .schedule-day-label {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.schedule-day-checkbox:has(input:checked) {
+  background: var(--primary-light, rgba(249, 115, 22, 0.08));
+  border-color: var(--primary, #f97316);
+}
+
+.schedule-day-label {
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-secondary, #4A5568);
+  transition: color 0.15s ease;
+  line-height: 1.2;
+}
+
+/* ─── Grid de fechas y horas ───────────────────────────────────── */
+.schedule-datetime-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Grupo de horas - 2 columnas */
+.schedule-time-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Grupo de fechas - 2 columnas */
+.schedule-date-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.schedule-datetime-grid .form-group {
+  margin-bottom: 0;
+}
+
+.schedule-datetime-grid .label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-secondary, #4A5568);
+}
+
+.schedule-input {
+  width: 100%;
+}
+
+.schedule-datetime-grid .help-text {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--font-size-xs, 11px);
+  color: var(--text-muted, #6b7280);
+}
+
+/* ─── Help text general ────────────────────────────────────────── */
+.help-text {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-muted, #6b7280);
+}
+
+/* ============================================================
+   RESPONSIVE - SCHEDULE TAB
+   ============================================================ */
+
+/* ─── Tablets (768px - 1024px) ────────────────────────────────── */
+@media (max-width: 1024px) {
+  .schedule-days-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .schedule-day-checkbox {
+    padding: 5px 6px;
+    font-size: var(--font-size-xs, 12px);
+  }
+
+  .schedule-day-label {
+    font-size: var(--font-size-xs, 12px);
+  }
+}
+
+/* ─── Tablets pequeñas y móviles grandes (640px - 768px) ──────── */
+@media (max-width: 768px) {
+  .schedule-tab {
+    gap: 18px;
+  }
+
+  .schedule-days-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+  }
+
+  .schedule-days-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .schedule-days-header .label {
+    font-size: var(--font-size-base, 14px);
+  }
+
+  .schedule-select-all-btn {
+    font-size: var(--font-size-xs, 12px);
+    padding: 2px 6px;
+  }
+
+  .schedule-day-checkbox {
+    padding: 4px 6px;
+    font-size: var(--font-size-xs, 11px);
+    min-height: 28px;
+  }
+
+  .schedule-day-checkbox input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+  }
+
+  .schedule-day-label {
+    font-size: var(--font-size-xs, 11px);
+  }
+
+  /* En tablets, fechas y horas en 2 columnas */
+  .schedule-datetime-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .schedule-time-group {
+    gap: 12px;
+  }
+
+  .schedule-date-group {
+    gap: 12px;
+  }
+
+  .schedule-datetime-grid .label {
+    font-size: var(--font-size-sm, 13px);
+  }
+
+  .schedule-input {
+    font-size: var(--font-size-sm, 13px);
+  }
+
+  .schedule-datetime-grid .help-text {
+    font-size: var(--font-size-xs, 10px);
+  }
+
+  .help-text {
+    font-size: var(--font-size-xs, 11px);
+  }
+}
+
+/* ─── Móviles pequeños (480px) ────────────────────────────────── */
+@media (max-width: 480px) {
+  .schedule-tab {
+    gap: 14px;
+  }
+
+  .schedule-days-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+
+  .schedule-days-header .label {
+    font-size: var(--font-size-sm, 13px);
+  }
+
+  .schedule-select-all-btn {
+    font-size: var(--font-size-xs, 10px);
+    padding: 2px 4px;
+  }
+
+  .schedule-day-checkbox {
+    padding: 3px 4px;
+    font-size: var(--font-size-xs, 10px);
+    min-height: 24px;
+    border-radius: var(--radius-xs, 4px);
+    gap: 4px;
+  }
+
+  .schedule-day-checkbox input[type="checkbox"] {
+    width: 12px;
+    height: 12px;
+  }
+
+  .schedule-day-label {
+    font-size: var(--font-size-xs, 10px);
+  }
+
+  /* En móviles pequeños: horas en una fila (2 columnas) y fechas en filas separadas */
+  .schedule-datetime-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .schedule-time-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .schedule-date-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .schedule-datetime-grid .label {
+    font-size: var(--font-size-xs, 12px);
+    margin-bottom: 3px;
+  }
+
+  .schedule-input {
+    font-size: var(--font-size-xs, 12px);
+    padding: 4px 6px;
+  }
+
+  .schedule-datetime-grid .help-text {
+    font-size: var(--font-size-xs, 9px);
+    margin-top: 2px;
+  }
+
+  .help-text {
+    font-size: var(--font-size-xs, 10px);
+  }
+}
+
+/* ─── Móviles muy pequeños (< 360px) ───────────────────────────── */
+@media (max-width: 360px) {
+  .schedule-tab {
+    gap: 10px;
+  }
+
+  .schedule-days-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3px;
+  }
+
+  .schedule-day-checkbox {
+    padding: 2px 3px;
+    font-size: 9px;
+    min-height: 20px;
+    gap: 3px;
+  }
+
+  .schedule-day-checkbox input[type="checkbox"] {
+    width: 10px;
+    height: 10px;
+  }
+
+  .schedule-day-label {
+    font-size: 9px;
+  }
+
+  .schedule-datetime-grid {
+    gap: 6px;
+  }
+
+  .schedule-time-group {
+    gap: 6px;
+  }
+
+  .schedule-date-group {
+    gap: 6px;
+  }
+
+  .schedule-datetime-grid .label {
+    font-size: var(--font-size-xs, 11px);
+  }
+
+  .schedule-input {
+    font-size: var(--font-size-xs, 11px);
+    padding: 3px 4px;
+  }
+
+  .schedule-datetime-grid .help-text {
+    font-size: 8px;
+  }
+}
+
+/* ─── Soporte para orientación landscape ───────────────────────── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .schedule-tab {
+    gap: 10px;
+  }
+
+  .schedule-days-grid {
+    gap: 4px;
+  }
+
+  .schedule-datetime-grid {
+    gap: 8px;
+  }
+
+  .schedule-time-group {
+    gap: 8px;
+  }
+
+  .schedule-date-group {
+    gap: 8px;
+  }
+
+  .schedule-day-checkbox {
+    padding: 3px 5px;
+    min-height: 22px;
+  }
+
+  .schedule-datetime-grid .form-group {
+    margin-bottom: 2px;
+  }
+}
+
+/* ─── Mejoras de accesibilidad ──────────────────────────────────── */
+.schedule-day-checkbox:focus-within {
+  outline: 2px solid var(--primary, #f97316);
+  outline-offset: 1px;
+}
+
+.schedule-day-checkbox input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--primary, #f97316);
+  outline-offset: 1px;
+}
+
+.schedule-input:focus {
+  outline: 2px solid var(--primary, #f97316);
+  outline-offset: 1px;
+}
+
+/* ─── Print ────────────────────────────────────────────────────── */
+@media print {
+  .schedule-tab {
+    gap: 12px;
+  }
+
+  .schedule-days-grid {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .schedule-datetime-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .schedule-time-group {
+    gap: 12px;
+  }
+
+  .schedule-date-group {
+    gap: 12px;
+  }
+
+  .schedule-select-all-btn {
+    display: none;
+  }
+
+  .schedule-day-checkbox {
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+    padding: 4px 6px;
+  }
+
+  .schedule-day-checkbox input[type="checkbox"] {
+    accent-color: #000;
+  }
+
+  .schedule-day-checkbox:has(input:checked) {
+    background: #e8e8e8;
+    border-color: #666;
+  }
+}
+
+/* ============================================================
+   CONDITIONS TAB - Estilos para la pestaña de condiciones
+   ============================================================ */
+
+/* ─── Contenedor principal ─────────────────────────────────────── */
+.conditions-tab {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+/* ─── Filas de condiciones ────────────────────────────────────── */
+.conditions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+/* ─── Inputs ───────────────────────────────────────────────────── */
+.conditions-input {
+  width: 100%;
+}
+
+.conditions-combobox {
+  width: 100%;
+}
+
+/* ─── Checkboxes ───────────────────────────────────────────────── */
+.conditions-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.conditions-checkboxes .checkbox-group {
+  display: flex;
+  align-items: center;
+}
+
+.conditions-checkboxes .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-sm, 14px);
+  color: var(--text-secondary, #4A5568);
+  cursor: pointer;
+  user-select: none;
+}
+
+.conditions-checkboxes .checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary, #f97316);
+  flex-shrink: 0;
+}
+
+.conditions-checkboxes .checkbox-label:hover {
+  color: var(--text-primary, #1A202C);
+}
+
+/* ─── Form group dentro de conditions ──────────────────────────── */
+.conditions-tab .form-group {
+  margin-bottom: 0;
+}
+
+.conditions-tab .label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-secondary, #4A5568);
+}
+
+/* ============================================================
+   RESPONSIVE - CONDITIONS TAB
+   ============================================================ */
+
+/* ─── Tablets (768px - 1024px) ────────────────────────────────── */
+@media (max-width: 1024px) {
+  .conditions-row {
+    gap: 14px;
+  }
+
+  .conditions-tab .label {
+    font-size: var(--font-size-sm, 13px);
+  }
+
+  .conditions-input {
+    font-size: var(--font-size-sm, 13px);
+  }
+}
+
+/* ─── Tablets pequeñas y móviles grandes (640px - 768px) ──────── */
+@media (max-width: 768px) {
+  .conditions-tab {
+    gap: 14px;
+  }
+
+  .conditions-row {
+    gap: 12px;
+  }
+
+  .conditions-tab .label {
+    font-size: var(--font-size-sm, 13px);
+  }
+
+  .conditions-input {
+    font-size: var(--font-size-sm, 13px);
+  }
+
+  .conditions-checkboxes .checkbox-label {
+    font-size: var(--font-size-sm, 13px);
+  }
+}
+
+/* ─── Móviles pequeños (480px) ────────────────────────────────── */
+@media (max-width: 480px) {
+  .conditions-tab {
+    gap: 12px;
+  }
+
+  /* Cada fila se convierte en una sola columna */
+  .conditions-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .conditions-tab .label {
+    font-size: var(--font-size-xs, 12px);
+    margin-bottom: 3px;
+  }
+
+  .conditions-input {
+    font-size: var(--font-size-xs, 12px);
+    padding: 4px 6px;
+  }
+
+  .conditions-combobox {
+    font-size: var(--font-size-xs, 12px);
+  }
+
+  .conditions-checkboxes {
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  .conditions-checkboxes .checkbox-label {
+    font-size: var(--font-size-xs, 12px);
+    gap: 6px;
+  }
+
+  .conditions-checkboxes .checkbox-label input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* ─── Móviles muy pequeños (< 360px) ───────────────────────────── */
+@media (max-width: 360px) {
+  .conditions-tab {
+    gap: 10px;
+  }
+
+  .conditions-row {
+    gap: 8px;
+  }
+
+  .conditions-tab .label {
+    font-size: var(--font-size-xs, 11px);
+  }
+
+  .conditions-input {
+    font-size: var(--font-size-xs, 11px);
+    padding: 3px 4px;
+  }
+
+  .conditions-checkboxes .checkbox-label {
+    font-size: var(--font-size-xs, 11px);
+  }
+
+  .conditions-checkboxes .checkbox-label input[type="checkbox"] {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* ─── Soporte para orientación landscape ───────────────────────── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .conditions-tab {
+    gap: 8px;
+  }
+
+  .conditions-row {
+    gap: 8px;
+  }
+
+  .conditions-tab .label {
+    margin-bottom: 2px;
+  }
+
+  .conditions-checkboxes {
+    flex-direction: row;
+    gap: 16px;
+  }
+}
+
+/* ─── Mejoras de accesibilidad ──────────────────────────────────── */
+.conditions-input:focus {
+  outline: 2px solid var(--primary, #f97316);
+  outline-offset: 1px;
+}
+
+.conditions-combobox:focus-within {
+  outline: 2px solid var(--primary, #f97316);
+  outline-offset: 1px;
+  border-radius: var(--radius, 8px);
+}
+
+.conditions-checkboxes .checkbox-label input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--primary, #f97316);
+  outline-offset: 1px;
+}
+
+/* ─── Print ────────────────────────────────────────────────────── */
+@media print {
+  .conditions-tab {
+    gap: 10px;
+  }
+
+  .conditions-row {
+    gap: 12px;
+  }
+
+  .conditions-checkboxes {
+    flex-direction: row;
+    gap: 20px;
+  }
+
+  .conditions-checkboxes .checkbox-label input[type="checkbox"] {
+    accent-color: #000;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+/* ─── Tablets (768px - 1024px) ────────────────────────────────── */
+@media (max-width: 1024px) {
+  :root {
+    --discount-card-min-width: 240px;
+    --discount-gap: 14px;
+  }
+
+  .discounts-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(var(--discount-card-min-width), 1fr));
+  }
+
+  .discount-card-value {
+    font-size: 22px;
+  }
+}
+
+/* ─── Tablets pequeñas y móviles grandes (640px - 768px) ──────── */
+@media (max-width: 768px) {
+  :root {
+    --discount-card-min-width: 100%;
+    --discount-gap: 12px;
+    --discount-toolbar-gap: 8px;
+  }
+
+  .users-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--discount-toolbar-gap);
+    padding: var(--space-2, 8px) 0;
+  }
+
+  .discounts-toolbar-filters {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  .discounts-toolbar-view {
+    align-self: center;
+    order: 2;
+  }
+
+  .discounts-toolbar-actions {
+    margin-left: 0;
+    width: 100%;
+    order: 3;
+  }
+
+  .discounts-toolbar-actions .btn-group {
+    width: 100%;
+  }
+
+  .discounts-toolbar-actions .btn-group .btn {
+    flex: 1;
+    justify-content: center;
+    font-size: var(--font-size-sm, 14px);
+  }
+
+  .discounts-cards-grid {
+    grid-template-columns: 1fr;
+    gap: var(--discount-gap);
+  }
+
+  .discount-card {
+    padding: var(--space-3, 12px);
+    min-height: 150px;
+  }
+
+  .discount-card-value {
+    font-size: 20px;
+  }
+
+  .discount-card-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+  }
+
+  .discount-card-name {
+    font-size: var(--font-size-base, 14px);
+  }
+
+  .discount-card-status {
+    font-size: 9px;
+    padding: 2px 8px;
+  }
+
+  .discount-card-details {
+    font-size: var(--font-size-xs, 11px);
+  }
+
+  .discount-card-actions .btn-group {
+    width: 100%;
+  }
+
+  .discount-card-actions .btn-group .btn {
+    flex: 1;
+    justify-content: center;
+    font-size: var(--font-size-xs, 11px);
+    padding: var(--space-1, 4px) var(--space-2, 8px);
+  }
+
+  .discounts-empty {
+    padding: 40px 16px;
+  }
+
+  .discounts-empty p {
+    font-size: var(--font-size-base, 14px);
+  }
+
+  .discounts-empty-btn {
+    font-size: var(--font-size-sm, 13px);
+    padding: var(--space-2, 8px) var(--space-4, 16px);
+  }
+
+  /* Tabs en modal */
+  .modal-tabs {
+    padding: 0 12px;
+  }
+
+  .tab-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+/* ─── Móviles pequeños (480px) ────────────────────────────────── */
+@media (max-width: 480px) {
+  :root {
+    --discount-gap: 8px;
+  }
+
+  .users-toolbar {
+    padding: var(--space-1, 4px) 0;
+    gap: 6px;
+  }
+
+  .discounts-toolbar-filters {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  .discounts-toolbar-actions .btn-group .btn {
+    font-size: var(--font-size-xs, 12px);
+    padding: var(--space-1, 4px) var(--space-2, 8px);
+  }
+
+  .view-toggle-btn {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 2px 6px;
+  }
+
+  .view-toggle-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .discount-card {
+    padding: var(--space-2, 8px);
+    min-height: 130px;
+    border-radius: var(--radius-sm, 12px);
+  }
+
+  .discount-card-header {
+    gap: var(--space-2, 8px);
+  }
+
+  .discount-card-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    border-radius: var(--radius-sm, 8px);
+  }
+
+  .discount-card-name {
+    font-size: var(--font-size-sm, 13px);
+  }
+
+  .discount-card-description {
+    font-size: var(--font-size-xs, 10px);
+    -webkit-line-clamp: 1;
+  }
+
+  .discount-card-value {
+    font-size: 18px;
+    margin: 2px 0;
+  }
+
+  .discount-card-status {
+    font-size: 8px;
+    padding: 1px 6px;
+  }
+
+  .discount-card-details {
+    font-size: var(--font-size-xs, 10px);
+    gap: 2px;
+  }
+
+  .discount-card-detail {
+    gap: var(--space-1, 4px);
+  }
+
+  .discount-card-detail svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .discount-card-actions {
+    padding-top: var(--space-2, 8px);
+    margin-top: var(--space-1, 4px);
+  }
+
+  .discount-card-actions .btn-group {
+    gap: 2px;
+  }
+
+  .discount-card-actions .btn-group .btn {
+    font-size: var(--font-size-xs, 10px);
+    padding: 2px 6px;
+    min-height: 28px;
+  }
+
+  .discount-card-actions .btn-group .btn svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .discounts-empty {
+    padding: 30px 12px;
+  }
+
+  .discounts-empty svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .discounts-empty p {
+    font-size: var(--font-size-sm, 13px);
+    margin-bottom: var(--space-3, 12px);
+  }
+
+  .discounts-empty-btn {
+    font-size: var(--font-size-xs, 12px);
+    padding: var(--space-1, 4px) var(--space-3, 12px);
+  }
+
+  /* Tabs en modal para móvil */
+  .modal-tabs {
+    padding: 0 8px;
+    gap: 2px;
+  }
+
+  .tab-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+/* ─── Móviles muy pequeños (< 360px) ───────────────────────────── */
+@media (max-width: 360px) {
+  .discount-card {
+    padding: var(--space-1, 4px) var(--space-2, 8px);
+    min-height: 110px;
+  }
+
+  .discount-card-name {
+    font-size: var(--font-size-xs, 12px);
+  }
+
+  .discount-card-value {
+    font-size: 16px;
+  }
+
+  .discount-card-actions .btn-group .btn {
+    font-size: 9px;
+    padding: 2px 4px;
+    min-height: 24px;
+  }
+
+  .discount-card-actions .btn-group .btn svg {
+    width: 8px;
+    height: 8px;
+  }
+
+  .tab-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .discounts-toolbar-actions .btn-group .btn {
+    font-size: var(--font-size-xs, 11px);
+    padding: 2px 6px;
+  }
+}
+
+/* ─── Soporte para orientación landscape ───────────────────────── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .discounts-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .discount-card {
+    min-height: 120px;
+    padding: var(--space-2, 8px);
+  }
+
+  .discount-card-value {
+    font-size: 18px;
+  }
+
+  .discount-card-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+
+  .discount-card-name {
+    font-size: var(--font-size-sm, 13px);
+  }
+
+  .discounts-empty {
+    padding: 20px 12px;
+  }
+}
+
+/* ─── Print ────────────────────────────────────────────────────── */
+@media print {
+  .discounts-toolbar-actions,
+  .discounts-toolbar-view,
+  .discount-card-actions .btn-group {
+    display: none;
+  }
+
+  .discount-card {
+    break-inside: avoid;
+    border: 1px solid #ddd;
+    box-shadow: none;
+  }
+
+  .discount-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+

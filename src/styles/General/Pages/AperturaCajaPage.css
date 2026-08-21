@@ -1,0 +1,424 @@
+/* ============================================================
+   APERTURA DE CAJA 
+   ============================================================ */
+
+/* ──────────────────────────────────────────────
+   HEADER PERSONALIZADO
+────────────────────────────────────────────── */
+.apertura-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 5px 5px 20px 20px;
+  text-transform: capitalize;
+}
+
+.apertura-subtitle strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+/* ──────────────────────────────────────────────
+   INFO Y ERROR
+────────────────────────────────────────────── */
+.apertura-info {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 14px 24px 18px 24px;
+  line-height: 1.5;
+}
+
+.apertura-error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin: 0 24px 16px 24px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ──────────────────────────────────────────────
+   SECCIONES
+────────────────────────────────────────────── */
+.apertura-section {
+  margin-bottom: 18px;
+  padding: 0 24px;
+}
+
+.apertura-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+/* ── Información del usuario ── */
+.apertura-user-info {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 0px;
+  margin-bottom: 16px;
+  border-left: 3px solid #f59e0b;
+}
+
+.apertura-user-name {
+  font-size: 14px;
+  color: #212529;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.apertura-user-name strong {
+  font-weight: 600;
+  color: #495057;
+}
+
+.apertura-user-role {
+  display: inline-block;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.apertura-user-email {
+  font-size: 13px;
+  color: #6c757d;
+  margin-top: 2px;
+}
+
+.apertura-user-email strong {
+  font-weight: 500;
+  color: #495057;
+}
+
+/* ── Error ── */
+.apertura-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.apertura-error svg {
+  flex-shrink: 0;
+}
+
+/* ──────────────────────────────────────────────
+   DENOMINACIONES - Grid y cards
+────────────────────────────────────────────── */
+.apertura-denom-grid {
+  display: grid;
+  grid-template-columns: repeat(7, max-content);
+  gap: 8px 5px; 
+  justify-content: start;
+}
+
+.apertura-denom-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  padding: 0px 0px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  transition: all 0.2s ease;
+  width: max-content; 
+}
+
+.apertura-denom-card:focus-within {
+  border-color: var(--border);
+}
+
+.apertura-denom-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+
+/* ──────────────────────────────────────────────
+   BANCA
+────────────────────────────────────────────── */
+.apertura-bank-card {
+  padding: 0 24px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px; /* Espacio entre label e input */
+  flex-wrap: wrap; /* Para que en móvil se apilen */
+}
+
+.apertura-bank-card .apertura-denom-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap; /* Evita que el texto se corte */
+}
+
+.apertura-bank-card .apertura-denom-label svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-primary);
+}
+
+.apertura-bank-input-wrap {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  flex-shrink: 0; /* Evita que se encoja */
+}
+
+.apertura-bank-input-wrap:focus-within {
+  border-color: var(--border);
+}
+
+.apertura-bank-prefix {
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Input de banca - sobrescritura del componente Input */
+.apertura-bank-input-wrap .apertura-bank-input {
+  flex: 1 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 8px 12px !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  min-width: 100px !important;
+  width: 120px !important;
+}
+
+.apertura-bank-input-wrap .apertura-bank-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ──────────────────────────────────────────────
+   RESPONSIVE - BANCA
+────────────────────────────────────────────── */
+@media (max-width: 599px) {
+  .apertura-bank-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .apertura-bank-card .apertura-denom-label {
+    white-space: normal;
+  }
+  
+  .apertura-bank-input-wrap {
+    width: 100%;
+  }
+  
+  .apertura-bank-input-wrap .apertura-bank-input {
+    width: 100% !important;
+    min-width: auto !important;
+  }
+}
+/* ──────────────────────────────────────────────
+   OBSERVACIONES
+────────────────────────────────────────────── */
+.apertura-obs {
+  margin: 0 24px 18px 24px;
+  width: calc(100% - 48px);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  resize: vertical;
+  min-height: 60px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.apertura-obs:focus {
+  outline: none;
+  border-color: var(--border);
+  background: var(--bg-secondary);
+}
+
+.apertura-obs::placeholder {
+  color: var(--text-muted);
+}
+
+/* ──────────────────────────────────────────────
+   TOTALES
+────────────────────────────────────────────── */
+.apertura-totals {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin: 0 24px 20px 24px;
+}
+
+.apertura-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.apertura-total-val {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.apertura-total-row--main {
+  margin-top: 5px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.apertura-total-val--main {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+/* ──────────────────────────────────────────────
+   RESPONSIVE
+────────────────────────────────────────────── */
+@media (min-width: 1200px) {
+  .apertura-denom-grid {
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1199px) {
+  .apertura-denom-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+  .apertura-denom-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 599px) {
+  .apertura-denom-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .apertura-bank-card {
+    padding: 0 16px;
+  }
+  
+  .apertura-bank-input-wrap {
+    width: 100%;
+  }
+  
+  .apertura-bank-input {
+    min-width: auto !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .apertura-header {
+    padding: 14px 16px 10px 16px;
+    gap: 10px;
+  }
+  
+  .apertura-header-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .apertura-header-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .apertura-title {
+    font-size: 18px;
+  }
+  
+  .apertura-subtitle {
+    font-size: 10px;
+  }
+  
+  .apertura-info {
+    margin: 10px 16px 12px 16px;
+    font-size: 11px;
+  }
+  
+  .apertura-section {
+    padding: 0 16px;
+    margin-bottom: 14px;
+  }
+  
+  .apertura-denom-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .apertura-denom-card {
+    padding: 6px 8px;
+  }
+  
+  .apertura-denom-card .apertura-denom-input {
+    width: 50px !important;
+  }
+  
+  .apertura-obs {
+    margin: 0 16px 14px 16px;
+    width: calc(100% - 32px);
+  }
+  
+  .apertura-totals {
+    margin: 0 16px 16px 16px;
+  }
+  
+  .apertura-error {
+    margin: 0 16px 12px 16px;
+  }
+}

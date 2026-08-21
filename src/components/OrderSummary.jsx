@@ -1,6 +1,7 @@
 import React from 'react';
 import { FiSend } from 'react-icons/fi';
 import { CiWarning } from "react-icons/ci";
+import { IconTextButton, ButtonGroup } from './General/Button';
 import '../styles/OrderSummary.css';
 
 export default function OrderSummary({
@@ -54,24 +55,21 @@ export default function OrderSummary({
       )}
 
       {/* Botón enviar a cocina */}
-      <button
-        className="btn-send-kitchen"
-        onClick={guardarOrden}
-        disabled={guardando || !isValid}
-        type="button"
-      >
-        {guardando ? (
-          <>
-            <div className="spinner"></div>
-            Enviando...
-          </>
-        ) : (
-          <>
-            <FiSend size={18} />
-            Enviar a cocina
-          </>
-        )}
-      </button>
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-2)' }}>
+        <ButtonGroup>
+          <IconTextButton
+            variant="success"
+            size="lg"
+            icon={guardando ? <div className="spinner" /> : <FiSend size={18} />}
+            onClick={guardarOrden}
+            disabled={guardando || !isValid}
+            fullWidth
+            style={{ marginTop: 'var(--space-4)'}}
+          >
+            {guardando ? 'Enviando...' : 'Guardar'}
+          </IconTextButton>
+        </ButtonGroup>
+      </div>
     </div>
   );
 }

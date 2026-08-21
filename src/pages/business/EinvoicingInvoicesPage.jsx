@@ -1,25 +1,25 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSession } from '../../context/SessionContext'; 
 import PageTemplate from '../../components/PageTemplate';
-import { RefreshCw, Download, Send, AlertCircle, CheckCircle, XCircle, Clock, FileText, MessageCircle, Mail, X, Search, Folder} from 'react-feather';
+import { RefreshCw, Download, Send, AlertCircle, CheckCircle, XCircle, Clock, MessageCircle, Mail, X, Search, Folder } from 'react-feather';
 import { MdOutlineFileDownload } from "react-icons/md";
-import { fetchWithAuth } from '../../config/apiBase';
+import { fetchWithAuth, api } from '../../config/api';
 import '../../styles/EinvoicingInvoicesPage.css';
 import JSZip from 'jszip';
+import Table from '../../components/General/Table';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import CustomCombobox from '../../components/General/CustomCombobox';
 
 // ── Configuración de zona horaria Ecuador ──
 const ECUADOR_TIMEZONE = 'America/Guayaquil';
 
 // ── Funciones de utilidad para fechas ──
 const dateUtils = {
-  // Convertir fecha ISO a fecha local de Ecuador
   toEcuadorDate: (isoDate) => {
     if (!isoDate) return null;
     const date = new Date(isoDate);
-    // Ajustar a zona horaria de Ecuador
     return new Date(date.toLocaleString('en-US', { timeZone: ECUADOR_TIMEZONE }));
   },
-
-  // Obtener solo la fecha (sin hora) en zona Ecuador
   getEcuadorDateString: (isoDate) => {
     const date = dateUtils.toEcuadorDate(isoDate);
     if (!date) return '';
@@ -28,44 +28,24 @@ const dateUtils = {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   },
-
-  // Comparar si dos fechas son el mismo día en zona Ecuador
   isSameDay: (isoDate1, isoDate2) => {
     const date1 = dateUtils.getEcuadorDateString(isoDate1);
     const date2 = dateUtils.getEcuadorDateString(isoDate2);
     return date1 === date2;
   },
-
-  // Verificar si una fecha está dentro de un rango en zona Ecuador
   isDateInRange: (isoDate, startDate, endDate) => {
     if (!isoDate) return false;
     const dateStr = dateUtils.getEcuadorDateString(isoDate);
     if (!dateStr) return false;
-    
-    // Si no hay fechas de filtro, todas pasan
     if (!startDate && !endDate) return true;
-    
-    // Solo fecha de inicio
-    if (startDate && !endDate) {
-      return dateStr === startDate;
-    }
-    
-    // Solo fecha de fin
-    if (!startDate && endDate) {
-      return dateStr <= endDate;
-    }
-    
-    // Rango completo
+    if (startDate && !endDate) return dateStr === startDate;
+    if (!startDate && endDate) return dateStr <= endDate;
     return dateStr >= startDate && dateStr <= endDate;
   },
-
-  // Obtener fecha actual en zona Ecuador
   getCurrentEcuadorDate: () => {
     const now = new Date();
     return new Date(now.toLocaleString('en-US', { timeZone: ECUADOR_TIMEZONE }));
   },
-
-  // Formatear fecha para mostrar en tabla
   formatDisplayDate: (isoDate) => {
     if (!isoDate) return '—';
     try {
@@ -79,21 +59,46 @@ const dateUtils = {
     } catch {
       return '—';
     }
+  },
+  getDateInputValue: (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 };
 
 const STATUS_STYLE = {
-  autorizada: { color: '#15803d', bg: 'rgba(34,197,94,0.08)',  border: 'rgba(34,197,94,0.3)',  label: 'Autorizada', Icon: CheckCircle },
-  pendiente:  { color: '#b45309', bg: 'rgba(217,119,6,0.08)',  border: 'rgba(217,119,6,0.3)',  label: 'Pendiente',  Icon: Clock },
-  rechazada:  { color: '#b91c1c', bg: 'rgba(225,29,72,0.06)',  border: 'rgba(225,29,72,0.25)', label: 'Rechazada',  Icon: XCircle },
-  error:      { color: '#6b7280', bg: 'rgba(107,114,128,0.08)',border: 'rgba(107,114,128,0.3)',label: 'Error',       Icon: AlertCircle },
+  autorizada: { color: '#15803d', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.3)', label: 'Autorizada', Icon: CheckCircle },
+  pendiente:  { color: '#b45309', bg: 'rgba(217,119,6,0.08)', border: 'rgba(217,119,6,0.3)', label: 'Pendiente',  Icon: Clock },
+  rechazada:  { color: '#b91c1c', bg: 'rgba(225,29,72,0.06)', border: 'rgba(225,29,72,0.25)', label: 'Rechazada',  Icon: XCircle },
+  error:      { color: '#6b7280', bg: 'rgba(107,114,128,0.08)', border: 'rgba(107,114,128,0.3)', label: 'Error', Icon: AlertCircle },
 };
+
+// ── Opciones para los combobox ──────────────────────────────────────────
+const dateOptions = [
+  { label: 'Todas las fechas', value: 'all' },
+  { label: 'Hoy', value: 'today' },
+  { label: 'Esta semana', value: 'week' },
+  { label: 'Este mes', value: 'month' },
+  { label: 'Personalizado', value: 'custom' },
+];
+
+const statusOptions = [
+  { label: 'Todos los estados', value: 'all' },
+  { label: 'Autorizadas', value: 'autorizada' },
+  { label: 'Pendientes', value: 'pendiente' },
+  { label: 'Rechazadas', value: 'rechazada' },
+  { label: 'Error', value: 'error' },
+];
 
 // ── Modal de envío por correo ─────────────────────────────────────────────────
 function EmailModal({ inv, onClose, onSent }) {
-  const [email,    setEmail   ] = useState(inv.customer_email || '');
-  const [sending,  setSending ] = useState(false);
-  const [err,      setErr     ] = useState('');
+  const [email, setEmail] = useState(inv.customer_email || '');
+  const [sending, setSending] = useState(false);
+  const [err, setErr] = useState('');
   const inputRef = useRef(null);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
@@ -102,7 +107,7 @@ function EmailModal({ inv, onClose, onSent }) {
     if (!email.trim()) { setErr('Ingresa un correo electrónico'); return; }
     setSending(true); setErr('');
     try {
-      const res  = await fetchWithAuth(`/api/einvoicing/invoices/${inv.id}/email`, {
+      const res = await fetchWithAuth(`/einvoicing/invoices/${inv.id}/email`, {
         method: 'POST',
         body: JSON.stringify({ email: email.trim() }),
       });
@@ -233,22 +238,26 @@ function DownloadProgress({ total, completed, current }) {
 
 // ── Página principal ──────────────────────────────────────────────────────────
 export default function EinvoicingInvoicesPage() {
-  const [invoices,  setInvoices ] = useState([]);
-  const [loading,   setLoading  ] = useState(true);
-  const [actionId,  setActionId ] = useState(null);
-  const [error,     setError    ] = useState('');
-  const [success,   setSuccess  ] = useState('');
-  const [emailMdl,  setEmailMdl ] = useState(null);
-  const [search,    setSearch   ] = useState('');
-  const [dateStart, setDateStart] = useState('');
-  const [dateEnd,   setDateEnd  ] = useState('');
+  const { user } = useSession(); // ✅ AGREGADO
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [actionId, setActionId] = useState(null);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [emailMdl, setEmailMdl] = useState(null);
+  const [search, setSearch] = useState('');
+  const [dateRange, setDateRange] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const res  = await fetchWithAuth('/api/einvoicing/invoices?limit=200');
+      // ✅ SIN /api
+      const res = await fetchWithAuth('/einvoicing/invoices?limit=200');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
       setInvoices(Array.isArray(data) ? data : []);
@@ -262,65 +271,127 @@ export default function EinvoicingInvoicesPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // ── Configurar fechas según el rango seleccionado ──────────────────────
+  useEffect(() => {
+    const now = dateUtils.getCurrentEcuadorDate();
+    
+    switch (dateRange) {
+      case 'all':
+        setStartDate('');
+        setEndDate('');
+        break;
+      case 'today': {
+        const todayStr = dateUtils.getDateInputValue(now);
+        setStartDate(todayStr);
+        setEndDate(todayStr);
+        break;
+      }
+      case 'week': {
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - now.getDay());
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        setStartDate(dateUtils.getDateInputValue(weekStart));
+        setEndDate(dateUtils.getDateInputValue(weekEnd));
+        break;
+      }
+      case 'month': {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        setStartDate(dateUtils.getDateInputValue(monthStart));
+        setEndDate(dateUtils.getDateInputValue(monthEnd));
+        break;
+      }
+      case 'custom':
+        break;
+      default:
+        setStartDate('');
+        setEndDate('');
+    }
+  }, [dateRange]);
+
   const notify = (msg, isError = false) => {
     if (isError) { setError(msg); setTimeout(() => setError(''), 6000); }
-    else         { setSuccess(msg); setTimeout(() => setSuccess(''), 5000); }
+    else { setSuccess(msg); setTimeout(() => setSuccess(''), 5000); }
   };
 
-  // Función para descargar archivo
+  // Función para descargar archivo usando axios directamente
   const downloadBlob = async (url, filename) => {
-    const res = await fetchWithAuth(url);
-    if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Archivo no disponible'); }
-    const blob = await res.blob();
-    return blob;
+    try {
+      // Usar api directamente con responseType: 'blob'
+      const response = await api({
+        url: url,
+        method: 'GET',
+        responseType: 'blob'
+      });
+      
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error('Archivo no disponible');
+      }
+      
+      return response.data; // Esto es un Blob
+    } catch (error) {
+      console.error('Error descargando:', error);
+      throw new Error(error.response?.data || 'Archivo no disponible');
+    }
   };
 
-  // Descarga individual PDF
+  // Descarga PDF
   const handleDownloadPdf = async (inv) => {
     try { 
-      const blob = await downloadBlob(`/api/einvoicing/invoices/${inv.id}/pdf`, `RIDE-${inv.invoice_number}.pdf`);
+      const blob = await downloadBlob(`/einvoicing/invoices/${inv.id}/pdf`, `FACT-${inv.invoice_number}.pdf`);
       const href = URL.createObjectURL(blob);
-      Object.assign(document.createElement('a'), { href, download: `RIDE-${inv.invoice_number}.pdf` }).click();
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = `FACT-${inv.invoice_number}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       URL.revokeObjectURL(href);
-    } catch (e) { notify(e.message, true); }
+    } catch (e) { 
+      notify(e.message, true); 
+    }
   };
 
-  // Descarga individual XML
+  // Descarga XML
   const handleDownloadXml = async (inv) => {
     try { 
-      const blob = await downloadBlob(`/api/einvoicing/invoices/${inv.id}/xml`, `${inv.invoice_number}.xml`);
+      const blob = await downloadBlob(`/einvoicing/invoices/${inv.id}/xml`, `FACT-${inv.invoice_number}.xml`);
       const href = URL.createObjectURL(blob);
-      Object.assign(document.createElement('a'), { href, download: `${inv.invoice_number}.xml` }).click();
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = `FACT-${inv.invoice_number}.xml`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       URL.revokeObjectURL(href);
-    } catch (e) { notify(e.message, true); }
+    } catch (e) { 
+      notify(e.message, true); 
+    }
   };
 
-  // ── Función para filtrar por fechas (CORREGIDA) ──
-  const filterByDate = (invoicesList, startDate, endDate) => {
+  const filterByDate = (invoicesList, start, end) => {
     return invoicesList.filter(inv => {
       if (!inv.emission_date) return false;
-      return dateUtils.isDateInRange(inv.emission_date, startDate, endDate);
+      return dateUtils.isDateInRange(inv.emission_date, start, end);
     });
   };
 
-  // ── Función principal de descarga ──
   const handleDownload = async () => {
     setDownloadingAll(true);
     setError('');
     setSuccess('');
 
     try {
-      // Aplicar filtros
       let targetInvoices = invoices;
       let isFiltered = false;
 
-      // Filtro por fechas
-      if (dateStart || dateEnd) {
-        targetInvoices = filterByDate(invoices, dateStart, dateEnd);
+      // Si hay fechas definidas, filtrar por fecha
+      if (startDate || endDate) {
+        targetInvoices = filterByDate(invoices, startDate, endDate);
         isFiltered = true;
       }
 
-      // Filtro por búsqueda
       if (search) {
         const q = search.toLowerCase();
         targetInvoices = targetInvoices.filter(inv => {
@@ -330,7 +401,11 @@ export default function EinvoicingInvoicesPage() {
         isFiltered = true;
       }
 
-      // Solo facturas autorizadas con XML
+      if (statusFilter !== 'all') {
+        targetInvoices = targetInvoices.filter(inv => inv.status === statusFilter);
+        isFiltered = true;
+      }
+
       targetInvoices = targetInvoices.filter(inv => 
         inv.status === 'autorizada' && inv.has_signed_xml
       );
@@ -344,7 +419,6 @@ export default function EinvoicingInvoicesPage() {
         return;
       }
 
-      // Crear el ZIP
       const zip = new JSZip();
       const total = targetInvoices.length;
       let completed = 0;
@@ -357,8 +431,8 @@ export default function EinvoicingInvoicesPage() {
         });
 
         try {
-          const xmlBlob = await downloadBlob(`/api/einvoicing/invoices/${inv.id}/xml`, `${inv.invoice_number}.xml`);
-          const pdfBlob = await downloadBlob(`/api/einvoicing/invoices/${inv.id}/pdf`, `RIDE-${inv.invoice_number}.pdf`);
+          const xmlBlob = await downloadBlob(`/einvoicing/invoices/${inv.id}/xml`, `${inv.invoice_number}.xml`);
+          const pdfBlob = await downloadBlob(`/einvoicing/invoices/${inv.id}/pdf`, `RIDE-${inv.invoice_number}.pdf`);
 
           const invoiceFolder = zip.folder(`Factura_${inv.invoice_number}`);
           invoiceFolder.file(`${inv.invoice_number}.xml`, xmlBlob);
@@ -376,7 +450,6 @@ export default function EinvoicingInvoicesPage() {
         current: null
       });
 
-      // Generar y descargar el ZIP
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
@@ -385,8 +458,8 @@ export default function EinvoicingInvoicesPage() {
       let fileName = `facturas_${new Date().toISOString().slice(0,10)}`;
       if (isFiltered) {
         fileName += `_filtradas`;
-        if (dateStart) fileName += `_desde_${dateStart}`;
-        if (dateEnd) fileName += `_hasta_${dateEnd}`;
+        if (startDate) fileName += `_desde_${startDate}`;
+        if (endDate) fileName += `_hasta_${endDate}`;
       }
       fileName += '.zip';
       
@@ -409,7 +482,8 @@ export default function EinvoicingInvoicesPage() {
   const handleResend = async (inv) => {
     setError(''); setSuccess(''); setActionId(inv.id);
     try {
-      const res  = await fetchWithAuth(`/api/einvoicing/invoices/${inv.id}/resend`, { method: 'POST' });
+      // ✅ SIN /api
+      const res = await fetchWithAuth(`/einvoicing/invoices/${inv.id}/resend`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al reenviar');
       setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, ...data } : i));
@@ -421,152 +495,320 @@ export default function EinvoicingInvoicesPage() {
     }
   };
 
-  // ── Filtro combinado (CORREGIDO) ──
+  // ── Función para reenviar todas las pendientes ──────────────────────────
+  const handleResendAllPending = async () => {
+    const pendingInvoices = filtered.filter(inv => inv.status === 'pendiente');
+    if (pendingInvoices.length === 0) {
+      notify('No hay facturas pendientes en el filtro actual', true);
+      return;
+    }
+
+    if (!window.confirm(`¿Reenviar ${pendingInvoices.length} factura(s) pendiente(s) al SRI?`)) {
+      return;
+    }
+
+    setActionId('all');
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const inv of pendingInvoices) {
+      try {
+        const res = await fetchWithAuth(`/einvoicing/invoices/${inv.id}/resend`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al reenviar');
+        setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, ...data } : i));
+        successCount++;
+      } catch (e) {
+        console.error(`Error reenviando factura ${inv.invoice_number}:`, e);
+        errorCount++;
+      }
+    }
+
+    setActionId(null);
+    notify(`Reenviadas: ${successCount} exitosas, ${errorCount} fallidas`);
+  };
+
+  // ── Filtrado combinado ──────────────────────────────────────────────────
   const filtered = invoices.filter(inv => {
-    // Filtro de búsqueda
     const q = search.toLowerCase();
     const matchSearch = !q ||
       (inv.customer_name || '').toLowerCase().includes(q) ||
       (inv.customer_ruc || '').toLowerCase().includes(q);
-    
-    // Filtro de fechas con zona horaria Ecuador
-    const matchDate = dateUtils.isDateInRange(inv.emission_date, dateStart, dateEnd);
-    
-    return matchSearch && matchDate;
+    const matchDate = dateUtils.isDateInRange(inv.emission_date, startDate, endDate);
+    const matchStatus = statusFilter === 'all' || inv.status === statusFilter;
+    return matchSearch && matchDate && matchStatus;
   });
 
-  const counts = Object.fromEntries(
-    Object.keys(STATUS_STYLE).map(k => [k, invoices.filter(i => i.status === k).length])
-  );
 
-  // Contar facturas disponibles para descarga
-  const hasFilters = search !== '' || dateStart !== '' || dateEnd !== '';
+  const hasFilters = search !== '' || dateRange !== 'all' || statusFilter !== 'all';
   
-  // Facturas autorizadas con XML (totales)
-  const allAuthorizedWithXml = invoices.filter(inv => 
+  const downloadCount = filtered.filter(inv => 
     inv.status === 'autorizada' && inv.has_signed_xml
   ).length;
 
-  // Facturas autorizadas con XML (filtradas)
-  const filteredAuthorizedWithXml = filtered.filter(inv => 
-    inv.status === 'autorizada' && inv.has_signed_xml
-  ).length;
+  const pendingCount = filtered.filter(inv => inv.status === 'pendiente').length;
 
-  // Determinar cuántas facturas se descargarán
-  const downloadCount = hasFilters ? filteredAuthorizedWithXml : allAuthorizedWithXml;
-
-  // Limpiar todos los filtros
   const clearAllFilters = () => {
     setSearch('');
-    setDateStart('');
-    setDateEnd('');
+    setDateRange('all');
+    setStatusFilter('all');
   };
 
-  // Formatear fecha para mostrar en el placeholder
-  const today = dateUtils.getCurrentEcuadorDate().toISOString().split('T')[0];
+  // ── Columnas para la tabla ──────────────────────────────────────────────
+  const columns = [
+    {
+      accessor: 'invoice_number',
+      label: 'N° Factura',
+      render: (item) => (
+        <span>{item.invoice_number}</span>
+      )
+    },
+    {
+      accessor: 'emission_date',
+      label: 'Fecha',
+      render: (item) => {
+        const date = dateUtils.formatDisplayDate(item.emission_date);
+        return <span style={{ color: 'var(--text-muted)' }}>{date}</span>;
+      }
+    },
+    {
+      accessor: 'customer',
+      label: 'Cliente',
+      render: (item) => (
+        <div className="einv-customer-info">
+          <div className="einv-customer-name">{item.customer_name}</div>
+          {item.customer_ruc && <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>{item.customer_ruc}</div>}
+          {item.customer_phone && (
+            <div className="einv-customer-phone">
+              <MessageCircle size={9} /> {item.customer_phone}
+            </div>
+          )}
+        </div>
+      )
+    },
+    {
+      accessor: 'subtotal',
+      label: 'Subtotal',
+      align: 'right',
+      render: (item) => (
+        <span>${parseFloat(item.subtotal || 0).toFixed(2)}</span>
+      )
+    },
+    {
+      accessor: 'iva_amount',
+      label: 'IVA',
+      align: 'right',
+      render: (item) => (
+        <span>${parseFloat(item.iva_amount || 0).toFixed(2)}</span>
+      )
+    },
+    {
+      accessor: 'total',
+      label: 'Total',
+      align: 'right',
+      render: (item) => (
+        <span>
+          ${parseFloat(item.total || 0).toFixed(2)}
+        </span>
+      )
+    },
+    {
+      accessor: 'status',
+      label: 'Estado',
+      align: 'center',
+      render: (item) => {
+        const st = STATUS_STYLE[item.status] || STATUS_STYLE.pendiente;
+        return (
+          <div>
+            <span className={`einv-status-badge ${item.status}`}>
+              {st.label}
+            </span>
+          </div>
+        );
+      }
+    },
+    {
+      accessor: 'actions',
+      label: 'Acciones',
+      align: 'center',
+      render: (item) => {
+        const isAct = actionId === item.id || actionId === 'all';
+        return (
+          <ButtonGroup>
+            {item.has_signed_xml && (
+              <IconTextButton
+                variant="info"
+                size="sm"
+                icon={<Download size={11} />}
+                onClick={() => handleDownloadPdf(item)}
+                tooltip="Descargar RIDE (PDF)"
+              >
+                PDF
+              </IconTextButton>
+            )}
+            {item.has_signed_xml && (
+              <IconTextButton
+                variant="blue"
+                size="sm"
+                icon={<Download size={11} />}
+                onClick={() => handleDownloadXml(item)}
+                tooltip="Descargar XML firmado"
+              >
+                XML
+              </IconTextButton>
+            )}
+            {(item.status === 'pendiente' || item.status === 'rechazada') && (
+              <IconTextButton
+                variant="success"
+                size="sm"
+                icon={<Send size={11} />}
+                onClick={() => handleResend(item)}
+                disabled={isAct}
+                loading={isAct && actionId === item.id}
+                tooltip="Reenviar al SRI"
+              >
+                SRI
+              </IconTextButton>
+            )}
+            {item.status === 'autorizada' && (
+              <IconTextButton
+                variant="success"
+                size="sm"
+                icon={<Mail size={11} />}
+                onClick={() => setEmailMdl(item)}
+                tooltip="Reenviar comprobante"
+              >
+                Email
+              </IconTextButton>
+            )}
+          </ButtonGroup>
+        );
+      }
+    }
+  ];
 
+  // ── Toolbar ─────────────────────────────────────────────────────────────
+  const toolbar = (
+    <div className="users-toolbar">
+      <div style={{ minWidth: '130px', maxWidth: '150px'  }}>
+        <CustomCombobox
+          options={statusOptions}
+          value={statusFilter}
+          onChange={setStatusFilter}
+          placeholder="Filtrar por estado"
+          size="sm"
+          filterable={false}
+          style={{ minWidth: '160px' }}
+        />
+      </div>
+      <div style={{ minWidth: '130px', maxWidth: '150px'  }}>
+        <CustomCombobox
+          options={dateOptions}
+          value={dateRange}
+          onChange={setDateRange}
+          placeholder="Seleccionar período"
+          size="sm"
+          filterable={false}
+          style={{ minWidth: '150px' }}
+        />
+
+        {dateRange === 'custom' && (
+          <div className="einv-date-range" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <input 
+              type="date" 
+              className="einv-date-input"
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)}
+              style={{ width: '130px' }}
+            />
+            <span className="einv-date-separator" style={{ color: 'var(--text-muted)' }}>→</span>
+            <input 
+              type="date" 
+              className="einv-date-input"
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)}
+              placeholder="Opcional"
+              style={{ width: '130px' }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Botones de acción en el toolbar */}
+      <ButtonGroup style={{ flexShrink: 0 }}>
+        {pendingCount > 0 && (
+          <IconTextButton
+            variant="warning"
+            size="md"
+            icon={<Send size={14} />}
+            onClick={handleResendAllPending}
+            disabled={actionId === 'all'}
+            loading={actionId === 'all'}
+          >
+            Reenviar ({pendingCount})
+          </IconTextButton>
+        )}
+
+        {downloadCount > 0 && (
+          <IconTextButton
+            variant={hasFilters ? "purple" : "success"}
+            size="md"
+            icon={hasFilters ? <Folder size={14} /> : <MdOutlineFileDownload size={14} />}
+            onClick={handleDownload}
+            disabled={downloadingAll}
+            loading={downloadingAll}
+          >
+            {downloadingAll 
+              ? 'Preparando...' 
+              : hasFilters 
+                ? `Descargar (${downloadCount})` 
+                : `Descargar (${downloadCount})`
+            }
+          </IconTextButton>
+        )}
+
+        {downloadCount === 0 && !loading && (
+          <span className="einv-no-download-msg" style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '0 8px' }}>
+            {hasFilters ? 'Sin facturas' : 'Sin facturas para descargar'}
+          </span>
+        )}
+
+        {hasFilters && (
+          <IconTextButton
+            variant="danger"
+            size="md"
+            icon={<X size={14} />}
+            onClick={clearAllFilters}
+          >
+            Limpiar
+          </IconTextButton>
+        )}
+      </ButtonGroup>
+    </div>
+  );
+
+  // ── Botón de refrescar (solo en header) ────────────────────────────────
+  const refreshButton = (
+    <button
+      onClick={load}
+      className="dashboard-refresh-btn-header"
+      disabled={loading}
+      title="Actualizar datos"
+    >
+      <RefreshCw size={18} className={loading ? 'spinning' : ''} />
+      <span>{loading ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
+
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // ── Render ──────────────────────────────────────────────────────────────
   return (
     <PageTemplate
       title="Comprobantes Electrónicos"
       subtitle="Comprobantes emitidos al SRI"
       theme="business"
-      headerAction={
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* ÚNICO BOTÓN DE DESCARGA */}
-          {downloadCount > 0 && (
-            <button
-              onClick={handleDownload}
-              disabled={downloadingAll}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '8px 16px',
-                background: downloadingAll ? '#6b7280' : (hasFilters ? '#7c3aed' : '#059669'),
-                color: 'white',
-                border: 'none',
-                borderRadius: 6,
-                cursor: downloadingAll ? 'default' : 'pointer',
-                fontWeight: 600,
-                fontSize: 13,
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {hasFilters ? (
-                <Folder size={14} />
-              ) : (
-                <MdOutlineFileDownload size={14} />
-              )}
-              {downloadingAll 
-                ? 'Preparando...' 
-                : hasFilters 
-                  ? `Descargar filtradas (${downloadCount})` 
-                  : `Descargar todas (${downloadCount})`
-              }
-            </button>
-          )}
-
-          {downloadCount === 0 && !loading && (
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 6, 
-              padding: '8px 14px', 
-              background: '#f1f5f9', 
-              borderRadius: 6,
-              color: '#64748b',
-              fontSize: 13,
-              fontWeight: 500
-            }}>
-              {hasFilters ? 'Sin facturas en el filtro' : 'Sin facturas para descargar'}
-            </div>
-          )}
-
-          {/* Botón limpiar filtros */}
-          {hasFilters && (
-            <button
-              onClick={clearAllFilters}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '8px 14px',
-                background: '#fef2f2',
-                color: '#b91c1c',
-                border: '1px solid #fecaca',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: 13
-              }}
-            >
-              <X size={14} /> Limpiar filtros
-            </button>
-          )}
-
-          {/* Botón actualizar */}
-          <button
-            onClick={load}
-            disabled={loading}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '8px 14px',
-              background: 'var(--color-primary)',
-              color: 'white',
-              border: 'none',
-              borderRadius: 6,
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: 13
-            }}
-          >
-            <RefreshCw size={14} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-            Actualizar
-          </button>
-        </div>
-      }
+      headerAction={refreshButton}
     >
       {/* Modal Email */}
       {emailMdl && (
@@ -588,229 +830,42 @@ export default function EinvoicingInvoicesPage() {
 
       {/* Mensajes */}
       {error && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 13 }}>
+        <div className="einv-message error">
           <AlertCircle size={15} /> {error}
         </div>
       )}
       {success && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 13 }}>
+        <div className="einv-message success">
           <CheckCircle size={15} /> {success}
         </div>
       )}
-
-      {/* Contadores */}
-      {!loading && invoices.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: '#64748b' }}>
-            {invoices.length} comprobante{invoices.length !== 1 ? 's' : ''}
-          </span>
-          {Object.entries(STATUS_STYLE).map(([k, s]) => counts[k] > 0 && (
-            <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: s.color, background: s.bg, border: `1px solid ${s.border}`, borderRadius: 20, padding: '3px 10px' }}>
-              <s.Icon size={11} /> {s.label}: {counts[k]}
-            </span>
-          ))}
-          {allAuthorizedWithXml > 0 && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: '#059669', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, padding: '3px 10px' }}>
-              <MdOutlineFileDownload size={11} /> Con XML: {allAuthorizedWithXml}
-            </span>
-          )}
-          {hasFilters && filteredAuthorizedWithXml > 0 && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #c4b5fd', borderRadius: 20, padding: '3px 10px' }}>
-              <Folder size={11} /> Filtradas: {filteredAuthorizedWithXml}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Barra de búsqueda y filtros de fecha */}
-      <div className="einv-filter-bar" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
-        <div className="einv-search-box" style={{ flex: 1, minWidth: 200 }}>
-          <Search size={14} />
-          <input
-            type="text"
-            placeholder="Buscar por cédula, RUC o nombre..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          {search && (
-            <button className="einv-clear-btn" onClick={() => setSearch('')} title="Limpiar">
-              <X size={13} />
-            </button>
-          )}
-        </div>
-
-        <div className="einv-date-filter" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <label style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Desde:</label>
-          <input
-            type="date"
-            value={dateStart}
-            onChange={e => setDateStart(e.target.value)}
-            max={dateEnd || undefined}
-            style={{
-              padding: '6px 10px',
-              border: '1.5px solid var(--color-border,#e2e8f0)',
-              borderRadius: 6,
-              fontSize: 12,
-              background: '#fff',
-              color: '#1e293b',
-              outline: 'none',
-              maxWidth: 150
-            }}
-          />
-          {dateStart && (
-            <button 
-              className="einv-clear-btn" 
-              onClick={() => setDateStart('')} 
-              title="Limpiar fecha inicio"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px 4px' }}
-            >
-              <X size={13} />
-            </button>
-          )}
-        </div>
-
-        <div className="einv-date-filter" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <label style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Hasta:</label>
-          <input
-            type="date"
-            value={dateEnd}
-            onChange={e => setDateEnd(e.target.value)}
-            min={dateStart || undefined}
-            style={{
-              padding: '6px 10px',
-              border: '1.5px solid var(--color-border,#e2e8f0)',
-              borderRadius: 6,
-              fontSize: 12,
-              background: '#fff',
-              color: '#1e293b',
-              outline: 'none',
-              maxWidth: 150
-            }}
-          />
-          {dateEnd && (
-            <button 
-              className="einv-clear-btn" 
-              onClick={() => setDateEnd('')} 
-              title="Limpiar fecha fin"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px 4px' }}
-            >
-              <X size={13} />
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Tabla */}
-      <div className="einv-table-container" style={{ overflowX: 'auto', background: '#fff', border: '1.5px solid var(--color-border,#e2e8f0)', borderRadius: 12 }}>
-        <table className="einv-table" style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#f8fafc', borderBottom: '2px solid var(--color-border,#e2e8f0)' }}>
-              <th style={th()}>N° Factura</th>
-              <th style={th()}>Fecha</th>
-              <th style={th()}>Cliente</th>
-              <th style={th('right')}>Subtotal</th>
-              <th style={th('right')}>IVA</th>
-              <th style={th('right')}>Total</th>
-              <th style={th('center')}>Estado</th>
-              <th style={th('center')}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr><td colSpan={8} style={{ textAlign: 'center', color: '#94a3b8', padding: 40, fontSize: 13 }}>Cargando...</td></tr>
-            )}
-            {!loading && invoices.length === 0 && !error && (
-              <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: 48 }}>
-                  <FileText size={36} style={{ color: '#cbd5e1', display: 'block', margin: '0 auto 10px' }} />
-                  <div style={{ color: '#94a3b8', fontSize: 13 }}>Sin facturas electrónicas emitidas</div>
-                  <div style={{ color: '#cbd5e1', fontSize: 12, marginTop: 4 }}>Las facturas emitidas desde el cobro o desde Prueba aparecerán aquí</div>
-                </td>
-              </tr>
-            )}
-            {!loading && invoices.length > 0 && filtered.length === 0 && (
-              <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: 36, color: '#94a3b8', fontSize: 13 }}>
-                  Sin resultados para esa búsqueda
-                </td>
-              </tr>
-            )}
-            {!loading && filtered.map(inv => {
-              const st    = STATUS_STYLE[inv.status] || STATUS_STYLE.pendiente;
-              const isAct = actionId === inv.id;
-              const date  = dateUtils.formatDisplayDate(inv.emission_date);
-              return (
-                <tr key={inv.id} className="einv-tbody-tr" style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td className="einv-td" data-label="N° Factura" style={{ padding: '11px 10px', fontWeight: 700, color: '#6842fe', whiteSpace: 'nowrap' }}>{inv.invoice_number}</td>
-                  <td className="einv-td" data-label="Fecha" style={{ padding: '11px 10px', whiteSpace: 'nowrap', color: '#64748b' }}>{date}</td>
-                  <td className="einv-td" data-label="Cliente" style={{ padding: '11px 10px' }}>
-                    <div style={{ fontWeight: 600 }}>{inv.customer_name}</div>
-                    {inv.customer_ruc && <div style={{ fontSize: 11, color: '#94a3b8' }}>{inv.customer_ruc}</div>}
-                    {inv.customer_phone && (
-                      <div style={{ fontSize: 11, color: '#25d366', display: 'flex', alignItems: 'center', gap: 3, marginTop: 1 }}>
-                        <MessageCircle size={9} /> {inv.customer_phone}
-                      </div>
-                    )}
-                  </td>
-                  <td className="einv-td einv-td-right" data-label="Subtotal" style={{ padding: '11px 10px', textAlign: 'right' }}>${parseFloat(inv.subtotal || 0).toFixed(2)}</td>
-                  <td className="einv-td einv-td-right" data-label="IVA" style={{ padding: '11px 10px', textAlign: 'right' }}>${parseFloat(inv.iva_amount || 0).toFixed(2)}</td>
-                  <td className="einv-td einv-td-right" data-label="Total" style={{ padding: '11px 10px', textAlign: 'right', fontWeight: 800, color: '#059669' }}>${parseFloat(inv.total || 0).toFixed(2)}</td>
-                  <td className="einv-td" data-label="Estado" style={{ padding: '11px 10px', textAlign: 'center' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: st.color, background: st.bg, border: `1px solid ${st.border}`, borderRadius: 20, padding: '3px 9px', fontWeight: 700, fontSize: 11 }}>
-                      <st.Icon size={11} /> {st.label}
-                    </span>
-                    {inv.auth_number && (
-                      <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 3, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: '3px auto 0' }} title={inv.auth_number}>
-                        {inv.auth_number}
-                      </div>
-                    )}
-                    {inv.sri_message && inv.status !== 'autorizada' && (
-                      <div style={{ fontSize: 10, color: st.color, marginTop: 3, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={inv.sri_message}>
-                        {inv.sri_message}
-                      </div>
-                    )}
-                  </td>
-                  <td className="einv-td einv-td-actions" data-label="Acciones" style={{ padding: '11px 10px' }}>
-                    <div style={{ display: 'flex', gap: 5, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
-                      {inv.has_signed_xml && (
-                        <button onClick={() => handleDownloadPdf(inv)} title="Descargar RIDE (PDF)" style={btnStyle('#fff7ed', '#b45309', '#fcd34d')}>
-                          <Download size={11} /> PDF
-                        </button>
-                      )}
-                      {inv.has_signed_xml && (
-                        <button onClick={() => handleDownloadXml(inv)} title="Descargar XML firmado" style={btnStyle('#fff', '#6842fe', '#dad2fa')}>
-                          <Download size={11} /> XML
-                        </button>
-                      )}
-                      {(inv.status === 'pendiente' || inv.status === 'rechazada') && (
-                        <button onClick={() => handleResend(inv)} disabled={isAct} title="Reenviar al SRI" style={btnStyle(isAct ? '#f1f5f9' : '#f0fdf4', '#15803d', '#bbf7d0', isAct)}>
-                          <Send size={11} /> {isAct ? '...' : 'SRI'}
-                        </button>
-                      )}
-                      {inv.status === 'autorizada' && (
-                        <button onClick={() => setEmailMdl(inv)} title="Enviar RIDE por correo" style={btnStyle('#eef2ff', '#6842fe', '#c7d2fe')}>
-                          <Mail size={11} /> Email
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+      <Table
+        data={filtered}
+        columns={columns}
+        keyField="id"
+        title=""
+        toolbar={toolbar}
+        searchable={true}
+        searchPlaceholder='Buscar por No. factura, nombre...'
+        searchFields={['invoice_number', 'customer_name', 'customer_ruc']}
+        pagination={true}
+        itemsPerPage={itemsPerPage}
+        itemsPerPageOptions={[10, 15]}
+        onItemsPerPageChange={(newPerPage) => setItemsPerPage(newPerPage)}
+        loading={loading}
+        emptyMessage={
+          !loading && invoices.length === 0 
+            ? 'Sin facturas electrónicas emitidas' 
+            : filtered.length === 0 && invoices.length > 0
+              ? 'Sin resultados para esa búsqueda'
+              : 'Cargando...'
+        }
+        striped
+        hoverable
+        bordered={false}
+        className="einv-table"
+      />
     </PageTemplate>
   );
-}
-
-function th(align = 'left') {
-  return { padding: '10px 10px', textAlign: align, fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap' };
-}
-function btnStyle(bg, color, border, disabled = false) {
-  return { padding: '4px 8px', background: bg, color, border: `1px solid ${border}`, borderRadius: 4, cursor: disabled ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600, fontSize: 11, whiteSpace: 'nowrap', opacity: disabled ? 0.6 : 1 };
 }

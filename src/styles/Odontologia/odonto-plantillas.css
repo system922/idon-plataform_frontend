@@ -1,0 +1,181 @@
+/* ============================================================
+   ODONTO-PLANTILLAS.CSS - Selector de plantillas (solo recetas)
+   ============================================================ */
+.odonto-plantilla-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.odonto-plantilla-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.odonto-plantilla-grid::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.odonto-plantilla-grid::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.odonto-plantilla-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.odonto-plantilla-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-bg);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.odonto-plantilla-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.odonto-plantilla-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.odonto-plantilla-title h4 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.odonto-plantilla-desc {
+  margin: 4px 0 8px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.odonto-plantilla-meds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 4px 0;
+}
+
+.odonto-plantilla-med-tag {
+  background: #F7FAFC;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.odonto-plantilla-duracion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.odonto-plantilla-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
+  color: #92400E;
+  font-size: 12px;
+  background: #FEF3C7;
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
+/* Plantilla info en modal de creación */
+.odonto-plantilla-preview {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.odonto-plantilla-preview h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.odonto-preview-meds {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.odonto-preview-med {
+  display: flex;
+  gap: 12px;
+  padding: 4px 8px;
+  background: white;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.odonto-preview-med span:first-child {
+  font-weight: 500;
+  flex: 1;
+}
+
+.odonto-preview-med span:last-child {
+  color: var(--text-muted);
+}
+
+.odonto-preview-instructions {
+  font-size: 13px;
+}
+
+.odonto-preview-instructions strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.odonto-preview-instructions p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* Animación de ondas de sonido */
+@keyframes ondasSonido {
+  0%, 100% {
+    transform: scaleY(0.3);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* Animación de pulso para el badge de llamada */
+@keyframes pulsoLlamada {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+}

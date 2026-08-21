@@ -1,13 +1,18 @@
-﻿.layout {
+﻿/* ============================================================
+   LAYOUT.CSS - Estilos del layout principal
+   Usa variables de general-variables.css
+   ============================================================ */
+
+.layout {
   display: flex;
   flex-direction: row;
   width: 100%;
   height: 100vh;
-  background: linear-gradient(to bottom right, #06281f 0%, #0b3d2e 50%, #041814 100%);
+  background: var(--bg-body, #f0f4f8);
   position: static;
-  color: #e5f7ef;
+  color: var(--text-primary, #1A202C);
   overflow: hidden;
-  --sidebar-width: 280px;      /* 🆕 SidebarModern: 280px */
+  --sidebar-width: 280px;
   --sidebar-width-collapsed: 80px;
   --sidebar-current-width: var(--sidebar-width);
 }
@@ -25,7 +30,7 @@
   padding: 0;
   overflow: hidden;
   margin-left: var(--sidebar-current-width);
-  transition: margin-left 0.3s ease;
+  transition: margin-left var(--transition, 0.3s ease);
 }
 
 .layout-container {
@@ -35,36 +40,37 @@
   margin: 0;
   background: transparent;
   border-radius: 0;
-  padding: 16px 12px;
+  padding: var(--space-4, 16px) var(--space-3, 12px);
   box-shadow: none;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-/* Footer Styling */
+/* ─── FOOTER ─── */
 .footer {
   flex-shrink: 0;
   width: 100%;
   height: auto;
   min-height: 60px;
-  background: rgba(4, 24, 20, 0.8);
-  border-top: 1px solid rgba(45, 85, 74, 0.5);
+  background: var(--bg-card, #ffffff);
+  border-top: 1px solid var(--border-color, #E2E8F0);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px 12px;
+  padding: var(--space-4, 16px) var(--space-3, 12px);
   margin-top: auto;
-  font-size: 0.875rem;
-  color: #7fccb9;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--text-muted, #718096);
   text-align: center;
 }
 
+/* ─── RESPONSIVE ─── */
 @media (max-width: 768px) {
   .layout-main {
     margin-left: 0 !important;
   }
   .layout-container {
-    padding: 10px 8px;
+    padding: var(--space-2, 10px) var(--space-2, 8px);
   }
 }

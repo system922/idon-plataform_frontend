@@ -8,15 +8,27 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiMenu } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { useSession } from '../../context/SessionContext'; 
 import SidebarModern from '../../components/SidebarModern';
 import Footer from '../../components/common/Footer';
 import { ADMIN_MENU } from '../config/adminMenu';
 import '../../styles/AdminLayout.css';
 
-export default function AdminLayout({ user, onLogout, children }) {
+export default function AdminLayout({ children }) { 
+  const { user, logout } = useSession(); 
+  const navigate = useNavigate();
+  
   const [collapsed,   setCollapsed]   = useState(false);
   const [mobileOpen,  setMobileOpen]  = useState(false);
   const [isMobile,    setIsMobile]    = useState(false);
+
+  // Redirigir si no es admin
+  useEffect(() => {
+    if (user && user.userType !== 'admin_idon') {
+      navigate('/app/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
@@ -46,6 +58,16 @@ export default function AdminLayout({ user, onLogout, children }) {
   }, []);
 
   const closeMobile = () => setMobileOpen(false);
+
+  // Manejar logout
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
 
   return (
     <div className="admin-layout">
@@ -77,7 +99,7 @@ export default function AdminLayout({ user, onLogout, children }) {
         <SidebarModern
           user={user}
           menu={ADMIN_MENU}
-          onLogout={onLogout}
+          onLogout={handleLogout}
           collapsed={collapsed}
           setCollapsed={setCollapsed}
           onMobileClose={closeMobile}

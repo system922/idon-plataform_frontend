@@ -5,7 +5,7 @@
 .order-summary {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-secondary);
 }
 
 .summary-row {
@@ -15,7 +15,7 @@
   padding: 0;
   line-height: 1.7;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text-primary);
 }
 
 .summary-row.total {
@@ -24,7 +24,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 13px;
   font-weight: 800;
-  color: #10b981;
+  color: var(--text-primary);
 }
 
 .summary-row.total span:last-child {
@@ -65,7 +65,7 @@
 .validation-message.warning {
   background: rgba(245, 158, 11, 0.15);
   border: 1px solid rgba(245, 158, 11, 0.3);
-  color: #fbbf24;
+  color: var(--warning);
 }
 
 .validation-message.success {

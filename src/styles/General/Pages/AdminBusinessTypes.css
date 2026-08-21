@@ -1,0 +1,173 @@
+/* ============================================
+   BUSINESS TYPES - ESTILOS ESPECÍFICOS
+   ============================================ */
+
+/* ─── Toolbar ───────────────────────────────────────────────────────────── */
+.business-types-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.business-types-stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.business-types-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.business-types-stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.business-types-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* ─── Tabla - Nombre ───────────────────────────────────────────────────── */
+.business-type-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.business-type-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 140, 66, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff8c42;
+  flex-shrink: 0;
+}
+
+.business-type-name strong {
+  font-size: 13px;
+}
+
+/* ─── Tabla - Código ───────────────────────────────────────────────────── */
+.business-type-code {
+  font-size: 11px;
+  background: rgba(255, 140, 66, 0.1);
+  color: #ff8c42;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+/* ─── Tabla - Descripción ──────────────────────────────────────────────── */
+.business-type-description {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 300px;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── MODAL ─────────────────────────────────────────────────────────────── */
+.business-types-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.business-types-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.business-types-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.business-types-form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.business-types-form-group label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.business-types-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+
+.business-types-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .business-types-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .business-types-stats {
+    justify-content: space-around;
+  }
+
+  .business-types-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .business-type-description {
+    max-width: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .business-types-stats {
+    gap: 12px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .business-types-stat-value {
+    font-size: 16px;
+  }
+
+  .business-types-stat-label {
+    font-size: 10px;
+  }
+
+  .business-type-description {
+    max-width: 80px;
+    font-size: 11px;
+  }
+}

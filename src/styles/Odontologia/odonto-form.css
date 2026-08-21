@@ -1,0 +1,359 @@
+/* ============================================================
+   ODONTO-FORM.CSS - Formularios
+   ============================================================ */
+.odonto-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.odonto-form-group label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.odonto-form-group input,
+.odonto-form-group select,
+.odonto-form-group textarea {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  transition: var(--transition);
+  box-sizing: border-box;
+}
+
+.odonto-form-group input:focus,
+.odonto-form-group select:focus,
+.odonto-form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.odonto-form-group input::placeholder,
+.odonto-form-group textarea::placeholder {
+  color: var(--text-dim);
+}
+
+.odonto-form-group input.field-found {
+  border-color: var(--primary);
+  background: var(--primary-bg);
+}
+
+.odonto-form-group select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+.odonto-form-help {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* GRIDS */
+.odonto-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.odonto-form-row-three {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.7fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.odonto-form-row-custom {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.odonto-form-row-address {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.odonto-form-row-allergies {
+  display: grid;
+  grid-template-columns: 0.7fr 0.5fr 2fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.odonto-form-row-hc {
+  display: grid;
+  grid-template-columns: 2fr 0.7fr;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+/* Formulario compacto (cédula + foto) */
+.odonto-form-row-compact {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  background: transparent;
+  margin-bottom: 16px;
+}
+
+/* CÉDULA */
+.odonto-cedula-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  transition: var(--transition);
+  flex: 1;
+}
+
+.odonto-cedula-section:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.odonto-cedula-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.odonto-cedula-label svg {
+  color: var(--primary);
+  font-size: 12px;
+}
+
+.odonto-cedula-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.odonto-cedula-wrapper .odonto-cedula-icon {
+  position: absolute;
+  left: 6px;
+  color: var(--text-dim);
+  font-size: 12px;
+  transition: var(--transition);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.odonto-cedula-wrapper:focus-within .odonto-cedula-icon {
+  color: var(--primary);
+}
+
+.odonto-cedula-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 5px 45px 5px 25px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.odonto-cedula-input:focus {
+  outline: none;
+}
+
+.odonto-cedula-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.odonto-cedula-counter {
+  position: absolute;
+  right: 26px;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-dim);
+  transition: var(--transition);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.odonto-cedula-counter.complete {
+  color: var(--primary);
+}
+
+.odonto-cedula-spinner {
+  position: absolute;
+  right: 6px;
+  color: var(--warning);
+  animation: odonto-spin 0.8s linear infinite;
+  z-index: 2;
+  font-size: 14px;
+}
+
+.odonto-cedula-success {
+  position: absolute;
+  right: 6px;
+  color: var(--primary);
+  z-index: 2;
+  font-size: 14px;
+}
+
+.odonto-cedula-error {
+  position: absolute;
+  right: 6px;
+  color: var(--danger);
+  z-index: 2;
+  font-size: 14px;
+}
+
+.odonto-cedula-wrapper.success {
+  border-color: var(--primary);
+  background: var(--primary-bg);
+}
+
+.odonto-cedula-wrapper.error {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.odonto-cedula-wrapper.searching {
+  border-color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.odonto-cedula-message {
+  margin-top: 4px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  animation: odonto-slideDown 0.3s ease;
+}
+
+.odonto-cedula-message.success {
+  color: var(--primary-dark);
+  background: var(--primary-bg);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.odonto-cedula-message.error {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+/* IMAGEN UPLOAD */
+.odonto-image-upload {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-tertiary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  transition: var(--transition);
+  flex: 1.5;
+}
+
+.odonto-image-upload:hover {
+  border-color: var(--border-hover);
+  background: var(--primary-bg);
+}
+
+.odonto-image-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.odonto-image-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ERROR MESSAGE */
+.odonto-error-message {
+  background: var(--danger-bg);
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+  font-size: 13px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* MEDICAMENTOS ROW */
+.odonto-medication-row {
+  display: grid;
+
+  align-items: center;
+}
+
+.odonto-medication-row input {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.odonto-medication-row input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.odonto-med-select {
+  font-size: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.odonto-med-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.odonto-med-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

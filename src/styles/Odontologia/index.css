@@ -1,0 +1,15 @@
+/* /src/styles/Odontologia/index.css */
+/* @import './odonto-variables.css'; */ 
+@import './odonto-stats.css';
+@import './odonto-table.css';
+@import './odonto-search.css';
+@import './odonto-buttons.css';
+@import './odonto-badges.css';
+@import './odonto-modal.css';
+@import './odonto-modal-detail.css';
+@import './odonto-form.css';
+@import './odonto-avatar.css';
+@import './odonto-camera.css';
+@import './odonto-plantillas.css';
+@import './odonto-responsive.css';
+@import './odonto-agenda.css';

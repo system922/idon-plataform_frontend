@@ -1,0 +1,397 @@
+/* ═══════════════════════════════════════════
+   Retail Dashboard — Responsive Styles
+   ═══════════════════════════════════════════ */
+
+.rd-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-1) 0 var(--space-8);
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ── Stats grid ─────────────────────────────── */
+
+.rd-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.rd-stat-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border-left: 4px solid var(--card-color, #10b981);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1.5px solid var(--border-color);
+  border-left-width: 4px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.rd-stat-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.rd-stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rd-stat-text {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rd-stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rd-stat-value {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-extrabold);
+  margin-top: var(--space-0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+
+.rd-stat-detail {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Charts row ─────────────────────────────── */
+
+.rd-charts {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-5);
+  width: 100%;
+}
+
+.rd-panel {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: var(--space-5) var(--space-6);
+  min-width: 0;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1.5px solid var(--border-color);
+}
+
+.rd-panel-title {
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ── Payment method bars ────────────────────── */
+
+.rd-bar-track {
+  height: 6px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.rd-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-xs);
+  transition: width 0.6s ease;
+}
+
+/* ── Top products ───────────────────────────── */
+
+.rd-products {
+  width: 100%;
+}
+
+.rd-product-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.rd-product-rank {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-extrabold);
+}
+
+.rd-product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.rd-product-name-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-0.5);
+}
+
+.rd-product-name {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.rd-product-total {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.rd-product-qty {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-0.5);
+}
+
+/* ── Empty placeholder ──────────────────────── */
+
+.rd-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ── Spinning animation ─────────────────────── */
+
+@keyframes rd-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rd-spinning {
+  animation: rd-spin 0.8s linear infinite;
+}
+
+/* ═══ RESPONSIVE ════════════════════════════ */
+
+/* Tablet — 2 columnas en stats, charts apilados */
+@media (max-width: 1024px) {
+  .rd-charts {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+}
+
+@media (max-width: 900px) {
+  .rd-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+  }
+}
+
+/* Móvil — 2 columnas compactas en stats */
+@media (max-width: 600px) {
+  .rd-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+
+  .rd-stat-card {
+    padding: var(--space-3) var(--space-3);
+    gap: var(--space-2);
+    border-radius: var(--radius-sm);
+  }
+
+  .rd-stat-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-xs);
+  }
+
+  .rd-stat-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .rd-stat-value {
+    font-size: var(--font-size-xl);
+  }
+
+  .rd-stat-label {
+    font-size: var(--font-size-2xs);
+    letter-spacing: 0.5px;
+  }
+
+  .rd-stat-detail {
+    font-size: var(--font-size-2xs);
+  }
+
+  .rd-panel {
+    padding: var(--space-4) var(--space-3);
+    border-radius: var(--radius-sm);
+  }
+
+  .rd-panel-title {
+    font-size: var(--font-size-base);
+    margin-bottom: var(--space-3);
+  }
+
+  .rd-charts {
+    gap: var(--space-3);
+  }
+
+  .rd-page {
+    gap: var(--space-3);
+  }
+
+  .rd-product-name {
+    font-size: var(--font-size-xs);
+  }
+
+  .rd-product-total {
+    font-size: var(--font-size-xs);
+  }
+
+  .rd-product-rank {
+    width: 24px;
+    height: 24px;
+    font-size: var(--font-size-2xs);
+  }
+
+  .rd-product-row {
+    gap: var(--space-2);
+  }
+}
+
+/* Muy pequeño — stack a 1 columna */
+@media (max-width: 400px) {
+  .rd-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-1.5);
+  }
+
+  .rd-stat-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    border-left-width: 3px;
+  }
+
+  .rd-stat-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .rd-stat-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .rd-stat-value {
+    font-size: var(--font-size-lg);
+  }
+
+  .rd-stat-label {
+    font-size: 8px;
+    letter-spacing: 0.3px;
+  }
+
+  .rd-stat-detail {
+    font-size: 9px;
+  }
+
+  .rd-panel {
+    padding: var(--space-3) var(--space-2);
+  }
+
+  .rd-panel-title {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* ═══ DARK THEME OVERRIDES ════════════════════ */
+
+/* Asegurar que los colores de los métodos de pago se vean bien */
+.rd-stat-card .rd-stat-value[style*="color"] {
+  /* Los colores vienen inline desde el componente */
+}
+
+/* Mejora de contraste para los textos en modo oscuro */
+.rd-stat-detail {
+  color: var(--text-muted);
+}
+
+/* ── Gráfica de Recharts ────────────────────── */
+
+/* Ajustes para el tooltip en modo oscuro */
+.rd-panel .recharts-tooltip-wrapper {
+  outline: none;
+}
+
+.rd-panel .recharts-default-tooltip {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.rd-panel .recharts-tooltip-label {
+  color: var(--text-primary) !important;
+  font-weight: var(--font-weight-bold) !important;
+}
+
+.rd-panel .recharts-tooltip-item {
+  color: var(--text-secondary) !important;
+}
+
+/* Ejes de la gráfica */
+.rd-panel .recharts-cartesian-axis-tick-value {
+  fill: var(--text-muted) !important;
+}
+
+.rd-panel .recharts-cartesian-grid-line {
+  stroke: var(--border-color) !important;
+  stroke-opacity: 0.3 !important;
+}

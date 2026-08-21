@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { useConfirm } from '../../context/ConfirmContext';
 import { Calendar, Clock, Bell, Mail, Plus, Edit2, Trash2, X, Check, AlertCircle, Loader } from 'react-feather';
-import { fetchWithAuth } from '../../config/apiBase';
+import { fetchWithAuth } from '../../config/apiBase_';
 import '../../styles/NotificationsScheduled.css';
 
 export default function NotificationsScheduled() {

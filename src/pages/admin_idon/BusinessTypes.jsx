@@ -1,37 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { useConfirm } from '../../context/ConfirmContext';
-import { useAlert } from '../../components/ConfirmContext';
+import { useConfirm, useAlert } from '../../context/ConfirmContext';
+import Table from '../../components/General/Table';
+import Modal from '../../components/General/Modal';
+import CustomCombobox from '../../components/General/CustomCombobox';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
+import Input from '../../components/General/Input';
 import {
   FiBriefcase, FiPlus, FiEdit2, FiTrash2, FiCheck,
-  FiRefreshCw, FiX,
+  FiRefreshCw, FiAlertCircle,
 } from 'react-icons/fi';
-import { adminApiService } from '../../services/apiService';
-import '../../styles/AdminPages.css';
-
-const inp = {
-  width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px',
-  background: 'var(--admin-bg-primary)', border: '1px solid var(--admin-border-light)',
-  color: 'var(--admin-text-primary)',
-};
-const Lbl = ({ children }) => (
-  <label style={{ display: 'block', marginBottom: 5, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: '#8CB79B' }}>
-    {children}
-  </label>
-);
+import { adminApi } from '../../config/api';
 
 export default function BusinessTypes() {
   const { showConfirm } = useConfirm();
   const alert = useAlert();
-  const [types,   setTypes]   = useState([]);
+  const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
-  const [modal,   setModal]   = useState(null); // null | 'new' | item
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [modal, setModal] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('todos');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
-      const r = await adminApiService.get('/admin/business-types');
+      const r = await adminApi.get('/admin/business-types');
       setTypes(Array.isArray(r) ? r : (r.data || []));
       setError(null);
     } catch (e) {
@@ -39,107 +34,203 @@ export default function BusinessTypes() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
   };
 
-  useEffect(() => { load(); }, []);
-
-  const handleDelete = async (id) => {
-    if (!await showConfirm('¿Eliminar este tipo de negocio? Los negocios asociados quedarán sin tipo.')) return;
+  const handleDelete = async (id, name) => {
+    if (!await showConfirm({
+      title: 'Eliminar tipo de negocio',
+      message: `¿Eliminar el tipo "${name}"? Los negocios asociados quedarán sin tipo. Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      danger: true,
+    })) return;
     try {
-      await adminApiService.delete(`/admin/business-types/${id}`);
-      load();
+      await adminApi.delete(`/admin/business-types/${id}`);
+      await load();
+      alert.success('Tipo de negocio eliminado correctamente', '✅ Éxito');
     } catch (e) {
-      await alert.error('Error: ' + e.message);
+      alert.error('Error: ' + e.message);
     }
   };
 
-  const active   = types.filter(t => t.is_active !== false).length;
-  const inactive = types.length - active;
+  const filteredTypes = useMemo(() => {
+    let result = types;
 
-  const headerAction = (
-    <div style={{ display: 'flex', gap: 8 }}>
-      <button className="admin-btn admin-btn-secondary" onClick={load}><FiRefreshCw size={14} /></button>
-      <button className="admin-btn admin-btn-primary" onClick={() => setModal('new')}><FiPlus size={15} /> Nuevo tipo</button>
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(t =>
+        t.name?.toLowerCase().includes(term) ||
+        t.code?.toLowerCase().includes(term) ||
+        t.description?.toLowerCase().includes(term)
+      );
+    }
+
+    if (filterStatus === 'active') {
+      result = result.filter(t => t.is_active !== false);
+    } else if (filterStatus === 'inactive') {
+      result = result.filter(t => t.is_active === false);
+    }
+
+    return result;
+  }, [types, searchTerm, filterStatus]);
+
+  const statusOptions = [
+    { value: 'todos', label: `Todos (${types.length})` },
+    { value: 'active', label: `Activos (${types.filter(t => t.is_active !== false).length})` },
+    { value: 'inactive', label: `Inactivos (${types.filter(t => t.is_active === false).length})` },
+  ];
+
+  const columns = [
+    {
+      accessor: 'name',
+      label: 'Nombre',
+      render: (item) => (
+        <div className="business-type-name">
+          <div className="business-type-icon">
+            <FiBriefcase size={14} />
+          </div>
+          <strong>{item.name}</strong>
+        </div>
+      ),
+    },
+    {
+      accessor: 'code',
+      label: 'Código',
+      render: (item) => (
+        <code className="business-type-code">{item.code}</code>
+      ),
+    },
+    {
+      accessor: 'description',
+      label: 'Descripción',
+      render: (item) => (
+        <span className="business-type-description">
+          {item.description || '—'}
+        </span>
+      ),
+    },
+    {
+      accessor: 'is_active',
+      label: 'Estado',
+      render: (item) => (
+        item.is_active !== false
+          ? <span className="admin-badge admin-badge-success"><FiCheck size={11} /> Activo</span>
+          : <span className="admin-badge admin-badge-warning">Inactivo</span>
+      ),
+    },
+    {
+      accessor: 'actions',
+      label: 'Acciones',
+      align: 'center',
+      render: (item) => (
+        <ButtonGroup>
+          <IconTextButton
+            variant="blue"
+            size="sm"
+            inline={true}
+            icon={<FiEdit2 size={13} />}
+            onClick={() => setModal(item)}
+          >
+            Editar
+          </IconTextButton>
+          <IconTextButton
+            variant="danger"
+            size="sm"
+            inline={true}
+            icon={<FiTrash2 size={13} />}
+            onClick={() => handleDelete(item.id, item.name)}
+          >
+            Eliminar
+          </IconTextButton>
+        </ButtonGroup>
+      ),
+    },
+  ];
+
+  const toolbar = (
+    <div className="business-types-toolbar">
+      <CustomCombobox
+        options={statusOptions}
+        value={filterStatus}
+        onChange={setFilterStatus}
+        placeholder="Filtrar por estado"
+        filterable={false}
+        size="sm"
+        className="business-types-filter"
+      />
+      <ButtonGroup>
+        <IconTextButton
+          variant="success"
+          size="md"
+          icon={<FiPlus size={13} />}
+          onClick={() => setModal('new')}
+        >
+          Nuevo tipo
+        </IconTextButton>
+      </ButtonGroup>
     </div>
   );
 
-  return (
-    <PageTemplate theme="admin" title="Tipos de Negocio" subtitle="Gestiona las categorías de negocio disponibles en la plataforma" loading={loading} error={error} onRetry={load} headerAction={headerAction}>
-      {/* Resumen */}
-      <div className="admin-stats-3" style={{ gap: 12, marginBottom: 20 }}>
-        {[
-          { label: 'Total tipos',  val: types.length, color: '#ff8c42' },
-          { label: 'Activos',      val: active,        color: '#22c55e' },
-          { label: 'Inactivos',    val: inactive,      color: '#9ca3af' },
-        ].map(s => (
-          <div key={s.label} className="admin-card" style={{ padding: '14px 18px' }}>
-            <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{s.label}</p>
-            <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: s.color }}>{s.val}</p>
-          </div>
-        ))}
-      </div>
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
 
-      <div className="admin-card">
-        <div className="admin-card-header">
-          <h2>Tipos de Negocio ({types.length})</h2>
+  return (
+    <PageTemplate
+      title="TIPOS DE NEGOCIO"
+      subtitle="Gestiona las categorías de negocio disponibles en la plataforma"
+      theme="admin"
+      loading={loading}
+      error={error}
+      onRetry={load}
+      headerAction={refreshButton}
+    >
+      {error && (
+        <div className="alert alert-error">
+          <FiAlertCircle size={16} /> {error}
         </div>
-        <div className="admin-card-body">
-          {loading ? (
-            <div className="admin-loading"><div className="admin-spinner" />Cargando...</div>
-          ) : types.length === 0 ? (
-            <div className="admin-empty">
-              <div className="admin-empty-icon"><FiBriefcase size={36} /></div>
-              <p className="admin-empty-title">Sin tipos de negocio</p>
-              <p className="admin-empty-text">Crea el primer tipo de negocio para la plataforma</p>
-            </div>
-          ) : (
-            <div className="admin-table-wrapper">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Código</th>
-                    <th>Descripción</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {types.map(t => (
-                    <tr key={t.id}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(255,140,66,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff8c42', flexShrink: 0 }}>
-                            <FiBriefcase size={14} />
-                          </div>
-                          <strong style={{ fontSize: 13 }}>{t.name}</strong>
-                        </div>
-                      </td>
-                      <td>
-                        <code style={{ fontSize: 11, background: 'rgba(255,140,66,.1)', color: '#ff8c42', padding: '2px 7px', borderRadius: 4 }}>{t.code}</code>
-                      </td>
-                      <td style={{ fontSize: 12, color: 'var(--admin-text-muted)', maxWidth: 300 }}>
-                        {t.description || <span style={{ opacity: .4 }}>—</span>}
-                      </td>
-                      <td>
-                        {t.is_active !== false
-                          ? <span className="admin-badge admin-badge-success"><FiCheck size={11} /> Activo</span>
-                          : <span className="admin-badge admin-badge-warning">Inactivo</span>}
-                      </td>
-                      <td>
-                        <div className="admin-table-actions">
-                          <button className="admin-table-btn" onClick={() => setModal(t)}><FiEdit2 size={13} /> Editar</button>
-                          <button className="admin-table-btn admin-table-btn-danger" onClick={() => handleDelete(t.id)}><FiTrash2 size={13} /> Eliminar</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
+
+      <Table
+        data={filteredTypes}
+        columns={columns}
+        keyField="id"
+        title="Tipos de Negocio"
+        subtitle={`${filteredTypes.length} ${filteredTypes.length === 1 ? 'tipo' : 'tipos'} encontrados`}
+        toolbar={toolbar}
+        searchable={true}
+        searchPlaceholder="Buscar por nombre, código o descripción..."
+        searchFields={['name', 'code', 'description']}
+        pagination={true}
+        itemsPerPage={10}
+        itemsPerPageOptions={[10, 25, 50, 100]}
+        loading={loading}
+        emptyMessage={
+          searchTerm || filterStatus !== 'todos'
+            ? 'No hay tipos de negocio que coincidan con los filtros aplicados'
+            : 'No hay tipos de negocio registrados'
+        }
+        striped={true}
+        hoverable={true}
+        bordered={false}
+        compact={false}
+      />
 
       {modal && (
         <BusinessTypeModal
@@ -153,85 +244,131 @@ export default function BusinessTypes() {
 }
 
 function BusinessTypeModal({ item, onClose, onSaved }) {
+  const alert = useAlert();
   const [form, setForm] = useState({
-    code:        item?.code        || '',
-    name:        item?.name        || '',
+    code: item?.code || '',
+    name: item?.name || '',
     description: item?.description || '',
-    is_active:   item?.is_active !== false,
+    is_active: item?.is_active !== false,
   });
   const [saving, setSaving] = useState(false);
-  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.code || !form.name) return await alert.error('Código y nombre son requeridos');
+    if (!form.code || !form.name) {
+      setError('❌ Código y nombre son requeridos');
+      return;
+    }
     setSaving(true);
+    setError('');
     try {
       if (item) {
-        await adminApiService.put(`/admin/business-types/${item.id}`, form);
+        await adminApi.put(`/admin/business-types/${item.id}`, form);
+        alert.success('Tipo de negocio actualizado correctamente', '✅ Éxito');
       } else {
-        await adminApiService.post('/admin/business-types', form);
+        await adminApi.post('/admin/business-types', form);
+        alert.success('Tipo de negocio creado correctamente', '✅ Éxito');
       }
       onSaved();
       onClose();
     } catch (e) {
-      await alert.error('Error: ' + e.message);
+      setError(e.message || 'Error al guardar');
     } finally {
       setSaving(false);
     }
   };
 
-  return (
-    <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal" style={{ maxWidth: 500, width: '95vw' }} onClick={e => e.stopPropagation()}>
-        <div className="admin-modal-header">
-          <h2>
-            <FiBriefcase size={17} style={{ marginRight: 8, color: '#ff8c42' }} />
-            {item ? 'Editar' : 'Nuevo'} Tipo de Negocio
-          </h2>
-          <button className="admin-modal-close" onClick={onClose}><FiX /></button>
+  const footer = (
+    <>
+      {error && (
+        <div className="modal-error-text">
+          <FiAlertCircle size={16} /> {error}
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="admin-modal-body">
-            <div className="admin-col-2" style={{ gap: 14 }}>
-              <div className="admin-form-group">
-                <Lbl>Nombre *</Lbl>
-                <input style={inp} value={form.name} onChange={set('name')} required />
-              </div>
-              <div className="admin-form-group">
-                <Lbl>Código *</Lbl>
-                <input
-                  style={inp} value={form.code} onChange={set('code')}
-                  disabled={!!item} required
-                  placeholder="restaurant, retail..."
-                />
-              </div>
-            </div>
-            <div className="admin-form-group" style={{ marginTop: 4 }}>
-              <Lbl>Descripción</Lbl>
-              <textarea
-                style={{ ...inp, resize: 'vertical' }} rows={3}
-                value={form.description} onChange={set('description')}
-                placeholder="Descripción breve del tipo de negocio"
+      )}
+      <ButtonGroup>
+        <IconTextButton
+          variant="secondary"
+          size="md"
+          onClick={onClose}
+          disabled={saving}
+        >
+          Cancelar
+        </IconTextButton>
+        <IconTextButton
+          variant="success"
+          size="md"
+          icon={<FiCheck size={14} />}
+          onClick={handleSubmit}
+          disabled={saving || !form.name || !form.code}
+          loading={saving}
+        >
+          {saving ? 'Guardando...' : item ? 'Guardar cambios' : 'Crear tipo'}
+        </IconTextButton>
+      </ButtonGroup>
+    </>
+  );
+
+  return (
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={item ? 'Editar Tipo de Negocio' : 'Nuevo Tipo de Negocio'}
+      size="md"
+      className="business-types-modal"
+      footer={footer}
+    >
+      <form onSubmit={handleSubmit}>
+        <div className="business-types-form">
+          <div className="business-types-form-row">
+            <div className="business-types-form-group">
+              <label>Nombre *</label>
+              <Input
+                type="text"
+                value={form.name}
+                onChange={(value) => setForm(f => ({ ...f, name: value }))}
+                placeholder="Ej: Restaurante, Retail..."
+                size="md"
+                autoFocus
+                required
               />
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, marginTop: 8 }}>
-              <input
-                type="checkbox"
-                checked={form.is_active}
-                onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))}
+            <div className="business-types-form-group">
+              <label>Código *</label>
+              <Input
+                type="text"
+                value={form.code}
+                onChange={(value) => setForm(f => ({ ...f, code: value }))}
+                placeholder="restaurant, retail..."
+                size="md"
+                disabled={!!item}
+                required
               />
-              Tipo de negocio activo (visible en el registro)
-            </label>
+            </div>
           </div>
-          <div className="admin-modal-footer">
-            <button type="button" className="admin-btn admin-btn-secondary" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="admin-btn admin-btn-primary" disabled={saving}>
-              <FiCheck size={15} /> {saving ? 'Guardando...' : 'Guardar'}
-            </button>
+
+          <div className="business-types-form-group full-width">
+            <label>Descripción</label>
+            <Input
+              type="textarea"
+              value={form.description}
+              onChange={(value) => setForm(f => ({ ...f, description: value }))}
+              placeholder="Descripción breve del tipo de negocio"
+              size="md"
+              rows={3}
+            />
           </div>
-        </form>
-      </div>
-    </div>
+
+          <label className="business-types-checkbox">
+            <input
+              type="checkbox"
+              checked={form.is_active}
+              onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))}
+            />
+            Tipo de negocio activo (visible en el registro)
+          </label>
+        </div>
+      </form>
+    </Modal>
   );
 }

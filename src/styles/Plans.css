@@ -1,0 +1,219 @@
+/* ============================================
+   PLANS - ESTILOS DE TARJETAS
+   ============================================ */
+
+
+
+/* ─── Grid de tarjetas ────────────────────────────────────────────────── */
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+/* ─── Tarjeta individual ──────────────────────────────────────────────── */
+.plan-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  padding: 15px 10px 10px 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.plan-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  border-color: var(--border-hover);
+}
+
+/* ─── Icono centrado ──────────────────────────────────────────────────── */
+.plan-card-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 5px;
+  border: 2px solid;
+  flex-shrink: 0;
+}
+
+/* ─── Título y subtítulo centrados ──────────────────────────────────── */
+.plan-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+  line-height: 1.3;
+}
+
+.plan-card-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 18px 0;
+  line-height: 1.4;
+}
+
+/* ─── Precio mensual ──────────────────────────────────────────────────── */
+.plan-card-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 10px;
+  padding: 0px 10px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  width: 100%;
+}
+
+.plan-price-amount {
+  font-size: 28px;
+  font-weight: 800;
+  color: #ff8c42;
+}
+
+.plan-price-period {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ─── Características ──────────────────────────────────────────────────── */
+.plan-card-features {
+  width: 100%;
+  text-align: left;
+  flex: 1;
+}
+
+.plan-features-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.plan-features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plan-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 2px 0;
+  line-height: 1.3;
+}
+
+.plan-feature-check {
+  flex-shrink: 0;
+  min-width: 14px;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+
+/* Tablets grandes */
+@media (max-width: 1200px) {
+  .plans-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+/* Tablets pequeñas */
+@media (max-width: 768px) {
+  .plans-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .plan-card {
+    padding: 24px 18px 20px 18px;
+  }
+
+  .plan-card-icon {
+    width: 64px;
+    height: 64px;
+  }
+
+  .plan-card-icon svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .plan-card-title {
+    font-size: 16px;
+  }
+
+  .plan-price-amount {
+    font-size: 24px;
+  }
+
+  .plan-feature-item {
+    font-size: 12px;
+  }
+}
+
+/* Móviles */
+@media (max-width: 550px) {
+  .plans-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .plan-card {
+    padding: 20px 16px 18px 16px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .plan-card-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .plan-card-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .plan-card-title {
+    font-size: 15px;
+  }
+
+  .plan-card-subtitle {
+    font-size: 12px;
+  }
+
+  .plan-price-amount {
+    font-size: 22px;
+  }
+
+  .plan-card-price {
+    padding: 6px 16px;
+  }
+
+  .plan-feature-item {
+    font-size: 11.5px;
+  }
+
+  .plan-features-title {
+    font-size: 11px;
+  }
+}

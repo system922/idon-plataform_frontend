@@ -1,0 +1,152 @@
+/* ============================================================
+   ODONTO-BADGES.CSS - Badges y etiquetas de estado
+   ============================================================ */
+.odonto-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.odonto-badge.primary {
+  background: var(--primary-bg);
+  color: var(--primary-dark);
+}
+.odonto-badge.success {
+  background: var(--success-bg);
+  color: var(--success);
+}
+.odonto-badge.warning {
+  background: var(--warning-bg);
+  color: #d97706;
+}
+.odonto-badge.danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.odonto-badge.info {
+  background: var(--info-bg);
+  color: var(--info);
+}
+.odonto-badge.purple {
+  background: var(--purple-bg);
+  color: var(--purple);
+}
+.odonto-badge.gray {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+/* Badge de cumpleaños */
+.odonto-badge-birthday {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--primary-bg);
+  color: var(--primary-dark);
+}
+
+.odonto-badge-birthday.soon {
+  background: var(--warning-bg);
+  color: #d97706;
+  animation: odonto-pulse 2s ease-in-out infinite;
+}
+
+/* Badge de plantilla */
+.odonto-badge-plantilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #2C5282;
+  background: #EBF8FF;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* Badge de estado */
+.odonto-badge-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.odonto-badge-status.active {
+  background: var(--primary-bg);
+  color: var(--primary-dark);
+}
+.odonto-badge-status.inactive {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+.odonto-badge-status.draft {
+  background: var(--warning-bg);
+  color: #d97706;
+}
+.odonto-badge-status.completed {
+  background: var(--primary-bg);
+  color: var(--primary-dark);
+}
+.odonto-badge-status.cancelled {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.odonto-badge-status.scheduled {
+  background: var(--info-bg);
+  color: var(--info);
+}
+.odonto-badge-status.in-progress {
+  background: var(--purple-bg);
+  color: var(--purple);
+}
+
+/* Tipos de recetas */
+.odonto-badge-tipo.antibiotico {
+  background: #FED7D7;
+  color: #9B2C2C;
+}
+.odonto-badge-tipo.analgesico {
+  background: #FEF3C7;
+  color: #92400E;
+}
+.odonto-badge-tipo.corticoide {
+  background: #E9D8FD;
+  color: #553C9A;
+}
+.odonto-badge-tipo.antifungico {
+  background: #F0FFF4;
+  color: #276749;
+}
+.odonto-badge-tipo.antiviral {
+  background: #EBF8FF;
+  color: #2A69AC;
+}
+.odonto-badge-tipo.combinacion {
+  background: #FEEBC8;
+  color: #C05621;
+}
+.odonto-badge-tipo.otro {
+  background: #EDF2F7;
+  color: #4A5568;
+}
+
+/* Fecha de expiración */
+.odonto-expiry-date {
+  font-size: 13px;
+}
+.odonto-expiry-date.valid {
+  color: #276749;
+}
+.odonto-expiry-date.expired {
+  color: #C53030;
+  font-weight: 500;
+}
+.odonto-expiry-none {
+  color: #A0AEC0;
+}

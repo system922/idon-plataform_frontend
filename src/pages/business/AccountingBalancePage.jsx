@@ -1,461 +1,559 @@
-import React, { useState, useEffect } from 'react';
-import ExcelJS from 'exceljs';
+import React, { useState, useMemo } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import ReportPdfButton from '../../components/ReportPdfButton';
-import { 
-  DollarSign, TrendingUp, TrendingDown, BarChart2, PieChart, 
-  Download, Calendar, Loader, AlertCircle, Check 
-} from 'react-feather';
-import { fetchWithAuth } from '../../config/apiBase';
+import Table from '../../components/General/Table';
+import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, Area, AreaChart
+  Download, TrendingUp, TrendingDown, DollarSign,
+  AlertCircle, Check, BarChart2, Layers
+} from 'react-feather';
+import { FiRefreshCw } from 'react-icons/fi';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import '../../styles/AccountingBalance.css';
 
-export default function AccountingBalance() {
-  const [dateRange, setDateRange] = useState({
-    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    to: new Date().toISOString().split('T')[0]
+// ─── HELPERS ──────────────────────────────────────────────────────────────
+const formatDate = (isoDate) => {
+  if (!isoDate) return '';
+  const date = new Date(isoDate);
+  if (isNaN(date.getTime())) return String(isoDate);
+  return date.toLocaleDateString('es-EC', {
+    year: 'numeric', month: '2-digit', day: '2-digit'
   });
-  const [groupBy, setGroupBy] = useState('month');
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
+};
+
+// ─── DATOS DE PRUEBA (MOCK) ──────────────────────────────────────────────
+const MOCK_BALANCE = {
+  assets: {
+    current: [
+      { name: 'Caja y Bancos', amount: 12500.00 },
+      { name: 'Cuentas por Cobrar', amount: 8400.50 },
+      { name: 'Inventarios', amount: 15200.00 },
+      { name: 'Total Activos Corrientes', amount: 36100.50, isSubtotal: true }
+    ],
+    nonCurrent: [
+      { name: 'Propiedad, Planta y Equipo', amount: 45000.00 },
+      { name: 'Depreciación Acumulada', amount: -8500.00 },
+      { name: 'Total Activos No Corrientes', amount: 36500.00, isSubtotal: true }
+    ]
+  },
+  liabilities: {
+    current: [
+      { name: 'Cuentas por Pagar', amount: 3200.00 },
+      { name: 'Obligaciones Laborales', amount: 1800.00 },
+      { name: 'Total Pasivos Corrientes', amount: 5000.00, isSubtotal: true }
+    ],
+    nonCurrent: [
+      { name: 'Préstamos Bancarios', amount: 12000.00 },
+      { name: 'Total Pasivos No Corrientes', amount: 12000.00, isSubtotal: true }
+    ]
+  },
+  equity: {
+    items: [
+      { name: 'Capital Social', amount: 50000.00 },
+      { name: 'Utilidades Retenidas', amount: 5600.50 },
+      { name: 'Total Patrimonio', amount: 55600.50, isSubtotal: true }
+    ]
+  },
+  totals: {
+    totalAssets: 72600.50,
+    totalLiabilities: 17000.00,
+    totalEquity: 55600.50
+  }
+};
+
+const MOCK_PANDL = {
+  sales: [
+    { period: '2026-01-01', amount: 1250.00 },
+    { period: '2026-01-02', amount: 980.00 },
+    { period: '2026-01-03', amount: 1420.00 },
+    { period: '2026-01-04', amount: 1100.00 },
+    { period: '2026-01-05', amount: 1550.00 },
+    { period: '2026-01-06', amount: 1300.00 },
+    { period: '2026-01-07', amount: 1720.00 },
+    { period: '2026-01-08', amount: 900.00 },
+    { period: '2026-01-09', amount: 1450.00 },
+    { period: '2026-01-10', amount: 1600.00 }
+  ],
+  expenses: [
+    { period: '2026-01-01', amount: 450.00 },
+    { period: '2026-01-02', amount: 380.00 },
+    { period: '2026-01-03', amount: 520.00 },
+    { period: '2026-01-04', amount: 400.00 },
+    { period: '2026-01-05', amount: 600.00 },
+    { period: '2026-01-06', amount: 490.00 },
+    { period: '2026-01-07', amount: 630.00 },
+    { period: '2026-01-08', amount: 350.00 },
+    { period: '2026-01-09', amount: 540.00 },
+    { period: '2026-01-10', amount: 580.00 }
+  ]
+};
+
+const MOCK_RATIOS = {
+  liquidez: 7.22,
+  endeudamiento: 0.23,
+  rentabilidad: 0.12,
+  rotacion: 1.28
+};
+
+// ─── SUBCOMPONENTES ────────────────────────────────────────────────────────
+function BalanceSheetTable({ data }) {
+  if (!data) return <div className="empty-state">No hay datos de balance.</div>;
+
+  const { assets, liabilities, equity, totals } = data;
+
+  const renderSection = (title, items, totalKey, totalLabel) => {
+    if (!items || items.length === 0) return null;
+    return (
+      <div className="balance-sheet-section">
+        {title && <h4 className="balance-section-title">{title}</h4>}
+        <table className="balance-sheet-table">
+          <tbody>
+            {items.map((item, idx) => (
+              <tr key={idx} className={item.isSubtotal ? 'subtotal-row' : ''}>
+                <td className="account-name">{item.name}</td>
+                <td className="account-amount">${Number(item.amount).toFixed(2)}</td>
+              </tr>
+            ))}
+            {totalKey && (
+              <tr className="total-row">
+                <td><strong>Total {totalLabel}</strong></td>
+                <td><strong>${Number(totals[totalKey]).toFixed(2)}</strong></td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  return (
+    <div className="balance-sheet-container">
+      <div className="balance-sheet-grid">
+        <div className="balance-sheet-col">
+          {renderSection('ACTIVOS', assets.current, 'totalAssets', 'Activos Corrientes')}
+          {renderSection('', assets.nonCurrent, null, null)}
+          <div className="balance-sheet-total">
+            <span><strong>Total Activos</strong></span>
+            <span><strong>${Number(totals.totalAssets).toFixed(2)}</strong></span>
+          </div>
+        </div>
+        <div className="balance-sheet-col">
+          {renderSection('PASIVOS', liabilities.current, 'totalLiabilities', 'Pasivos Corrientes')}
+          {renderSection('', liabilities.nonCurrent, null, null)}
+          <div className="balance-sheet-total">
+            <span><strong>Total Pasivos</strong></span>
+            <span><strong>${Number(totals.totalLiabilities).toFixed(2)}</strong></span>
+          </div>
+          <div style={{ marginTop: '20px' }}>
+            {renderSection('PATRIMONIO', equity.items, 'totalEquity', 'Patrimonio')}
+            <div className="balance-sheet-total">
+              <span><strong>Total Patrimonio</strong></span>
+              <span><strong>${Number(totals.totalEquity).toFixed(2)}</strong></span>
+            </div>
+          </div>
+          <div className="balance-sheet-grand-total">
+            <span><strong>Pasivos + Patrimonio</strong></span>
+            <span><strong>${Number(totals.totalLiabilities + totals.totalEquity).toFixed(2)}</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RatiosCards({ ratios }) {
+  if (!ratios) return <div className="empty-state">No hay ratios disponibles.</div>;
+
+  const ratioItems = [
+    { key: 'liquidez', label: 'Liquidez', icon: <DollarSign size={20} />, color: 'var(--primary)' },
+    { key: 'endeudamiento', label: 'Endeudamiento', icon: <BarChart2 size={20} />, color: 'var(--warning)' },
+    { key: 'rentabilidad', label: 'Rentabilidad sobre Ventas', icon: <TrendingUp size={20} />, color: 'var(--success)' },
+    { key: 'rotacion', label: 'Rotación de Activos', icon: <Layers size={20} />, color: 'var(--info)' }
+  ];
+
+  return (
+    <div className="ratios-grid">
+      {ratioItems.map(({ key, label, icon, color }) => (
+        <div key={key} className="ratio-card" style={{ borderLeftColor: color }}>
+          <div className="ratio-icon" style={{ background: `${color}20`, color }}>
+            {icon}
+          </div>
+          <div className="ratio-content">
+            <div className="ratio-label">{label}</div>
+            <div className="ratio-value">{ratios[key] !== undefined ? ratios[key].toFixed(2) : 'N/A'}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────
+export default function AccountingBalance() {
+  const [activeTab, setActiveTab] = useState('balance'); // 'balance', 'pandl', 'ratios'
+  const [dateRange] = useState({
+    from: '2026-01-01',
+    to: '2026-01-10'
+  });
+  const [groupBy] = useState('month');
+
+  // Datos mock
+  const balanceData = MOCK_BALANCE;
+  const pandlData = MOCK_PANDL;
+  const ratiosData = MOCK_RATIOS;
+
+  const [loadingBalance] = useState(false);
+  const [loadingPandl] = useState(false);
+  const [loadingRatios] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [exporting, setExporting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const loadBalance = async () => {
-    if (!dateRange.from || !dateRange.to) return;
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetchWithAuth(`/api/accounting/balance?from=${dateRange.from}&to=${dateRange.to}&groupBy=${groupBy}`);
-      if (!res.ok) throw new Error('Error al cargar balance');
-      const result = await res.json();
-      setData(result);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ─── Calcular totales P&L ──────────────────────────────────────────────
+  const pandlTotals = useMemo(() => {
+    if (!pandlData) return { totalVentas: 0, totalGastos: 0, neto: 0, margen: 0 };
+    const totalVentas = pandlData.sales.reduce((sum, s) => sum + s.amount, 0);
+    const totalGastos = pandlData.expenses.reduce((sum, e) => sum + e.amount, 0);
+    const neto = totalVentas - totalGastos;
+    const margen = totalVentas > 0 ? (neto / totalVentas) * 100 : 0;
+    return { totalVentas, totalGastos, neto, margen };
+  }, [pandlData]);
 
-  useEffect(() => {
-    loadBalance();
-  }, [dateRange, groupBy]);
-
-  // ============================================================
-  // EXPORTACIÓN A EXCEL (con estilos profesionales)
-  // ============================================================
-  const handleExportXLSX = async () => {
-    if (!data) return;
-    setExporting(true);
-    try {
-      const wb = new ExcelJS.Workbook();
-      wb.creator = 'IDON Accounting';
-      wb.created = new Date();
-
-      // Estilos comunes (igual que ReportsAdvanced)
-      const COLORS = {
-        headerBg:   '1E2840',
-        sectionBg:  '2563EB',
-        colHeaderBg:'DBEAFE',
-        totalsBg:   '1E40AF',
-        rowAlt:     'F0F7FF',
-        white:      'FFFFFF',
-        black:      '000000',
-        positive:   '166534',
-        negative:   '991B1B',
+  // ─── Datos para gráfico ──────────────────────────────────────────────────
+  const chartData = useMemo(() => {
+    if (!pandlData) return [];
+    return pandlData.sales.map(s => {
+      const gasto = pandlData.expenses.find(e => e.period === s.period)?.amount || 0;
+      return {
+        period: formatDate(s.period),
+        periodKey: s.period,
+        Ventas: s.amount,
+        Gastos: gasto
       };
-      const border = {
-        top:    { style: 'thin', color: { argb: 'D1D5DB' } },
-        bottom: { style: 'thin', color: { argb: 'D1D5DB' } },
-        left:   { style: 'thin', color: { argb: 'D1D5DB' } },
-        right:  { style: 'thin', color: { argb: 'D1D5DB' } },
-      };
-      const applyStyle = (cell, style) => { cell.style = style; };
-      
-      const styleHeader = (cell, text) => {
-        cell.value = text;
-        applyStyle(cell, {
-          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerBg } },
-          font: { bold: true, size: 14, color: { argb: COLORS.white }, name: 'Calibri' },
-          alignment: { vertical: 'middle', horizontal: 'center' },
-        });
-      };
-      const styleSection = (cell, text) => {
-        cell.value = text;
-        applyStyle(cell, {
-          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.sectionBg } },
-          font: { bold: true, size: 10, color: { argb: COLORS.white }, name: 'Calibri' },
-          alignment: { vertical: 'middle', horizontal: 'left' },
-          border,
-        });
-      };
-      const styleColHeader = (cell, text) => {
-        cell.value = text;
-        applyStyle(cell, {
-          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.colHeaderBg } },
-          font: { bold: true, size: 9, color: { argb: '1E3A5F' }, name: 'Calibri' },
-          alignment: { vertical: 'middle', horizontal: 'center' },
-          border,
-        });
-      };
-      const styleData = (cell, value, align = 'left', altRow = false, numFmt = null) => {
-        cell.value = value;
-        const style = {
-          fill: altRow
-            ? { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.rowAlt } }
-            : { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.white } },
-          font: { size: 9, name: 'Calibri', color: { argb: COLORS.black } },
-          alignment: { vertical: 'middle', horizontal: align },
-          border,
-        };
-        if (numFmt) style.numFmt = numFmt;
-        applyStyle(cell, style);
-      };
-      const styleTotals = (cell, value, align = 'center', numFmt = null) => {
-        cell.value = value;
-        const style = {
-          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.totalsBg } },
-          font: { bold: true, size: 9, color: { argb: COLORS.white }, name: 'Calibri' },
-          alignment: { vertical: 'middle', horizontal: align },
-          border: {
-            top:    { style: 'medium', color: { argb: COLORS.white } },
-            bottom: { style: 'medium', color: { argb: COLORS.white } },
-            left:   { style: 'thin',   color: { argb: '3B82F6' } },
-            right:  { style: 'thin',   color: { argb: '3B82F6' } },
-          },
-        };
-        if (numFmt) style.numFmt = numFmt;
-        applyStyle(cell, style);
-      };
+    });
+  }, [pandlData]);
 
-      const totalVentas   = Number(data.total_sales) || 0;
-      const totalGastos   = Number(data.total_expenses) || 0;
-      const neto          = Number(data.net_income) || (totalVentas - totalGastos);
-      const margen        = totalVentas > 0 ? (neto / totalVentas) * 100 : 0;
-
-      const ws = wb.addWorksheet('Balance General', { views: [{ showGridLines: false }] });
-      ws.columns = [
-        { key: 'a', width: 28 },
-        { key: 'b', width: 16 },
-        { key: 'c', width: 16 },
-        { key: 'd', width: 16 },
-        { key: 'e', width: 14 },
-      ];
-
-      // Título
-      ws.mergeCells('A1:E1');
-      styleHeader(ws.getCell('A1'), 'BALANCE GENERAL - ESTADO DE RESULTADOS');
-      ws.getRow(1).height = 28;
-
-      // Periodo y grupo
-      ws.getRow(2).height = 18;
-      ws.mergeCells('A2:C2');
-      const cellPeriod = ws.getCell('A2');
-      cellPeriod.value = `Periodo: ${dateRange.from} al ${dateRange.to}`;
-      applyStyle(cellPeriod, {
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: '1E3A5F' } },
-        font: { size: 9, color: { argb: COLORS.white }, name: 'Calibri' },
-        alignment: { vertical: 'middle', horizontal: 'left' },
-      });
-      ws.mergeCells('D2:E2');
-      const cellGroup = ws.getCell('D2');
-      cellGroup.value = `Agrupado por: ${groupBy === 'month' ? 'Mes' : 'Día'}`;
-      applyStyle(cellGroup, {
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: '1E3A5F' } },
-        font: { size: 9, color: { argb: 'BFDBFE' }, name: 'Calibri' },
-        alignment: { vertical: 'middle', horizontal: 'right' },
-      });
-
-      ws.getRow(3).height = 6;
-
-      // Resumen ejecutivo
-      ws.mergeCells('A4:E4');
-      styleSection(ws.getCell('A4'), '  RESUMEN EJECUTIVO');
-      ws.getRow(4).height = 18;
-
-      const kpis = [
-        ['Ventas Totales', totalVentas, '#currency'],
-        ['Gastos Operativos', totalGastos, '#currency'],
-        ['Resultado Neto', neto, '#currency'],
-        ['Margen de Ganancia', margen, '#pct'],
-      ];
-      kpis.forEach(([label, value, type], idx) => {
-        const rowNum = 5 + idx;
-        ws.getRow(rowNum).height = 16;
-        const cA = ws.getCell(`A${rowNum}`);
-        const cB = ws.getCell(`B${rowNum}`);
-        ws.mergeCells(`B${rowNum}:E${rowNum}`);
-        const alt = idx % 2 === 1;
-        styleData(cA, label, 'left', alt);
-        if (type === '#currency') {
-          styleData(cB, value, 'right', alt, '"$"#,##0.00');
-          if (label === 'Resultado Neto') {
-            cB.font = { ...cB.font, bold: true, color: { argb: value >= 0 ? COLORS.positive : COLORS.negative } };
-          }
-        } else {
-          styleData(cB, value.toFixed(1) + '%', 'right', alt);
-        }
-      });
-
-      const spRow = 5 + kpis.length;
-      ws.getRow(spRow).height = 6;
-
-      // Detalle por período
-      let r = spRow + 1;
-      ws.mergeCells(`A${r}:E${r}`);
-      styleSection(ws.getCell(`A${r}`), '  DETALLE POR PERÍODO');
-      ws.getRow(r).height = 18;
-      r++;
-
-      ['Período', 'Ventas ($)', 'Gastos ($)', 'Resultado ($)', 'Margen (%)'].forEach((h, i) => {
-        styleColHeader(ws.getCell(r, i + 1), h);
-      });
-      ws.getRow(r).height = 16;
-      r++;
-
-      const chartData = (data.sales || []).map(s => ({
+  // ─── Datos para tabla P&L ──────────────────────────────────────────────
+  const tableData = useMemo(() => {
+    if (!pandlData) return [];
+    return pandlData.sales.map(s => {
+      const gasto = pandlData.expenses.find(e => e.period === s.period)?.amount || 0;
+      const venta = s.amount;
+      const resultado = venta - gasto;
+      return {
+        id: s.period,
         period: s.period,
-        ventas: Number(s.amount) || 0,
-        gastos: Number(data.expenses.find(e => e.period === s.period)?.amount) || 0
-      }));
+        periodFormatted: formatDate(s.period),
+        ventas: venta,
+        gastos: gasto,
+        resultado: resultado,
+        margenPorcentaje: venta > 0 ? +((resultado / venta) * 100).toFixed(1) : 0
+      };
+    });
+  }, [pandlData]);
 
-      chartData.forEach((row, idx) => {
-        const result = row.ventas - row.gastos;
-        const marginPct = row.ventas > 0 ? (result / row.ventas) * 100 : 0;
-        const alt = idx % 2 === 1;
-        ws.getRow(r).height = 15;
-        const periodStr = groupBy === 'month'
-          ? new Date(row.period).toLocaleDateString('es-EC', { month: 'long', year: 'numeric' })
-          : new Date(row.period).toLocaleDateString();
-        styleData(ws.getCell(r, 1), periodStr, 'left', alt);
-        styleData(ws.getCell(r, 2), row.ventas, 'right', alt, '"$"#,##0.00');
-        styleData(ws.getCell(r, 3), row.gastos, 'right', alt, '"$"#,##0.00');
-        styleData(ws.getCell(r, 4), result, 'right', alt, '"$"#,##0.00');
-        const cellMargin = ws.getCell(r, 5);
-        styleData(cellMargin, marginPct.toFixed(1) + '%', 'right', alt);
-        cellMargin.font = { ...cellMargin.font, color: { argb: result >= 0 ? COLORS.positive : COLORS.negative } };
-        r++;
-      });
+  // ─── Filtrar tabla ──────────────────────────────────────────────────────
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return tableData;
+    const term = searchTerm.toLowerCase();
+    return tableData.filter(row =>
+      row.periodFormatted.toLowerCase().includes(term) ||
+      row.ventas.toString().includes(term) ||
+      row.gastos.toString().includes(term)
+    );
+  }, [tableData, searchTerm]);
 
-      // Fila totales
-      ws.getRow(r).height = 18;
-      styleTotals(ws.getCell(r, 1), 'TOTALES', 'left');
-      styleTotals(ws.getCell(r, 2), totalVentas, 'right', '"$"#,##0.00');
-      styleTotals(ws.getCell(r, 3), totalGastos, 'right', '"$"#,##0.00');
-      styleTotals(ws.getCell(r, 4), neto, 'right', '"$"#,##0.00');
-      styleTotals(ws.getCell(r, 5), margen.toFixed(1) + '%', 'right');
-
-      const buffer = await wb.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `balance_${dateRange.from}_${dateRange.to}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
-      setSuccess('Exportado a Excel');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-
-      setError('Error al exportar a Excel');
-    } finally {
-      setExporting(false);
-    }
+  // ─── Simular refresh ────────────────────────────────────────────────────
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800);
+    setSuccess('Datos actualizados correctamente');
+    setTimeout(() => setSuccess(''), 3000);
   };
 
-  // ============================================================
-  // CONFIGURACIÓN PARA PDF
-  // ============================================================
-  const chartData = (data?.sales || []).map(s => ({
-    period: s.period,
-    Ventas: Number(s.amount) || 0,
-    Gastos: Number(data.expenses.find(e => e.period === s.period)?.amount) || 0
-  })) || [];
+  // ─── Exportar Excel (simulado) ─────────────────────────────────────────
+  const handleExportXLSX = () => {
+    setSuccess('Exportado a Excel correctamente (simulado)');
+    setTimeout(() => setSuccess(''), 3000);
+  };
 
-  const totalVentasPDF = (data?.total_sales ? Number(data.total_sales) : chartData.reduce((s, row) => s + row.Ventas, 0)) || 0;
-  const totalGastosPDF = (data?.total_expenses ? Number(data.total_expenses) : chartData.reduce((s, row) => s + row.Gastos, 0)) || 0;
-  const netoPDF = (data?.net_income ? Number(data.net_income) : totalVentasPDF - totalGastosPDF) || 0;
-  const margenPDF = totalVentasPDF > 0 ? (netoPDF / totalVentasPDF) * 100 : 0;
+  // ─── Columnas tabla ────────────────────────────────────────────────────
+  const columns = [
+    { accessor: 'periodFormatted', label: 'Período', render: (item) => <span>{item.periodFormatted}</span> },
+    { accessor: 'ventas', label: 'Ventas ($)', align: 'right', render: (item) => <span>${item.ventas.toFixed(2)}</span> },
+    { accessor: 'gastos', label: 'Gastos ($)', align: 'right', render: (item) => <span>${item.gastos.toFixed(2)}</span> },
+    { accessor: 'resultado', label: 'Resultado ($)', align: 'right', render: (item) => (
+      <span style={{ color: item.resultado >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+        ${item.resultado.toFixed(2)}
+      </span>
+    ) },
+    { accessor: 'margenPorcentaje', label: 'Margen (%)', align: 'right', render: (item) => (
+      <span style={{ color: item.resultado >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+        {item.margenPorcentaje}%
+      </span>
+    ) }
+  ];
 
-  const pdfConfig = data ? {
-    title: 'Balance General - Estado de Resultados',
-    kpis: [
-      { label: 'Ventas Totales', value: totalVentasPDF, formatter: (v) => `$${Number(v).toFixed(2)}` },
-      { label: 'Gastos Operativos', value: totalGastosPDF, formatter: (v) => `$${Number(v).toFixed(2)}` },
-      { label: 'Resultado Neto', value: netoPDF, formatter: (v) => `$${Number(v).toFixed(2)}`, bold: true },
-      { label: 'Margen de Ganancia', value: margenPDF, formatter: (v) => `${v.toFixed(1)}%`, bold: true }
-    ],
-    sections: chartData.length ? [{
-      title: 'DETALLE POR PERÍODO',
-      columns: [
-        { label: 'Período', key: 'period', width: 28, formatter: (val) => {
-          if (!val) return '';
-          const d = new Date(val);
-          return isNaN(d) ? val : d.toLocaleDateString('es-EC');
-        } },
-        { label: 'Ventas ($)', key: 'ventas', width: 16, formatter: (v) => `$${Number(v).toFixed(2)}` },
-        { label: 'Gastos ($)', key: 'gastos', width: 16, formatter: (v) => `$${Number(v).toFixed(2)}` },
-        { label: 'Resultado ($)', key: 'resultado', width: 16, formatter: (v) => `$${Number(v).toFixed(2)}` }
-      ],
-      rows: chartData.map(row => ({
-        period: row.period,
-        ventas: row.Ventas,
-        gastos: row.Gastos,
-        resultado: row.Ventas - row.Gastos
-      }))
-    }] : []
-  } : null;
+  // ─── Toolbar ─────────────────────────────────────────────────────────────
+  const toolbar = (
+    <div className="users-toolbar">
+      <ButtonGroup>
+        <IconTextButton
+          variant="success"
+          size="md"
+          icon={<Download size={13} />}
+          onClick={handleExportXLSX}
+        >
+          Exportar Excel (mock)
+        </IconTextButton>
+      </ButtonGroup>
+    </div>
+  );
 
-  // ============================================================
-  // RENDER (mejorado)
-  // ============================================================
+  // ─── Footer tabla ──────────────────────────────────────────────────────
+  const tableFooter = useMemo(() => {
+    if (filteredData.length === 0) return null;
+    const { totalVentas, totalGastos, neto, margen } = pandlTotals;
+    return (
+      <tr className="table-footer-totals">
+        <td><strong>TOTALES</strong></td>
+        <td className="text-right"><strong>${totalVentas.toFixed(2)}</strong></td>
+        <td className="text-right"><strong>${totalGastos.toFixed(2)}</strong></td>
+        <td className={`text-right ${neto >= 0 ? 'text-success' : 'text-danger'}`}>
+          <strong>${neto.toFixed(2)}</strong>
+        </td>
+        <td className={`text-right ${neto >= 0 ? 'text-success' : 'text-danger'}`}>
+          <strong>{margen.toFixed(1)}%</strong>
+        </td>
+      </tr>
+    );
+  }, [filteredData, pandlTotals]);
+
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // ─── RENDER ─────────────────────────────────────────────────────────────
   return (
     <PageTemplate
-      title="BALANCE GENERAL"
-      subtitle="Estado de Resultados - Pérdidas y Ganancias"
+      title="BALANCE Y P&G"
+      subtitle="Balance General, Estado de Resultados y Ratios Financieros"
+      theme="business"
+      loading={loadingBalance || loadingPandl || loadingRatios}
+      headerAction={
+        <button
+          onClick={handleRefresh}
+          className="dashboard-refresh-btn-header"
+          disabled={refreshing}
+          title="Actualizar datos"
+        >
+          <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+          <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+        </button>
+      }
     >
-      <div className="accounting-balance-container">
-        {error && <div className="alert-error"><AlertCircle size={16} /> {error}</div>}
-        {success && <div className="alert-success"><Check size={16} /> {success}</div>}
+      <div className="accounting-balance-container custom-dashboard">
+        {error && (
+          <div className="alert-error">
+            <AlertCircle size={16} /> {error}
+          </div>
+        )}
+        {success && (
+          <div className="alert-success">
+            <Check size={16} /> {success}
+          </div>
+        )}
 
+        {/* Filtros (estáticos para demo) */}
         <div className="filters-bar">
           <div className="filter-group">
             <label>Desde</label>
-            <input type="date" value={dateRange.from} onChange={e => setDateRange({...dateRange, from: e.target.value})} />
+            <input type="date" value={dateRange.from} disabled />
           </div>
           <div className="filter-group">
             <label>Hasta</label>
-            <input type="date" value={dateRange.to} onChange={e => setDateRange({...dateRange, to: e.target.value})} />
+            <input type="date" value={dateRange.to} disabled />
           </div>
           <div className="filter-group">
             <label>Agrupar por</label>
-            <select value={groupBy} onChange={e => setGroupBy(e.target.value)}>
-              <option value="day">Día</option>
+            <select value={groupBy} disabled>
               <option value="month">Mes</option>
             </select>
           </div>
-          <button className="btn-secondary" onClick={handleExportXLSX} disabled={exporting}>
-            <Download size={16} /> {exporting ? 'Exportando...' : 'Exportar Excel'}
-          </button>
-          <ReportPdfButton
-            customConfig={pdfConfig}
-            dateRange={dateRange}
-            groupBy={groupBy}
-            className="btn-secondary"
-          />
         </div>
 
-        {loading && <div className="loading-spinner"><Loader size={32} className="spin" /></div>}
+        {/* Tabs */}
+        <div className="tabs-container">
+          <div className="tabs-header">
+            <button
+              className={`tab-btn ${activeTab === 'balance' ? 'active' : ''}`}
+              onClick={() => setActiveTab('balance')}
+            >
+              <Layers size={16} /> Balance General
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'pandl' ? 'active' : ''}`}
+              onClick={() => setActiveTab('pandl')}
+            >
+              <TrendingUp size={16} /> Estado de Resultados
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'ratios' ? 'active' : ''}`}
+              onClick={() => setActiveTab('ratios')}
+            >
+              <BarChart2 size={16} /> Ratios Financieros
+            </button>
+          </div>
 
-        {!loading && data && (
-          <>
-            {/* KPIs */}
-            <div className="kpi-cards">
-              <div className="kpi-card">
-                <div className="kpi-title">Ventas Totales</div>
-                <div className="kpi-value">${totalVentasPDF.toFixed(2)}</div>
-                <TrendingUp size={24} className="kpi-icon positive" />
-              </div>
-              <div className="kpi-card">
-                <div className="kpi-title">Gastos Operativos</div>
-                <div className="kpi-value">${totalGastosPDF.toFixed(2)}</div>
-                <TrendingDown size={24} className="kpi-icon negative" />
-              </div>
-              {data.total_incomes > 0 && (
-                <div className="kpi-card">
-                  <div className="kpi-title">Ingresos No Operativos</div>
-                  <div className="kpi-value">${Number(data.total_incomes || 0).toFixed(2)}</div>
-                  <DollarSign size={24} className="kpi-icon" />
-                </div>
-              )}
-              <div className={`kpi-card ${netoPDF >= 0 ? 'success' : 'danger'}`}>
-                <div className="kpi-title">Resultado Neto</div>
-                <div className="kpi-value">${netoPDF.toFixed(2)}</div>
-                <BarChart2 size={24} className="kpi-icon" />
-              </div>
-            </div>
-
-            {/* Gráfico de evolución */}
-            {chartData.length > 0 && (
-              <div className="chart-card">
-                <h3>Evolución de Ventas vs Gastos</h3>
-                <ResponsiveContainer width="100%" height={350}>
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
-                      </linearGradient>
-                      <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="period" stroke="#94a3b8" tickFormatter={(v) => {
-                      if (groupBy === 'month') return new Date(v).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
-                      return new Date(v).toLocaleDateString();
-                    }} />
-                    <YAxis stroke="#94a3b8" tickFormatter={v => `$${v}`} />
-                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155' }} />
-                    <Legend />
-                    <Area type="monotone" dataKey="Ventas" stroke="#10b981" fill="url(#salesGrad)" />
-                    <Area type="monotone" dataKey="Gastos" stroke="#ef4444" fill="url(#expenseGrad)" />
-                  </AreaChart>
-                </ResponsiveContainer>
+          <div className="tab-content">
+            {/* Tab: Balance General */}
+            {activeTab === 'balance' && (
+              <div className="tab-panel">
+                <BalanceSheetTable data={balanceData} />
               </div>
             )}
 
-            {/* Tabla resumen por período */}
-            <div className="table-card">
-              <h3>Detalle por {groupBy === 'month' ? 'Mes' : 'Día'}</h3>
-              <div className="table-responsive">
-                <table className="balance-table">
-                  <thead>
-                    <tr>
-                      <th>Período</th>
-                      <th>Ventas</th>
-                      <th>Gastos</th>
-                      <th>Resultado</th>
-                      <th>Margen</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {chartData.map(row => {
-                      const result = row.Ventas - row.Gastos;
-                      const margin = row.Ventas > 0 ? (result / row.Ventas) * 100 : 0;
-                      const periodDisplay = groupBy === 'month'
-                        ? new Date(row.period).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
-                        : new Date(row.period).toLocaleDateString();
-                      return (
-                        <tr key={row.period} className="bal-tbody-tr">
-                          <td data-label="Período">{periodDisplay}</td>
-                          <td data-label="Ventas" className="sales">${row.Ventas.toFixed(2)}</td>
-                          <td data-label="Gastos" className="expenses">${row.Gastos.toFixed(2)}</td>
-                          <td data-label="Resultado" className={result >= 0 ? 'profit' : 'loss'}>${result.toFixed(2)}</td>
-                          <td data-label="Margen" className={margin >= 0 ? 'profit' : 'loss'}>{margin.toFixed(1)}%</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bal-tfoot-tr">
-                      <td data-label="Período"><strong>Totales</strong></td>
-                      <td data-label="Ventas"><strong>${totalVentasPDF.toFixed(2)}</strong></td>
-                      <td data-label="Gastos"><strong>${totalGastosPDF.toFixed(2)}</strong></td>
-                      <td data-label="Resultado" className={netoPDF >= 0 ? 'profit' : 'loss'}><strong>${netoPDF.toFixed(2)}</strong></td>
-                      <td data-label="Margen"><strong>{margenPDF.toFixed(1)}%</strong></td>
-                    </tr>
-                  </tfoot>
-                </table>
+            {/* Tab: Estado de Resultados */}
+            {activeTab === 'pandl' && (
+              <div className="tab-panel">
+                {/* KPIs */}
+                <div className="stat-cards-row">
+                  <div className="stat-card" style={{ borderLeft: '4px solid var(--primary)' }}>
+                    <div className="stat-card-icon" style={{ background: 'var(--bg-primary)' }}>
+                      <TrendingUp size={24} color="var(--text-primary)" />
+                    </div>
+                    <div>
+                      <div className="stat-card-label">Ventas Totales</div>
+                      <div className="stat-card-value" style={{ color: 'var(--text-primary)' }}>
+                        ${pandlTotals.totalVentas.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="stat-card" style={{ borderLeft: '4px solid var(--danger)' }}>
+                    <div className="stat-card-icon" style={{ background: 'var(--bg-primary)' }}>
+                      <TrendingDown size={24} color="var(--text-primary)" />
+                    </div>
+                    <div>
+                      <div className="stat-card-label">Gastos Operativos</div>
+                      <div className="stat-card-value" style={{ color: 'var(--text-primary)' }}>
+                        ${pandlTotals.totalGastos.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="stat-card" style={{ borderLeft: `4px solid ${pandlTotals.neto >= 0 ? 'var(--success)' : 'var(--danger)'}` }}>
+                    <div className="stat-card-icon" style={{ background: 'var(--bg-primary)' }}>
+                      <DollarSign size={24} color={pandlTotals.neto >= 0 ? 'var(--success)' : 'var(--danger)'} />
+                    </div>
+                    <div>
+                      <div className="stat-card-label">Resultado Neto</div>
+                      <div className="stat-card-value" style={{ color: pandlTotals.neto >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                        ${pandlTotals.neto.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="stat-card" style={{ borderLeft: `4px solid ${pandlTotals.neto >= 0 ? 'var(--success)' : 'var(--danger)'}` }}>
+                    <div className="stat-card-icon" style={{ background: 'var(--bg-primary)' }}>
+                      <TrendingUp size={24} color={pandlTotals.neto >= 0 ? 'var(--success)' : 'var(--danger)'} />
+                    </div>
+                    <div>
+                      <div className="stat-card-label">Margen de Ganancia</div>
+                      <div className="stat-card-value" style={{ color: pandlTotals.neto >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                        {pandlTotals.margen.toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gráfico */}
+                {chartData.length > 0 && (
+                  <div className="dashboard-graph-card">
+                    <h3 className="dashboard-graph-title">Evolución de Ventas vs Gastos</h3>
+                    <ResponsiveContainer width="100%" height={350}>
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="var(--success)" stopOpacity={0.8} />
+                            <stop offset="95%" stopColor="var(--success)" stopOpacity={0.1} />
+                          </linearGradient>
+                          <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="var(--danger)" stopOpacity={0.8} />
+                            <stop offset="95%" stopColor="var(--danger)" stopOpacity={0.1} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                        <XAxis dataKey="period" stroke="var(--text-muted)" />
+                        <YAxis stroke="var(--text-muted)" tickFormatter={v => `$${v}`} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'var(--bg-card)',
+                            borderColor: 'var(--border-color)',
+                            color: 'var(--text-primary)',
+                            borderRadius: 'var(--radius-sm)'
+                          }}
+                          formatter={(value) => `$${Number(value).toFixed(2)}`}
+                        />
+                        <Legend />
+                        <Area
+                          type="monotone"
+                          dataKey="Ventas"
+                          stroke="var(--success)"
+                          fill="url(#salesGrad)"
+                          strokeWidth={2}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="Gastos"
+                          stroke="var(--danger)"
+                          fill="url(#expenseGrad)"
+                          strokeWidth={2}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {/* Tabla */}
+                <Table
+                  data={filteredData}
+                  columns={columns}
+                  keyField="id"
+                  title="Detalle por Período"
+                  subtitle={`${filteredData.length} registros encontrados`}
+                  toolbar={toolbar}
+                  searchable={true}
+                  searchPlaceholder="Buscar por período o monto..."
+                  pagination={true}
+                  itemsPerPage={itemsPerPage}
+                  itemsPerPageOptions={[10, 15]}
+                  onItemsPerPageChange={(newPerPage) => setItemsPerPage(newPerPage)}
+                  loading={loadingPandl}
+                  emptyMessage="No hay datos para el período seleccionado"
+                  striped={true}
+                  hoverable={true}
+                  bordered={false}
+                  compact={false}
+                  footer={tableFooter}
+                />
               </div>
-            </div>
-          </>
-        )}
+            )}
+
+            {/* Tab: Ratios Financieros */}
+            {activeTab === 'ratios' && (
+              <div className="tab-panel">
+                <RatiosCards ratios={ratiosData} />
+                <div style={{ marginTop: '24px', padding: '20px', background: 'var(--bg-card)', borderRadius: 'var(--radius-md)' }}>
+                  <h4 style={{ marginBottom: '12px' }}>Interpretación de Ratios</h4>
+                  <ul style={{ listStyle: 'none', padding: 0 }}>
+                    <li><strong>Liquidez:</strong> {ratiosData.liquidez >= 1 ? '✅ Adecuada' : '⚠️ Posible problema de liquidez'}</li>
+                    <li><strong>Endeudamiento:</strong> {ratiosData.endeudamiento < 0.5 ? '✅ Bajo' : '⚠️ Alto'}</li>
+                    <li><strong>Rentabilidad:</strong> {ratiosData.rentabilidad > 0.1 ? '✅ Buena' : '⚠️ Mejorable'}</li>
+                    <li><strong>Rotación de Activos:</strong> {ratiosData.rotacion > 1 ? '✅ Eficiente' : '⚠️ Ineficiente'}</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </PageTemplate>
   );

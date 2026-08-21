@@ -1,0 +1,714 @@
+/* ============================================================
+   BUTTONS.CSS - Sistema de botones global
+   Dependencias: GENERAL_VARIABLES.CSS
+   Versión: 3.0 - Botones estandarizados
+   ============================================================ */
+
+/* ─── Base de botones ──────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: 8px;  /* ← Cambiado a 8px fijos para consistencia */
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition-fast);
+  min-height: 36px;
+  min-width: 36px;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* ─── Tamaños ───────────────────────────────────────────────────── */
+
+.btn-xs {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  min-height: 24px;
+  min-width: 24px;
+  border-radius: 6px;
+}
+
+.btn-sm {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+  min-height: 28px;
+  min-width: 28px;
+  border-radius: 6px;
+}
+
+.btn-md {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  min-height: 36px;
+  min-width: 36px;
+  border-radius: 8px;
+}
+
+.btn-lg {
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--font-size-base);
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: 10px;
+}
+
+.btn-xl {
+  padding: var(--space-4) var(--space-8);
+  font-size: var(--font-size-md);
+  min-height: 52px;
+  min-width: 52px;
+  border-radius: 12px;
+}
+
+/* ─── Botones con ícono ────────────────────────────────────────── */
+
+.btn-icon {
+  padding: var(--space-2);
+  min-width: 36px;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+}
+
+.btn-icon.btn-xs {
+  padding: var(--space-1);
+  min-width: 24px;
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+}
+
+.btn-icon.btn-sm {
+  padding: var(--space-1);
+  min-width: 28px;
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+}
+
+.btn-icon.btn-lg {
+  padding: var(--space-3);
+  min-width: 44px;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+}
+
+.btn-icon.btn-xl {
+  padding: var(--space-4);
+  min-width: 52px;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+}
+
+/* ─── Variantes de color ───────────────────────────────────────── */
+
+/* ============================================================
+   PRIMARY - Naranja
+   ============================================================ */
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--text-white);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary-outline {
+  background: var(--primary-bg);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-primary-outline:hover:not(:disabled) {
+  background: var(--primary);
+  color: var(--text-white);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary-ghost {
+  background: var(--primary-bg);
+  color: var(--primary);
+  border-color: transparent;
+}
+
+.btn-primary-ghost:hover:not(:disabled) {
+  background: var(--primary);
+  color: var(--text-white);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================
+   SUCCESS - Verde
+   ============================================================ */
+
+.btn-success {
+  background: var(--success);
+  color: var(--text-white);
+  border-color: var(--success);
+}
+
+.btn-success:hover:not(:disabled) {
+  background: var(--success-dark);
+  border-color: var(--success-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-success-outline {
+  background: var(--success-bg);
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.btn-success-outline:hover:not(:disabled) {
+  background: var(--success);
+  color: var(--text-white);
+  border-color: var(--success);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-success-ghost {
+  background: var(--success-bg);
+  color: var(--success);
+  border-color: transparent;
+}
+
+.btn-success-ghost:hover:not(:disabled) {
+  background: var(--success);
+  color: var(--text-white);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================
+   DANGER - Rojo
+   ============================================================ */
+
+.btn-danger {
+  background: var(--danger);
+  color: var(--text-white);
+  border-color: var(--danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger-dark);
+  border-color: var(--danger-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-danger-outline {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn-danger-outline:hover:not(:disabled) {
+  background: var(--danger);
+  color: var(--text-white);
+  border-color: var(--danger);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-danger-ghost {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: transparent;
+}
+
+.btn-danger-ghost:hover:not(:disabled) {
+  background: var(--danger);
+  color: var(--text-white);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================
+   WARNING - Amarillo
+   ============================================================ */
+
+.btn-warning {
+  background: var(--warning);
+  color: var(--text-white);
+  border-color: var(--warning);
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: var(--warning-dark);
+  border-color: var(--warning-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-warning-outline {
+  background: var(--warning-bg);
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+.btn-warning-outline:hover:not(:disabled) {
+  background: var(--warning);
+  color: var(--text-white);
+  border-color: var(--warning);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-warning-ghost {
+  background: var(--warning-bg);
+  color: var(--warning);
+  border-color: transparent;
+}
+
+.btn-warning-ghost:hover:not(:disabled) {
+  background: var(--warning);
+  color: var(--text-white);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================
+   INFO - Azul
+   ============================================================ */
+
+.btn-info {
+  background: var(--info);
+  color: var(--text-white);
+  border-color: var(--info);
+}
+
+.btn-info:hover:not(:disabled) {
+  background: var(--info-dark);
+  border-color: var(--info-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-info-outline {
+  background: var(--info-bg);
+  color: var(--info);
+  border-color: var(--info);
+}
+
+.btn-info-outline:hover:not(:disabled) {
+  background: var(--info);
+  color: var(--text-white);
+  border-color: var(--info);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-info-ghost {
+  background: var(--info-bg);
+  color: var(--info);
+  border-color: transparent;
+}
+
+.btn-info-ghost:hover:not(:disabled) {
+  background: var(--info);
+  color: var(--text-white);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================
+   PURPLE - Morado
+   ============================================================ */
+
+.btn-purple {
+  background: var(--purple);
+  color: var(--text-white);
+  border-color: var(--purple);
+}
+
+.btn-purple:hover:not(:disabled) {
+  background: var(--purple-dark);
+  border-color: var(--purple-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-purple-outline {
+  background: var(--purple-bg);
+  color: var(--purple);
+  border-color: var(--purple);
+}
+
+.btn-purple-outline:hover:not(:disabled) {
+  background: var(--purple);
+  color: var(--text-white);
+  border-color: var(--purple);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-purple-ghost {
+  background: var(--purple-bg);
+  color: var(--purple);
+  border-color: transparent;
+}
+
+.btn-purple-ghost:hover:not(:disabled) {
+  background: var(--purple);
+  color: var(--text-white);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================
+   BLUE - Azul corporativo
+   ============================================================ */
+
+.btn-blue {
+  background: var(--blue-primary);
+  color: var(--text-white);
+  border-color: var(--blue-primary);
+}
+
+.btn-blue:hover:not(:disabled) {
+  background: var(--blue-dark);
+  border-color: var(--blue-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-blue-outline {
+  background: var(--blue-bg);
+  color: var(--blue-primary);
+  border-color: var(--blue-primary);
+}
+
+.btn-blue-outline:hover:not(:disabled) {
+  background: var(--blue-primary);
+  color: var(--text-white);
+  border-color: var(--blue-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-blue-ghost {
+  background: var(--blue-bg);
+  color: var(--blue-primary);
+  border-color: transparent;
+}
+
+.btn-blue-ghost:hover:not(:disabled) {
+  background: var(--blue-primary);
+  color: var(--text-white);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================
+   SECONDARY - Neutral
+   ============================================================ */
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary-outline {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+.btn-secondary-outline:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary-ghost {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-color: transparent;
+}
+
+.btn-secondary-ghost:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   LINK - Estilo de enlace
+   ============================================================ */
+
+.btn-link {
+  background: transparent;
+  color: var(--primary);
+  border-color: transparent;
+  text-decoration: underline;
+}
+
+.btn-link:hover:not(:disabled) {
+  color: var(--primary-dark);
+  text-decoration: none;
+}
+
+.btn-link:disabled {
+  opacity: 0.5;
+}
+
+/* ─── Botones con carga (loading) ──────────────────────────────── */
+
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.btn-loading.btn-xs::after {
+  width: 10px;
+  height: 10px;
+  border-width: 2px;
+}
+
+.btn-loading.btn-sm::after {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+}
+
+.btn-loading.btn-lg::after {
+  width: 20px;
+  height: 20px;
+  border-width: 3px;
+}
+
+.btn-loading.btn-xl::after {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+}
+
+/* ─── Botones full width ────────────────────────────────────────── */
+
+.btn-block {
+  display: flex;
+  width: 100%;
+}
+
+/* ─── Botones en línea ──────────────────────────────────────────── */
+
+.btn-inline {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+  min-height: 24px;
+  min-width: 24px;
+  border-radius: 6px;
+}
+
+/* ─── Grupo de botones CON SEPARACIÓN ──────────────────────────── */
+
+.btn-group {
+  display: inline-flex;
+  gap: 8px;  /* ← Gap de 8px entre botones */
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-group-vertical {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;  /* ← Gap de 8px entre botones */
+  align-items: stretch;
+}
+
+/* ─── Botones dentro del grupo mantienen su estilo individual ──── */
+
+.btn-group .btn,
+.btn-group-vertical .btn {
+  border-radius: 8px;  /* ← Mantienen su radio individual */
+  border-right-width: 1px;  /* ← Mantienen su borde */
+}
+
+.btn-group .btn:first-child,
+.btn-group-vertical .btn:first-child {
+  border-radius: 8px;  /* ← Mismo radio que cualquier botón */
+}
+
+.btn-group .btn:last-child,
+.btn-group-vertical .btn:last-child {
+  border-radius: 8px;  /* ← Mismo radio que cualquier botón */
+}
+
+.btn-group .btn:not(:first-child):not(:last-child),
+.btn-group-vertical .btn:not(:first-child):not(:last-child) {
+  border-radius: 8px;  /* ← Mismo radio que cualquier botón */
+}
+
+/* ─── Botones con ícono ───────────────────────────────────────── */
+
+.btn-icon svg {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+
+/* ─── Botones con texto e ícono ───────────────────────────────── */
+
+.btn .btn-icon-left {
+  margin-right: var(--space-2);
+}
+
+.btn .btn-icon-right {
+  margin-left: var(--space-2);
+}
+
+.btn-xs .btn-icon-left,
+.btn-xs .btn-icon-right {
+  margin: 0 var(--space-1);
+}
+
+.btn-sm .btn-icon-left,
+.btn-sm .btn-icon-right {
+  margin: 0 var(--space-1);
+}
+
+/* ─── Variantes de color con texto blanco ────────────────────── */
+
+.btn-primary,
+.btn-success,
+.btn-danger,
+.btn-warning,
+.btn-info,
+.btn-purple,
+.btn-blue {
+  color: var(--text-white);
+}
+
+.btn-primary-outline,
+.btn-success-outline,
+.btn-danger-outline,
+.btn-warning-outline,
+.btn-info-outline,
+.btn-purple-outline,
+.btn-blue-outline {
+  color: var(--text-white);
+}
+
+.btn-primary-outline:hover:not(:disabled),
+.btn-success-outline:hover:not(:disabled),
+.btn-danger-outline:hover:not(:disabled),
+.btn-warning-outline:hover:not(:disabled),
+.btn-info-outline:hover:not(:disabled),
+.btn-purple-outline:hover:not(:disabled),
+.btn-blue-outline:hover:not(:disabled) {
+  color: var(--text-white);
+}
+
+.btn-primary-ghost,
+.btn-success-ghost,
+.btn-danger-ghost,
+.btn-warning-ghost,
+.btn-info-ghost,
+.btn-purple-ghost,
+.btn-blue-ghost {
+  color: var(--text-white);
+}
+
+.btn-primary-ghost:hover:not(:disabled),
+.btn-success-ghost:hover:not(:disabled),
+.btn-danger-ghost:hover:not(:disabled),
+.btn-warning-ghost:hover:not(:disabled),
+.btn-info-ghost:hover:not(:disabled),
+.btn-purple-ghost:hover:not(:disabled),
+.btn-blue-ghost:hover:not(:disabled) {
+  color: var(--text-white);
+}
+
+/* ─── Loading states con texto blanco ─────────────────────────── */
+
+.btn-primary.btn-loading::after,
+.btn-success.btn-loading::after,
+.btn-danger.btn-loading::after,
+.btn-warning.btn-loading::after,
+.btn-info.btn-loading::after,
+.btn-purple.btn-loading::after,
+.btn-blue.btn-loading::after {
+  color: var(--text-white);
+}
+
+.btn-primary-outline.btn-loading::after,
+.btn-success-outline.btn-loading::after,
+.btn-danger-outline.btn-loading::after,
+.btn-warning-outline.btn-loading::after,
+.btn-info-outline.btn-loading::after,
+.btn-purple-outline.btn-loading::after,
+.btn-blue-outline.btn-loading::after {
+  color: currentColor;
+}
+
+/* ─── Responsive ───────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .btn-group {
+    gap: 6px;  /* ← Gap más pequeño en móviles */
+  }
+  
+  .btn-group-vertical {
+    gap: 6px;  /* ← Gap más pequeño en móviles */
+  }
+}
+
+/* ─── Animaciones ───────────────────────────────────────────────── */
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

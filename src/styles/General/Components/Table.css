@@ -1,0 +1,944 @@
+/* ============================================================
+   TABLE.CSS - Componente de tabla reutilizable
+   ============================================================ */
+
+/* ─── Contenedor principal ────────────────────────────────────── */
+
+.table-container {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: var(--transition);
+  width: 100%;
+}
+
+.table-container:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* ─── Cabecera ────────────────────────────────────────────────── */
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.table-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.table-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.table-title small {
+  font-weight: var(--font-weight-normal);
+  color: var(--text-muted);
+  font-size: var(--font-size-base);
+}
+
+.table-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.table-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.table-header-cell {
+  color: var(--text-primary) !important;
+  font-weight: var(--font-weight-bold);
+}
+
+.table-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.table-export-btn:hover {
+  background: var(--primary-bg);
+  border-color: var(--border-primary);
+  color: var(--primary);
+}
+
+/* ─── Controles (búsqueda y filtros) ────────────────────────── */
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--border-light);
+  flex-wrap: wrap;
+  background: var(--bg-secondary);
+}
+
+.table-controls-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 200px;
+}
+
+.table-controls-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+}
+
+.table-toolbar-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* ─── Búsqueda rápida ────────────────────────────────────────── */
+
+.table-quick-filter {
+  position: relative;
+  flex: 0 1 auto;
+  width: 280px;
+  min-width: 180px;
+  max-width: 400px;
+}
+
+.table-quick-filter-icon {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.table-quick-filter-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3) var(--space-2) calc(var(--space-3) + 20px);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  transition: var(--transition);
+  outline: none;
+}
+
+.table-quick-filter-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+.table-quick-filter-input::placeholder {
+  color: var(--text-dim);
+}
+
+.table-quick-filter-clear {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: 50%;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-quick-filter-clear:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* ─── Filtros avanzados ───────────────────────────────────────── */
+
+.table-advanced-filters {
+  position: relative;
+}
+
+.table-advanced-filters-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.table-advanced-filters-toggle:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-primary);
+  color: var(--primary);
+}
+
+.table-advanced-filters-toggle.active {
+  background: var(--primary-bg);
+  border-color: var(--border-primary);
+  color: var(--primary);
+}
+
+.table-advanced-filters-toggle.has-filters {
+  background: var(--primary-bg);
+  border-color: var(--border-primary);
+  color: var(--primary);
+}
+
+.table-advanced-filters-panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-4);
+  min-width: 300px;
+  max-width: 500px;
+  z-index: var(--z-dropdown);
+  animation: slideDown 0.2s ease;
+}
+
+.table-advanced-filters-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.table-advanced-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.table-advanced-filter-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table-advanced-filter-input {
+  padding: var(--space-2);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xs);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  transition: var(--transition);
+  outline: none;
+  width: 100%;
+}
+
+.table-advanced-filter-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+.table-advanced-filters-actions {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.table-advanced-filters-clear {
+  padding: var(--space-1) var(--space-3);
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.table-advanced-filters-clear:hover {
+  text-decoration: underline;
+}
+
+/* ─── Scroll de tabla ──────────────────────────────────────────── */
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ─── Tabla ────────────────────────────────────────────────────── */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+/* Modo compacto */
+.table-compact .table {
+  font-size: var(--font-size-xs);
+}
+
+.table-compact .table-header {
+  padding: var(--space-3) var(--space-4);
+}
+
+.table-compact .table-controls {
+  padding: var(--space-2) var(--space-4);
+}
+
+.table-compact .table-cell {
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Modo con bordes */
+.table-bordered {
+  border: 1px solid var(--border-color);
+}
+
+.table-bordered .table-header-cell,
+.table-bordered .table-cell {
+  border: 1px solid var(--border-color);
+}
+
+/* ─── Cabecera de la tabla ────────────────────────────────────── */
+
+.table-header-cell {
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table-header-cell.text-center {
+  text-align: center;
+}
+
+.table-header-cell.text-right {
+  text-align: right;
+}
+
+/* Anchos de columna personalizados */
+.table-col-small { width: 80px; min-width: 80px; max-width: 80px; }
+.table-col-medium { width: 120px; min-width: 120px; max-width: 120px; }
+.table-col-large { width: 200px; min-width: 200px; max-width: 200px; }
+
+/* ─── Celdas ──────────────────────────────────────────────────── */
+
+.table-cell {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-body);
+  vertical-align: middle;
+}
+
+.table-cell.text-center {
+  text-align: center;
+}
+
+.table-cell.text-right {
+  text-align: right;
+}
+
+/* ─── Filas ────────────────────────────────────────────────────── */
+
+.table-row {
+  transition: var(--transition-fast);
+}
+
+.table-striped .table-row:nth-child(even) {
+  background: var(--bg-tertiary);
+}
+
+.table-hoverable .table-row:hover {
+  background: var(--bg-hover);
+}
+
+.table-row-clickable {
+  cursor: pointer;
+}
+
+.table-row-clickable:hover {
+  background: var(--primary-bg) !important;
+}
+
+/* ─── Estados de la tabla ─────────────────────────────────────── */
+
+.table-loading,
+.table-error,
+.table-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-10) var(--space-6);
+  gap: var(--space-3);
+  color: var(--text-muted);
+}
+
+.table-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.table-error {
+  color: var(--danger);
+}
+
+.table-error-icon {
+  font-size: var(--font-size-3xl);
+}
+
+.table-error-retry {
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-white);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.table-error-retry:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.table-empty {
+  color: var(--text-muted);
+}
+
+.table-empty-icon {
+  font-size: var(--font-size-3xl);
+}
+
+/* ─── Acciones ────────────────────────────────────────────────── */
+
+.table-actions-header {
+  text-align: center;
+  min-width: 120px;
+}
+
+.table-actions-cell {
+  text-align: center;
+}
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.table-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: none;
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.table-action-btn:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.table-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.table-action-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ─── Paginación ───────────────────────────────────────────────── */
+
+.table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.table-pagination-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.table-pagination-per-page {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.table-pagination-select {
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xs);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  outline: none;
+}
+
+.table-pagination-select:focus {
+  border-color: var(--border-focus);
+}
+
+.table-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.table-pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xs);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.table-pagination-btn:hover:not(:disabled) {
+  background: var(--primary-bg);
+  border-color: var(--border-primary);
+  color: var(--primary);
+}
+
+.table-pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.table-pagination-numbers {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.table-pagination-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.table-pagination-number:hover:not(.active):not(.dots) {
+  background: var(--bg-hover);
+  border-color: var(--border-color);
+}
+
+.table-pagination-number.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--text-white);
+}
+
+.table-pagination-number.dots {
+  cursor: default;
+  color: var(--text-dim);
+}
+
+/* ─── Toolbar personalizado para usuarios ───────────────────── */
+
+.users-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.users-search-input {
+  min-width: 180px;
+  max-width: 250px;
+}
+
+/* ─── Toolbar personalizado para nómina ────────────────────── */
+
+.users-toolbar .payment-type-select {
+  min-width: 120px;
+}
+
+.users-toolbar .date-range {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.users-toolbar .date-range input {
+  width: 130px;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-xs);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  transition: var(--transition);
+}
+
+.users-toolbar .date-range input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-bg);
+  outline: none;
+}
+
+.users-toolbar .date-range input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.users-toolbar .date-range .date-separator {
+  color: var(--text-muted);
+  font-weight: var(--font-weight-light);
+  padding: 0 var(--space-1);
+}
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .table-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .table-header-right {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .table-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .table-controls-left {
+    display: none;
+  }
+
+  .table-controls-right {
+    justify-content: flex-start;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .table-quick-filter {
+    width: 100%;
+    max-width: 100%;
+    min-width: unset;
+  }
+
+  .table-toolbar-inline {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .users-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .users-toolbar .date-range {
+    flex-wrap: wrap;
+  }
+
+  .users-toolbar .date-range input {
+    width: 100%;
+  }
+
+  .table-advanced-filters-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 90vw;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: scaleIn 0.2s ease;
+  }
+
+  .table-advanced-filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table-pagination {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .table-pagination-info {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .table-pagination-controls {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* Tabla responsive con etiquetas */
+  .table thead {
+    display: none;
+  }
+
+  .table tbody tr {
+    display: block;
+    margin-bottom: var(--space-3);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: var(--space-3);
+  }
+
+  .table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) 0;
+    border: none;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .table tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .table tbody td::before {
+    content: attr(data-label);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-right: var(--space-4);
+  }
+
+  .table .table-actions-cell {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-1);
+  }
+
+  .table .table-actions-cell::before {
+    content: 'Acciones';
+  }
+
+  .table-actions {
+    gap: var(--space-2);
+  }
+
+  .table-actions .table-action-btn {
+    padding: var(--space-1) var(--space-3);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+  }
+
+  .table-actions .table-action-btn:hover:not(:disabled) {
+    background: var(--bg-hover);
+  }
+
+  /* Responsive en modo compacto */
+  .table-compact .table tbody tr {
+    padding: var(--space-2);
+  }
+
+  .table-compact .table tbody td {
+    padding: var(--space-1) 0;
+    font-size: var(--font-size-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .table-controls {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .users-toolbar .payment-type-select {
+    min-width: 100%;
+  }
+
+  .users-toolbar .date-range {
+    width: 100%;
+  }
+}
+
+/* ─── Animaciones ───────────────────────────────────────────────── */
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* ─── Scrollbar personalizada ──────────────────────────────────── */
+
+.table-scroll::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 99px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* ─── Utilidades ─────────────────────────────────────────────────── */
+
+.text-center {
+  text-align: center;
+}
+.text-right {
+  text-align: right;
+}
+.text-left {
+  text-align: left;
+}
+
+/* ─── Dark mode support ─────────────────────────────────────────── */
+
+@media (prefers-color-scheme: dark) {
+  .table-container {
+    background: var(--bg-secondary);
+  }
+
+  .table-header-cell {
+    background: var(--bg-tertiary);
+  }
+
+  .table-striped .table-row:nth-child(even) {
+    background: var(--bg-tertiary);
+  }
+
+  .table-hoverable .table-row:hover {
+    background: var(--bg-hover);
+  }
+
+  .table-advanced-filters-panel {
+    background: var(--bg-secondary);
+  }
+}

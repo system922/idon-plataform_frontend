@@ -2,6 +2,7 @@ import React from 'react';
 import { FiPlus } from 'react-icons/fi';
 import ItemsList from './ItemsList';
 import OrderSummary from './OrderSummary';
+import { IconTextButton, ButtonGroup } from './General/Button';
 
 export default function ItemsSection({
   items,
@@ -21,21 +22,16 @@ export default function ItemsSection({
     <section className="card card-soft">
       <div className="items-head">
         <div className="items-head-left">
-          <h3 className="items-title">Items</h3>
-          <span className="items-badge">{items.length}</span>
+          <h3 className="items-title">{items.length} item(s)</h3>
         </div>
-
-        <div className="items-head-center">
-          <span className="items-counter">{items.length} item(s) en la orden</span>
-        </div>
-
-        <button
-          className="items-head-btn"
+        <IconTextButton
+          variant="success"
+          size="sm"
+          icon={<FiPlus size={18} />}
           onClick={() => setShowAddItemModal(true)}
-          type="button"
         >
-          <FiPlus size={14} /> Agregar item
-        </button>
+          Agregar
+        </IconTextButton>
       </div>
 
       <ItemsList

@@ -1,0 +1,177 @@
+/* ============================================================
+   ROLES PAGE - Estilos específicos para la gestión de roles
+   ============================================================ */
+
+/* ─── Contenedor principal ────────────────────────────────────── */
+
+.roles-table-container {
+  padding: var(--space-4);
+  width: 100%;
+}
+
+/* ─── Toolbar ──────────────────────────────────────────────────── */
+
+.roles-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.roles-toolbar .search-input-wrapper {
+  flex: 1;
+  min-width: 200px;
+}
+
+.roles-toolbar .custom-combobox {
+  min-width: 180px;
+}
+
+/* ─── Columna Nombre en la tabla ────────────────────────────── */
+
+.roles-cell-name-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.roles-cell-name-inner strong {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.roles-cell-description {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  font-weight: var(--font-weight-normal);
+}
+
+/* ─── Permisos / Badges en la tabla ──────────────────────────── */
+
+.roles-permissions-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.roles-permission-badge {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  transition: var(--transition-fast);
+}
+
+.roles-permission-badge:hover {
+  border-color: var(--border-color);
+  background: var(--bg-hover);
+}
+
+.roles-permission-module {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.roles-permission-module::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  margin-right: var(--space-1);
+}
+
+.roles-permission-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-left: var(--space-1);
+}
+
+.roles-permission-feature {
+  background: var(--bg-input);
+  padding: 0 var(--space-2);
+  border-radius: 99px;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  line-height: 1.6;
+  border: 1px solid var(--border-light);
+}
+
+/* ─── Estado vacío (solo si se usa fuera de Table) ──────────── */
+
+.roles-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-10) var(--space-4);
+  color: var(--text-muted);
+  text-align: center;
+  gap: var(--space-4);
+}
+
+.roles-empty-icon {
+  color: var(--text-dim);
+  opacity: 0.4;
+}
+
+.roles-empty-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--primary);
+  color: var(--text-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.roles-empty-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .roles-table-container {
+    padding: var(--space-2);
+  }
+
+  .roles-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .roles-toolbar .search-input-wrapper {
+    min-width: unset;
+  }
+
+  .roles-toolbar .custom-combobox {
+    min-width: unset;
+  }
+
+  .roles-permissions-container {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .roles-permission-badge {
+    width: 100%;
+  }
+}

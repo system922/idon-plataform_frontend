@@ -1,4 +1,4 @@
-import { fetchWithAuth } from '../config/apiBase';
+import { fetchWithAuth } from '../config/api';
 import { API_ENDPOINTS } from '../constants/inventoryConstants';
 import { toNumber, toBoolean } from '../utils/productUtils';
 
@@ -9,9 +9,15 @@ class ProductService {
   /**
    * Obtiene todos los productos
    * @param {AbortSignal} signal - Señal para abortar la petición
+   * @param {boolean} includeInactive - Si es true, incluye productos inactivos (envía ?all=1)
    */
-  async getAll(signal) {
-    const response = await fetchWithAuth(API_ENDPOINTS.PRODUCTS, { signal });
+  async getAll(signal, includeInactive = false) {
+    // Construir URL con query param si es necesario
+    let url = API_ENDPOINTS.PRODUCTS; // ✅ /api/products
+    if (includeInactive) {
+      url += '?all=1';
+    }
+    const response = await fetchWithAuth(url, { signal });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
@@ -25,7 +31,7 @@ class ProductService {
       tax_rate: toNumber(p.tax_rate),
       unit_cost: toNumber(p.unit_cost),
       stock: toNumber(p.stock),
-      is_taxable: toNumber(p.is_taxable),  // ✅ MANTENER COMO NÚMERO (0, 5, 8, 12, 15)
+      is_taxable: toNumber(p.is_taxable),
       is_active: toBoolean(p.is_active),
     }));
   }
@@ -85,10 +91,23 @@ class ProductService {
    * @param {AbortSignal} signal - Señal para abortar la petición
    */
   async getCategories(signal) {
+    // ✅ Usar API_ENDPOINTS.CATEGORIES = '/api/categories'
     const response = await fetchWithAuth(API_ENDPOINTS.CATEGORIES, { signal });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
     const data = await response.json();
-    return Array.isArray(data) ? data : [];
+    // Manejar diferentes formatos de respuesta
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (data?.data && Array.isArray(data.data)) {
+      return data.data;
+    }
+    if (data?.categories && Array.isArray(data.categories)) {
+      return data.categories;
+    }
+    return [];
   }
 
   /**

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import { RefreshCw, AlertCircle, CheckCircle, Clock, FileText, Search, X, Download } from 'react-feather';
-import { fetchWithAuth } from '../../config/apiBase';
+import { fetchWithAuth } from '../../config/apiBase_';
 import '../../styles/EinvoicingInvoicesPage.css';
 
 const STATUS_STYLE = {

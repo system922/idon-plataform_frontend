@@ -1,0 +1,181 @@
+/* ============================================
+   ADMIN MODULOS - ESTILOS ESPECÍFICOS
+   ============================================ */
+
+/* ─── Toolbar ───────────────────────────────────────────────────────────── */
+.modulos-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.modulos-filter {
+  min-width: 160px;
+}
+
+/* ─── Tabla - Nombre ───────────────────────────────────────────────────── */
+.modulo-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modulo-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 140, 66, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff8c42;
+  flex-shrink: 0;
+}
+
+.modulo-name strong {
+  font-size: 13px;
+}
+
+.modulo-description {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* ─── Tabla - Código ───────────────────────────────────────────────────── */
+.modulo-code {
+  font-size: 11px;
+  background: rgba(255, 140, 66, 0.1);
+  color: #ff8c42;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+/* ─── Tabla - Precios ──────────────────────────────────────────────────── */
+.modulo-price-monthly {
+  font-weight: 700;
+  color: #ff8c42;
+}
+
+.modulo-price-annual {
+  font-weight: 700;
+  color: #8CB79B;
+}
+
+.modulo-sort-order {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ─── MODAL ─────────────────────────────────────────────────────────────── */
+.modulos-modal .modal-content {
+  max-width: 540px;
+  width: 95vw;
+  max-height: 92vh;
+}
+
+.modulos-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 0;
+}
+
+.modulos-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.modulos-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modulos-form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.modulos-form-group label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.modulos-form-group .input-container textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.modulos-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+
+.modulos-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.modulos-preview {
+  margin-top: 4px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(255, 140, 66, 0.06);
+  border: 1px solid rgba(255, 140, 66, 0.15);
+  font-size: 12px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.modulos-preview-monthly {
+  color: #ff8c42;
+}
+
+.modulos-preview-annual {
+  color: #8CB79B;
+}
+
+.modulos-preview-saving {
+  color: #22c55e;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .modulos-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .modulos-filter {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .modulos-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .modulos-preview {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
