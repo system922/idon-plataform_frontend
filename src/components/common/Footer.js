@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
 export default function Footer({ variant = 'dark' }) {
@@ -13,7 +14,7 @@ export default function Footer({ variant = 'dark' }) {
         </span>
         <span className="saas-footer__version">v2.0</span>
         <span className="saas-footer__divider" />
-        <span className="saas-footer__copy">© 2026 IDON PLATAFORM by SYSTEM DESIGN</span>
+        <span className="saas-footer__copy">© 2026 IDON CONTROL by SYSTEM DESIGN</span>
       </div>
 
       <div className="saas-footer__links">

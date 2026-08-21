@@ -1,0 +1,1083 @@
+/* ============================================================
+   LANDING PAGE - Estilos exclusivos usando variables globales
+   (100% Responsive)
+   ============================================================ */
+
+.landing-container {
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background-color: var(--bg-body);
+  line-height: 1.6;
+}
+
+.landing-container * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ============================================================
+   HEADER / MENÚ (Responsive)
+   ============================================================ */
+.landing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.15rem 5% 0.40rem 0.75rem;
+  max-width: 100%;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-dropdown);
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap; /* Permite que el menú baje en pantallas muy pequeñas */
+}
+
+/* Logo con imagen y texto */
+.landing-header .logo {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  text-decoration: none;
+}
+
+.animated-logo {
+  display: block;
+  transition: transform 0.3s ease;
+  height: 70px;
+  width: auto;
+}
+
+.animated-logo:hover {
+  transform: scale(1.05) rotate(-2deg);
+}
+
+.logo-idon,
+.logo-on {
+  font-size: 1.8rem;
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.logo-idon {
+  font-family: 'Syne', sans-serif;
+  color: #1A202C;
+}
+
+.logo-on {
+  font-family: 'Syne', sans-serif;
+  color: var(--primary);
+}
+
+.logo-idon,
+.logo-on {
+  padding-bottom: 2px;
+}
+
+/* Navegación */
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.main-nav a {
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  transition: var(--transition);
+  position: relative;
+  padding: 0.25rem 0;
+}
+
+.main-nav a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--primary);
+  transition: var(--transition);
+}
+
+.main-nav a:hover {
+  color: var(--blue-primary);
+}
+
+.main-nav a:hover::after {
+  width: 100%;
+}
+
+/* Botón de inicio de sesión o registro */
+.btn-login {
+  background: var(--primary);
+  color: var(--text-white) !important;
+  font-weight: var(--font-weight-semibold) !important;
+  padding: 0.4rem 1.4rem !important;
+  border-radius: 50px;
+  border: 2px solid var(--primary);
+  transition: var(--transition) !important;
+}
+
+.btn-login:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  color: var(--text-white) !important;
+}
+
+.btn-login:hover::after {
+  width: 0 !important;
+}
+
+/* ============================================================
+   CONTENIDO PRINCIPAL
+   ============================================================ */
+.landing-main {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 2rem 2% 2rem;
+}
+
+/* H1 */
+.landing-main h1 {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-extrabold);
+  line-height: 1.2;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+}
+
+/* Subtítulo (lead) */
+.lead {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+  max-width: 750px;
+  margin-bottom: 1.5rem;
+  line-height: 1.7;
+  border-left: 4px solid var(--primary);
+  padding-left: 1.5rem;
+}
+
+/* ============================================================
+   IMÁGENES DEL LANDING (Responsive)
+   ============================================================ */
+.images-grid {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: center;
+  margin: 2rem 0 3rem;
+  flex-wrap: wrap;
+}
+
+.landing-image {
+  max-width: 100%;
+  height: auto;
+  width: 100%;
+  max-width: 600px;
+  height: 300px;
+  border-radius: 5px;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition);
+  border: 1px solid var(--border-light);
+  object-fit: cover; /* Asegura que la imagen no se deforme */
+}
+
+.landing-image:hover {
+  transform: scale(1.02);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ============================================================
+   GRID DE CARACTERÍSTICAS (Responsive)
+   ============================================================ */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.feature-card {
+  background: var(--bg-card);
+  padding: 1.5rem 1.5rem;
+  border-radius: var(--radius);
+  transition: var(--transition);
+  border: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.feature-card-prices {
+  background: var(--bg-secondary);
+  padding: 0.5rem 0.5rem;
+  border-radius: var(--radius);
+  transition: var(--transition);
+  border: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-primary);
+  background: var(--bg-secondary);
+}
+
+.feature-card h2,
+.feature-card h3 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 0.8rem;
+  color: var(--text-primary);
+}
+
+.feature-card h3 {
+  font-size: var(--font-size-lg);
+}
+
+.feature-card p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  line-height: 1.7;
+}
+
+.feature-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.feature-card ul li {
+  padding: 0.4rem 0;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--font-size-base);
+}
+
+.feature-card ul li:last-child {
+  border-bottom: none;
+}
+
+/* ============================================================
+   SECCIÓN "AUDIENCIA" (Responsive)
+   ============================================================ */
+.audience-section {
+  background: var(--bg-primary);
+  padding: 1rem 1rem;
+  border-radius: var(--radius);
+  margin: 1rem 0;
+}
+
+.audience-section h2 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.audience-section > p {
+  font-size: var(--font-size-md);
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.audience-section ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.audience-section ul li {
+  background: var(--bg-card);
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+  box-shadow: var(--shadow-sm);
+  border-left: 4px solid var(--primary);
+  color: var(--text-secondary);
+}
+
+.audience-section ul li strong {
+  color: var(--blue-primary);
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+/* ============================================================
+   CTA (Llamada a la acción) - Responsive
+   ============================================================ */
+.cta-section {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 1rem 2rem;
+  border-radius: var(--radius);
+  text-align: center;
+  margin: 3rem 0 0rem;
+  box-shadow: 0 20px 40px rgba(26, 58, 92, 0.3);
+}
+
+.cta-section h2 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 0.8rem;
+}
+
+.cta-section p {
+  font-size: var(--font-size-sm);
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+}
+
+.cta-button {
+  display: inline-block;
+  background: var(--success);
+  color: var(--text-white) !important;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-md);
+  padding: 0.9rem 3rem;
+  border-radius: 50px;
+  text-decoration: none;
+  transition: var(--transition);
+  border: none;
+  cursor: pointer;
+}
+
+.cta-button:hover {
+  transform: scale(1.04);
+  background: var(--primary-dark);
+}
+
+.cta-button-prices {
+  display: inline-block;
+  background: var(--success);
+  color: var(--text-white) !important;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  padding: 0.5rem 3rem;
+  border-radius: 50px;
+  text-decoration: none;
+  transition: var(--transition);
+  border: none;
+  cursor: pointer;
+}
+
+.cta-button-prices:hover {
+  transform: scale(1.04);
+  background: var(--primary-dark);
+}
+
+/* ============================================================
+   ESTILOS PARA CONTACTO (formulario)
+   ============================================================ */
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin: 3rem 0;
+}
+
+.contact-info h2,
+.contact-form h2 {
+  font-size: var(--font-size-2xl);
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.contact-info p {
+  font-size: var(--font-size-base);
+  padding: 0.5rem 0;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.contact-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.contact-form input,
+.contact-form textarea {
+  padding: 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  transition: var(--transition);
+  width: 100%;
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+/* ============================================================
+   RESPONSIVE - BREAKPOINTS MEJORADOS
+   ============================================================ */
+
+/* Tablets grandes y laptops pequeñas (≤ 1024px) */
+@media (max-width: 1024px) {
+  .landing-main h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  .lead {
+    font-size: var(--font-size-md);
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cta-section h2 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .contact-grid {
+    gap: 2rem;
+  }
+}
+
+/* Tablets y móviles grandes (≤ 768px) */
+@media (max-width: 768px) {
+  .landing-header {
+    flex-direction: column;
+    padding: 0.8rem 1.5rem;
+    gap: 0.8rem;
+  }
+
+  .logo {
+    font-size: 1.6rem;
+  }
+
+  .main-nav {
+    justify-content: center;
+    gap: 0.8rem 1.2rem;
+    width: 100%;
+  }
+
+  .main-nav a {
+    font-size: var(--font-size-sm);
+  }
+
+  .btn-login {
+    font-size: var(--font-size-xs) !important;
+    padding: 0.3rem 1rem !important;
+  }
+
+  .landing-main {
+    padding: 2rem 1.5rem 3rem;
+  }
+
+  .landing-main h1 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .lead {
+    font-size: var(--font-size-base);
+    padding-left: 1rem;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .feature-card {
+    padding: 1.5rem;
+  }
+
+  .audience-section {
+    padding: 2rem 1.5rem;
+  }
+
+  .audience-section h2 {
+    font-size: var(--font-size-xl);
+  }
+
+  .audience-section ul {
+    grid-template-columns: 1fr;
+  }
+
+  .cta-section {
+    padding: 2.5rem 1.5rem;
+  }
+
+  .cta-section h2 {
+    font-size: var(--font-size-xl);
+  }
+
+  .cta-section p {
+    font-size: var(--font-size-base);
+  }
+
+  .cta-button {
+    font-size: var(--font-size-base);
+    padding: 0.8rem 2.2rem;
+  }
+
+  /* Contacto: dos columnas pasan a una */
+  .contact-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .contact-info h2,
+  .contact-form h2 {
+    font-size: var(--font-size-xl);
+  }
+
+  .images-grid {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .landing-image {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* Móviles pequeños (≤ 480px) */
+@media (max-width: 480px) {
+  .landing-main h1 {
+    font-size: var(--font-size-xl);
+  }
+
+  .lead {
+    font-size: var(--font-size-sm);
+  }
+
+  .main-nav {
+    gap: 0.5rem 0.8rem;
+  }
+
+  .main-nav a {
+    font-size: 0.75rem;
+  }
+
+  .btn-login {
+    font-size: 0.7rem !important;
+    padding: 0.2rem 0.8rem !important;
+  }
+
+  .cta-section h2 {
+    font-size: var(--font-size-lg);
+  }
+
+  .cta-button,
+  .cta-button-prices {
+    font-size: var(--font-size-sm);
+    padding: 0.6rem 1.5rem;
+  }
+
+  .feature-card-prices {
+    padding: 0.8rem;
+  }
+
+  .audience-section ul li {
+    padding: 0.8rem;
+    font-size: var(--font-size-sm);
+  }
+
+  .contact-form input,
+  .contact-form textarea {
+    font-size: var(--font-size-sm);
+    padding: 0.6rem;
+  }
+}
+
+/* Pantallas muy grandes (≥ 1400px) */
+@media (min-width: 1400px) {
+  .landing-main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 0;
+  }
+
+  .landing-header {
+    max-width: 1200px;
+    padding: 0.15rem 0 0.40rem 0;
+  }
+
+  .landing-image {
+    max-width: 700px;
+    height: 350px;
+  }
+}
+
+/* ============================================================
+   UTILIDADES PARA MEJORAR EL RESPONSIVE EN ELEMENTOS INTERNOS
+   ============================================================ */
+
+/* Ajuste para los íconos y listas en tarjetas de precios */
+.feature-card-prices ul li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.feature-card-prices ul li:last-child {
+  border-bottom: none;
+}
+
+.feature-card-prices ul li svg {
+  flex-shrink: 0;
+}
+
+/* Ajuste para los elementos de la sección de módulos (grid interno) */
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.modules-grid div {
+  background: var(--bg-card);
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  border-left: 4px solid var(--primary);
+}
+
+/* Ajuste para el footer (si se usa en landing) - recomendación */
+.saas-footer {
+  padding: 1.5rem 5%;
+  flex-wrap: wrap;
+}
+
+.saas-footer__links {
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .saas-footer {
+    flex-direction: column;
+    text-align: center;
+  }
+  .saas-footer__links {
+    justify-content: center;
+  }
+}
+
+/* ============================================================
+   CONTACTO PAGE - Estilos exclusivos
+   (Usa variables globales y es 100% responsive)
+   ============================================================ */
+
+/* ---- Contenedor principal ---- */
+.contact-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0rem 0%;
+}
+
+/* ---- Grid de contacto (2 columnas) ---- */
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin: 3rem 0;
+}
+
+/* ---- Tarjetas de información y formulario ---- */
+.contact-card {
+  background: var(--bg-card);
+  padding: 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  transition: var(--transition);
+}
+
+.contact-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.contact-card h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--blue-primary);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.contact-card h2 svg {
+  flex-shrink: 0;
+}
+
+/* ---- Lista de información de contacto ---- */
+.contact-info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.contact-info-list li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+}
+
+.contact-info-list li:last-child {
+  border-bottom: none;
+}
+
+.contact-info-list li svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+.contact-info-list li strong {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  min-width: 70px;
+}
+
+.contact-info-list li a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.contact-info-list li a:hover {
+  color: var(--primary);
+}
+
+/* ---- Badge de confirmación ---- */
+.contact-badge {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: var(--primary-bg);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.contact-badge svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+/* ---- Formulario ---- */
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.contact-form input,
+.contact-form textarea {
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  font-size: var(--font-size-base);
+  font-family: var(--font-family);
+  transition: var(--transition);
+  outline: none;
+  width: 100%;
+  background: var(--bg-input);
+  color: var(--text-input);
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+.contact-form textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.contact-form .btn-submit {
+  background: var(--primary);
+  color: var(--text-white);
+  border: none;
+  padding: 0.9rem 2rem;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  border-radius: 50px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font-family);
+}
+
+.contact-form .btn-submit:hover {
+  background: var(--primary-dark);
+  transform: scale(1.02);
+  box-shadow: var(--shadow-md);
+}
+
+.contact-form .btn-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.contact-form .form-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+/* ---- Sección de confianza (WhatsApp directo) ---- */
+.contact-trust {
+  background: var(--bg-primary);
+  padding: 2rem 2rem;
+  border-radius: var(--radius);
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.contact-trust h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.contact-trust p {
+  font-size: var(--font-size-md);
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+}
+
+.contact-trust .btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #25D366;
+  color: var(--text-white);
+  padding: 0.8rem 2rem;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-md);
+  transition: var(--transition);
+  border: none;
+  cursor: pointer;
+}
+
+.contact-trust .btn-whatsapp:hover {
+  transform: scale(1.04);
+  box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
+}
+
+/* ============================================================
+   RESPONSIVE - BREAKPOINTS
+   ============================================================ */
+
+/* Tablets y laptops pequeñas (≤ 1024px) */
+@media (max-width: 1024px) {
+  .contact-grid {
+    gap: 2rem;
+  }
+
+  .contact-card {
+    padding: 1.5rem;
+  }
+
+  .contact-card h2 {
+    font-size: var(--font-size-xl);
+  }
+}
+
+/* Tablets y móviles grandes (≤ 768px) */
+@media (max-width: 768px) {
+  .contact-container {
+    padding: 1.5rem;
+  }
+
+  .contact-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .contact-card {
+    padding: 1.5rem;
+  }
+
+  .contact-card h2 {
+    font-size: var(--font-size-lg);
+  }
+
+  .contact-info-list li {
+    font-size: var(--font-size-sm);
+    padding: 0.6rem 0;
+    flex-wrap: wrap;
+  }
+
+  .contact-info-list li strong {
+    min-width: 60px;
+  }
+
+  .contact-form input,
+  .contact-form textarea {
+    font-size: var(--font-size-sm);
+    padding: 0.7rem 0.9rem;
+  }
+
+  .contact-form .btn-submit {
+    font-size: var(--font-size-base);
+    padding: 0.8rem 1.5rem;
+  }
+
+  .contact-trust {
+    padding: 1.5rem;
+  }
+
+  .contact-trust h2 {
+    font-size: var(--font-size-xl);
+  }
+
+  .contact-trust p {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* Móviles pequeños (≤ 480px) */
+@media (max-width: 480px) {
+  .contact-container {
+    padding: 1rem;
+  }
+
+  .contact-grid {
+    gap: 1.5rem;
+  }
+
+  .contact-card {
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .contact-card h2 {
+    font-size: var(--font-size-lg);
+    margin-bottom: 1rem;
+  }
+
+  .contact-info-list li {
+    font-size: var(--font-size-xs);
+    padding: 0.5rem 0;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .contact-info-list li strong {
+    min-width: 50px;
+  }
+
+  .contact-info-list li svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .contact-badge {
+    font-size: 0.75rem;
+    padding: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .contact-form input,
+  .contact-form textarea {
+    font-size: var(--font-size-xs);
+    padding: 0.6rem 0.8rem;
+  }
+
+  .contact-form textarea {
+    min-height: 100px;
+  }
+
+  .contact-form .btn-submit {
+    font-size: var(--font-size-sm);
+    padding: 0.7rem 1.2rem;
+  }
+
+  .contact-form .form-note {
+    font-size: 0.7rem;
+  }
+
+  .contact-trust {
+    padding: 1.2rem;
+  }
+
+  .contact-trust h2 {
+    font-size: var(--font-size-lg);
+  }
+
+  .contact-trust p {
+    font-size: var(--font-size-xs);
+  }
+
+  .contact-trust .btn-whatsapp {
+    font-size: var(--font-size-sm);
+    padding: 0.6rem 1.2rem;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Pantallas muy grandes (≥ 1400px) */
+@media (min-width: 1400px) {
+  .contact-container {
+    max-width: 1200px;
+    padding: 3rem 0;
+  }
+
+  .contact-grid {
+    gap: 4rem;
+  }
+
+  .contact-card {
+    padding: 2.5rem;
+  }
+}
+
+/* ============================================================
+   MEJORAS PARA ACCESIBILIDAD Y TÁCTIL
+   ============================================================ */
+
+/* Espaciado para inputs en dispositivos táctiles */
+@media (hover: none) and (pointer: coarse) {
+  .contact-form input,
+  .contact-form textarea,
+  .contact-form .btn-submit,
+  .contact-trust .btn-whatsapp {
+    min-height: 48px;
+  }
+
+  .contact-info-list li {
+    padding: 0.8rem 0;
+  }
+}

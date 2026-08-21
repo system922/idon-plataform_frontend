@@ -1,6 +1,12 @@
 // ========== src/App.js ==========
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+
+import LandingPage from './pages/LandingPage';
+import PreciosPage from './pages/PreciosPage';
+import ContactoPage from './pages/ContactoPage';
+import BlogPage from './pages/BlogPage';
+
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminDashboard from './pages/admin_idon/AdminDashboard';
@@ -55,8 +61,12 @@ function useRoutePersistence() {
       const currentPath = location.pathname + location.search;
       
       const excludeRoutes = [
+        '/',
         '/login',
         '/register',
+        '/precios',
+        '/contacto',
+        '/blog',
         '/pending-approval',
         '/app/inactive',
         '/app/no-access',
@@ -356,7 +366,10 @@ function AppRoutes() {
           )
         }
       />
-
+      <Route path="/" element={<PublicLayout><LandingPage /></PublicLayout>} />
+      <Route path="/precios" element={<PreciosPage />} />
+      <Route path="/contacto" element={<ContactoPage />} />
+      <Route path="/blog" element={<BlogPage />} />
       {/* Páginas legales */}
       <Route path="/terms-and-conditions" element={<PublicLayout><TermsAndConditions /></PublicLayout>} />
       <Route path="/privacy-policy" element={<PublicLayout><PrivacyPolicy /></PublicLayout>} />
