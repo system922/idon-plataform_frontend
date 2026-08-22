@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
-import { CheckCircle, Users, ShoppingBag, Clipboard, Building, TrendingUp, Leaf, Rocket  } from 'lucide-react';
+import { CheckCircle, Users, ShoppingBag, Clipboard, Building, TrendingUp, Leaf, Rocket } from 'lucide-react';
 
 const LandingPage = () => {
   return (
@@ -10,28 +10,26 @@ const LandingPage = () => {
       <PublicHeader />
 
       <main className="landing-main">
-        {/* H1 y eslogan */}
+        {/* ===== H1: EL MÁS IMPORTANTE ===== */}
         <h1>IDON Control : Simplemente eficiente</h1>
+        
         <p className="lead">
-          <strong>“Tu negocio en tu bolsillo.”</strong> Facturación electrónica, inventario inteligente, 
-          POS y CRM en una sola plataforma. Desde <strong>$10 al mes</strong>, sin complicaciones.
+          <strong>“Tu negocio en tu bolsillo.” </strong> 
+          <Link to="/precios">Facturación electrónica</Link>, 
+          <Link to="/precios"> inventario inteligente</Link>, 
+          <Link to="/precios"> POS</Link>
+          <Link to="/precios"> en una sola plataforma. </Link>  
+          Desde <strong> $10 al mes</strong>, sin complicaciones. 
+          <Link to="/contacto"> Contáctanos</Link> para más información.
         </p>
 
-        {/* ===== NUEVO: Dos imágenes después del lead ===== */}
+        {/* ===== IMÁGENES ===== */}
         <div className="images-grid">
-          <img
-            src="/inicio+.png"
-            alt="IDON - Facturación y ventas"
-            className="landing-image"
-          />
-          <img
-            src="/inicio2.png"
-            alt="IDON - Gestión y control"
-            className="landing-image"
-          />
+          <img src="/inicio+.png" alt="IDON - Facturación y ventas" className="landing-image" />
+          <img src="/inicio2.png" alt="IDON - Gestión y control" className="landing-image" />
         </div>
 
-        {/* Beneficios destacados */}
+        {/* ===== SECCIÓN 1: ¿QUÉ ES IDON? (H2) ===== */}
         <section className="features-grid">
           <div className="feature-card">
             <h2>¿Qué es IDON?</h2>
@@ -41,15 +39,19 @@ const LandingPage = () => {
               comprobantes en el SRI y tener una base de datos completa de tus clientes.
             </p>
           </div>
+
+          {/* ===== SECCIÓN 2: FUNCIONALIDADES (H3) ===== */}
           <div className="feature-card">
             <h3>+50 Funcionalidades para crecer</h3>
             <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li><CheckCircle size={14} color="var(--text-primary)" />  Facturación electrónica directo al SRI</li>
-              <li><CheckCircle size={14} color="var(--text-primary)" />  Control de inventario en tiempo real</li>
-              <li><CheckCircle size={14} color="var(--text-primary)" />  CRM con campañas de email marketing</li>
-              <li><CheckCircle size={14} color="var(--text-primary)" />  Reportes ejecutivos desde el celular</li>
+              <li><CheckCircle size={14} color="var(--text-primary)" /> Facturación electrónica directo al SRI</li>
+              <li><CheckCircle size={14} color="var(--text-primary)" /> Control de inventario en tiempo real</li>
+              <li><CheckCircle size={14} color="var(--text-primary)" /> CRM con campañas de email marketing</li>
+              <li><CheckCircle size={14} color="var(--text-primary)" /> Reportes ejecutivos desde el celular</li>
             </ul>
           </div>
+
+          {/* ===== SECCIÓN 3: PARA QUIÉN ES IDON (H3) ===== */}
           <div className="feature-card">
             <h3>¿Para quién es IDON?</h3>
             <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -61,25 +63,25 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* Módulos clave (de la presentación) */}
+        {/* ===== SECCIÓN 4: ECOSISTEMA IDON (H2) ===== */}
         <section className="audience-section">
           <h2>Ecosistema IDON Control v2.0</h2>
           <p>Módulos clave para transformar tu negocio:</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: '1rem' }}>
-            <div><strong><ShoppingBag size={15} color="var(--text-primary)" /> POS & Comandas</strong> – Ventas rápidas, cierre de caja.</div>
-            <div><strong><Clipboard size={15} color="var(--text-primary)" /> Inventario Inteligente</strong> – Ajustes de stock.</div>
-            <div><strong><Building size={15} color="var(--text-primary)" /> Facturación SRI</strong> – Emisión automática validada.</div>
-            <div><strong><TrendingUp size={15} color="var(--text-primary)" /> Analítica de datos</strong> – KPI de rentabilidad.</div>
-            <div><strong><Users size={15} color="var(--text-primary)" /> CRM & Marketing</strong> – Segmentación y campañas.</div>
+            <div><h3 style={{ fontSize: '1rem', margin: 0, display: 'inline' }}><ShoppingBag size={15} color="var(--text-primary)" /> POS & Comandas</h3> – Ventas rápidas, cierre de caja.</div>
+            <div><h3 style={{ fontSize: '1rem', margin: 0, display: 'inline' }}><Clipboard size={15} color="var(--text-primary)" /> Inventario Inteligente</h3> – Ajustes de stock.</div>
+            <div><h3 style={{ fontSize: '1rem', margin: 0, display: 'inline' }}><Building size={15} color="var(--text-primary)" /> Facturación SRI</h3> – Emisión automática validada.</div>
+            <div><h3 style={{ fontSize: '1rem', margin: 0, display: 'inline' }}><TrendingUp size={15} color="var(--text-primary)" /> Analítica de datos</h3> – KPI de rentabilidad.</div>
+            <div><h3 style={{ fontSize: '1rem', margin: 0, display: 'inline' }}><Users size={15} color="var(--text-primary)" /> CRM & Marketing</h3> – Segmentación y campañas.</div>
           </div>
         </section>
 
-        {/* CTA final */}
-        <div className="cta-section">
+        {/* ===== CTA FINAL (H2) ===== */}
+        <section className="cta-section">
           <h2>Empieza a gestionar tu negocio hoy</h2>
           <p>Únete y descubre lo fácil que es manejar tu negocio.</p>
           <Link to="/login" className="cta-button">Regístrate ahora – Desde $10/mes</Link>
-        </div>
+        </section>
       </main>
     </div>
   );

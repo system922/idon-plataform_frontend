@@ -154,16 +154,76 @@
   letter-spacing: -0.02em;
 }
 
-/* Subtítulo (lead) */
+/* ============================================================
+   ESTILOS PARA EL LEAD CON ENLACES
+   ============================================================ */
+
+/* Estilo base del lead */
 .lead {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-normal);
   color: var(--text-secondary);
-  max-width: 750px;
-  margin-bottom: 1.5rem;
-  line-height: 1.7;
+  max-width: 850px;
+  margin-bottom: 2rem;
+  line-height: 1.8;
   border-left: 4px solid var(--primary);
   padding-left: 1.5rem;
+}
+
+/* Enlaces dentro del lead */
+.lead a {
+  color: var(--primary);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-bottom: 2px solid transparent;
+  padding: 0 2px;
+  white-space: nowrap; /* Evita que los enlaces se rompan en varias líneas */
+}
+
+/* Efecto hover en los enlaces */
+.lead a:hover {
+  color: var(--primary-dark);
+  border-bottom-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+/* Enlace de contacto al final (destacado) */
+.lead a:last-of-type {
+  color: var(--blue-primary);
+  font-weight: var(--font-weight-bold);
+  border-bottom-color: var(--blue-primary);
+}
+
+.lead a:last-of-type:hover {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* Texto en negrita dentro del lead */
+.lead strong {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Espaciado entre palabras y enlaces */
+.lead .link-separator {
+  margin: 0 2px;
+  color: var(--text-muted);
+}
+
+/* Ajuste para móviles: los enlaces pueden ocupar varias líneas */
+@media (max-width: 768px) {
+  .lead {
+    font-size: var(--font-size-base);
+    padding-left: 1rem;
+    line-height: 1.7;
+  }
+
+  .lead a {
+    white-space: normal; /* Permite que los enlaces se envuelvan en móviles */
+    display: inline; /* Mantiene el flujo en línea */
+  }
 }
 
 /* ============================================================
@@ -1079,5 +1139,355 @@
 
   .contact-info-list li {
     padding: 0.8rem 0;
+  }
+}
+
+/* ============================================================
+   BLOG PAGE - Estilos exclusivos
+   (Usa variables globales, 100% responsive)
+   ============================================================ */
+
+/* ---- Contenedor principal del blog ---- */
+.blog-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0rem 0%;
+}
+
+/* ---- Título y subtítulo ---- */
+.blog-title {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.blog-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--text-secondary);
+  max-width: 750px;
+  margin-bottom: 2.5rem;
+  line-height: 1.7;
+  border-left: 4px solid var(--primary);
+  padding-left: 1.5rem;
+}
+
+.blog-subtitle strong {
+  color: var(--blue-primary);
+}
+
+/* ---- Grid de artículos ---- */
+.blog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin: 3rem 0;
+}
+
+/* ---- Tarjeta de artículo ---- */
+.blog-card {
+  background: var(--bg-card);
+  padding: 1.8rem 1.8rem 1.5rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.blog-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-primary);
+}
+
+.blog-card h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: 0.8rem;
+  line-height: 1.3;
+  transition: var(--transition);
+}
+
+.blog-card:hover h3 {
+  color: var(--blue-primary);
+}
+
+.blog-card p {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  flex: 1;
+  margin-bottom: 1rem;
+}
+
+/* ---- Meta información (fecha + fuente) ---- */
+.blog-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.blog-date {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.blog-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--blue-primary);
+  font-size: var(--font-size-xs);
+  text-decoration: none;
+  transition: var(--transition);
+  font-weight: var(--font-weight-medium);
+  border-bottom: 1px dashed transparent;
+}
+
+.blog-source:hover {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.blog-source svg {
+  flex-shrink: 0;
+}
+
+/* ---- Botón "Leer más" ---- */
+.blog-read-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--primary);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  transition: var(--transition);
+  margin-top: 1rem;
+  align-self: flex-start;
+}
+
+.blog-read-more:hover {
+  color: var(--primary-dark);
+  transform: translateX(6px);
+}
+
+/* ---- Sección de fuentes oficiales ---- */
+.blog-sources-section {
+  background: var(--bg-primary);
+  padding: 2.5rem 2rem;
+  border-radius: var(--radius);
+  margin-top: 3rem;
+  text-align: center;
+}
+
+.blog-sources-section h3 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.blog-sources-section .sources-description {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.sources-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+}
+
+.sources-grid a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.4rem 1.2rem;
+  background: var(--bg-card);
+  border-radius: 50px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+  transition: var(--transition);
+  border: 1px solid var(--border-light);
+  font-weight: var(--font-weight-medium);
+}
+
+.sources-grid a:hover {
+  background: var(--primary);
+  color: var(--text-white);
+  border-color: var(--primary);
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+.sources-grid a svg {
+  flex-shrink: 0;
+}
+
+/* ---- Mensaje cuando no hay artículos (opcional) ---- */
+.blog-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-muted);
+}
+
+.blog-empty h3 {
+  font-size: var(--font-size-2xl);
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+/* Tablets (≤ 1024px) */
+@media (max-width: 1024px) {
+  .blog-title {
+    font-size: var(--font-size-3xl);
+  }
+
+  .blog-subtitle {
+    font-size: var(--font-size-md);
+  }
+
+  .blog-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+/* Tablets y móviles grandes (≤ 768px) */
+@media (max-width: 768px) {
+  .blog-container {
+    padding: 1.5rem;
+  }
+
+  .blog-title {
+    font-size: var(--font-size-2xl);
+  }
+
+  .blog-subtitle {
+    font-size: var(--font-size-base);
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .blog-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .blog-card {
+    padding: 1.5rem;
+  }
+
+  .blog-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
+
+  .blog-sources-section {
+    padding: 1.5rem;
+  }
+
+  .blog-sources-section h3 {
+    font-size: var(--font-size-lg);
+  }
+
+  .sources-grid {
+    gap: 0.5rem;
+  }
+
+  .sources-grid a {
+    font-size: var(--font-size-xs);
+    padding: 0.3rem 0.8rem;
+  }
+}
+
+/* Móviles pequeños (≤ 480px) */
+@media (max-width: 480px) {
+  .blog-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .blog-subtitle {
+    font-size: var(--font-size-sm);
+  }
+
+  .blog-card {
+    padding: 1rem;
+  }
+
+  .blog-card h3 {
+    font-size: var(--font-size-md);
+  }
+
+  .blog-card p {
+    font-size: var(--font-size-sm);
+  }
+
+  .blog-date,
+  .blog-source {
+    font-size: var(--font-size-xs);
+  }
+
+  .blog-read-more {
+    font-size: var(--font-size-sm);
+  }
+
+  .sources-grid a {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+  }
+}
+
+/* Pantallas muy grandes (≥ 1400px) */
+@media (min-width: 1400px) {
+  .blog-container {
+    max-width: 1200px;
+    padding: 3rem 0;
+  }
+
+  .blog-grid {
+    gap: 2.5rem;
+  }
+
+  .blog-card {
+    padding: 2rem;
+  }
+}
+
+/* ============================================================
+   MEJORAS PARA ACCESIBILIDAD Y TÁCTIL
+   ============================================================ */
+
+@media (hover: none) and (pointer: coarse) {
+  .blog-card {
+    padding: 1.2rem;
+  }
+
+  .blog-read-more {
+    padding: 0.4rem 0;
+  }
+
+  .sources-grid a {
+    padding: 0.5rem 1rem;
+    min-height: 44px;
   }
 }

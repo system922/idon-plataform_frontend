@@ -367,9 +367,9 @@ function AppRoutes() {
         }
       />
       <Route path="/" element={<PublicLayout><LandingPage /></PublicLayout>} />
-      <Route path="/precios" element={<PreciosPage />} />
-      <Route path="/contacto" element={<ContactoPage />} />
-      <Route path="/blog" element={<BlogPage />} />
+      <Route path="/precios" element={<PublicLayout><PreciosPage /></PublicLayout>} />
+      <Route path="/contacto" element={<PublicLayout><ContactoPage /></PublicLayout>} />
+      <Route path="/blog" element={<PublicLayout><BlogPage /></PublicLayout>} />
       {/* Páginas legales */}
       <Route path="/terms-and-conditions" element={<PublicLayout><TermsAndConditions /></PublicLayout>} />
       <Route path="/privacy-policy" element={<PublicLayout><PrivacyPolicy /></PublicLayout>} />
