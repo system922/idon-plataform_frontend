@@ -453,6 +453,7 @@ function PayModal({ row, onClose, onConfirm }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Registrar Pago"
@@ -578,6 +579,7 @@ function EmailModal({ row, onClose }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Enviar Email"

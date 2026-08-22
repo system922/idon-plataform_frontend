@@ -21,38 +21,11 @@ import {
   FiUser,
   FiCalendar,
   FiHash,
-  FiBox,
-  FiCreditCard,
   FiList,
   FiArrowRight,
   FiCheckCircle,
   FiXCircle,
-  FiShield,
-  FiAlertTriangle,
-  FiGlobe,
-  FiClock,
-  FiMail,
-  FiPrinter,
-  FiShoppingCart,
-  FiPackage,
-  FiBarChart2,
-  FiSettings,
-  FiGrid,
-  FiBook,
-  FiClipboard,
-  FiTruck,
-  FiShoppingBag,
-  FiMap,
-  FiMapPin,
-  FiBell,
-  FiTag,
-  FiGift,
-  FiShare2,
-  FiSearch,
-  FiLayers,
-  FiMonitor,
-  FiActivity,
-  FiZap,
+  FiShield
 } from 'react-icons/fi';
 import { fetchWithAuth } from '../../config/api';
 import Table from '../../components/General/Table';
@@ -730,6 +703,7 @@ function AuditDetailModal({ log, onClose }) {
   // ─── RENDER ──────────────────────────────────────────────────────────
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={

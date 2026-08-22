@@ -27,6 +27,7 @@ export default function Modal({
   overlayClassName = '',
 }) {
   const modalRef = useRef(null);
+  const overlayRef = useRef(null);
 
   // Cerrar con Escape
   useEffect(() => {
@@ -54,7 +55,7 @@ export default function Modal({
     };
   }, [isOpen]);
 
-  // Cerrar al hacer clic en el overlay
+  // Cerrar al hacer clic en el overlay (solo si el clic es directamente en el overlay, no en el contenido)
   const handleOverlayClick = useCallback(
     (e) => {
       if (closeOnOverlayClick && e.target === e.currentTarget) {
@@ -67,9 +68,15 @@ export default function Modal({
   // Enfocar el modal al abrir (para accesibilidad)
   useEffect(() => {
     if (isOpen && modalRef.current) {
-      modalRef.current.focus();
+      // Pequeño retraso para asegurar que el DOM esté listo
+      setTimeout(() => {
+        modalRef.current.focus();
+      }, 10);
     }
   }, [isOpen]);
+
+  // Si no está abierto, no renderizar nada
+  if (!isOpen) return null;
 
   // Tamaños del modal
   const sizeStyles = {
@@ -80,7 +87,7 @@ export default function Modal({
     full: { maxWidth: '95vw', width: '100%' },
   };
 
-  // Estilos del overlay
+  // Estilos del overlay (con backdrop blur)
   const overlayStyles = {
     position: 'fixed',
     top: 0,
@@ -168,22 +175,28 @@ export default function Modal({
     borderBottomRightRadius: 'var(--radius-lg, 12px)',
   };
 
-  if (!isOpen) return null;
-
   return (
     <div
+      ref={overlayRef}
       style={overlayStyles}
       className={overlayClassName}
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
+      // Prevenir que el evento de clic se propague desde el contenido
+      onMouseDown={(e) => {
+        // Si el clic comienza en el overlay, no hacer nada especial
+      }}
     >
       <div
         ref={modalRef}
         style={contentStyles}
         className={className}
         tabIndex={-1}
+        // Prevenir que el clic en el contenido cierre el modal
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Cabecera */}
         <div style={headerStyles} className="modal-header">

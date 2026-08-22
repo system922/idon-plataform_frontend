@@ -3,12 +3,11 @@ import { FiFileText, FiPrinter, FiAlertCircle, FiCheckCircle } from 'react-icons
 import Modal from '../components/General/Modal';
 import { IconTextButton, ButtonGroup } from '../components/General/Button';
 import {
-  Plus, Edit2, CheckCircle, AlertCircle, X, Save, Trash2
+  X, 
 } from 'react-feather';
 import { fetchWithAuth } from '../config/apiBase_';
 import PrintPayrollButton from '../components/PrintPayrollButton';
 import jsPDF from "jspdf";
-import './PayrollPrintModal.css';
 
 function getOperatorUser() {
   try {
@@ -390,6 +389,7 @@ export default function PayrollPrintModal({
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={open}
       onClose={onClose}
       title="Imprimir Recibo de Nómina"

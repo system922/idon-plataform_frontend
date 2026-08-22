@@ -8,7 +8,7 @@ import {
   Award as AwardIcon
 } from 'react-feather';
 import { FiRefreshCw } from 'react-icons/fi';
-import { fetchWithAuth } from '../../config/api'; // ✅ CORREGIDO
+import { fetchWithAuth } from '../../config/api';
 import '../../styles/CrmAnalytics.css';
 
 // ── IMPORTAR COMPONENTES DE TABS ──

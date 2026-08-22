@@ -11,7 +11,6 @@ import { BsCashCoin } from "react-icons/bs";
 import { CiCreditCard1 } from "react-icons/ci";
 import { SlScreenSmartphone } from "react-icons/sl";
 
-import Modal from '../../components/General/Modal';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 
 // Componentes
@@ -1476,7 +1475,7 @@ export default function PosCheckoutPage() {
   useEffect(() => {
     const navigationState = window.history.state?.usr || {};
     if (navigationState.orderNumber) {
-      console.log('📦 Navegando desde Cuentas por Cobrar (state):', navigationState);
+      console.log('Navegando desde Cuentas por Cobrar (state):', navigationState);
       setIsFromReceivable(true);
       setCurrentReceivableId(navigationState.receivableId || null);
       if (window.history.state?.usr) {
@@ -1487,7 +1486,7 @@ export default function PosCheckoutPage() {
         String(o.id) === String(navigationState.orderNumber)
       );
       if (targetOrder) {
-        console.log('✅ Orden encontrada en orders:', targetOrder);
+        console.log('Orden encontrada en orders:', targetOrder);
         setDraftOrder(targetOrder);
         setSelectedOrder(targetOrder);
         const cedula = navigationState.customerCedula || targetOrder.customer_document_number || '9999999999';

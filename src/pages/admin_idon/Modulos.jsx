@@ -343,6 +343,7 @@ function ModuloModal({ item, onClose, onSaved }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={item ? 'Editar Módulo' : 'Nuevo Módulo'}

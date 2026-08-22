@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSession } from '../../context/SessionContext';  // ✅ AGREGADO
-import { useBusinessContext } from '../../admin/config/BusinessContext';  // ✅ AGREGADO
+import { useSession } from '../../context/SessionContext';  
+import { useBusinessContext } from '../../admin/config/BusinessContext';  
 import PageTemplate from '../../components/PageTemplate';
 import { 
-  Plus, Eye, Send, RefreshCw, AlertCircle, Check, X, FileText, 
-  Download, Mail, Clock 
+  Send, RefreshCw, AlertCircle, Check, X, FileText, 
+  Download, Clock 
 } from 'react-feather';
-import { MdOutlineFileDownload } from "react-icons/md";
-import { fetchWithAuth } from '../../config/api';  // ✅ Cambiado
+import { fetchWithAuth } from '../../config/api';  
 import { usePrinterService } from '../../services/usePrinterService';
 import Table from '../../components/General/Table';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
-import SearchInput from '../../components/General/SearchInput';
 import CustomCombobox from '../../components/General/CustomCombobox';
 import '../../styles/CreditNotes.css';
 

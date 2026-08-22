@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSession } from '../../context/SessionContext'; // ✅ AGREGADO
+import { useSession } from '../../context/SessionContext'; 
 import PageTemplate from '../../components/PageTemplate';
 import { useConfirm } from '../../context/ConfirmContext';
 import {
   FiPlus, FiEdit2, FiTrash2, FiSend, FiEye, FiX, FiCheck, FiAlertCircle,
-  FiMail, FiUsers, FiCalendar, FiLoader, FiCheckCircle, FiXCircle,
-  FiSearch, FiImage, FiUploadCloud, FiRefreshCw
+  FiMail, FiUsers, FiLoader, FiCheckCircle, FiXCircle,
+  FiImage, FiUploadCloud, FiRefreshCw
 } from 'react-icons/fi';
-import { fetchWithAuth } from '../../config/api'; // ✅ CORREGIDO
+import { fetchWithAuth } from '../../config/api'; 
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Modal from '../../components/General/Modal';
 import Input from '../../components/General/Input';
@@ -107,7 +107,6 @@ function CampaignSendModal({ campaign, onClose, onSent }) {
         : mode === 'selection'
         ? { send_to_all: false, customer_ids: [...selectedIds] }
         : { send_to_all: false, segment_id: selectedSegment };
-      // ✅ SIN /api
       const res = await fetchWithAuth(`/crm/email-campaigns/${campaign.id}/send`, { method: 'POST', body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al enviar');
@@ -117,6 +116,7 @@ function CampaignSendModal({ campaign, onClose, onSent }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Enviar campaña"
@@ -267,7 +267,7 @@ function CampaignSendModal({ campaign, onClose, onSent }) {
             )}
 
             <div className="crm-send-hint">
-              💡 El nombre del cliente y tu negocio se insertan automáticamente en cada correo
+              El nombre del cliente y tu negocio se insertan automáticamente en cada correo
             </div>
 
             {canSend && (
@@ -331,7 +331,6 @@ export default function CrmEmail() {
   const loadCampaigns = async () => {
     setLoading(true); setError('');
     try {
-      // ✅ SIN /api
       const res = await fetchWithAuth('/crm/email-campaigns');
       if (!res.ok) throw new Error('Error al cargar campañas');
       const data = await res.json();
@@ -341,7 +340,6 @@ export default function CrmEmail() {
 
   useEffect(() => {
     loadCampaigns();
-    // ✅ SIN /api
     fetchWithAuth('/einvoicing/config')
       .then(r => r.ok ? r.json() : null)
       .then(d => {
@@ -399,7 +397,6 @@ export default function CrmEmail() {
     try {
       const form = new FormData();
       form.append('file', imgFile);
-      // ✅ SIN /api
       const res = await fetchWithAuth('/crm/email-campaigns/upload-image', { method: 'POST', body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al subir imagen');
@@ -500,7 +497,6 @@ export default function CrmEmail() {
   const handleDelete = async (campaign) => {
     if (!await showConfirm(`¿Eliminar la campaña "${campaign.title}"?`)) return;
     try {
-      // ✅ SIN /api
       const res = await fetchWithAuth(`/crm/email-campaigns/${campaign.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Error al eliminar');
       setSuccess('Campaña eliminada'); loadCampaigns();
@@ -672,6 +668,7 @@ export default function CrmEmail() {
         {/* ── Modal crear / editar ──────────────────────────────────────── */}
         {modalOpen && (
           <Modal
+            closeOnOverlayClick={false}
             isOpen={true}
             onClose={() => setModalOpen(false)}
             title={
@@ -872,6 +869,7 @@ export default function CrmEmail() {
         {/* ── Modal vista previa ────────────────────────────────────────── */}
         {previewOpen && editingCampaign && (
           <Modal
+            closeOnOverlayClick={false}
             isOpen={true}
             onClose={() => setPreviewOpen(false)}
             title={editingCampaign.title}

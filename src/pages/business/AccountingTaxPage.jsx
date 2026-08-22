@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import Table from '../../components/General/Table';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Modal from '../../components/General/Modal';
 import {
-  AlertCircle, CheckCircle, DollarSign, Calendar, FileText,
-  Download, Upload, RefreshCw, X, Eye, Shield, Zap, Clock
+  AlertCircle, CheckCircle, DollarSign, FileText,
+  Upload, RefreshCw, X, Eye, Shield, Zap
 } from 'react-feather';
 import { FiRefreshCw as FiRefreshCwIcon } from 'react-icons/fi';
 
@@ -107,6 +107,7 @@ function DeclarationDetailModal({ isOpen, onClose, declaration }) {
   if (!declaration) return null;
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={isOpen}
       onClose={onClose}
       title={`Detalle de Declaración - ${declaration.type}`}
@@ -154,6 +155,7 @@ function SendDocumentModal({ isOpen, onClose, onSend }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={isOpen}
       onClose={onClose}
       title="Enviar Comprobante al SRI"

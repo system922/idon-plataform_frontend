@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSession } from '../../context/SessionContext'; // ✅ AGREGADO
+import { useSession } from '../../context/SessionContext'; 
 import {
   FiRefreshCw, FiAlertCircle,
   FiEdit2, FiSave, FiX, FiCheck,
@@ -7,11 +7,11 @@ import {
   FiShield, FiLock, FiHash
 } from 'react-icons/fi';
 import PageTemplate from '../../components/PageTemplate';
-import { fetchWithAuth } from '../../config/api'; // ✅ CORREGIDO
+import { fetchWithAuth } from '../../config/api';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 
 export default function AccountingSriPage() {
-  const { user } = useSession(); // ✅ AGREGADO
+  const { user } = useSession(); 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [msg, setMsg] = useState(null);

@@ -1,6 +1,7 @@
 // src/pages/PosRetailPage.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useConfirm, useAlert } from '../../context/ConfirmContext';
 import { useSession } from '../../context/SessionContext';
 import PageTemplate from '../../components/PageTemplate';
 import {
@@ -14,16 +15,19 @@ import OpenDrawerButton from '../../components/OpenDrawerButton';
 import { fetchWithAuth } from '../../config/api';
 import { useQzTray } from '../../components/useQzTray';
 import { usePrinterService } from '../../services/usePrinterService';
+import PrintModal from '../../components/POS/PrintModal';
+
 
 // ── Componentes reutilizables ──
 import Button, { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Input from '../../components/General/Input';
-import Modal from '../../components/General/Modal';
 import CustomCombobox from '../../components/General/CustomCombobox';
 import SearchInput from '../../components/General/SearchInput';
 
 export default function PosRetailPage() {
   const { user, selectedBusiness } = useSession();
+  const { showConfirm } = useConfirm();
+  const alert = useAlert();
   const navigate = useNavigate();
   const { printerError } = useQzTray();
   const { print } = usePrinterService();
@@ -35,7 +39,20 @@ export default function PosRetailPage() {
 
   const [showPrintModal, setShowPrintModal] = useState(false);
   const awaitPrintDecision = () => new Promise(res => { printResolveRef.current = res; setShowPrintModal(true); });
-  const handlePrintDecision = (v) => { setShowPrintModal(false); printResolveRef.current?.(v); };
+
+  const [toast, setToast] = useState({ message: '', type: '', visible: false });
+  const toastTimerRef = useRef(null);
+
+  const handlePrintDecision = (shouldPrint) => {
+    setShowPrintModal(false);
+    printResolveRef.current?.(shouldPrint);
+    printResolveRef.current = null;
+  };
+
+  const hideToast = () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message: '', type: '', visible: false });
+  };
 
   // ── Catálogo ────────────────────────────────────────────────────────────────
   const [products, setProducts] = useState([]);
@@ -978,7 +995,7 @@ export default function PosRetailPage() {
         );
       }
 
-      setSuccess(`✅ Venta completada${invoiceData ? ` | Factura ${invoiceData.invoice_number}` : ''}`);
+      setSuccess(`Venta completada${invoiceData ? ` | Factura ${invoiceData.invoice_number}` : ''}`);
       clearCart();
     } catch (err) {
       setError(err.message || 'Error al procesar la venta');
@@ -1746,9 +1763,54 @@ export default function PosRetailPage() {
         </div>
       </div>
 
-      <Modal isOpen={showPrintModal} onClose={() => handlePrintDecision(false)} title="¿Imprimir comprobante?" size="sx" footer={footer}>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: 20 }}>El pago fue registrado exitosamente.</p>
-      </Modal>
+      <PrintModal
+        isOpen={showPrintModal}
+        onPrint={handlePrintDecision}
+        onClose={() => handlePrintDecision(false)}
+      />
+
+      {toast.visible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: 9999,
+            maxWidth: '400px',
+            padding: '16px 20px',
+            borderRadius: '8px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+            backgroundColor: toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#ef4444' : '#3b82f6',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            fontFamily: 'sans-serif',
+            fontSize: '14px',
+            fontWeight: '500',
+            transition: 'all 0.3s ease',
+            animation: 'slideIn 0.3s ease',
+          }}
+        >
+          <span style={{ flex: 1 }}>{toast.message}</span>
+          <button
+            onClick={hideToast}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#fff',
+              fontSize: '18px',
+              cursor: 'pointer',
+              lineHeight: 1,
+              opacity: 0.8,
+              padding: '0 4px',
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+      
     </PageTemplate>
   );
 }

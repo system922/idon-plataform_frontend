@@ -9,7 +9,6 @@ import PageTemplate from '../../components/PageTemplate';
 import { fetchWithAuth } from '../../config/api'; // ✅ CORREGIDO
 import Table from '../../components/General/Table';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
-import SearchInput from '../../components/General/SearchInput';
 import Input from '../../components/General/Input';
 import Modal from '../../components/General/Modal';
 import CustomCombobox from '../../components/General/CustomCombobox';
@@ -35,6 +34,7 @@ function SupplierModal({ supplier, onClose, onSave, saving }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={supplier ? 'Editar proveedor' : 'Nuevo proveedor'}

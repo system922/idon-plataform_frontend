@@ -311,6 +311,7 @@ function BusinessTypeModal({ item, onClose, onSaved }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={item ? 'Editar Tipo de Negocio' : 'Nuevo Tipo de Negocio'}

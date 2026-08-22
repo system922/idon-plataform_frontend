@@ -50,29 +50,28 @@ import PaymentPendingPage from './pages/business/PaymentPendingPage';
 import PublicOrderPage from './pages/public/PublicOrderPage';
 import NoAccessPage from './pages/NoAccessPage';
 
+// ==================== FUNCIÓN AUXILIAR ====================
+const isAdminUser = (user) => {
+  if (!user) return false;
+  return user.userType === 'admin_idon' || 
+         user.role === 'admin' || 
+         user.role === 'superadmin' ||
+         user.role === 'super_admin';
+};
+
 // ==================== GUARDAR RUTA ACTUAL ====================
 function useRoutePersistence() {
   const location = useLocation();
   const { isAuthenticated, loading } = useSession();
 
   useEffect(() => {
-    // Solo guardar si está autenticado y no está cargando
     if (!loading && isAuthenticated) {
       const currentPath = location.pathname + location.search;
       
       const excludeRoutes = [
-        '/',
-        '/login',
-        '/register',
-        '/precios',
-        '/contacto',
-        '/blog',
-        '/pending-approval',
-        '/app/inactive',
-        '/app/no-access',
-        '/app/payment-pending',
-        '/terms-and-conditions',
-        '/privacy-policy'
+        '/', '/login', '/register', '/precios', '/contacto', '/blog',
+        '/pending-approval', '/app/inactive', '/app/no-access', '/app/payment-pending',
+        '/terms-and-conditions', '/privacy-policy'
       ];
       
       const shouldExclude = excludeRoutes.some(route => currentPath.includes(route));
@@ -111,12 +110,8 @@ function useRouteRestorer() {
 
       if (!shouldNotRestore) {
         const excludeRoutes = [
-          '/login',
-          '/register',
-          '/pending-approval',
-          '/app/inactive',
-          '/app/no-access',
-          '/app/payment-pending'
+          '/login', '/register', '/pending-approval',
+          '/app/inactive', '/app/no-access', '/app/payment-pending'
         ];
         
         const isExcluded = excludeRoutes.some(route => savedRoute.includes(route));
@@ -130,7 +125,7 @@ function useRouteRestorer() {
 }
 
 // =============================================
-// HOOK PERSONALIZADO PARA VERIFICAR ESTADO
+// HOOK PERSONALIZADO PARA VERIFICAR ESTADO DEL NEGOCIO
 // =============================================
 function useBusinessStatus() {
   const { user, isAuthenticated, logout } = useSession();
@@ -143,13 +138,7 @@ function useBusinessStatus() {
 
   useEffect(() => {
     const checkStatus = async () => {
-      // Rutas públicas que no requieren verificación
-      const publicRoutes = [
-        '/login',
-        '/register',
-        '/terms-and-conditions',
-        '/privacy-policy'
-      ];
+      const publicRoutes = ['/login', '/register', '/terms-and-conditions', '/privacy-policy'];
       
       if (publicRoutes.some(route => location.pathname.includes(route))) {
         setLoading(false);
@@ -157,7 +146,7 @@ function useBusinessStatus() {
         return;
       }
 
-      // Si está en páginas de estado, no verificar
+      // Páginas de estado - no verificar
       if (location.pathname.includes('/pending-approval') ||
           location.pathname.includes('/app/payment-pending') ||
           location.pathname.includes('/app/inactive') ||
@@ -168,14 +157,18 @@ function useBusinessStatus() {
         return;
       }
 
-      // Si es admin IDON, no verificar estado de negocio
-      if (location.pathname.includes('/admin') || user?.userType === 'admin_idon') {
+      // Si es admin, no verificar estado de negocio
+      if (location.pathname.includes('/admin') || isAdminUser(user)) {
         setLoading(false);
         setChecked(true);
+        // Si está en rutas de estado de negocio, redirigir al dashboard
+        const statusRoutes = ['/app/no-access', '/app/inactive', '/pending-approval', '/app/payment-pending'];
+        if (statusRoutes.some(route => location.pathname.includes(route))) {
+          setRedirectTo('/admin/dashboard');
+        }
         return;
       }
 
-      // Si no está autenticado, no verificar
       if (!isAuthenticated || !user) {
         setLoading(false);
         setChecked(true);
@@ -202,14 +195,9 @@ function useBusinessStatus() {
 
         let redirect = null;
 
-        // Solo redirigir por estado
         if (status === 'inactive' || status === 'user_not_found') {
           redirect = '/app/inactive';
-        } else if (status === 'no_business') {
-          redirect = '/app/no-access';
-        } else if (status === 'no_request') {
-          redirect = '/app/no-access';
-        } else if (status === 'error') {
+        } else if (status === 'no_business' || status === 'no_request' || status === 'error') {
           redirect = '/app/no-access';
         } else if (status === 'active') {
           redirect = null;
@@ -258,7 +246,6 @@ function AppRoutesWrapper() {
   const location = useLocation();
   const { loading, redirectTo, statusData, checked } = useBusinessStatus();
 
-  // 1. Si está cargando o no ha verificado, mostrar spinner
   if (loading || !checked) {
     return (
       <div className="spinner-overlay">
@@ -272,7 +259,6 @@ function AppRoutesWrapper() {
     );
   }
 
-  // Si hay redirección pendiente (por estado del negocio)
   if (redirectTo) {
     return (
       <div className="spinner-overlay">
@@ -286,8 +272,7 @@ function AppRoutesWrapper() {
     );
   }
 
-  // TODOS los usuarios autenticados con negocio activo pueden acceder
-  // 2. PRIORIDAD ALTA: Páginas de estado
+  // Páginas de estado
   if (location.pathname.includes('/pending-approval')) {
     return <PendingApprovalPage onLogout={logout} />;
   }
@@ -304,9 +289,29 @@ function AppRoutesWrapper() {
     return <NoAccessPage onLogout={logout} />;
   }
 
-  // 3. Mostrar el BusinessLayout (él mismo carga su navegación)
+  // Business Layout
   const realRole = user?.role || user?.userType || 'user';
   return <BusinessLayout userRole={realRole} />;
+}
+
+// =============================================
+// COMPONENTE PARA RUTAS /app/*
+// =============================================
+function AppRouter() {
+  const { user, isAuthenticated } = useSession();
+  
+  // Si es admin, redirigir al dashboard
+  if (isAuthenticated && isAdminUser(user)) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+  
+  // Si no está autenticado, redirigir al login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Usuario de negocio
+  return <AppRoutesWrapper />;
 }
 
 function RegisterPageWrapper() {
@@ -326,12 +331,10 @@ function AppRoutes() {
   const { user, logout, isAuthenticated, requiresBusinessSelection } = useSession();
   const location = useLocation();
   
-  // Función para determinar si debe redirigir desde páginas de autenticación
   const shouldRedirectFromAuthPage = isAuthenticated && !requiresBusinessSelection;
   
-  // Determinar ruta de redirección inicial
   const getRedirectPath = () => {
-    if (user?.userType === 'admin_idon' || user?.role === 'superadmin') {
+    if (isAdminUser(user)) {
       return '/admin/dashboard';
     }
     return '/app';
@@ -370,7 +373,6 @@ function AppRoutes() {
       <Route path="/precios" element={<PublicLayout><PreciosPage /></PublicLayout>} />
       <Route path="/contacto" element={<PublicLayout><ContactoPage /></PublicLayout>} />
       <Route path="/blog" element={<PublicLayout><BlogPage /></PublicLayout>} />
-      {/* Páginas legales */}
       <Route path="/terms-and-conditions" element={<PublicLayout><TermsAndConditions /></PublicLayout>} />
       <Route path="/privacy-policy" element={<PublicLayout><PrivacyPolicy /></PublicLayout>} />
 
@@ -381,21 +383,18 @@ function AppRoutes() {
           isAuthenticated ? <PendingApprovalPage onLogout={logout} /> : <Navigate to="/login" replace />
         }
       />
-
       <Route
         path="/app/inactive"
         element={
           isAuthenticated ? <InactiveUserPage onLogout={logout} /> : <Navigate to="/login" replace />
         }
       />
-
       <Route
         path="/app/no-access"
         element={
           isAuthenticated ? <NoAccessPage onLogout={logout} /> : <Navigate to="/login" replace />
         }
       />
-
       <Route
         path="/app/payment-pending"
         element={
@@ -415,7 +414,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Dashboard genérico - redirige a /app */}
+      {/* Dashboard genérico */}
       <Route
         path="/dashboard"
         element={
@@ -428,7 +427,7 @@ function AppRoutes() {
       />
 
       {/* Admin IDON */}
-      {user?.userType === 'admin_idon' && (
+      {isAdminUser(user) && (
         <Route path="/admin/*" element={
           <AdminLayout user={user} onLogout={logout}>
             <Routes>
@@ -454,20 +453,11 @@ function AppRoutes() {
       )}
 
       {/* App Business */}
-      <Route
-        path="/app/*"
-        element={
-          isAuthenticated && user?.userType !== 'admin_idon' ? (
-            <AppRoutesWrapper />
-          ) : (
-            <Navigate to={isAuthenticated ? '/admin/dashboard' : '/login'} replace />
-          )
-        }
-      >
+      <Route path="/app/*" element={<AppRouter />}>
         {businessRoutes}
       </Route>
 
-      {/* 404 - Redireccionar */}
+      {/* 404 */}
       <Route
         path="*"
         element={
@@ -489,11 +479,9 @@ function AppContent() {
   const { loading, isAuthenticated, user } = useSession();
   const location = useLocation();
 
-  // Usar los hooks de persistencia
   useRoutePersistence();
   useRouteRestorer();
 
-  // Rutas públicas que no muestran spinner de carga
   const isPublicRoute = location.pathname === '/' ||
                         location.pathname === '/login' ||
                         location.pathname === '/register' ||

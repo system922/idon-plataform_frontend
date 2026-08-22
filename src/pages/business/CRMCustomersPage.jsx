@@ -1,21 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSession } from '../../context/SessionContext'; // ✅ AGREGADO
+import { useSession } from '../../context/SessionContext'; 
 import PageTemplate from '../../components/PageTemplate';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAlert } from '../../components/ConfirmContext';
 import { 
-  Plus, Edit2, Trash2, X, Search, RefreshCw, 
-  Mail, Phone, CreditCard, ChevronLeft, ChevronRight,
-  Users, UserCheck, UserPlus, ShoppingBag, FileText, Zap,
+  Plus, Edit2, Trash2, X, 
+  Mail, Phone, CreditCard, 
+  Users, UserCheck, UserPlus, ShoppingBag, 
   CheckCircle, AlertCircle
 } from 'react-feather';
 import { FiRefreshCw as FiRefreshCwIcon } from 'react-icons/fi';
-import { fetchWithAuth } from '../../config/api'; // ✅ CORREGIDO
+import { fetchWithAuth } from '../../config/api'; 
 import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Modal from '../../components/General/Modal';
 import Input from '../../components/General/Input';
-import SearchInput from '../../components/General/SearchInput';
 import Table from '../../components/General/Table';
 import '../../styles/CRMCustomersPage.css';
 
@@ -209,6 +208,7 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={customer ? 'Editar cliente' : 'Nuevo cliente'}

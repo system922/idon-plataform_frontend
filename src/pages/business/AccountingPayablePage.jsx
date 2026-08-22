@@ -7,7 +7,6 @@ import PageTemplate from '../../components/PageTemplate';
 import ReportPdfButton from '../../components/ReportPdfButton';
 import Table from '../../components/General/Table';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
-import SearchInput from '../../components/General/SearchInput';
 import Modal from '../../components/General/Modal';
 import CustomCombobox from '../../components/General/CustomCombobox';
 import { fetchWithAuth } from '../../config/api';
@@ -64,6 +63,7 @@ function CreatePayableModal({ onClose, onSave, saving }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Nueva Cuenta por Pagar"
@@ -222,6 +222,7 @@ function PaymentModal({ payable, onClose, onSave, saving }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Registrar Pago"
@@ -329,6 +330,7 @@ function DetailModal({ payable, onClose }) {
   
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Detalle de Cuenta por Pagar"
@@ -473,7 +475,6 @@ export default function AccountingPayablePage() {
       let url = `/accounting-payable/payable?page=${currentPage}&limit=15&status=${statusFilter}`;
       if (search) url += `&search=${encodeURIComponent(search)}`;
       if (typeFilter !== 'all') url += `&type=${typeFilter}`;
-      // ✅ Asegurar que businessId se envía
       url += `&businessId=${businessId}`;
       
       const response = await fetchWithAuth(url);

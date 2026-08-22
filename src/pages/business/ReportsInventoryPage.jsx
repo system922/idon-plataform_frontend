@@ -1056,6 +1056,7 @@ export default function ReportsInventoryPage() {
 
         {/* Modal de detalle de inventario */}
         <Modal
+          closeOnOverlayClick={false}
           isOpen={showInventoryDetail}
           onClose={() => setShowInventoryDetail(false)}
           title={`Detalle de inventario #${String(selectedInventory?.id || '').slice(0, 8)}`}
@@ -1092,6 +1093,7 @@ export default function ReportsInventoryPage() {
 
         {/* Modal de kardex de producto */}
         <Modal
+          closeOnOverlayClick={false}
           isOpen={showProductMovements}
           onClose={() => setShowProductMovements(false)}
           title={`Kardex - ${selectedProduct?.name || 'Producto'}`}
@@ -1130,6 +1132,7 @@ export default function ReportsInventoryPage() {
         {/* Modal de fechas personalizadas */}
         {showCustomDate && (
           <Modal
+            closeOnOverlayClick={false}
             isOpen={true}
             onClose={() => setShowCustomDate(false)}
             title="Seleccionar fechas"

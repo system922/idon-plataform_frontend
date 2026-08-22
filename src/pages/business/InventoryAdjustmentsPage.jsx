@@ -11,7 +11,6 @@ import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Input from '../../components/General/Input';
 import Modal from '../../components/General/Modal';
 import CustomCombobox from '../../components/General/CustomCombobox';
-import SearchInput from '../../components/General/SearchInput';
 import '../../styles/InventoryAdjustmentsPage.css';
 
 export default function InventoryAdjustmentsPage() {
@@ -758,12 +757,13 @@ export default function InventoryAdjustmentsPage() {
 
         {/* Modal de movimientos del producto (Kardex) */}
         <Modal
+          closeOnOverlayClick={false}
           isOpen={showMovementsModal}
           onClose={() => {
-            setShowMovementsModal(false);
-            setSelectedProduct(null);
-            setProductMovements([]);
-            setMovementFilter({ type: 'all', startDate: '', endDate: '' });
+          setShowMovementsModal(false);
+          setSelectedProduct(null);
+          setProductMovements([]);
+          setMovementFilter({ type: 'all', startDate: '', endDate: '' });
           }}
           title={`Kardex - ${selectedProduct?.name || ''}`}
           size="xl"
@@ -903,14 +903,15 @@ export default function InventoryAdjustmentsPage() {
 
         {/* Modal de ajustes */}
         <Modal
+          closeOnOverlayClick={false}
           isOpen={showModal}
           onClose={() => {
-            setShowModal(false);
-            setSelectedInventory(null);
-            setSelectedItems([]);
-            setInventoryItems([]);
-            setIsInventoryAdjusted(false);
-            setError('');
+          setShowModal(false);
+          setSelectedInventory(null);
+          setSelectedItems([]);
+          setInventoryItems([]);
+          setIsInventoryAdjusted(false);
+          setError('');
           }}
           title="Nuevo ajuste de inventario"
           size="md"

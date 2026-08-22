@@ -1,7 +1,7 @@
 import React from 'react';
 import Modal from './General/Modal';
 import { IconTextButton, ButtonGroup } from './General/Button';
-import { X, CheckCircle, AlertTriangle, Trash2 } from 'react-feather';
+import { X, CheckCircle, Trash2 } from 'react-feather';
 import { useState } from 'react';
 
 // ─── HOOK useConfirm ─────────────────────────────────────────────
@@ -49,6 +49,7 @@ const ConfirmModal = ({
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={isOpen}
       onClose={onCancel}
       title={title}

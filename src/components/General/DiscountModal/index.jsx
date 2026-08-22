@@ -234,6 +234,7 @@ const DiscountModal = ({ onClose, onSaved, discount = null }) => {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={discount ? 'Editar Descuento' : 'Nuevo Descuento'}

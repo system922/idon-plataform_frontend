@@ -46,18 +46,13 @@ const MOD_ICON_LG = {
   einvoicing: <FiFileText size={16}/>,
 };
 
-// ============================================================
-// Modal para gestionar módulos y aprovisionar
-// ============================================================
 function BusinessModulesModal({ business, onClose, onSaved }) {
-  const { showConfirm } = useConfirm();
   const alert = useAlert();
   const [allModules, setAllModules] = useState([]);
   const [selectedMods, setSelectedMods] = useState([]);
   const [selectedFeats, setSelectedFeats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [provisioning, setProvisioning] = useState(false);
   const [error, setError] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -117,7 +112,6 @@ function BusinessModulesModal({ business, onClose, onSaved }) {
     setHasChanges(true);
   };
 
-  // Guardar solo la selección de módulos (no crea tablas)
   const handleSave = async () => {
     if (saving || !hasChanges) return;
     setSaving(true);
@@ -128,8 +122,8 @@ function BusinessModulesModal({ business, onClose, onSaved }) {
         featureIds: selectedFeats,
       });
       alert.success('Módulos actualizados correctamente', 'Actualización Exitosa');
-      setHasChanges(false); // <-- ya no hay cambios pendientes
       if (onSaved) onSaved();
+      onClose();
     } catch (e) {
       setError(e.message || 'Error al guardar módulos');
     } finally {
@@ -137,47 +131,14 @@ function BusinessModulesModal({ business, onClose, onSaved }) {
     }
   };
 
-  // Aprovisionar (crear tablas)
-  const handleProvision = async () => {
-    if (hasChanges) {
-      alert.warning('Primero guarda los módulos seleccionados antes de aprovisionar.', 'Módulos sin guardar');
-      return;
-    }
-    if (provisioning) return;
-
-    const confirmed = await showConfirm({
-      title: 'Aprovisionar negocio',
-      message: `¿Estás seguro de que deseas crear las tablas para "${business.business_name}"? Esta acción creará todas las tablas necesarias para los módulos seleccionados.`,
-      confirmText: 'Sí, aprovisionar',
-      cancelText: 'Cancelar',
-    });
-    if (!confirmed) return;
-
-    setProvisioning(true);
-    setError('');
-    try {
-      const res = await adminApi.post(`/admin/businesses/${business.id}/provision`);
-      alert.success(res.data.message || 'Aprovisionamiento completado exitosamente');
-      if (onSaved) onSaved();
-      onClose();
-    } catch (e) {
-      setError(e.message || 'Error al aprovisionar');
-    } finally {
-      setProvisioning(false);
-    }
-  };
-
   const totalMensual = allModules
     .filter(m => selectedMods.includes(m.id))
     .reduce((sum, m) => sum + parseFloat(m.price_monthly || 0), 0);
 
-  // Decidir qué botón mostrar
-  const showSaveButton = hasChanges;
-  const showProvisionButton = !hasChanges && !loading;
+  const isSaveDisabled = saving || !hasChanges || loading;
 
   return (
     <Modal
-      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Módulos del Negocio"
@@ -196,38 +157,20 @@ function BusinessModulesModal({ business, onClose, onSaved }) {
               size="md"
               icon={<FiX size={14} />}
               onClick={onClose}
-              disabled={saving || provisioning}
+              disabled={saving}
             >
-              Cancelar
+              Cerrar
             </IconTextButton>
-
-            {/* Botón Guardar módulos - visible solo cuando hay cambios */}
-            {showSaveButton && (
-              <IconTextButton
-                variant="success"
-                size="md"
-                icon={<FiCheck size={14} />}
-                onClick={handleSave}
-                disabled={saving || provisioning}
-                loading={saving}
-              >
-                {saving ? 'Guardando...' : 'Guardar módulos'}
-              </IconTextButton>
-            )}
-
-            {/* Botón Aprovisionar - visible solo cuando NO hay cambios (módulos guardados) */}
-            {showProvisionButton && (
-              <IconTextButton
-                variant="warning"
-                size="md"
-                icon={<FiRefreshCw size={14} />}
-                onClick={handleProvision}
-                disabled={provisioning || saving}
-                loading={provisioning}
-              >
-                {provisioning ? 'Aprovisionando...' : 'Aprovisionar'}
-              </IconTextButton>
-            )}
+            <IconTextButton
+              variant="success"
+              size="md"
+              icon={<FiCheck size={14} />}
+              onClick={handleSave}
+              disabled={isSaveDisabled}
+              loading={saving}
+            >
+              {saving ? 'Guardando...' : 'Guardar módulos'}
+            </IconTextButton>
           </ButtonGroup>
         </>
       }
@@ -273,11 +216,6 @@ function BusinessModulesModal({ business, onClose, onSaved }) {
   );
 }
 
-// ============================================================
-// Modales de edición (clientes, negocios) y resto de la página
-// (igual que antes)
-// ============================================================
-
 function EditClientModal({ client, onClose, onSaved }) {
   const alert = useAlert();
   const [form, setForm] = useState({
@@ -319,7 +257,7 @@ function EditClientModal({ client, onClose, onSaved }) {
           variant="" 
           onClick={onClose} 
           disabled={saving}
-        >
+          >
           Cancelar
         </IconTextButton>
         <IconTextButton 
@@ -327,7 +265,7 @@ function EditClientModal({ client, onClose, onSaved }) {
           onClick={handleSave} 
           disabled={saving} 
           loading={saving}
-        >
+          >
           {saving ? 'Guardando...' : 'Guardar'}
         </IconTextButton>
       </ButtonGroup>
@@ -336,7 +274,6 @@ function EditClientModal({ client, onClose, onSaved }) {
 
   return (
     <Modal
-      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Editar Cliente"
@@ -450,7 +387,6 @@ function EditBusinessModal({ business, onClose, onSaved }) {
 
   return (
     <Modal
-      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Editar Negocio"
@@ -470,9 +406,6 @@ function EditBusinessModal({ business, onClose, onSaved }) {
   );
 }
 
-// ============================================================
-// Componente Acordeón de cliente
-// ============================================================
 function ClientAccordion({ client, onEditClient, onEditBusiness, onModBusiness, onSubBusiness, onRegisterPayment }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedBusinesses, setExpandedBusinesses] = useState({});
@@ -689,9 +622,6 @@ function ClientAccordion({ client, onEditClient, onEditBusiness, onModBusiness, 
   );
 }
 
-// ============================================================
-// Página principal
-// ============================================================
 export default function ClientsPage() {
   const { showConfirm } = useConfirm();
   const alert = useAlert();
@@ -705,6 +635,7 @@ export default function ClientsPage() {
   const [subBusiness, setSubBusiness] = useState(null);
   const [modBusiness, setModBusiness] = useState(null);
   
+  // 🔥 Estados para el modal de pago
   const [payBusiness, setPayBusiness] = useState(null);
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [savingPay, setSavingPay] = useState(false);
@@ -734,6 +665,7 @@ export default function ClientsPage() {
     setRefreshing(false);
   };
 
+  // 🔥 Función para abrir el modal de pago
   const handleRegisterPayment = (business) => {
     setPayBusiness(business);
     setPayModalOpen(true);
@@ -743,6 +675,7 @@ export default function ClientsPage() {
     setPayMethod('transferencia');
   };
 
+  // 🔥 Función para confirmar el pago
   const handleConfirmPayment = async () => {
     if (savingPay) return;
     setSavingPay(true);
@@ -891,18 +824,17 @@ export default function ClientsPage() {
         />
       )}
 
-      {/* Modal de registro de pago */}
+      {/* MODAL DE REGISTRO DE PAGO */}
       {payModalOpen && payBusiness && (
         <Modal
-          closeOnOverlayClick={false}
           isOpen={true}
           onClose={() => {
-          setPayModalOpen(false);
-          setPayBusiness(null);
-          setPayError('');
-          setPayNotes('');
-          setPayReference('');
-          setPayMethod('transferencia');
+            setPayModalOpen(false);
+            setPayBusiness(null);
+            setPayError('');
+            setPayNotes('');
+            setPayReference('');
+            setPayMethod('transferencia');
           }}
           title="Registrar Pago"
           size="sm"
@@ -990,6 +922,7 @@ export default function ClientsPage() {
               </select>
             </div>
 
+            {/* 🔥 Solo mostrar referencia si es transferencia */}
             {payMethod === 'transferencia' && (
               <div className="clients-pay-field">
                 <label htmlFor="pay-reference">Referencia / Comprobante (opcional)</label>
@@ -1022,6 +955,7 @@ export default function ClientsPage() {
           </div>
         </Modal>
       )}
+      
     </PageTemplate>
   );
 }

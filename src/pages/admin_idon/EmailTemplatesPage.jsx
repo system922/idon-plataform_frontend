@@ -380,6 +380,7 @@ function EditModal({ tpl, onClose, onSaved }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={isNew ? 'Nueva Plantilla' : `Editar: ${tpl?.label}`}

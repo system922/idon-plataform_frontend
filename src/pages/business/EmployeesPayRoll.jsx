@@ -846,6 +846,7 @@ export default function EmployeesPayRollPage() {
     >
       {/* ─── MODAL SELECTOR DE DÍAS ─── */}
       <Modal
+        closeOnOverlayClick={false}
         isOpen={showDaySelector}
         onClose={() => setShowDaySelector(false)}
         title="Seleccionar días del período"

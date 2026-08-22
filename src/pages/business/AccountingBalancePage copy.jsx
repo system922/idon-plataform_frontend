@@ -5,7 +5,6 @@ import PageTemplate from '../../components/PageTemplate';
 import ReportPdfButton from '../../components/ReportPdfButton';
 import Table from '../../components/General/Table';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
-import SearchInput from '../../components/General/SearchInput';
 import {
   Download, TrendingUp, TrendingDown, DollarSign,
   AlertCircle, Check
@@ -13,7 +12,7 @@ import {
 import {
   FiRefreshCw,
 } from "react-icons/fi";
-import { fetchWithAuth } from '../../config/api'; // ✅ CORREGIDO
+import { fetchWithAuth } from '../../config/api';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer

@@ -201,6 +201,7 @@ function AttendanceModal({ employees, attendanceData, onClose, onSave, saving })
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Registrar Asistencia"

@@ -3,11 +3,16 @@
 @import './Layouts/SidebarModern.css';
 @import './Layouts/Footer.css';
 @import './Layouts/PageTemplate.css';
+@import './Layouts/AdminLayout.css';
+@import './Layouts/BusinessLayout.css';
+
 
 @import './Components/SpinnerLoader.css';
 @import './Components/Buttons.css';
 @import './Components/Table.css';
 @import './Components/Modal.css';
+@import './Components/PayrollPrintModal.css';
+
 @import './Components/ConfirmModal.css';
 @import './Components/Input.css';
 @import './Components/SearchInput.css';

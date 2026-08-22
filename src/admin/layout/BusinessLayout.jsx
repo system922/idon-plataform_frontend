@@ -17,7 +17,6 @@ import {
   FiMonitor, FiActivity, FiTag, FiShare2, FiSearch,
   FiMail, FiGift, FiX, FiUser, FiLayers, FiShield
 } from 'react-icons/fi';
-import '../../styles/BusinessLayout.css';
 import Footer from '../../components/common/Footer';
 
 import AperturaCajaPage from '../../pages/business/PosAperturaCajaPage';

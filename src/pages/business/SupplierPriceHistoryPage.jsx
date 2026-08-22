@@ -3,7 +3,7 @@ import { useSession } from '../../context/SessionContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAlert } from '../../components/ConfirmContext';
 import {
-  FiRefreshCw, FiDollarSign, FiEdit2, FiSave, FiX, 
+  FiRefreshCw, FiDollarSign, FiSave, FiX, 
   FiAlertCircle, FiPackage, FiUser, FiTrendingUp, FiTrendingDown,
   FiBarChart2, FiShoppingBag
 } from 'react-icons/fi';
@@ -11,7 +11,6 @@ import PageTemplate from '../../components/PageTemplate';
 import { fetchWithAuth } from '../../config/api';
 import Table from '../../components/General/Table';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
-import SearchInput from '../../components/General/SearchInput';
 import Input from '../../components/General/Input';
 import Modal from '../../components/General/Modal';
 import CustomCombobox from '../../components/General/CustomCombobox';
@@ -46,6 +45,7 @@ function EditSalePriceModal({ item, onClose, onSave, saving }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Actualizar precio de venta"

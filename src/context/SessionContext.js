@@ -57,36 +57,40 @@ export const SessionProvider = ({ children }) => {
 
   // ─── Función auxiliar para cargar negocios ──────────────────────────
   const loadBusinesses = useCallback(async (userData) => {
+    // SI ES ADMIN, NO CARGAR NEGOCIOS (EVITA ERROR 500)
+    if (userData?.role === 'admin' || 
+        userData?.role === 'superadmin' || 
+        userData?.role === 'super_admin' ||
+        userData?.userType === 'admin_idon') {
+      setRequiresBusinessSelection(false);
+      setSelectedBusiness(null);
+      return;
+    }
+
     // Si el usuario ya tiene un businessId, usarlo directamente
     if (userData?.businessId) {
-      
       let schemaName = userData.schemaName;
       if (!schemaName) {
         schemaName = sessionStorage.getItem('schema_name') || null;
       }
-      
       const biz = { 
         id: userData.businessId, 
         schemaName: schemaName 
       };
-      
       setSelectedBusiness(biz);
       setBusinessContext(userData.businessId, schemaName);
       setRequiresBusinessSelection(false);
-      return; // SALIR - No hacer llamada a /auth/businesses
+      return;
     }
 
     // SOLO si NO tiene businessId, intentar cargar la lista
     try {
       const bizResponse = await api.get('/auth/businesses');
-      
       if (bizResponse.data?.ok && bizResponse.data?.data) {
         const bizList = bizResponse.data.data || [];
         setBusinesses(bizList);
-        
         const hasMultiple = bizList.length > 1;
         setRequiresBusinessSelection(hasMultiple);
-        
         if (bizList.length === 1) {
           const singleBiz = bizList[0];
           const biz = { 
@@ -181,11 +185,14 @@ export const SessionProvider = ({ children }) => {
                              userData.rol ||
                              userData.userType ||
                              'user';
-            
+
+            const isAdmin = userRole === 'admin' || userRole === 'superadmin';
+            const userType = isAdmin ? 'admin_idon' : (userData.userType || userRole);
+
             setUser({
               ...userData,
               role: userRole,
-              userType: userData.userType || userRole,
+              userType: userType,
               roleCode: userRole
             });
             
@@ -250,11 +257,14 @@ export const SessionProvider = ({ children }) => {
                                  userData.rol ||
                                  userData.userType ||
                                  'user';
-                
+
+                const isAdmin = userRole === 'admin' || userRole === 'superadmin';
+                const userType = isAdmin ? 'admin_idon' : (userData.userType || userRole);
+
                 setUser({
                   ...userData,
                   role: userRole,
-                  userType: userData.userType || userRole,
+                  userType: userType,
                   roleCode: userRole
                 });
                 
@@ -318,8 +328,21 @@ export const SessionProvider = ({ children }) => {
         const userRole = roleFromToken || 
                          userData.roleCode ||
                          userData.role || 
-                         userData.userType || 
+                         userData.role_name || 
+                         userData.roleName || 
+                         userData.rol ||
+                         userData.userType ||
                          'user';
+
+        const isAdmin = userRole === 'admin' || userRole === 'superadmin';
+        const userType = isAdmin ? 'admin_idon' : (userData.userType || userRole);
+
+        setUser({
+          ...userData,
+          role: userRole,
+          userType: userType,
+          roleCode: userRole
+        });
         
         setToken(newToken);
         setAuthToken(newToken);
@@ -328,17 +351,11 @@ export const SessionProvider = ({ children }) => {
           setRefreshToken(rt);
         }
         
-        setUser({
-          ...userData,
-          role: userRole,
-          userType: userData.userType || userRole,
-          roleCode: userRole
-        });
-        
         setIsAuthenticated(true);
         
         const businessList = bizList || [];
         setBusinesses(businessList);
+
         
         const hasMultipleBusinesses = businessList.length > 1;
         const finalRequiresSelection = requiresBusinessSelection || hasMultipleBusinesses;
@@ -416,7 +433,9 @@ export const SessionProvider = ({ children }) => {
         }
         
         const userRole = roleFromToken || userData.role || userData.userType || 'user';
-        
+        const isAdmin = userRole === 'admin' || userRole === 'superadmin';
+        const userType = isAdmin ? 'admin_idon' : (userData.userType || userRole);
+
         setToken(newToken);
         setAuthToken(newToken);
         
@@ -427,7 +446,7 @@ export const SessionProvider = ({ children }) => {
         setUser({
           ...userData,
           role: userRole,
-          userType: userData.userType || userRole,
+          userType: userType,
           roleCode: userRole
         });
         

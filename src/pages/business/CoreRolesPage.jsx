@@ -121,6 +121,7 @@ function RoleModal({ role, onClose, onSave, saving, modules }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={role ? 'Editar rol' : 'Nuevo rol'}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageTemplate from '../../components/PageTemplate';
-import { Settings, ArrowRight, Save, RefreshCw, AlertCircle, Check } from 'react-feather';
+import { ArrowRight, Save, RefreshCw, AlertCircle, Check } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase';
 import Input from '../../components/General/Input';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';

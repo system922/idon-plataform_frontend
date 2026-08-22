@@ -321,6 +321,7 @@ function EmployeeModal({ employee, onClose, onSave, saving }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={employee ? 'Editar Colaborador/a' : 'Nuevo Colaborador/a'}

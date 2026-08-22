@@ -20,7 +20,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { businessSlug: routeBusinessSlug } = useParams();
-  const { login, selectBusiness, isAuthenticated, requiresBusinessSelection } = useSession();
+  const { user, login, selectBusiness, isAuthenticated, requiresBusinessSelection } = useSession();
 
   /* ─── Screen state ─── */
   const [isLogin, setIsLogin] = useState(true);
@@ -559,13 +559,6 @@ export default function LoginPage() {
       default: return <FiAlertCircle size={16} />;
     }
   };
-
-  // Redirigir si ya está autenticado PERO NO si está en el selector de negocios
-  useEffect(() => {
-    if (isAuthenticated && !showBusinessSelector && !requiresBusinessSelection) {
-      navigate('/app', { replace: true });
-    }
-  }, [isAuthenticated, navigate, showBusinessSelector, requiresBusinessSelection]);
 
   return (
     <div className="login-page" style={{ position: 'relative', paddingBottom: 44 }}>

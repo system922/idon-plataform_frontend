@@ -571,6 +571,7 @@ function EditModal({ item, onClose, onSaved }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={isNew ? 'Nueva Novedad' : `Editar: ${item?.title}`}

@@ -127,6 +127,7 @@ function PaymentModal({ receipt, onClose, onConfirm, saving }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Pagar Recepción de Mercadería"
@@ -383,6 +384,7 @@ function PaymentOptionsModal({
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={isOpen}
       onClose={onClose}
       title="Finalizar recepción"
@@ -1453,6 +1455,7 @@ function ReceiptModal({
   return (
     <>
       <Modal
+        closeOnOverlayClick={false}
         isOpen={true}
         onClose={onClose}
         title={showGroupedView ? 'Revisar recepción por proveedor' : 'Nueva recepción de mercadería'}
@@ -1564,6 +1567,7 @@ function ReceiptModal({
 function ReceiptDetailModal({ receipt, items, onClose }) {
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={`Detalle de recepción #${receipt?.receipt_number || ''}`}

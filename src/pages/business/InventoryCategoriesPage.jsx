@@ -1,11 +1,10 @@
 // src/pages/inventory/InventoryCategoriesPage.jsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { useSession } from '../../context/SessionContext'; // ✅ AGREGADO
+import { useSession } from '../../context/SessionContext'; 
 import { useConfirm, useAlert } from '../../context/ConfirmContext';
 import { 
-  Plus, Edit2, Trash2, Tag, X, RefreshCw, Save,
-  Box, Clock, Calendar
+  Plus, Edit2, Trash2, X, RefreshCw, Save,
 } from 'react-feather';
 import { fetchWithAuth } from '../../config/api';
 import { useRealtimeSync } from '../../hooks/useRealtimeSync';
@@ -17,7 +16,7 @@ import Modal from '../../components/General/Modal';
 import Input from '../../components/General/Input';
 
 export default function InventoryCategoriesPage() {
-  const { user } = useSession(); // ✅ AGREGADO
+  const { user } = useSession(); 
   const { showConfirm } = useConfirm();
   const alert = useAlert();
   const [categories, setCategories] = useState([]);
@@ -411,6 +410,7 @@ export default function InventoryCategoriesPage() {
 
       {/* Modal de creación/edición */}
       <Modal
+        closeOnOverlayClick={false}
         isOpen={showModal}
         onClose={closeModal}
         title={editingCat ? 'Editar categoría' : 'Nueva categoría'}

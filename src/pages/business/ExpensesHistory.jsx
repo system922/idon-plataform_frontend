@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useSession } from '../../context/SessionContext'; // ✅ Única fuente de sesión
+import { useSession } from '../../context/SessionContext'; 
 import ExcelJS from 'exceljs';
 import {
   FiDollarSign, FiPlus, FiEdit2, FiTrash2, FiRefreshCw,
@@ -8,7 +8,7 @@ import {
 } from "react-icons/fi";
 import PageTemplate from '../../components/PageTemplate';
 import ReportPdfButton from '../../components/ReportPdfButton';
-import { fetchWithAuth } from '../../config/api'; // ✅ Única fuente de llamadas API
+import { fetchWithAuth } from '../../config/api'; 
 import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 import Table from '../../components/General/Table';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
@@ -165,6 +165,7 @@ function ExpenseModal({ expense, categories, onClose, onSave, saving }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={expense ? 'Editar gasto' : 'Nuevo gasto'}

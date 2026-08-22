@@ -1041,7 +1041,13 @@ export default function ReportsAdvanced() {
 
       {/* Modal de fechas personalizadas */}
       {showCustomDate && (
-        <Modal isOpen={true} onClose={() => setShowCustomDate(false)} title="Seleccionar fechas" size="sm">
+        <Modal
+          closeOnOverlayClick={false} 
+          isOpen={true} 
+          onClose={() => setShowCustomDate(false)} 
+          title="Seleccionar fechas" 
+          size="sm"
+        >
           <DateRangePicker
             startDate={customStartDate}
             endDate={customEndDate}

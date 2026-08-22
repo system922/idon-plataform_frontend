@@ -115,6 +115,7 @@ function SaleDetailModal({ sale, onClose, isOpen }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={isOpen}
       onClose={onClose}
       title="Detalle de Factura"

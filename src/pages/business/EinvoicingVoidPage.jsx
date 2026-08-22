@@ -13,10 +13,7 @@ import { fetchWithAuth } from '../../config/api';  // ✅ Cambiado
 import { usePrinterService } from '../../services/usePrinterService';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Modal from '../../components/General/Modal';
-import Input from '../../components/General/Input';
-import SearchInput from '../../components/General/SearchInput';
 import Table from '../../components/General/Table';
-import CustomCombobox from '../../components/General/CustomCombobox';
 import '../../styles/EinvoicingInvoicesPage.css';
 
 const INV_STATUS = {
@@ -87,6 +84,7 @@ function VoidModal({ invoice, onClose, onConfirm, submitting }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={

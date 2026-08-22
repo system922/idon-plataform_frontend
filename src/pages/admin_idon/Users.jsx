@@ -355,6 +355,7 @@ function EditUserModal({ user, onClose, onSaved }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Editar Usuario"

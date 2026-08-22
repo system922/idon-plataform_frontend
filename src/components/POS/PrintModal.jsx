@@ -31,6 +31,7 @@ const PrintModal = ({ isOpen, onPrint, onClose }) => {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={isOpen}
       onClose={onClose}
       title="¿Imprimir comprobante?"

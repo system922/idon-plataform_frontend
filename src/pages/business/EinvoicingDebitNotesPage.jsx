@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import PageTemplate from '../../components/PageTemplate';
-import { Plus, RefreshCw, AlertCircle, Check, X, FileText, Send } from 'react-feather';
+import { Plus, AlertCircle, Check, X, FileText, Send } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase_';
 import '../../styles/CreditNotes.css';
 

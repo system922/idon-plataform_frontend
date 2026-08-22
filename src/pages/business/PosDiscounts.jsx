@@ -4,13 +4,12 @@ import { useConfirm } from '../../context/ConfirmContext';
 import { useSession } from '../../context/SessionContext';
 import { 
   FiRefreshCw, FiPlus, FiAlertCircle, FiEdit2, FiTrash2, 
-  FiCheckCircle, FiCopy, FiPackage, FiSearch, FiGrid, FiList,
+  FiCopy, FiPackage, FiGrid, FiList,
   FiPercent, FiDollarSign, FiShoppingBag, FiUsers, FiAward,
   FiTag, FiClock, FiCalendar, FiRepeat
 } from 'react-icons/fi';
 import { fetchWithAuth } from '../../config/api';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
-import SearchInput from '../../components/General/SearchInput';
 import Table from '../../components/General/Table';
 import DiscountModal from '../../components/General/DiscountModal';
 import CustomCombobox from '../../components/General/CustomCombobox';

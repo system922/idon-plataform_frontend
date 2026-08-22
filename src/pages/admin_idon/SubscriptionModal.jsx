@@ -257,6 +257,7 @@ export default function SubscriptionModal({ business, existingSubscription, onCl
   if (loading) {
     return (
       <Modal
+        closeOnOverlayClick={false}
         isOpen={true}
         onClose={onClose}
         title="Cargando Suscripción"
@@ -273,6 +274,7 @@ export default function SubscriptionModal({ business, existingSubscription, onCl
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={isEdit ? 'Editar Suscripción' : 'Nueva Suscripción'}

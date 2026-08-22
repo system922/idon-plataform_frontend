@@ -934,11 +934,12 @@ export default function InventoryPhysicalPage() {
 
         {/* ── MODAL DE DETALLE DE INVENTARIO ── */}
         <Modal
+          closeOnOverlayClick={false}
           isOpen={showDetailModal}
           onClose={() => {
-            setShowDetailModal(false);
-            setDetailInventory(null);
-            setDetailItems([]);
+          setShowDetailModal(false);
+          setDetailInventory(null);
+          setDetailItems([]);
           }}
           title={`Detalle de ${detailInventory?.name || 'Inventario'}  (${detailInventory?.status === 'open' ? 'Abierto' : 'Cerrado'})`}
           size="xl"
@@ -1080,10 +1081,11 @@ export default function InventoryPhysicalPage() {
 
         {/* ── MODAL DE RECONTEO ── */}
         <Modal
+          closeOnOverlayClick={false}
           isOpen={showRecountModal}
           onClose={() => {
-            setShowRecountModal(false);
-            setRecountReason('');
+          setShowRecountModal(false);
+          setRecountReason('');
           }}
           title="Reconteo de inventario"
           size="xl"

@@ -1,52 +1,83 @@
 // src/pages/BlogPage.js
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
 import { ExternalLink } from 'lucide-react';
+import { FiClock } from 'react-icons/fi';
+import { api } from '../config/api';
 
 const BlogPage = () => {
-  const articles = [
-    {
-      id: 1,
-      title: 'Facturación Electrónica en Ecuador: Lo que todo negocio debe saber en 2026',
-      excerpt: 'A partir del 1 de enero de 2026, todos los comprobantes electrónicos en Ecuador deben transmitirse al SRI en tiempo real. Conoce los plazos, las sanciones y cómo IDON te ayuda a cumplir sin estrés.',
-      date: '25 de febrero, 2026',
-      source: 'EDICOM Group / SRI Ecuador',
-      sourceLink: 'https://edicomgroup.com/es/blog/como-es-la-factura-electronica-en-ecuador'
-    },
-    {
-      id: 2,
-      title: 'Ecuador perdió más de 100.000 empresas en 2024: el desafío de las MIPYMES',
-      excerpt: 'Según el INEC, Ecuador pasó de 1.173.985 empresas activas en 2023 a 1.073.524 en 2024, una pérdida de más de 100.000 unidades productivas. Las microempresas representan más de 1,1 millones del total de 1,2 millones de unidades productivas en el país.',
-      date: '20 de febrero, 2026',
-      source: 'INEC Ecuador / Radio Pichincha',
-      sourceLink: 'https://www.radiopichincha.com/ecuador-empresas-miles-inec/'
-    },
-    {
-      id: 3,
-      title: 'Artesanos ecuatorianos: Exportaciones por USD 86,2 millones en 2023',
-      excerpt: 'En 2023, el sector artesanal ecuatoriano registró exportaciones por USD 86,2 millones, con Estados Unidos como su principal destino. El registro único de artesanos permite acceder a beneficios como la exoneración del impuesto de patentes.',
-      date: '15 de febrero, 2026',
-      source: 'Ministerio de Producción / Datos Abiertos Ecuador',
-      sourceLink: 'https://www.produccion.gob.ec/ministerio-de-produccion-impulsa-la-competitividad-de-las-artesanias-ecuatorianas/'
-    },
-    {
-      id: 4,
-      title: 'Agricultura familiar en América Latina: el rol clave de los intermediarios',
-      excerpt: 'Un estudio de la CEPAL analiza cómo los intermediarios estructuran las cadenas de valor agropecuarias en Guatemala, El Salvador y República Dominicana. La contribución de los intermediarios a la generación de valor agregado depende de las capacidades tecnológicas de los productores y la estructura de mercado.',
-      date: '10 de febrero, 2026',
-      source: 'CEPAL – Serie Estudios y Perspectivas',
-      sourceLink: 'https://www.cepal.org/es/publicaciones/45796-intermediarios-cadenas-valor-agropecuarias-un-analisis-la-apropiacion-generacion'
-    },
-    {
-      id: 5,
-      title: 'Microempresas en Ecuador: el 87,4% de crecimiento en ventas que sorprende a los gremios',
-      excerpt: 'Según el Banco Central del Ecuador, las microempresas registraron un incremento de ventas del 87,4% entre enero y marzo de 2025 en el sector comercial. Sin embargo, más del 50% son informales y enfrentan tasas de interés de hasta el 36% para financiamiento.',
-      date: '5 de febrero, 2026',
-      source: 'Banco Central del Ecuador / Ecuavisa',
-      sourceLink: 'https://www.ecuavisa.com/economia/el-banco-central-reporta-crecimiento-record-de-microempresas-pero-gremios-discrepan-20250717-0051.html'
-    }
-  ];
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        const response = await api.get('/blog');
+        // Estructura esperada: { ok: true, data: [...] }
+        if (response.data?.ok && Array.isArray(response.data?.data)) {
+          setArticles(response.data.data);
+        } else {
+          setArticles([]);
+        }
+      } catch (err) {
+        console.error('Error al cargar novedades:', err);
+        setError('No se pudieron cargar los artículos.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNews();
+  }, []);
+
+  // Función para obtener etiqueta según tipo
+  const getTypeLabel = (type) => {
+    const types = {
+      'new_module': 'Nuevo Módulo',
+      'improvement': 'Mejora',
+      'announcement': 'Anuncio',
+      'update': 'Actualización',
+      'feature': 'Nueva Funcionalidad',
+    };
+    return types[type] || type;
+  };
+
+  // Formateo de fecha
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-EC', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="landing-container">
+        <PublicHeader />
+        <main className="landing-main">
+          <div className="blog-container">
+            <div className="blog-loading">Cargando artículos...</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="landing-container">
+        <PublicHeader />
+        <main className="landing-main">
+          <div className="blog-container">
+            <div className="blog-error">{error}</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="landing-container">
@@ -60,26 +91,37 @@ const BlogPage = () => {
             para potenciar tu negocio. Todas nuestras estadísticas tienen fuentes verificables.
           </p>
 
-          <div className="blog-grid">
-            {articles.map((article) => (
-              <div key={article.id} className="blog-card">
-                <h3>{article.title}</h3>
-                <p>{article.excerpt}</p>
-                <div className="blog-meta">
-                  <span className="blog-date">{article.date}</span>
-                  <a 
-                    href={article.sourceLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="blog-source"
-                  >
-                    <ExternalLink size={14} />
-                    {article.source}
-                  </a>
+          {articles.length === 0 ? (
+            <div className="blog-empty">
+              <p>No hay artículos disponibles en este momento.</p>
+            </div>
+          ) : (
+            <div className="blog-grid">
+              {articles.map((article) => (
+                <div key={article.id} className="blog-card">
+                  {article.image_url && (
+                    <div className="blog-card-image">
+                      <img src={article.image_url} alt={article.title} />
+                    </div>
+                  )}
+                  <div className="blog-card-content">
+                    <span className="blog-card-type">{getTypeLabel(article.type)}</span>
+                    <h3>{article.title}</h3>
+                    <p>{article.content}</p>
+                    <div className="blog-meta">
+                      <span className="blog-date">
+                        <FiClock size={14} />
+                        {formatDate(article.created_at)}
+                      </span>
+                      {article.is_highlight && (
+                        <span className="blog-highlight">★ Destacado</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Sección de fuentes destacadas */}
           <div className="blog-sources-section">

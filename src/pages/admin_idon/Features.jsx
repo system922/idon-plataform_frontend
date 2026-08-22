@@ -374,6 +374,7 @@ function FeatureModal({ item, modules, onClose, onSaved, defaultModuleId }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={item ? 'Editar Funcionalidad' : 'Nueva Funcionalidad'}

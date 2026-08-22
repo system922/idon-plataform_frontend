@@ -40,6 +40,7 @@ function CategoryModal({ category, onClose, onSave, saving }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={category ? 'Editar categoría' : 'Nueva categoría'}

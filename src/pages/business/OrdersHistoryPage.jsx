@@ -1559,6 +1559,7 @@ export default function OrdersHistoryPage() {
 
         {/* MODAL DIVIDIR ORDEN */}
         <Modal
+          closeOnOverlayClick={false}
           isOpen={showSplitModal}
           onClose={() => setShowSplitModal(false)}
           title="Dividir Orden"
@@ -1689,6 +1690,7 @@ export default function OrdersHistoryPage() {
         {/* Modal de fechas personalizadas */}
         {showCustomDate && (
           <Modal
+            closeOnOverlayClick={false}
             isOpen={true}
             onClose={() => setShowCustomDate(false)}
             title="Seleccionar fechas"

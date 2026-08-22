@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import PageTemplate from '../../components/PageTemplate';
 import Table from '../../components/General/Table';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Modal from '../../components/General/Modal';
 import {
-  Calendar, CheckCircle, AlertCircle, FileText, User,
+  CheckCircle, AlertCircle, FileText,
   TrendingUp, TrendingDown, DollarSign, X, Eye
 } from 'react-feather';
 import { FiRefreshCw } from 'react-icons/fi';
@@ -68,6 +68,7 @@ function ClosingDetailModal({ isOpen, onClose, closing }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={isOpen}
       onClose={onClose}
       title={`Detalle de Cierre - ${closing.period}`}

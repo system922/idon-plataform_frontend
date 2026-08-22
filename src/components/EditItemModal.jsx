@@ -121,6 +121,7 @@ export default function EditItemModal({
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={showEditItemModal}
       onClose={handleClose}
       title="Editar item"

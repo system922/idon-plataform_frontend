@@ -7,6 +7,8 @@ import {
   FiLogOut, FiRefreshCw, FiCreditCard 
 } from 'react-icons/fi';
 import Footer from '../components/common/Footer';
+import { IconTextButton, ButtonGroup } from '../components/General/Button';
+
 
 export default function PendingApprovalPage({ onLogout }) {
   const navigate = useNavigate();
@@ -171,7 +173,7 @@ export default function PendingApprovalPage({ onLogout }) {
       case 'active':
         return (
           <>
-            <h1 className="pending-title success">¡Negocio Activado! 🎉</h1>
+            <h1 className="pending-title success">¡Negocio Activado!</h1>
             <p className="pending-subtitle">
               Tu negocio ya está completamente activo. Puedes comenzar a usar IDON ahora mismo.
             </p>
@@ -258,13 +260,13 @@ export default function PendingApprovalPage({ onLogout }) {
           requestStatus === 'rejected' ? 'error' : ''
         }`}>
           {requestStatus === 'active' ? (
-            <FiCheckCircle size={36} className="pending-icon" />
+            <FiCheckCircle size={40} className="pending-icon" />
           ) : requestStatus === 'approved' || requestStatus === 'provisioned' ? (
-            <FiCreditCard size={32} className="pending-icon" />
+            <FiCreditCard size={40} className="pending-icon" />
           ) : requestStatus === 'rejected' ? (
-            <FiClock size={28} className="pending-icon" />
+            <FiClock size={40} className="pending-icon" />
           ) : (
-            <FiClock size={28} className="pending-icon" />
+            <FiClock size={40} className="pending-icon" />
           )}
         </div>
 
@@ -327,30 +329,28 @@ export default function PendingApprovalPage({ onLogout }) {
             </div>
           </div>
         )}
-
-        {/* Acciones */}
-        <div className="pending-actions">
-          {requestStatus !== 'active' && (
-            <button
-              onClick={checkStatus}
-              disabled={checking}
-              className="btn-check-status"
-            >
-              <FiRefreshCw
-                size={15}
-                className={checking ? 'spinner-icon' : ''}
-              />
-              {checking ? 'Verificando...' : 'Verificar estado'}
-            </button>
-          )}
-          <button
-            onClick={handleLogout}
-            className="btn-logout"
+        <ButtonGroup>
+          <IconTextButton
+            variant="success"
+            size="md"
+            icon={<FiRefreshCw size={14} className={checking ? 'spinner-icon' : ''}/>}
+            onClick={checkStatus}
+            disabled={checking}
           >
-            <FiLogOut size={15} />
-            Cerrar sesión
-          </button>
-        </div>
+            {checking ? 'Verificando...' : 'Verificar estado'}
+          </IconTextButton>
+
+          {requestStatus !== 'active' && (
+            <IconTextButton
+              variant=""
+              size="md"
+              icon={<FiLogOut size={14}/>}
+              onClick={handleLogout}
+            >
+              Cerrar sesión
+            </IconTextButton>
+          )}
+        </ButtonGroup>
       </div>
 
       {/* Footer */}

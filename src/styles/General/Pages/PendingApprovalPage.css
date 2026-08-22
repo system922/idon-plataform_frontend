@@ -5,19 +5,18 @@
 
 /* ── Contenedor principal ── */
 .pending-approval-page {
-  min-height: 100vh;
-  min-height: 100dvh;
-  height: 100dvh;
+  min-height: 100%;
+  height: 100%;
   background: var(--bg-primary, #f0f4f8);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-family: var(--font-family, 'Inter', sans-serif);
-  padding: var(--space-3, 12px);
+  padding: var(--space-1, --space-1);
   width: 100%;
   position: relative;
-  padding-bottom: 60px;
+  padding-bottom:  var(--space-1, --space-1);;
 }
 
 /* ── Footer ── */
@@ -33,7 +32,7 @@
   background: var(--bg-secondary, #ffffff);
   border: 1px solid var(--border-color, #E2E8F0);
   border-radius: var(--radius, 16px);
-  padding: var(--space-8, 32px) var(--space-6, 24px);
+  padding: var(--space-1, --space-1) var(--space-1, --space-1);
   max-width: 100%;
   width: 100%;
   max-width: 100%;
@@ -56,7 +55,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto var(--space-5, 20px);
+  margin: 0 auto var(--space-4, --space-2);
   box-shadow: 0 0 40px rgba(249, 115, 22, 0.25);
   flex-shrink: 0;
   transition: var(--transition, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
@@ -235,10 +234,10 @@
 
 /* ── Email notification banner ── */
 .pending-email-banner {
-  background: var(--primary-bg, rgba(249, 115, 22, 0.08));
-  border: 1px solid var(--border-primary, rgba(249, 115, 22, 0.3));
+  background: var(--bg-primary);
+  border: var(--bg-primary);
   border-radius: var(--radius-sm, 8px);
-  padding: var(--space-3, 12px) var(--space-4, 16px);
+  padding: var(--space-1, --space-0) var(--space-1, --space-1);
   display: flex;
   align-items: center;
   gap: var(--space-3, 12px);
@@ -248,7 +247,7 @@
 }
 
 .pending-email-banner:hover {
-  background: var(--primary-hover, rgba(249, 115, 22, 0.15));
+  background: var(--bg-tertiary);
 }
 
 .pending-email-banner .email-icon {

@@ -136,6 +136,7 @@ function ReceivableEditModal({ receivable, customers, onClose, onSave, saving })
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Editar cuenta por cobrar"
@@ -1095,6 +1096,7 @@ export default function AccountingReceivablePage() {
 
       {showCustomDate && (
         <Modal
+          closeOnOverlayClick={false}
           isOpen={true}
           onClose={() => setShowCustomDate(false)}
           title="Seleccionar fechas"

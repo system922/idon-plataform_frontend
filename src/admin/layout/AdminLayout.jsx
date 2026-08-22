@@ -13,7 +13,6 @@ import { useSession } from '../../context/SessionContext';
 import SidebarModern from '../../components/SidebarModern';
 import Footer from '../../components/common/Footer';
 import { ADMIN_MENU } from '../config/adminMenu';
-import '../../styles/AdminLayout.css';
 
 export default function AdminLayout({ children }) { 
   const { user, logout } = useSession(); 

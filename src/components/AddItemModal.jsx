@@ -114,6 +114,7 @@ export default function AddItemModal({
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={showAddItemModal}
       onClose={handleClose}
       title="Agregar item"

@@ -581,7 +581,13 @@ export default function ReportsProductsPage() {
       </div>
 
       {showCustomDate && (
-        <Modal isOpen={true} onClose={() => setShowCustomDate(false)} title="Seleccionar fechas" size="sm">
+        <Modal 
+          closeOnOverlayClick={false}
+          isOpen={true} 
+          onClose={() => setShowCustomDate(false)} 
+          title="Seleccionar fechas" 
+          size="sm"
+        >
           <DateRangePicker
             startDate={customStartDate}
             endDate={customEndDate}

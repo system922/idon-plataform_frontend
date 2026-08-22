@@ -1,190 +1,36 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useConfirm, useAlert } from '../../context/ConfirmContext';
 import {
-  FiBox, FiShoppingCart, FiShoppingBag, FiClipboard, FiClock,
-  FiCheck, FiX, FiRefreshCw, FiEye, FiPackage, FiStar,
-  FiSettings, FiBarChart2,
-  FiCreditCard, FiDollarSign, FiTruck, FiGrid, FiCalendar,
-  FiUsers, FiUserCheck, FiMap, FiMapPin, FiList, FiGlobe,
-  FiBell, FiFileText, FiThermometer, FiUser, FiMail, FiPhone,
-  FiFile, FiAlertCircle,
+  FiBox, FiCheck, FiX, FiRefreshCw, FiEye, FiClock,
+  FiUser, FiMail, FiPhone, FiFile, FiAlertCircle,
 } from 'react-icons/fi';
 import { adminApi } from '../../config/api';
 import PageTemplate from '../../components/PageTemplate';
 import Table from '../../components/General/Table';
 import Modal from '../../components/General/Modal';
-import Checklist from '../../components/General/Checklist';
 import CustomCombobox from '../../components/General/CustomCombobox';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 
-const MOD_ICON_MAP = {
-  core:          <FiSettings size={16} />,
-  pos:           <FiShoppingCart size={16} />,
-  inventory:     <FiBox size={16} />,
-  reports:       <FiBarChart2 size={16} />,
-  payments:      <FiCreditCard size={16} />,
-  accounting:    <FiDollarSign size={16} />,
-  orders:        <FiClipboard size={16} />,
-  kitchen:       <FiThermometer size={16} />,
-  delivery:      <FiTruck size={16} />,
-  tables:        <FiGrid size={16} />,
-  reservations:  <FiCalendar size={16} />,
-  loyalty:       <FiStar size={16} />,
-  suppliers:     <FiTruck size={16} />,
-  purchases:     <FiShoppingBag size={16} />,
-  appointments:  <FiCalendar size={16} />,
-  employees:     <FiUsers size={16} />,
-  crm:           <FiUserCheck size={16} />,
-  routes:        <FiMap size={16} />,
-  tracking:      <FiMapPin size={16} />,
-  queue:         <FiList size={16} />,
-  ecommerce:     <FiGlobe size={16} />,
-  notifications: <FiBell size={16} />,
-  einvoicing:    <FiFileText size={16} />,
-};
-
-const ModIcon = ({ code }) => (
-  <span className="solicitud-mod-icon">
-    {MOD_ICON_MAP[code] || <FiBox size={16} />}
-  </span>
-);
-
-function DetailModal({ request, onClose, onApprove, onReject, modules, onSave }) {
+// Modal de detalles (sin módulos, solo información y aprobar/rechazar)
+function DetailModal({ request, onClose, onApprove, onReject }) {
   const { showConfirm } = useConfirm();
   const alert = useAlert();
-  const [selectedMods, setSelectedMods] = useState([]);
-  const [selectedFeats, setSelectedFeats] = useState([]);
-  const [loadingMods, setLoadingMods] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [hasChanges, setHasChanges] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoadingMods(true);
-        let preModIds = [];
-        let preFeatIds = [];
-
-        if (request.status === 'approved' && request.business_id) {
-          try {
-            const bizMods = await adminApi.get(`/admin/businesses/${request.business_id}/modules`);
-            preModIds = bizMods.data?.moduleIds || [];
-            preFeatIds = bizMods.data?.featureIds || [];
-          } catch (e) { }
-        } else {
-          const savedModCodes = request.modulos || [];
-          const savedFeatCodes = request.features || [];
-          preModIds = modules.filter(m => savedModCodes.includes(m.code)).map(m => m.id);
-          preFeatIds = modules.flatMap(m => m.features || [])
-            .filter(f => savedFeatCodes.includes(f.code)).map(f => f.id);
-        }
-
-        setSelectedMods(preModIds);
-        setSelectedFeats(preFeatIds);
-        setHasChanges(false);
-      } catch (e) { } finally {
-        setLoadingMods(false);
-      }
-    };
-    load();
-  }, [request.id, request.status, request.business_id, request.modulos, request.features, modules]);
-
-  const checklistItems = useMemo(() => {
-    return modules.map(m => ({
-      id: String(m.id),
-      label: m.name,
-      icon: <ModIcon code={m.code || m.id} />,
-      badge: m.price_monthly ? `$${m.price_monthly}/mes` : '',
-      isPremium: parseFloat(m.price_monthly || 0) > 0,
-      children: m.features?.map(f => ({
-        id: String(f.id),
-        label: f.name,
-        isPremium: f.is_premium || false,
-      })) || [],
-    }));
-  }, [modules]);
-
-  const checklistValue = useMemo(() => {
-    return selectedMods.map(modId => ({
-      modulo: modId,
-      features: selectedFeats.filter(featId => {
-        const mod = modules.find(m => m.id === modId);
-        return mod?.features?.some(f => f.id === featId);
-      }),
-    }));
-  }, [selectedMods, selectedFeats, modules]);
-
-  const handlePermissionsChange = (newValue) => {
-    const modIds = newValue.map(item => item.modulo);
-    const featIds = newValue.flatMap(item => item.features || []);
-    setSelectedMods(modIds);
-    setSelectedFeats(featIds);
-    setError('');
-    setHasChanges(true);
-  };
-
-  const totalMensual = modules
-    .filter(m => selectedMods.includes(m.id))
-    .reduce((sum, m) => sum + parseFloat(m.price_monthly || 0), 0);
-
-  const handleSave = async () => {
-    if (saving || !hasChanges) return;
+  const handleApprove = async () => {
+    if (saving) return;
     setSaving(true);
-    setError('');
     try {
-      if (request.status === 'approved' && request.business_id) {
-        await adminApi.put(`/admin/businesses/${request.business_id}/modules`, {
-          moduleIds: selectedMods,
-          featureIds: selectedFeats,
-        });
-      } else {
-        await adminApi.post(`/admin/requests/${request.id}/save-modules`, {
-          moduleIds: selectedMods,
-          featureIds: selectedFeats,
-        });
-      }
-      
-      alert.success(
-        request.status === 'approved' 
-          ? 'Módulos actualizados correctamente en el negocio' 
-          : 'Selección guardada correctamente',
-        'Actualización Exitosa'
-      );
-      
-      if (onSave) onSave();
-      onClose();
+      await onApprove();
+      // onApprove ya cierra el modal y actualiza la lista
     } catch (err) {
-      setError(err.message || 'Error al guardar');
+      alert.error(err.message || 'Error al aprobar');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleApproveWithModules = async () => {
-    setSaving(true);
-    setError('');
-    try {
-      await adminApi.post(`/admin/requests/${request.id}/save-modules`, {
-        moduleIds: selectedMods,
-        featureIds: selectedFeats,
-      });
-      
-      alert.success(
-        `La solicitud "${request.empresa}" ha sido aprobada correctamente. El negocio ya puede comenzar a operar.`,
-        'Solicitud Aprobada'
-      );
-      
-      onApprove();
-    } catch (err) {
-      setError(err.message || 'Error al guardar módulos');
-      setSaving(false);
-    }
-  };
-
-  const isSaveDisabled = saving || !hasChanges || loadingMods;
-
-  const handleRejectWithConfirm = async () => {
+  const handleReject = async () => {
     if (!await showConfirm({
       title: 'Rechazar solicitud',
       message: `¿Estás seguro de que deseas rechazar la solicitud "${request.empresa}"? Esta acción no se puede deshacer.`,
@@ -192,74 +38,60 @@ function DetailModal({ request, onClose, onApprove, onReject, modules, onSave })
       cancelText: 'Cancelar',
       danger: true,
     })) return;
-    
-    onReject();
+
+    setSaving(true);
+    try {
+      await onReject();
+    } catch (err) {
+      alert.error(err.message || 'Error al rechazar');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <Modal
+    <Modal 
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Detalles de Solicitud"
       size="md"
       className="solicitud-modal-detail"
       footer={
-        <>
-          {error && (
-            <div className="modal-error-text" style={{ color: 'var(--danger)', marginBottom: '12px' }}>
-              <FiAlertCircle size={16} /> {error}
-            </div>
+        <ButtonGroup>
+          <IconTextButton
+            variant=""
+            size="md"
+            icon={<FiX size={14} />}
+            onClick={onClose}
+            disabled={saving}
+          >
+            Cerrar
+          </IconTextButton>
+          {request.estado === 'pendiente' && (
+            <>
+              <IconTextButton
+                variant="danger"
+                size="md"
+                icon={<FiX size={14} />}
+                onClick={handleReject}
+                disabled={saving}
+              >
+                Rechazar
+              </IconTextButton>
+              <IconTextButton
+                variant="success"
+                size="md"
+                icon={<FiCheck size={14} />}
+                onClick={handleApprove}
+                disabled={saving}
+                loading={saving}
+              >
+                {saving ? 'Aprobando...' : 'Aprobar'}
+              </IconTextButton>
+            </>
           )}
-          <ButtonGroup>
-            <IconTextButton
-              variant=""
-              size="md"
-              icon={<FiX size={14} />}
-              onClick={onClose}
-              disabled={saving}
-            >
-              Cerrar
-            </IconTextButton>
-            {request.estado === 'pendiente' && (
-              <>
-                <IconTextButton
-                  variant="danger"
-                  size="md"
-                  icon={<FiX size={14} />}
-                  onClick={handleRejectWithConfirm}
-                  disabled={saving}
-                >
-                  Rechazar
-                </IconTextButton>
-                <IconTextButton
-                  variant="success"
-                  size="md"
-                  icon={<FiCheck size={14} />}
-                  onClick={handleApproveWithModules}
-                  disabled={saving}
-                  loading={saving}
-                >
-                  {saving ? 'Guardando...' : 'Aprobar'}
-                </IconTextButton>
-              </>
-            )}
-            <IconTextButton
-              variant={request.status === 'approved' ? 'success' : 'secondary'}
-              size="md"
-              icon={<FiCheck size={14} />}
-              onClick={handleSave}
-              disabled={isSaveDisabled}
-              loading={saving}
-            >
-              {saving 
-                ? 'Guardando...' 
-                : request.status === 'approved' 
-                  ? 'Actualizar módulos' 
-                  : 'Guardar selección'
-              }
-            </IconTextButton>
-          </ButtonGroup>
-        </>
+        </ButtonGroup>
       }
     >
       <div className="solicitud-modal-body">
@@ -288,44 +120,11 @@ function DetailModal({ request, onClose, onApprove, onReject, modules, onSave })
             <span className="solicitud-detail-label"><FiBox size={14} /> Tipo de negocio</span>
             <span className="solicitud-detail-value">{request.tipo || '—'}</span>
           </div>
-        </div>
-
-        <hr className="solicitud-detail-divider" />
-
-        <div className="solicitud-modules-header">
-          <h3><FiPackage size={15} /> Módulos y Funcionalidades</h3>
-          <div className="solicitud-modules-stats">
-            <span>
-              <strong>{selectedMods.length}</strong> módulos ·{' '}
-              <strong>{selectedFeats.length}</strong> funcionalidades
-            </span>
-            {totalMensual > 0 && (
-              <span className="solicitud-modules-total">${totalMensual.toFixed(2)}/mes</span>
-            )}
+          <div className="solicitud-detail-item">
+            <span className="solicitud-detail-label"><FiClock size={14} /> Fecha de solicitud</span>
+            <span className="solicitud-detail-value">{request.creado}</span>
           </div>
         </div>
-
-        {loadingMods ? (
-          <div className="solicitud-loading">Cargando módulos...</div>
-        ) : (
-          <Checklist
-            items={checklistItems}
-            value={checklistValue}
-            onChange={handlePermissionsChange}
-            mode="hierarchical"
-            variant="default"
-            maxHeight={350}
-            showIcons
-            selectAll
-            emptyMessage="No hay módulos disponibles"
-          />
-        )}
-
-        {request.status === 'approved' && (
-          <div className="solicitud-info-message">
-            ℹ️ Esta solicitud ya está aprobada. Los cambios se guardarán directamente en el negocio.
-          </div>
-        )}
       </div>
     </Modal>
   );
@@ -336,7 +135,6 @@ export default function AdminSolicitudes() {
   const alert = useAlert();
   const [allRequests, setAllRequests] = useState([]);
   const [requests, setRequests] = useState([]);
-  const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -352,22 +150,16 @@ export default function AdminSolicitudes() {
     { value: 'rechazado', label: `Rechazados (${allRequests.filter(r => r.estado === 'rechazado').length})` },
   ];
 
-  useEffect(() => {
-    adminApi.get('/admin/modules-with-features')
-      .then(res => setModules(res.data || []))
-      .catch(() => setModules([]));
-  }, []);
-
   const mapRequests = (raw) => (raw || []).map(item => ({
     id: item.id,
     propietario: item.contact_name ||
       `${item.owner_first_name || ''} ${item.owner_last_name || ''}`.trim(),
-    tipo: item.business_type_name || item.tipo_nombre || '',
-    tipo_codigo: item.business_type_code || item.tipo || '',
+    tipo: item.business_type_name || '',
+    tipo_codigo: item.business_type_code || '',
     empresa: item.business_name,
-    email: item.owner_email || item.contact_email,
-    telefono: item.owner_phone || item.contact_phone || '—',
-    cedula: item.owner_document_number || item.identification_number || '—',
+    email: item.owner_email,
+    telefono: item.owner_phone || '—',
+    cedula: item.owner_document_number || '—',
     status: item.status,
     business_id: item.business_id || null,
     estado: item.status === 'pending' ? 'pendiente'
@@ -376,28 +168,18 @@ export default function AdminSolicitudes() {
       : item.status,
     creado: item.requested_at
       ? new Date(item.requested_at).toLocaleString('es-EC', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit'
-      })
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit'
+        })
       : '—',
-    modulos: Array.isArray(item.requested_modules)
-      ? item.requested_modules
-      : item.requested_modules
-        ? item.requested_modules.split(',').map(m => m.trim())
-        : [],
-    features: Array.isArray(item.requested_features)
-      ? item.requested_features
-      : item.requested_features
-        ? item.requested_features.split(',').map(f => f.trim())
-        : [],
   }));
 
   const loadRequests = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await adminApi.get('/admin/requests');
-      const allData = mapRequests(data.data);
+      const res = await adminApi.get('/admin/requests');
+      const allData = mapRequests(res.data);
       setAllRequests(allData);
       setRequests(filterStatus === 'todos'
         ? allData
@@ -424,8 +206,7 @@ export default function AdminSolicitudes() {
       await loadRequests();
       alert.success('Solicitud aprobada correctamente');
     } catch (err) {
-      setError(err.message || 'Error al aprobar la solicitud');
-      setTimeout(() => setError(''), 5000);
+      alert.error(err.message || 'Error al aprobar');
     }
   };
 
@@ -433,10 +214,9 @@ export default function AdminSolicitudes() {
     try {
       await adminApi.post(`/admin/${requestId}/reject`, {});
       await loadRequests();
-      alert.info('Solicitud rechazada correctamente');
+      alert.info('Solicitud rechazada');
     } catch (err) {
-      setError(err.message || 'Error al rechazar la solicitud');
-      setTimeout(() => setError(''), 5000);
+      alert.error(err.message || 'Error al rechazar');
     }
   };
 
@@ -510,7 +290,7 @@ export default function AdminSolicitudes() {
           <IconTextButton
             variant="blue"
             size="sm"
-            inline={true}
+            inline
             icon={<FiEye size={13} />}
             onClick={() => openDetail(item)}
             tooltip="Ver detalles"
@@ -522,7 +302,7 @@ export default function AdminSolicitudes() {
               <IconTextButton
                 variant="success"
                 size="sm"
-                inline={true}
+                inline
                 icon={<FiCheck size={13} />}
                 onClick={() => handleApprove(item.id)}
                 tooltip="Aprobar solicitud"
@@ -532,7 +312,7 @@ export default function AdminSolicitudes() {
               <IconTextButton
                 variant="danger"
                 size="sm"
-                inline={true}
+                inline
                 icon={<FiX size={13} />}
                 onClick={() => handleReject(item.id)}
                 tooltip="Rechazar solicitud"
@@ -578,15 +358,15 @@ export default function AdminSolicitudes() {
       headerAction={refreshButton}
     >
       {error && (
-        <div className="alert alert-error" style={{ 
-          padding: '12px 16px', 
-          background: 'var(--danger-bg)', 
-          color: 'var(--danger)', 
-          borderRadius: '8px', 
-          marginBottom: '16px', 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '8px' 
+        <div className="alert alert-error" style={{
+          padding: '12px 16px',
+          background: 'var(--danger-bg)',
+          color: 'var(--danger)',
+          borderRadius: '8px',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
         }}>
           <FiAlertCircle size={16} /> {error}
         </div>
@@ -599,10 +379,10 @@ export default function AdminSolicitudes() {
         title="Lista de Solicitudes"
         subtitle={`${filteredRequests.length} ${filteredRequests.length === 1 ? 'solicitud' : 'solicitudes'} encontradas`}
         toolbar={toolbar}
-        searchable={true}
+        searchable
         searchPlaceholder="Buscar por propietario, empresa, email..."
         searchFields={['propietario', 'empresa', 'email', 'tipo', 'cedula']}
-        pagination={true}
+        pagination
         itemsPerPage={10}
         itemsPerPageOptions={[10, 25, 50, 100]}
         loading={loading}
@@ -611,20 +391,16 @@ export default function AdminSolicitudes() {
             ? 'No hay solicitudes que coincidan con los filtros aplicados'
             : 'No hay solicitudes de registro pendientes'
         }
-        striped={true}
-        hoverable={true}
-        bordered={false}
-        compact={false}
+        striped
+        hoverable
       />
 
       {showDetailModal && selectedRequest && (
         <DetailModal
           request={selectedRequest}
-          modules={modules}
           onClose={closeDetail}
           onApprove={() => { handleApprove(selectedRequest.id); closeDetail(); }}
           onReject={() => { handleReject(selectedRequest.id); closeDetail(); }}
-          onSave={loadRequests}
         />
       )}
     </PageTemplate>

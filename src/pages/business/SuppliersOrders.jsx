@@ -831,6 +831,7 @@ function PurchaseOrderModal({
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title="Nueva orden de compra"
@@ -1387,6 +1388,7 @@ function OrderDetailModal({
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={

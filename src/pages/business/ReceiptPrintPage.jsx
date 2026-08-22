@@ -87,6 +87,7 @@ function InvoiceDetailModal({ sale, onClose, isOpen }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={isOpen}
       onClose={onClose}
       title="Detalle de Factura"
@@ -762,6 +763,7 @@ export default function InvoiceReprintPage() {
       {/* Modal de fechas personalizadas */}
       {showCustomDate && (
         <Modal
+          closeOnOverlayClick={false}
           isOpen={true}
           onClose={() => setShowCustomDate(false)}
           title="Seleccionar fechas"

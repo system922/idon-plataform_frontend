@@ -34,6 +34,7 @@ function SupplierModal({ supplier, onClose, onSave, saving }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={supplier ? 'Editar proveedor' : 'Nuevo proveedor'}

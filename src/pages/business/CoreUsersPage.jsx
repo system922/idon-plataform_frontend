@@ -436,6 +436,7 @@ export default function CoreUsersPage() {
         />
 
         <Modal
+          closeOnOverlayClick={false}
           isOpen={showModal}
           onClose={closeModal}
           title={editingUser ? 'Editar usuario' : 'Nuevo usuario'}

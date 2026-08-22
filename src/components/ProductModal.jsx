@@ -236,12 +236,12 @@ const ProductModal = ({ isOpen, product, onSave, onClose, isSaving = false }) =>
   // ── Render ──
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={isOpen}
       onClose={onClose}
       title={product ? 'Editar Producto' : 'Nuevo Producto'}
       size="m"
       footer={footer}
-      closeOnOverlayClick={false}
     >
       <form onSubmit={handleSubmit} className="product-modal-form">
         <div className="form-grid">

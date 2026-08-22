@@ -408,6 +408,7 @@ function RolModal({ item, modules, businessId, onClose, onSaved }) {
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
       title={item ? 'Editar Rol' : 'Nuevo Rol'}

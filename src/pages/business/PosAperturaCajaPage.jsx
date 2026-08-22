@@ -45,7 +45,6 @@ function fmt(n) {
 const getNombreUsuario = (user) => {
   if (!user) return 'Usuario no identificado';
   
-  // Usar las propiedades correctas: firstName y lastName
   const nombre = user.firstName || user.first_name || user.nombre || user.name || '';
   const apellido = user.lastName || user.last_name || user.apellido || '';
   
@@ -67,10 +66,8 @@ const getEmailUsuario = (user) => {
 };
 
 export default function AperturaCajaPage({ onAperturaCompleta, onCancel }) {
-  // Usar useSession
   const { user } = useSession();
   
-  // Obtener nombre y email con las propiedades correctas
   const nombreUsuario = getNombreUsuario(user);
   const emailUsuario = getEmailUsuario(user);
   const userId = user?.id;
@@ -86,6 +83,32 @@ export default function AperturaCajaPage({ onAperturaCompleta, onCancel }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const [montoBancaRaw, setMontoBancaRaw] = useState(''); // texto que muestra el input
+
+  // ─── Helper para parsear entrada de dinero ────────────────────────────────
+const parseMoneyInput = (value) => {
+  // Si está vacío o es null, retorna 0
+  if (!value || value === '') return 0;
+  
+  // Reemplazar comas por punto (por si el usuario usa coma)
+  let cleaned = value.replace(/,/g, '.');
+  
+  // Si contiene un punto, parsear como número normal
+  if (cleaned.includes('.')) {
+    const num = parseFloat(cleaned);
+    // Si no es un número válido, retorna 0
+    if (isNaN(num)) return 0;
+    // Redondear a 2 decimales para evitar errores de precisión
+    return Math.round(num * 100) / 100;
+  }
+  
+  // Si NO tiene punto, interpretar como centavos
+  // Ejemplo: "1020" → 10.20
+  const cents = parseInt(cleaned, 10);
+    if (isNaN(cents)) return 0;
+    return cents / 100;
+  };
+
   const totalEfectivo = useMemo(() => {
     let total = 0;
     for (const d of [...MONEDAS, ...BILLETES]) {
@@ -99,6 +122,32 @@ export default function AperturaCajaPage({ onAperturaCompleta, onCancel }) {
   const handleDenom = (key, val) => {
     const num = val.replace(/[^0-9]/g, '');
     setDenoms(prev => ({ ...prev, [key]: num }));
+  };
+
+  // Manejar cambio de montoBanca con formato
+  const handleMontoBancaChange = (val) => {
+    // Permitir solo dígitos y un punto decimal
+    const cleaned = val.replace(/[^0-9.]/g, '');
+    const parts = cleaned.split('.');
+    const formatted = parts.length > 1 ? parts[0] + '.' + parts.slice(1).join('') : cleaned;
+
+    // Si no tiene punto, interpretar como centavos (1020 -> 10.20)
+    if (!formatted.includes('.')) {
+      const cents = parseInt(formatted) || 0;
+      setMontoBanca((cents / 100).toFixed(2)); // ✅ CON DOS DECIMALES
+    } else {
+      const num = parseFloat(formatted) || 0;
+      setMontoBanca(num.toFixed(2)); // ✅ CON DOS DECIMALES
+    }
+  };
+
+  const handleMontoBancaBlur = () => {
+    const num = parseFloat(montoBanca) || 0;
+    if (num > 0) {
+      setMontoBanca(num.toFixed(2));
+    } else {
+      setMontoBanca('');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -118,9 +167,6 @@ export default function AperturaCajaPage({ onAperturaCompleta, onCancel }) {
         body[d.key] = parseInt(denoms[d.key], 10) || 0;
       }
 
-      console.log('📤 Enviando a /pos/cash-register/opening:', body);
-
-      // Usar fetchWithAuth directamente (sin /api/ prefix)
       const res = await fetchWithAuth('/pos/cash-register/opening', {
         method: 'POST',
         body: JSON.stringify(body),
@@ -129,14 +175,12 @@ export default function AperturaCajaPage({ onAperturaCompleta, onCancel }) {
       const data = await res.json();
 
       if (res.status === 409) {
-        // Ya existe apertura para hoy
         onAperturaCompleta(data);
         return;
       }
 
       if (!res.ok) throw new Error(data?.error || 'Error al guardar apertura');
 
-      // Registrar en audit-log usando fetchWithAuth
       const auditPayload = {
         user_id: userId,
         user_name: nombreUsuario,
@@ -180,15 +224,16 @@ export default function AperturaCajaPage({ onAperturaCompleta, onCancel }) {
     timeZone: 'America/Guayaquil'
   });
 
+  
 
   return (
     <Modal
+      closeOnOverlayClick={false}
       isOpen={true}
       size="lg"
       className="apertura-modal-container"
       overlayClassName="apertura-modal-overlay"
-       title={`Apertura de Caja - ${fechaActual}`}
-      closeOnOverlayClick={false}
+      title={`Apertura de Caja - ${fechaActual}`}
       closeOnEscape={false}
       footer={
         <ButtonGroup>
@@ -288,15 +333,42 @@ export default function AperturaCajaPage({ onAperturaCompleta, onCancel }) {
           <div className="apertura-bank-input-wrap">
             <span className="apertura-bank-prefix">$</span>
             <Input
-              min="0"
-              step="0.01"
+              type="text"
+              inputMode="numeric"
               placeholder="0.00"
               value={montoBanca}
-              onChange={setMontoBanca}
+              onChange={(val) => {
+                // Solo permitir dígitos
+                let digits = val.replace(/\D/g, '');
+                // Limitar a 8 dígitos (máximo $99,999.99)
+                if (digits.length > 8) digits = digits.slice(0, 8);
+                // Guardar dígitos en bruto
+                setMontoBancaRaw(digits);
+                // Formatear a dos decimales
+                const formatted = digits === '' ? '' : (parseInt(digits, 10) / 100).toFixed(2);
+                setMontoBanca(formatted);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Backspace') {
+                  const currentRaw = montoBancaRaw || '';
+                  if (currentRaw.length === 0) {
+                    e.preventDefault();
+                    return;
+                  }
+                  // Si solo queda un dígito, al borrar se limpia todo
+                  if (currentRaw.length === 1) {
+                    setMontoBancaRaw('');
+                    setMontoBanca('');
+                    e.preventDefault();
+                  }
+                }
+              }}
+              onFocus={(e) => e.target.select()}
               className="input-denom-xs_1"
             />
           </div>
         </div>
+
 
         {/* Observaciones */}
         <textarea
