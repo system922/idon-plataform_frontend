@@ -233,22 +233,20 @@
   display: flex;
   gap: 1.5rem;
   justify-content: center;
-  align-items: center;
-  margin: 2rem 0 3rem;
+  align-items: stretch; 
   flex-wrap: wrap;
 }
 
 .landing-image {
-  max-width: 100%;
-  height: auto;
-  width: 100%;
-  max-width: 600px;
-  height: 300px;
+  flex: 1 1 calc(50% - 0.75rem); /* Ocupa la mitad del ancho menos la mitad del gap */
+  max-width: calc(50% - 0.75rem);
+  height: auto; /* Altura automática */
+  aspect-ratio: 16 / 9; /* Proporción deseada, ajusta según tus imágenes */
+  object-fit: contain;
   border-radius: 5px;
   box-shadow: var(--shadow-md);
   transition: var(--transition);
   border: 1px solid var(--border-light);
-  object-fit: cover; /* Asegura que la imagen no se deforme */
 }
 
 .landing-image:hover {
@@ -716,27 +714,6 @@
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
   border-left: 4px solid var(--primary);
-}
-
-/* Ajuste para el footer (si se usa en landing) - recomendación */
-.saas-footer {
-  padding: 1.5rem 5%;
-  flex-wrap: wrap;
-}
-
-.saas-footer__links {
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-@media (max-width: 600px) {
-  .saas-footer {
-    flex-direction: column;
-    text-align: center;
-  }
-  .saas-footer__links {
-    justify-content: center;
-  }
 }
 
 /* ============================================================

@@ -11,6 +11,7 @@ export default function Footer({ variant = 'dark' }) {
         <span className="saas-footer__logo">
           <span className="brand-id">ID</span>
           <span className="saas-footer__logo-on">ON</span>
+          <span className="brand-id">  Control</span>
         </span>
         <span className="saas-footer__version">v2.0</span>
         <span className="saas-footer__divider" />
