@@ -14,27 +14,17 @@ const BlogPage = () => {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        console.log('🔍 [BLOG] Solicitando novedades...');
         const response = await api.get('/blog/news');
-        console.log('📦 [BLOG] Respuesta recibida:', response);
         
-        // CORREGIDO: Verificar 'success' en lugar de 'ok'
         if (response.data?.success && Array.isArray(response.data?.data)) {
-          console.log(`📊 [BLOG] ${response.data.data.length} artículos recibidos del backend`);
-          
-          // FILTRAR solo los artículos activos en el frontend
           const activeArticles = response.data.data.filter(
             article => article.is_active === true
           );
-          
-          console.log(`✅ [BLOG] ${activeArticles.length} artículos activos después del filtro`);
           setArticles(activeArticles);
         } else {
-          console.warn('⚠️ [BLOG] Respuesta sin datos o estructura incorrecta:', response.data);
           setArticles([]);
         }
       } catch (err) {
-        console.error('❌ [BLOG] Error al cargar novedades:', err);
         setError('No se pudieron cargar los artículos.');
       } finally {
         setLoading(false);
@@ -43,7 +33,6 @@ const BlogPage = () => {
     fetchNews();
   }, []);
 
-  // Función para obtener etiqueta según tipo
   const getTypeLabel = (type) => {
     const types = {
       'new_module': 'Nuevo Módulo',
@@ -55,7 +44,6 @@ const BlogPage = () => {
     return types[type] || type;
   };
 
-  // Formateo de fecha
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-EC', {
@@ -109,33 +97,39 @@ const BlogPage = () => {
             </div>
           ) : (
             <div className="blog-grid">
-              {articles.map((article) => (
-                <div key={article.id} className="blog-card">
-                  {article.image_url && article.image_url.trim() !== '' && (
-                    <div className="blog-card-image">
-                      <img src={article.image_url} alt={article.title} />
-                    </div>
-                  )}
-                  <div className="blog-card-content">
-                    <span className="blog-card-type">{getTypeLabel(article.type)}</span>
-                    <h3>{article.title}</h3>
-                    <p>{article.content}</p>
-                    <div className="blog-meta">
-                      <span className="blog-date">
-                        <FiClock size={14} />
-                        {formatDate(article.created_at)}
-                      </span>
-                      {article.is_highlight && (
-                        <span className="blog-highlight">★ Destacado</span>
-                      )}
+              {articles.map((article) => {
+                const hasImage = article.image_url && article.image_url.trim() !== '';
+                
+                return (
+                  <div 
+                    key={article.id} 
+                    className={`blog-card ${hasImage ? 'has-image' : ''}`}
+                  >
+                    {hasImage && (
+                      <div className="blog-card-image">
+                        <img src={article.image_url} alt={article.title} />
+                      </div>
+                    )}
+                    <div className="blog-card-content">
+                      <span className="blog-card-type">{getTypeLabel(article.type)}</span>
+                      <h3>{article.title}</h3>
+                      <p>{article.content}</p>
+                      <div className="blog-meta">
+                        <span className="blog-date">
+                          <FiClock size={14} />
+                          {formatDate(article.created_at)}
+                        </span>
+                        {article.is_highlight && (
+                          <span className="blog-highlight">★ Destacado</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
-          {/* Sección de fuentes destacadas */}
           <div className="blog-sources-section">
             <h3>Fuentes oficiales consultadas</h3>
             <p className="sources-description">
