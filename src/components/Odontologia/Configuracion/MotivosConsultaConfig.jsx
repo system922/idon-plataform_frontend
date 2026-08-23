@@ -1,7 +1,7 @@
 // components/Odontologia/Configuracion/MotivosConsultaConfig.jsx
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEdit, FiTrash2, FiX, FiRefreshCw } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
+import { fetchWithAuth } from '../../../config/api';
 
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#f59e0b', '#ec4899', '#14b8a6', '#f97316'];
 
@@ -27,7 +27,7 @@ export default function MotivosConsultaConfig() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchWithAuth('/api/odontologia/motivos-consulta');
+      const res = await fetchWithAuth('/odontologia/motivos-consulta');
       if (!res.ok) throw new Error('Error al cargar motivos');
       const data = await res.json();
       if (data.success) {
@@ -88,8 +88,8 @@ export default function MotivosConsultaConfig() {
 
     try {
       const url = selectedMotivo
-        ? `/api/odontologia/motivos-consulta/${selectedMotivo.id}`
-        : '/api/odontologia/motivos-consulta';
+        ? `/odontologia/motivos-consulta/${selectedMotivo.id}`
+        : '/odontologia/motivos-consulta';
       const method = selectedMotivo ? 'PUT' : 'POST';
 
       const res = await fetchWithAuth(url, {
@@ -119,7 +119,7 @@ export default function MotivosConsultaConfig() {
     if (!window.confirm('¿Está seguro de eliminar este motivo?')) return;
 
     try {
-      const res = await fetchWithAuth(`/api/odontologia/motivos-consulta/${id}`, {
+      const res = await fetchWithAuth(`/odontologia/motivos-consulta/${id}`, {
         method: 'DELETE',
       });
 
@@ -153,7 +153,7 @@ export default function MotivosConsultaConfig() {
     <div className="odonto-config-section">
       <div className="odonto-config-header">
         <div>
-          <h3>📋 Motivos de Consulta</h3>
+          <h3>Motivos de Consulta</h3>
           <p>Define los motivos de consulta para las citas</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>

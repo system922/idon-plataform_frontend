@@ -1,7 +1,7 @@
 // components/Odontologia/Configuracion/EspecialistasConfig.jsx
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEdit, FiTrash2, FiX, FiSearch, FiRefreshCw } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
+import { fetchWithAuth } from '../../../config/api';
 
 export default function EspecialistasConfig() {
   const [especialistas, setEspecialistas] = useState([]);
@@ -27,7 +27,7 @@ export default function EspecialistasConfig() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchWithAuth('/api/odontologia/especialistas');
+      const res = await fetchWithAuth('/odontologia/especialistas');
       if (!res.ok) throw new Error('Error al cargar especialistas');
       const data = await res.json();
       if (data.success) {
@@ -90,8 +90,8 @@ export default function EspecialistasConfig() {
 
     try {
       const url = selectedEspecialista
-        ? `/api/odontologia/especialistas/${selectedEspecialista.id}`
-        : '/api/odontologia/especialistas';
+        ? `/odontologia/especialistas/${selectedEspecialista.id}`
+        : '/odontologia/especialistas';
       const method = selectedEspecialista ? 'PUT' : 'POST';
 
       const res = await fetchWithAuth(url, {
@@ -121,7 +121,7 @@ export default function EspecialistasConfig() {
     if (!window.confirm('¿Está seguro de eliminar este especialista?')) return;
 
     try {
-      const res = await fetchWithAuth(`/api/odontologia/especialistas/${id}`, {
+      const res = await fetchWithAuth(`/odontologia/especialistas/${id}`, {
         method: 'DELETE',
       });
 
@@ -164,7 +164,7 @@ export default function EspecialistasConfig() {
     <div className="odonto-config-section">
       <div className="odonto-config-header">
         <div>
-          <h3>👨‍⚕️ Especialistas / Odontólogos</h3>
+          <h3>Especialistas / Odontólogos</h3>
           <p>Gestiona los profesionales de la clínica odontológica</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>

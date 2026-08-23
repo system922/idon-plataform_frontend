@@ -1,7 +1,7 @@
 // components/Odontologia/Configuracion/GruposConfig.jsx
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEdit, FiTrash2, FiX, FiRefreshCw } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
+import { fetchWithAuth } from '../../../config/api';
 
 export default function GruposConfig() {
   const [grupos, setGrupos] = useState([]);
@@ -24,7 +24,7 @@ export default function GruposConfig() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchWithAuth('/api/odontologia/grupos-agendas');
+      const res = await fetchWithAuth('/odontologia/grupos-agendas');
       if (!res.ok) throw new Error('Error al cargar grupos');
       const data = await res.json();
       if (data.success) {
@@ -83,8 +83,8 @@ export default function GruposConfig() {
 
     try {
       const url = selectedGrupo
-        ? `/api/odontologia/grupos-agendas/${selectedGrupo.id}`
-        : '/api/odontologia/grupos-agendas';
+        ? `/odontologia/grupos-agendas/${selectedGrupo.id}`
+        : '/odontologia/grupos-agendas';
       const method = selectedGrupo ? 'PUT' : 'POST';
 
       const res = await fetchWithAuth(url, {
@@ -114,7 +114,7 @@ export default function GruposConfig() {
     if (!window.confirm('¿Está seguro de eliminar este grupo?')) return;
 
     try {
-      const res = await fetchWithAuth(`/api/odontologia/grupos-agendas/${id}`, {
+      const res = await fetchWithAuth(`/odontologia/grupos-agendas/${id}`, {
         method: 'DELETE',
       });
 
@@ -148,7 +148,7 @@ export default function GruposConfig() {
     <div className="odonto-config-section">
       <div className="odonto-config-header">
         <div>
-          <h3>📂 Grupos de Agendas</h3>
+          <h3>Grupos de Agendas</h3>
           <p>Organiza las agendas en grupos para mejor gestión</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>

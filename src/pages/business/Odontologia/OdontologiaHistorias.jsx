@@ -1,7 +1,7 @@
 // pages/business/Odontologia/OdontologiaHistorias.jsx
 import React, { useState } from 'react';
-import { FiFileText, FiPlus, FiRefreshCw, FiUser, FiSearch, FiX, FiArrowLeft } from 'react-icons/fi';
-import PageTemplateOdontologia from '../../../components/PageTemplateOdontologia';
+import { FiFileText, FiPlus, FiRefreshCw, FiUser, FiX, FiArrowLeft } from 'react-icons/fi';
+import PageTemplate from '../../../components/PageTemplate';
 import { useHistoriasClinicas } from '../../../hooks/useHistoriasClinicas';
 import { usePacientesSearch } from '../../../hooks/usePacientesSearch';
 import {
@@ -125,7 +125,7 @@ export default function OdontologiaHistorias() {
     : null;
 
   return (
-    <PageTemplateOdontologia
+    <PageTemplate
       title={selectedPatient ? `Historias Clínicas`: "Historias Clínicas"}
       subtitle="Gestión completa de historias clínicas odontológicas"
       loading={loadingPacientes || loadingHistorias}
@@ -283,6 +283,6 @@ export default function OdontologiaHistorias() {
         title={confirmModal.title}
         message={confirmModal.message}
       />
-    </PageTemplateOdontologia>
+    </PageTemplate>
   );
 }

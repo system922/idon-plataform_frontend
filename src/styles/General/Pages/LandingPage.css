@@ -227,26 +227,33 @@
 }
 
 /* ============================================================
-   IMÁGENES DEL LANDING (Responsive)
+   IMÁGENES DEL LANDING (Responsive) - SIN CLS
    ============================================================ */
 .images-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Siempre dos columnas */
   gap: 1.5rem;
-  justify-content: center;
-  align-items: stretch; 
-  flex-wrap: wrap;
+  justify-items: center;
+  align-items: start;
 }
 
 .landing-image {
-  flex: 1 1 calc(50% - 0.75rem); /* Ocupa la mitad del ancho menos la mitad del gap */
-  max-width: calc(50% - 0.75rem);
-  height: auto; /* Altura automática */
-  aspect-ratio: 16 / 9; /* Proporción deseada, ajusta según tus imágenes */
-  object-fit: contain;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain; /* o cover, según prefieras */
   border-radius: 5px;
   box-shadow: var(--shadow-md);
   transition: var(--transition);
   border: 1px solid var(--border-light);
+}
+
+/* Mantén los aspect-ratio específicos */
+.landing-image[width="634"][height="272"] {
+  aspect-ratio: 634 / 272;
+}
+.landing-image[width="634"][height="294"] {
+  aspect-ratio: 634 / 294;
 }
 
 .landing-image:hover {
@@ -600,7 +607,7 @@
   }
 
   .images-grid {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     gap: 1rem;
   }
 
@@ -609,6 +616,7 @@
     height: auto;
   }
 }
+
 
 /* Móviles pequeños (≤ 480px) */
 @media (max-width: 480px) {
@@ -664,17 +672,12 @@
   .landing-main {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 3rem 0;
+    padding: 3rem 0; /* ← Solo padding vertical, nada horizontal */
   }
 
   .landing-header {
     max-width: 1200px;
     padding: 0.15rem 0 0.40rem 0;
-  }
-
-  .landing-image {
-    max-width: 700px;
-    height: 350px;
   }
 }
 

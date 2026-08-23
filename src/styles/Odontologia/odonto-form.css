@@ -118,8 +118,8 @@
 .odonto-cedula-section {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 12px;
+  gap: 0px;
+  padding: 12px 2px;
   background: var(--bg-tertiary);
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--border-color);

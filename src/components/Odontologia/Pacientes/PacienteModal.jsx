@@ -1,16 +1,24 @@
 // componentes/pacientes/PacienteModal.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { FiX, FiUpload, FiUser, FiCamera, FiSearch, FiLoader, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { FiX, FiUpload, FiUser, FiCamera, FiSearch, FiLoader, FiCheckCircle, FiAlertCircle, FiSave } from 'react-icons/fi';
 import { PacienteAvatar } from './PacienteAvatar';
 import { CameraModal } from './CameraModal';
+import Modal from '../../General/Modal';
+import { IconTextButton, ButtonGroup } from '../../General/Button';
+import CustomCombobox from '../../General/CustomCombobox'; // 👈 Importación
+import { useAlert } from '../../ConfirmContext';
+import { fetchWithAuth } from '../../../config/api';
 
-export const PacienteModal = ({ 
-  isOpen, 
-  onClose, 
-  paciente = null, 
+export const PacienteModal = ({
+  isOpen,
+  onClose,
+  paciente = null,
   onSave,
-  loading 
+  loading,
+  initialDocumentNumber = ''
 }) => {
+  const alert = useAlert();
+
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
@@ -32,7 +40,7 @@ export const PacienteModal = ({
   const [error, setError] = useState('');
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-  
+
   const [searching, setSearching] = useState(false);
   const [searchSuccess, setSearchSuccess] = useState(false);
   const [searchMessage, setSearchMessage] = useState('');
@@ -47,6 +55,39 @@ export const PacienteModal = ({
     setForm(prev => ({ ...prev, image_file: file, image_url: '' }));
   };
 
+  // ============================================================
+  // FUNCIÓN UNIFICADA PARA LIMPIAR CAMPOS Y ESTADOS
+  // ============================================================
+  const limpiarCamposYCedula = () => {
+    setForm({
+      first_name: '',
+      last_name: '',
+      document_number: '',
+      phone: '',
+      email: '',
+      birth_date: '',
+      gender: 'Masculino',
+      address: '',
+      allergies: '',
+      medical_history: '',
+      occupation: '',
+      nationality: '',
+      blood_type: '',
+      hc_number: '',
+      image_url: '',
+      image_file: null,
+    });
+    setImagePreview(null);
+    setSearchSuccess(false);
+    setSearchMessage('');
+    setFoundData(null);
+    setCedulaTouched(false);
+    setError('');
+  };
+
+  // ============================================================
+  // EFECTO PARA INICIALIZAR EL FORMULARIO
+  // ============================================================
   useEffect(() => {
     if (paciente) {
       setForm({
@@ -76,7 +117,7 @@ export const PacienteModal = ({
       setForm({
         first_name: '',
         last_name: '',
-        document_number: '',
+        document_number: initialDocumentNumber || '',
         phone: '',
         email: '',
         birth_date: '',
@@ -98,18 +139,59 @@ export const PacienteModal = ({
       setCedulaTouched(false);
     }
     setError('');
-  }, [paciente]);
+  }, [paciente, initialDocumentNumber]);
 
-  useEffect(() => {
-    return () => {
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
+  // ============================================================
+  // FUNCIÓN PARA VERIFICAR EXISTENCIA EN BASE DE DATOS
+  // ============================================================
+  const verificarExistenciaEnDB = async (cedula) => {
+    if (!cedula || cedula.length !== 10) return null;
+    try {
+      const res = await fetchWithAuth(`/odontologia/pacientes/search?q=${encodeURIComponent(cedula)}`);
+      const data = await res.json();
+      if (data.success && data.data && data.data.length > 0) {
+        return data.data.find(p => p.document_number === cedula) || null;
       }
-    };
-  }, [searchTimeout]);
+      return null;
+    } catch (error) {
+      console.error('Error verificando paciente en DB:', error);
+      return null;
+    }
+  };
 
-  if (!isOpen) return null;
+  // ============================================================
+  // FUNCIÓN PRINCIPAL: VALIDAR Y LUEGO BUSCAR EN REGISTRO CIVIL
+  // ============================================================
+  const verificarYBuscar = async (documentNumber) => {
+    if (!documentNumber || documentNumber.length !== 10) {
+      setSearchMessage('Ingrese una cédula válida de 10 dígitos');
+      setSearchSuccess(false);
+      return;
+    }
 
+    setSearching(true);
+    setSearchMessage('Verificando en el sistema...');
+    setSearchSuccess(false);
+    setError('');
+
+    const existente = await verificarExistenciaEnDB(documentNumber);
+    if (existente) {
+      setSearching(false);
+      setSearchSuccess(false);
+      await alert.info(
+        `El paciente con cédula ${documentNumber} ya está registrado como "${existente.first_name} ${existente.last_name}". No se puede duplicar.`,
+        'Paciente ya existe'
+      );
+      limpiarCamposYCedula();
+      return;
+    }
+
+    await buscarEnRegistroCivil(documentNumber);
+  };
+
+  // ============================================================
+  // FUNCIÓN DE BÚSQUEDA EN REGISTRO CIVIL
+  // ============================================================
   const buscarEnRegistroCivil = async (documentNumber) => {
     if (!documentNumber || documentNumber.length !== 10) {
       setSearchMessage('Ingrese una cédula válida de 10 dígitos');
@@ -118,16 +200,15 @@ export const PacienteModal = ({
     }
 
     setSearching(true);
-    setSearchMessage('');
     setSearchSuccess(false);
     setError('');
 
     try {
       const proxyUrl = 'https://infoplacas.herokuapp.com/';
       const targetUrl = 'https://si.secap.gob.ec/sisecap/logeo_web/json/busca_persona_registro_civil.php';
-      const postData = new URLSearchParams({ 
-        documento: documentNumber, 
-        tipo: '1' 
+      const postData = new URLSearchParams({
+        documento: documentNumber,
+        tipo: '1'
       });
 
       const response = await fetch(proxyUrl + targetUrl, {
@@ -137,14 +218,14 @@ export const PacienteModal = ({
       });
 
       const text = await response.text();
-      
+
       if (text) {
         const json = JSON.parse(text);
         if (json?.nombres) {
           const firstName = json.nombres ? json.nombres.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) : '';
           const lastName = json.apellidos ? json.apellidos.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) : '';
           const birthDate = json.fechaNacimiento || '';
-          
+
           let gender = 'Masculino';
           if (json.sexo) {
             const sexoUpper = json.sexo.toUpperCase();
@@ -154,12 +235,12 @@ export const PacienteModal = ({
               gender = 'Femenino';
             }
           }
-          
+
           let nationality = '';
           if (json.nacionalidad) {
             nationality = json.nacionalidad;
           }
-          
+
           setForm(prev => ({
             ...prev,
             first_name: firstName,
@@ -169,7 +250,7 @@ export const PacienteModal = ({
             gender: gender,
             nationality: nationality,
           }));
-          
+
           setFoundData({
             nombre: `${firstName} ${lastName}`,
             first_name: firstName,
@@ -179,75 +260,75 @@ export const PacienteModal = ({
             gender: gender,
             nationality: nationality,
           });
-          
+
           setSearchSuccess(true);
-          
+
           setTimeout(() => {
             setSearchMessage('');
           }, 4000);
         } else {
           setSearchSuccess(false);
-          setSearchMessage('❌ No se encontraron datos en el registro civil');
         }
       } else {
         setSearchSuccess(false);
-        setSearchMessage('❌ No se encontraron datos en el registro civil');
       }
     } catch (err) {
       console.error('Error al buscar en registro civil:', err);
       setSearchSuccess(false);
-      setSearchMessage('❌ Error al consultar el registro civil');
     } finally {
       setSearching(false);
     }
   };
 
+  // ============================================================
+  // EFECTO PARA BÚSQUEDA AUTOMÁTICA (cuando viene de la cita)
+  // ============================================================
+  useEffect(() => {
+    if (isOpen && !paciente && initialDocumentNumber && initialDocumentNumber.length === 10) {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+      const timeout = setTimeout(() => {
+        verificarYBuscar(initialDocumentNumber);
+      }, 300);
+      setSearchTimeout(timeout);
+    }
+  }, [isOpen, paciente, initialDocumentNumber]);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchTimeout]);
+
+  // ============================================================
+  // MANEJADORES DE CAMBIOS
+  // ============================================================
   const handleDocumentChange = (e) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-    
-    setForm({ ...form, document_number: value });
+
+    if (value.length < 10) {
+      limpiarCamposYCedula();
+      setForm(prev => ({ ...prev, document_number: value }));
+      setCedulaTouched(true);
+      return;
+    }
+
     setSearchMessage('');
     setSearchSuccess(false);
     setFoundData(null);
     setCedulaTouched(true);
+    setForm(prev => ({ ...prev, document_number: value }));
 
-    if (value.length < 10) {
-      setForm(prev => ({
-        ...prev,
-        first_name: '',
-        last_name: '',
-        document_number: value,
-        phone: '',
-        email: '',
-        birth_date: '',
-        gender: 'Masculino',
-        address: '',
-        allergies: '',
-        medical_history: '',
-        occupation: '',
-        nationality: '',
-        blood_type: '',
-        hc_number: '',
-        image_url: '',
-        image_file: null,
-      }));
-      setSearchSuccess(false);
-      setFoundData(null);
-      setSearchMessage('');
-      return;
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
     }
-    
-    if (value.length === 10) {
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-      }
-      
-      const timeout = setTimeout(() => {
-        buscarEnRegistroCivil(value);
-      }, 600);
-      
-      setSearchTimeout(timeout);
-    }
+    const timeout = setTimeout(() => {
+      verificarYBuscar(value);
+    }, 600);
+    setSearchTimeout(timeout);
   };
 
   const handlePhoneChange = (e) => {
@@ -295,6 +376,9 @@ export const PacienteModal = ({
     fileInputRef.current?.click();
   };
 
+  // ============================================================
+  // HANDLE SUBMIT CON VALIDACIÓN Y LIMPIEZA
+  // ============================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -314,8 +398,17 @@ export const PacienteModal = ({
       return;
     }
 
+    const existente = await verificarExistenciaEnDB(form.document_number);
+    if (existente) {
+      await alert.info(
+        `El paciente con cédula ${form.document_number} ya está registrado como "${existente.first_name} ${existente.last_name}". No se puede duplicar.`,
+        'Paciente ya existe'
+      );
+      limpiarCamposYCedula();
+      return;
+    }
+
     const submitData = new FormData();
-    
     const dataToSend = {
       document_number: form.document_number,
       first_name: form.first_name,
@@ -360,307 +453,226 @@ export const PacienteModal = ({
 
   const cedulaStatus = getCedulaStatus();
 
+  const isFromAppointment = !paciente && initialDocumentNumber && initialDocumentNumber.length === 10;
+
+  const footer = (
+    <ButtonGroup style={{ justifyContent: 'flex-end' }}>
+      <IconTextButton
+        variant=""
+        size="md"
+        icon={<FiX size={14} />}
+        onClick={onClose}
+        disabled={loading}
+      >
+        Cancelar
+      </IconTextButton>
+      <IconTextButton
+        variant="success"
+        size="md"
+        icon={<FiSave size={14} />}
+        onClick={handleSubmit}
+        disabled={loading}
+        loading={loading}
+      >
+        {paciente ? 'Actualizar' : 'Guardar'}
+      </IconTextButton>
+    </ButtonGroup>
+  );
+
   return (
     <>
-      <div className="odonto-modal-overlay" onClick={onClose}>
-        <div className="odonto-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 650 }}>
-          {/* HEADER - usa primary gradient */}
-          <div className="odonto-modal-header blue">
-            <div>
-              <h3>{paciente ? 'Editar Paciente' : 'Nuevo Paciente'}</h3>
-              <p>{paciente ? 'Modificar información del paciente' : 'Registrar un nuevo paciente'}</p>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={paciente ? 'Editar Paciente' : 'Nuevo Paciente'}
+        size="md"
+        closeOnOverlayClick={false}
+        closeOnEscape={true}
+        footer={footer}
+      >
+        <div className="paciente-modal-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {error && (
+            <div className="odonto-error-message" style={{ color: '#dc2626', fontSize: '14px', padding: '8px 12px', backgroundColor: '#fef2f2', borderRadius: '6px', border: '1px solid #fca5a5' }}>
+              {error}
             </div>
-            <button className="odonto-modal-close" onClick={onClose}>
-              <FiX size={20} />
-            </button>
-          </div>
+          )}
 
-          {/* BODY */}
-          <div className="odonto-modal-body">
-            {error && (
-              <div className="odonto-error-message">
-                {error}
-              </div>
-            )}
-            
-            <form onSubmit={handleSubmit}>
-              {/* CÉDULA + FOTO - layout compacto */}
-              <div className="odonto-form-row-compact">
-                {/* Cédula */}
-                <div className="odonto-cedula-section">
-                  <label className="odonto-cedula-label">N. CED.</label>
-                  <div className={`odonto-cedula-wrapper ${cedulaStatus}`}>
-                    <FiSearch className="odonto-cedula-icon" />
-                    <input
-                      name="document_number"
-                      type="text"
-                      value={form.document_number}
-                      onChange={handleDocumentChange}
-                      placeholder="10 dígitos"
-                      required
-                      disabled={!!paciente}
-                      className="odonto-cedula-input"
-                      maxLength="10"
-                    />
-                    
-                    <span className={`odonto-cedula-counter ${form.document_number.length === 10 ? 'complete' : ''}`}>
-                      {form.document_number.length}/10
-                    </span>
-                    
-                    {searching && (
-                      <div className="odonto-cedula-spinner">
-                        <FiLoader size={14} />
-                      </div>
-                    )}
-                    
-                    {searchSuccess && !searching && (
-                      <div className="odonto-cedula-success">
-                        <FiCheckCircle size={14} />
-                      </div>
-                    )}
-                    
-                    {form.document_number.length === 10 && !searchSuccess && !searching && !paciente && (
-                      <div className="odonto-cedula-error">
-                        <FiAlertCircle size={14} />
-                      </div>
-                    )}
-                  </div>
+          <form onSubmit={handleSubmit}>
+            {/* CÉDULA + FOTO */}
+            <div className="odonto-form-row-compact">
+              <div className="odonto-cedula-section">
+                <label className="odonto-cedula-label">N. CED.</label>
+                <div className={`odonto-cedula-wrapper ${cedulaStatus}`}>
+                  <FiSearch className="odonto-cedula-icon" />
+                  <input
+                    name="document_number"
+                    type="text"
+                    value={form.document_number}
+                    onChange={handleDocumentChange}
+                    placeholder="10 dígitos"
+                    required
+                    disabled={!!paciente || isFromAppointment}
+                    className="odonto-cedula-input"
+                    maxLength="10"
+                  />
+                  <span className={`odonto-cedula-counter ${form.document_number.length === 10 ? 'complete' : ''}`}>
+                    {form.document_number.length}/10
+                  </span>
+                  {searching && (
+                    <div className="odonto-cedula-spinner">
+                      <FiLoader size={14} />
+                    </div>
+                  )}
+                  {searchSuccess && !searching && (
+                    <div className="odonto-cedula-success">
+                      <FiCheckCircle size={14} />
+                    </div>
+                  )}
+                  {form.document_number.length === 10 && !searchSuccess && !searching && !paciente && (
+                    <div className="odonto-cedula-error">
+                      <FiAlertCircle size={14} />
+                    </div>
+                  )}
                 </div>
+              </div>
 
-                {/* Foto */}
-                <div className="odonto-image-upload">
-                  <label className="odonto-image-label">FOTO</label>
-                  
-                  <div className="odonto-image-preview">
-                    <PacienteAvatar 
-                      firstName={form.first_name || '?'}
-                      lastName={form.last_name || ''}
-                      imageUrl={imagePreview}
-                      size={36} 
-                      className="bordered-primary"
-                    />
-                  </div>
-
-                  <div className="odonto-image-actions">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      style={{ display: 'none' }}
-                    />
-                    
-                    <button
-                      type="button"
-                      className="odonto-btn-upload"
-                      onClick={handleUploadClick}
-                    >
-                      <FiUpload size={13} />
-                      <span>{imagePreview ? 'Cambiar' : 'Subir'}</span>
+              <div className="odonto-image-upload">
+                <label className="odonto-image-label">FOTO</label>
+                <div className="odonto-image-preview">
+                  <PacienteAvatar
+                    firstName={form.first_name || '?'}
+                    lastName={form.last_name || ''}
+                    imageUrl={imagePreview}
+                    size={36}
+                    className="bordered-primary"
+                  />
+                </div>
+                <div className="odonto-image-actions">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                  />
+                  <button type="button" className="odonto-btn-upload" onClick={handleUploadClick}>
+                    <FiUpload size={13} />
+                    <span>{imagePreview ? 'Cambiar' : 'Subir'}</span>
+                  </button>
+                  {!imagePreview && (
+                    <button type="button" className="odonto-btn-camera" onClick={() => setShowCamera(true)} title="Tomar foto con WebCam">
+                      <FiCamera size={13} />
+                      <span>Tomar</span>
                     </button>
-
-                    {!imagePreview && (
-                      <button
-                        type="button"
-                        className="odonto-btn-camera"
-                        onClick={() => setShowCamera(true)}
-                        title="Tomar foto con WebCam"
-                      >
-                        <FiCamera size={13} />
-                        <span>Tomar</span>
-                      </button>
-                    )}
-
-                    {imagePreview && (
-                      <button
-                        type="button"
-                        className="odonto-btn-remove"
-                        onClick={handleRemoveImage}
-                      >
-                        <FiX size={13} />
-                      </button>
-                    )}
-                  </div>
+                  )}
+                  {imagePreview && (
+                    <button type="button" className="odonto-btn-remove" onClick={handleRemoveImage}>
+                      <FiX size={13} />
+                    </button>
+                  )}
                 </div>
               </div>
+            </div>
 
-              {/* Nombres, Apellidos, Teléfono - 3 columnas */}
-              <div className="odonto-form-row-three">
-                <div className="odonto-form-group">
-                  <label>Nombres *</label>
-                  <input 
-                    name="first_name" 
-                    value={form.first_name} 
-                    onChange={handleChange} 
-                    required 
-                    className={searchSuccess ? 'field-found' : ''}
-                    placeholder="Ej: Juan Carlos"
-                  />
-                </div>
-                <div className="odonto-form-group">
-                  <label>Apellidos *</label>
-                  <input 
-                    name="last_name" 
-                    value={form.last_name} 
-                    onChange={handleChange} 
-                    required 
-                    className={searchSuccess ? 'field-found' : ''}
-                    placeholder="Ej: Pérez González"
-                  />
-                </div>
-                <div className="odonto-form-group">
-                  <label>Teléfono</label>
-                  <input 
-                    name="phone" 
-                    value={form.phone} 
-                    onChange={handlePhoneChange} 
-                    placeholder="0999123456"
-                    style={{ maxWidth: '150px' }}
-                  />
-                </div>
+            {/* Nombres, Apellidos, Teléfono - 3 columnas */}
+            <div className="odonto-form-row-three">
+              <div className="odonto-form-group">
+                <label>Nombres *</label>
+                <input name="first_name" value={form.first_name} onChange={handleChange} required className={searchSuccess ? 'field-found' : ''} placeholder="Ej: Juan Carlos"/>
               </div>
-
-              {/* Email, Fecha, Género - custom 3 columnas */}
-              <div className="odonto-form-row-custom">
-                <div className="odonto-form-group">
-                  <label>Email</label>
-                  <input 
-                    name="email" 
-                    type="email" 
-                    value={form.email} 
-                    onChange={handleChange} 
-                    placeholder="ejemplo@correo.com"
-                    style={{ maxWidth: '280px' }}
-                  />
-                </div>
-                <div className="odonto-form-group">
-                  <label>Fecha de nacimiento</label>
-                  <input 
-                    name="birth_date" 
-                    type="date" 
-                    value={form.birth_date} 
-                    onChange={handleChange} 
-                    className={searchSuccess && form.birth_date ? 'field-found' : ''}
-                    style={{ maxWidth: '140px' }}
-                  />
-                </div>
-                <div className="odonto-form-group">
-                  <label>Género</label>
-                  <select 
-                    name="gender" 
-                    value={form.gender} 
-                    onChange={handleChange}
-                    className={searchSuccess ? 'field-found' : ''}
-                    style={{ maxWidth: '140px' }}
-                  >
-                    <option value="Masculino">Masculino</option>
-                    <option value="Femenino">Femenino</option>
-                    <option value="Otro">Otro</option>
-                  </select>
-                </div>
+              <div className="odonto-form-group">
+                <label>Apellidos *</label>
+                <input name="last_name" value={form.last_name} onChange={handleChange} required className={searchSuccess ? 'field-found' : ''} placeholder="Ej: Pérez González"/>
               </div>
-
-              {/* Dirección, Ocupación - 2 columnas */}
-              <div className="odonto-form-row-address">
-                <div className="odonto-form-group">
-                  <label>Dirección</label>
-                  <input 
-                    name="address" 
-                    value={form.address} 
-                    onChange={handleChange} 
-                    placeholder="Dirección completa"
-                  />
-                </div>
-                <div className="odonto-form-group">
-                  <label>Ocupación</label>
-                  <input 
-                    name="occupation" 
-                    value={form.occupation || ''} 
-                    onChange={handleChange} 
-                    placeholder="Ej: Ingeniero, Médico..."
-                  />
-                </div>
+              <div className="odonto-form-group">
+                <label>Teléfono</label>
+                <input name="phone" value={form.phone} onChange={handlePhoneChange} placeholder="0999123456" style={{ maxWidth: '125px' }} />
               </div>
+            </div>
 
-              {/* Nacionalidad, Sangre, Alergias - 3 columnas */}
-              <div className="odonto-form-row-allergies">
-                <div className="odonto-form-group">
-                  <label>Nacionalidad</label>
-                  <input 
-                    name="nationality" 
-                    value={form.nationality || ''} 
-                    onChange={handleChange} 
-                    placeholder="Ej: Ecuatoriana"
-                    className={searchSuccess && form.nationality ? 'field-found' : ''}
-                  />
-                </div>
-                <div className="odonto-form-group">
-                  <label>T. Sangre</label>
-                  <select 
-                    name="blood_type" 
-                    value={form.blood_type || ''} 
-                    onChange={handleChange}
-                  >
-                    <option value="">Seleccionar</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                  </select>
-                </div>
-                <div className="odonto-form-group">
-                  <label>Alergias</label>
-                  <input 
-                    name="allergies" 
-                    value={form.allergies} 
-                    onChange={handleChange} 
-                    placeholder="Ej: Penicilina, Polen, Látex..."
-                  />
-                </div>
+            {/* Email, Fecha, Género - custom 3 columnas */}
+            <div className="odonto-form-row-custom">
+              <div className="odonto-form-group">
+                <label>Email</label>
+                <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="ejemplo@correo.com" style={{ maxWidth: '280px' }} />
               </div>
-
-              {/* Antecedentes médicos - full width */}
-              <div className="odonto-form-group" style={{ marginTop: '4px' }}>
-                <label>Antecedentes médicos</label>
-                <textarea 
-                  name="medical_history" 
-                  value={form.medical_history} 
-                  onChange={handleChange} 
-                  placeholder="Historial médico relevante del paciente..."
-                  rows={2}
-                  style={{ 
-                    width: '100%', 
-                    padding: '8px 12px', 
-                    borderRadius: '6px', 
-                    border: '1px solid #d1d5db', 
-                    resize: 'vertical',
-                    fontFamily: 'inherit',
-                    fontSize: '13px'
-                  }}
+              <div className="odonto-form-group">
+                <label>Fecha de nacimiento</label>
+                <input name="birth_date" type="date" value={form.birth_date} onChange={handleChange} className={searchSuccess && form.birth_date ? 'field-found' : ''} style={{ maxWidth: '140px' }} />
+              </div>
+              <div className="odonto-form-group">
+                <label>Género</label>
+                {/* CustomCombobox para Género */}
+                <CustomCombobox
+                  options={[
+                    { label: 'Masculino', value: 'Masculino' },
+                    { label: 'Femenino', value: 'Femenino' },
+                    { label: 'Otro', value: 'Otro' }
+                  ]}
+                  value={form.gender}
+                  onChange={(val) => setForm({ ...form, gender: val })}
+                  placeholder="Seleccionar género"
+                  filterable={false}
+                  forceDropup={false}
+                  className={searchSuccess ? 'field-found' : ''}
                 />
               </div>
-            </form>
-          </div>
+            </div>
 
-          {/* FOOTER */}
-          <div className="odonto-modal-footer">
-            <button className="odonto-btn-secondary" onClick={onClose}>
-              Cancelar
-            </button>
-            <button 
-              className="odonto-btn-primary" 
-              onClick={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? 'Guardando...' : (paciente ? 'Actualizar' : 'Guardar')}
-            </button>
-          </div>
+            {/* Dirección, Ocupación - 2 columnas */}
+            <div className="odonto-form-row-address">
+              <div className="odonto-form-group">
+                <label>Dirección</label>
+                <input name="address" value={form.address} onChange={handleChange} placeholder="Dirección completa" />
+              </div>
+              <div className="odonto-form-group">
+                <label>Ocupación</label>
+                <input name="occupation" value={form.occupation || ''} onChange={handleChange} placeholder="Ej: Ingeniero, Médico..." />
+              </div>
+            </div>
+
+            {/* Nacionalidad, Sangre, Alergias - 3 columnas */}
+            <div className="odonto-form-row-allergies">
+              <div className="odonto-form-group">
+                <label>Nacionalidad</label>
+                <input name="nationality" value={form.nationality || ''} onChange={handleChange} placeholder="Ej: Ecuatoriana" className={searchSuccess && form.nationality ? 'field-found' : ''} style={{ maxWidth: '150px' }}/>
+              </div>
+              <div className="odonto-form-group">
+                <label>T. Sangre</label>
+                {/* CustomCombobox para Tipo de Sangre */}
+                <CustomCombobox style={{ maxWidth: '125px' }}
+                  options={[
+                    { label: '', value: '' },
+                    { label: 'A+ ', value: 'A+' },
+                    { label: 'A- ', value: 'A-' },
+                    { label: 'B+ ', value: 'B+' },
+                    { label: 'B- ', value: 'B-' },
+                    { label: 'AB+ ', value: 'AB+' },
+                    { label: 'AB- ', value: 'AB-' },
+                    { label: 'O+ ', value: 'O+' },
+                    { label: 'O- ', value: 'O-' }
+                  ]}
+                  value={form.blood_type || ''}
+                  onChange={(val) => setForm({ ...form, blood_type: val })}
+                  placeholder=""
+                  filterable={false}
+                  forceDropup={false}
+                />
+              </div>
+              <div className="odonto-form-group">
+                <label>Alergias</label>
+                <input name="allergies" value={form.allergies} onChange={handleChange} placeholder="Ej: Penicilina, Polen, Látex..." />
+              </div>
+            </div>
+
+            {/* Antecedentes médicos - full width */}
+            <div className="odonto-form-group" style={{ marginTop: '4px' }}>
+              <label>Antecedentes médicos</label>
+              <textarea name="medical_history" value={form.medical_history} onChange={handleChange} placeholder="Historial médico relevante del paciente..." rows={2} style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db', resize: 'vertical', fontFamily: 'inherit', fontSize: '13px' }} />
+            </div>
+          </form>
         </div>
-      </div>
+      </Modal>
 
       {showCamera && (
         <CameraModal

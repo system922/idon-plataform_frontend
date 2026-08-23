@@ -1,7 +1,7 @@
 // components/Odontologia/Configuracion/HorariosConfig.jsx
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEdit, FiTrash2, FiX, FiRefreshCw } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
+import { fetchWithAuth } from '../../../config/api';
 
 const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -27,7 +27,7 @@ export default function HorariosConfig() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchWithAuth('/api/odontologia/horarios-trabajo');
+      const res = await fetchWithAuth('/odontologia/horarios-trabajo');
       if (!res.ok) throw new Error('Error al cargar horarios');
       const data = await res.json();
       if (data.success) {
@@ -51,7 +51,7 @@ export default function HorariosConfig() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchWithAuth('/api/odontologia/horarios-trabajo/init');
+      const res = await fetchWithAuth('/odontologia/horarios-trabajo/init');
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || 'Error al inicializar');
@@ -116,8 +116,8 @@ export default function HorariosConfig() {
 
     try {
       const url = selectedHorario
-        ? `/api/odontologia/horarios-trabajo/${selectedHorario.id}`
-        : '/api/odontologia/horarios-trabajo';
+        ? `/odontologia/horarios-trabajo/${selectedHorario.id}`
+        : '/odontologia/horarios-trabajo';
       const method = selectedHorario ? 'PUT' : 'POST';
 
       const res = await fetchWithAuth(url, {
@@ -147,7 +147,7 @@ export default function HorariosConfig() {
     if (!window.confirm('¿Está seguro de eliminar este horario?')) return;
 
     try {
-      const res = await fetchWithAuth(`/api/odontologia/horarios-trabajo/${id}`, {
+      const res = await fetchWithAuth(`/odontologia/horarios-trabajo/${id}`, {
         method: 'DELETE',
       });
 
@@ -181,7 +181,7 @@ export default function HorariosConfig() {
     <div className="odonto-config-section">
       <div className="odonto-config-header">
         <div>
-          <h3>🕐 Horarios de Trabajo</h3>
+          <h3>Horarios de Trabajo</h3>
           <p>Configura los horarios de atención por día de la semana</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>

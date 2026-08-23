@@ -5,7 +5,7 @@ import {
   FiBriefcase, FiGlobe, FiDroplet, FiFileText,
   FiPhoneCall, FiEdit2, FiSave, FiX
 } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
+import { fetchWithAuth } from '../../../config/api';
 
 export default function DatosPersonales({ paciente, onSave }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -59,7 +59,7 @@ export default function DatosPersonales({ paciente, onSave }) {
         hc_number: formData.hc_number
       };
 
-      const url = `/api/odontologia/pacientes/${paciente.id}`;
+      const url = `/odontologia/pacientes/${paciente.id}`;
       const res = await fetchWithAuth(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

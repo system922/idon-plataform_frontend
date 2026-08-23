@@ -6,11 +6,8 @@
     <!-- ============================================ -->
     <!-- FAVICON - Logo en la pestaña del navegador   -->
     <!-- ============================================ -->
-    <!-- Usando IDON_2.svg para la pestaña -->
     <link rel="icon" href="%PUBLIC_URL%/IDON_2.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/IDON_2.svg" />
-    
-    <!-- Fallback para navegadores que no soportan SVG -->
     <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/IDON_2.svg" />
     <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/IDON_2.svg" />
 
@@ -20,72 +17,99 @@
     <!-- Theme -->
     <meta name="theme-color" content="#07101a" />
 
-    <!-- SEO -->
+    <!-- ============================================ -->
+    <!-- SEO                                          -->
+    <!-- ============================================ -->
     <title>IDON Control | Inventario, Ventas y Operaciones</title>
     <meta name="description" content="IDON: software de gestión unificada. Controla ventas, inventario y operaciones en restaurantes, comercios y más. Simplifica tu negocio hoy." />
     <meta name="keywords" content="IDON, Plataforma de Gestión, inventario, ventas y operaciones" />
     <meta name="author" content="IDON" />
+    <meta name="robots" content="index, follow" />
+    <meta name="googlebot" content="index, follow" />
+    <link rel="canonical" href="https://www.idonplataform.site" />
 
     <!-- ============================================ -->
     <!-- OPEN GRAPH (Facebook, WhatsApp, LinkedIn)    -->
     <!-- ============================================ -->
     <meta property="og:title" content="IDON Control | Inventario, Ventas y Operaciones" />
-    <meta
-      property="og:description"
-      content="Administra múltiples negocios en un solo lugar con IDON. Solución moderna, escalable y eficiente."
-    />
+    <meta property="og:description" content="Administra múltiples negocios en un solo lugar con IDON. Solución moderna, escalable y eficiente." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.idonplataform.site" />
     <meta property="og:site_name" content="IDON" />
     <meta property="og:locale" content="es_ES" />
-
-    <!-- IMAGEN PARA REDES SOCIALES - Usar PNG (mejor compatibilidad) -->
-    <!-- Asegúrate de tener el archivo IDON_3.png en la carpeta public -->
     <meta property="og:image" content="https://www.idonplataform.site/IDON_3.png" />
     <meta property="og:image:secure_url" content="https://www.idonplataform.site/IDON_3.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="IDON Control | Inventario, Ventas y Operaciones" />
-
-    <!-- Fallback: si no encuentra PNG, usar SVG -->
+    <!-- Fallback SVG -->
     <meta property="og:image" content="https://www.idonplataform.site/IDON_2.svg" />
     <meta property="og:image:secure_url" content="https://www.idonplataform.site/IDON_2.svg" />
     <meta property="og:image:type" content="image/svg+xml" />
 
     <!-- ============================================ -->
-    <!-- TWITTER CARDS (Twitter/X)                    -->
+    <!-- TWITTER CARDS                                -->
     <!-- ============================================ -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="IDON Control | Inventario, Ventas y Operaciones" />
-    <meta
-      name="twitter:description"
-      content="Administra múltiples negocios en un solo lugar con IDON. Solución moderna, escalable y eficiente."
-    />
+    <meta name="twitter:description" content="Administra múltiples negocios en un solo lugar con IDON. Solución moderna, escalable y eficiente." />
     <meta name="twitter:image" content="https://www.idonplataform.site/IDON_3.png" />
     <meta name="twitter:image:alt" content="IDON Logo" />
     <meta name="twitter:site" content="@IDON" />
 
     <!-- ============================================ -->
-    <!-- METADATOS ADICIONALES                        -->
+    <!-- MANIFEST                                     -->
     <!-- ============================================ -->
-    <meta name="robots" content="index, follow" />
-    <meta name="googlebot" content="index, follow" />
-    <link rel="canonical" href="https://www.idonplataform.site" />
-
-    <!-- Manifest -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
-    <!-- Preconnect -->
+    <!-- ============================================ -->
+    <!-- OPTIMIZACIÓN DE FUENTES Y CSS (NO BLOQUEANTE)-->
+    <!-- ============================================ -->
+
+    <!-- 1. Preconexión a Google Fonts (ya lo tenías, lo mantenemos) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Tipografía -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
+    <!-- 2. Precarga de la hoja de estilos de Google Fonts -->
+    <link 
+      rel="preload" 
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" 
+      as="style" 
+      onload="this.onload=null;this.rel='stylesheet'" 
     />
+    <!-- Fallback para navegadores sin soporte de preload -->
+    <noscript>
+      <link 
+        rel="stylesheet" 
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" 
+      />
+    </noscript>
 
+    <!-- 3. Precarga del CSS principal (para que empiece a descargar en paralelo) -->
+    <link 
+      rel="preload" 
+      href="%PUBLIC_URL%/static/css/main.52d97ffc.css" 
+      as="style" 
+    />
+    <!-- 4. Aplicación del CSS sin bloquear el renderizado -->
+    <link 
+      rel="stylesheet" 
+      href="%PUBLIC_URL%/static/css/main.52d97ffc.css" 
+      media="print" 
+      onload="this.media='all'; this.onload=null" 
+    />
+    <!-- Fallback para navegadores sin JavaScript -->
+    <noscript>
+      <link 
+        rel="stylesheet" 
+        href="%PUBLIC_URL%/static/css/main.52d97ffc.css" 
+      />
+    </noscript>
+
+    <!-- ============================================ -->
+    <!-- ESTILOS INLINE CRÍTICOS (para pintado rápido)-->
+    <!-- ============================================ -->
     <style>
       body {
         margin: 0;
@@ -98,6 +122,10 @@
 
   <body>
     <noscript>
+      <!-- Mensaje opcional para usuarios sin JavaScript -->
+      <p style="color: white; text-align: center; padding: 2rem;">
+        IDON Control necesita JavaScript para funcionar correctamente.
+      </p>
     </noscript>
 
     <div id="root"></div>

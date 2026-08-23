@@ -5,7 +5,7 @@ import {
   FiClock, FiCopy, FiAlertCircle, FiSave,
   FiSearch, FiRefreshCw, FiUserX
 } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
+import { fetchWithAuth } from '../../../config/api';
 
 const DIAS_SEMANA = [
   { value: 'lunes', label: 'Lunes' },
@@ -61,9 +61,9 @@ export default function AgendasConfig() {
     setError(null);
     try {
       const [agendasRes, especialistasRes, gruposRes] = await Promise.all([
-        fetchWithAuth('/api/odontologia/agendas'),
-        fetchWithAuth('/api/odontologia/especialistas'),
-        fetchWithAuth('/api/odontologia/grupos-agendas')
+        fetchWithAuth('/odontologia/agendas'),
+        fetchWithAuth('/odontologia/especialistas'),
+        fetchWithAuth('/odontologia/grupos-agendas')
       ]);
 
       const agendasData = await agendasRes.json();
@@ -178,8 +178,8 @@ export default function AgendasConfig() {
       };
 
       const url = selectedAgenda
-        ? `/api/odontologia/agendas/${selectedAgenda.id}`
-        : '/api/odontologia/agendas';
+        ? `/odontologia/agendas/${selectedAgenda.id}`
+        : '/odontologia/agendas';
       const method = selectedAgenda ? 'PUT' : 'POST';
 
       const res = await fetchWithAuth(url, {
@@ -209,7 +209,7 @@ export default function AgendasConfig() {
     if (!window.confirm('¿Está seguro de eliminar esta agenda?')) return;
 
     try {
-      const res = await fetchWithAuth(`/api/odontologia/agendas/${id}`, {
+      const res = await fetchWithAuth(`/odontologia/agendas/${id}`, {
         method: 'DELETE',
       });
 
@@ -277,11 +277,11 @@ export default function AgendasConfig() {
       if (selectedDiaLibre) {
         // Actualizar día libre (eliminar y crear nuevo)
         await fetchWithAuth(
-          `/api/odontologia/agendas/${selectedAgenda.id}/dias-libres/${selectedDiaLibre.id}`,
+          `/odontologia/agendas/${selectedAgenda.id}/dias-libres/${selectedDiaLibre.id}`,
           { method: 'DELETE' }
         );
         res = await fetchWithAuth(
-          `/api/odontologia/agendas/${selectedAgenda.id}/dias-libres`,
+          `/odontologia/agendas/${selectedAgenda.id}/dias-libres`,
           {
             method: 'POST',
             body: JSON.stringify(diaLibreData),
@@ -289,7 +289,7 @@ export default function AgendasConfig() {
         );
       } else {
         res = await fetchWithAuth(
-          `/api/odontologia/agendas/${selectedAgenda.id}/dias-libres`,
+          `/odontologia/agendas/${selectedAgenda.id}/dias-libres`,
           {
             method: 'POST',
             body: JSON.stringify(diaLibreData),
@@ -320,7 +320,7 @@ export default function AgendasConfig() {
 
     try {
       const res = await fetchWithAuth(
-        `/api/odontologia/agendas/${agendaId}/dias-libres/${diaLibre.id}`,
+        `/odontologia/agendas/${agendaId}/dias-libres/${diaLibre.id}`,
         { method: 'DELETE' }
       );
 
@@ -373,7 +373,7 @@ export default function AgendasConfig() {
     <div className="odonto-config-section">
       <div className="odonto-config-header">
         <div>
-          <h3>📋 Agendas por Odontólogo</h3>
+          <h3>Agendas por Odontólogo</h3>
           <p>Configura los días y horarios de atención de cada odontólogo</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>

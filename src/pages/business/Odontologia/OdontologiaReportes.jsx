@@ -36,7 +36,6 @@ export default function OdontologiaReportes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('consulta');
   const [selectedPaciente, setSelectedPaciente] = useState(null);
-  const [debugInfo, setDebugInfo] = useState(null);
 
   // Estadísticas
   const stats = {
@@ -50,104 +49,59 @@ export default function OdontologiaReportes() {
   // CARGAR DATOS DESDE API
   // ============================================================
   const loadData = async () => {
-    console.log('🔄 [Reportes] Iniciando carga de datos...');
     setLoading(true);
     setError(null);
-    setDebugInfo(null);
     
-    try {
-      console.log('📡 [Reportes] Haciendo fetch a /odontologia/pacientes');
-      
+    try {      
       const res = await fetchWithAuth('/odontologia/pacientes');
-      console.log(`📡 [Reportes] Response status: ${res.status} ${res.statusText}`);
-      
       const responseText = await res.text();
-      console.log('📄 [Reportes] Raw response text:', responseText);
-      
       let data;
       try {
         data = JSON.parse(responseText);
-        console.log('📦 [Reportes] Data parseada correctamente:', data);
       } catch (parseError) {
-        console.error('❌ [Reportes] Error al parsear JSON:', parseError);
+        console.error('[Reportes] Error al parsear JSON:', parseError);
         setError('Error al parsear la respuesta del servidor');
-        setDebugInfo({ rawResponse: responseText, parseError: parseError.message });
         setLoading(false);
         return;
       }
       
       if (!res.ok) {
-        console.error(`❌ [Reportes] Error HTTP: ${res.status}`, data);
+        console.error(`[Reportes] Error HTTP: ${res.status}`, data);
         setError(data.error || data.message || `Error HTTP ${res.status}`);
-        setDebugInfo({ status: res.status, data });
         setLoading(false);
         return;
       }
 
-      console.log('📦 [Reportes] Procesando datos...');
       
       let pacientesData = [];
       
       if (Array.isArray(data)) {
-        console.log('✅ [Reportes] Formato: Array directo');
         pacientesData = data;
       } else if (data.success && data.data) {
-        console.log('✅ [Reportes] Formato: { success, data }');
         pacientesData = Array.isArray(data.data) ? data.data : [];
       } else if (data.data && Array.isArray(data.data)) {
-        console.log('✅ [Reportes] Formato: { data }');
         pacientesData = data.data;
       } else if (data.rows && Array.isArray(data.rows)) {
-        console.log('✅ [Reportes] Formato: { rows }');
         pacientesData = data.rows;
       } else if (data.result && Array.isArray(data.result)) {
-        console.log('✅ [Reportes] Formato: { result }');
         pacientesData = data.result;
       } else {
-        console.warn('⚠️ [Reportes] Formato de datos no reconocido:', data);
         pacientesData = [];
-        setDebugInfo({
-          message: 'Formato de datos no reconocido',
-          data: data
-        });
-      }
       
-      console.log('📋 [Reportes] Pacientes procesados:', pacientesData);
-      console.log('📊 [Reportes] Cantidad de pacientes:', pacientesData.length);
-      
-      if (pacientesData.length > 0) {
-        console.log('🔍 [Reportes] Primer paciente:', pacientesData[0]);
       }
       
       setPacientes(pacientesData);
-      setDebugInfo({
-        totalPacientes: pacientesData.length,
-        firstPaciente: pacientesData.length > 0 ? pacientesData[0] : null,
-        format: Array.isArray(data) ? 'array' : 
-                data.success && data.data ? 'success-data' :
-                data.data ? 'data' :
-                data.rows ? 'rows' :
-                data.result ? 'result' : 'unknown'
-      });
-      
-      console.log('✅ [Reportes] Pacientes guardados en estado');
-      
+            
     } catch (err) {
-      console.error('❌ [Reportes] Error loading pacientes:', err);
+      console.error('[Reportes] Error loading pacientes:', err);
       setError('Error al cargar los datos: ' + err.message);
-      setDebugInfo({ 
-        error: err.message, 
-        stack: err.stack,
-        type: err.name 
-      });
+      
     } finally {
       setLoading(false);
-      console.log('🏁 [Reportes] Carga de datos finalizada');
     }
   };
 
   useEffect(() => {
-    console.log('🔁 [Reportes] useEffect ejecutado - cargando datos iniciales');
     loadData();
   }, []);
 
@@ -155,17 +109,14 @@ export default function OdontologiaReportes() {
   // HANDLERS
   // ============================================================
   const handleSelectPaciente = (paciente) => {
-    console.log('👤 [Reportes] Seleccionando paciente:', paciente);
     setSelectedPaciente(paciente);
   };
 
   const handleClearPaciente = () => {
-    console.log('🧹 [Reportes] Limpiando paciente seleccionado');
     setSelectedPaciente(null);
   };
 
   const handlePrint = () => {
-    console.log('🖨️ [Reportes] Imprimiendo...');
     window.print();
   };
 
@@ -183,13 +134,11 @@ export default function OdontologiaReportes() {
     return match;
   }) || [];
 
-  console.log('🔍 [Reportes] Pacientes filtrados:', filteredPacientes.length, 'de', pacientes.length);
 
   // ============================================================
   // RENDER CONTENIDO SEGÚN TAB ACTIVA
   // ============================================================
   const renderContent = () => {
-    console.log(`📄 [Reportes] Renderizando tab: ${activeTab}`);
     
     const commonProps = {
       pacientes: filteredPacientes,
@@ -268,49 +217,6 @@ export default function OdontologiaReportes() {
         </div>
       }
     >
-      {error && (
-        <div className="odonto-alert error" style={{ marginBottom: 16 }}>
-          <span>❌ {error}</span>
-          {debugInfo && (
-            <details style={{ marginTop: 8, fontSize: 12 }}>
-              <summary>Ver detalles técnicos</summary>
-              <pre style={{ 
-                background: '#f5f5f5', 
-                padding: 8, 
-                borderRadius: 4,
-                overflow: 'auto',
-                maxHeight: 200,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all'
-              }}>
-                {JSON.stringify(debugInfo, null, 2)}
-              </pre>
-            </details>
-          )}
-        </div>
-      )}
-
-      {/* DEBUG: Mostrar información de depuración */}
-      {debugInfo && !error && (
-        <div className="odonto-alert info" style={{ marginBottom: 16 }}>
-          <span>ℹ️ Debug: {debugInfo.totalPacientes} pacientes cargados</span>
-          <details style={{ marginTop: 8, fontSize: 12 }}>
-            <summary>Ver detalles</summary>
-            <pre style={{ 
-              background: '#f5f5f5', 
-              padding: 8, 
-              borderRadius: 4,
-              overflow: 'auto',
-              maxHeight: 200,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all'
-            }}>
-              {JSON.stringify(debugInfo, null, 2)}
-            </pre>
-          </details>
-        </div>
-      )}
-
       <ReporteStats stats={stats} />
 
       <div className="odonto-filters-row">

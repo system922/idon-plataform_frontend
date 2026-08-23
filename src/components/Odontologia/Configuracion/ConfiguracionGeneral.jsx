@@ -1,7 +1,7 @@
 // components/Odontologia/Configuracion/ConfiguracionGeneral.jsx
 import React, { useState, useEffect } from 'react';
 import { FiSave, FiRefreshCw, FiAlertCircle } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
+import { fetchWithAuth } from '../../../config/api';
 
 export default function ConfiguracionGeneral() {
   const [config, setConfig] = useState({
@@ -26,7 +26,7 @@ export default function ConfiguracionGeneral() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchWithAuth('/api/odontologia/configuracion-general');
+      const res = await fetchWithAuth('/odontologia/configuracion-general');
       if (!res.ok) throw new Error('Error al cargar configuración');
       const data = await res.json();
       if (data.success) {
@@ -73,7 +73,7 @@ export default function ConfiguracionGeneral() {
         notificaciones_email: config.notificacionesEmail,
       };
 
-      const res = await fetchWithAuth('/api/odontologia/configuracion-general', {
+      const res = await fetchWithAuth('/odontologia/configuracion-general', {
         method: 'PUT',
         body: JSON.stringify(payload),
       });
@@ -107,7 +107,7 @@ export default function ConfiguracionGeneral() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetchWithAuth('/api/odontologia/configuracion-general/reset', {
+      const res = await fetchWithAuth('/odontologia/configuracion-general/reset', {
         method: 'POST',
       });
       
@@ -158,7 +158,7 @@ export default function ConfiguracionGeneral() {
     <div className="odonto-config-section">
       <div className="odonto-config-header">
         <div>
-          <h3>⚙️ Configuración General</h3>
+          <h3>Configuración General</h3>
           <p>Ajustes generales de la agenda odontológica</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>

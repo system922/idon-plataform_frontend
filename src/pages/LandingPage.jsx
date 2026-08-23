@@ -24,9 +24,35 @@ const LandingPage = () => {
         </p>
 
         {/* ===== IMÁGENES ===== */}
+        {/* ===== IMÁGENES CON OPTIMIZACIÓN LCP ===== */}
         <div className="images-grid">
-          <img src="/inicio+.png" alt="IDON - Facturación y ventas" className="landing-image" />
-          <img src="/inicio2.png" alt="IDON - Gestión y control" className="landing-image" />
+          {/* IMAGEN PRINCIPAL - PRIORIDAD ALTA (LCP) */}
+          <picture>
+            <source srcSet="/landing.webp" type="image/webp" />
+            <img 
+              src="/landing.webp"
+              alt="IDON - Facturación y ventas" 
+              className="landing-image" 
+              width="634" 
+              height="272" 
+              loading="eager" 
+              fetchpriority="high" 
+            />
+          </picture>
+          
+
+          {/* IMAGEN SECUNDARIA - CARGA DIFERIDA */}
+          <picture>
+            <source srcSet="/landing_2.webp" type="image/webp" />
+            <img 
+              src="/landing_2.webp" 
+              alt="IDON - Gestión y control" 
+              className="landing-image" 
+              width="634" 
+              height="272" 
+              loading="lazy" 
+            />
+          </picture>
         </div>
 
         {/* ===== SECCIÓN 1: ¿QUÉ ES IDON? (H2) ===== */}

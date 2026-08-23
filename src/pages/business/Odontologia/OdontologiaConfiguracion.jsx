@@ -2,10 +2,9 @@
 import React, { useState } from 'react';
 import { 
   FiSettings, FiUsers, FiClock, FiCalendar, FiList, 
-  FiUsers as FiGroup, FiPlus, FiEdit, FiTrash2, FiX, 
-  FiSave, FiRefreshCw, FiCheck, FiEye, FiSearch
+  FiUsers as FiGroup, FiRefreshCw, 
 } from 'react-icons/fi';
-import PageTemplateOdontologia from '../../../components/PageTemplateOdontologia';
+import PageTemplate from '../../../components/PageTemplate';
 import { 
   ConfiguracionGeneral,
   EspecialistasConfig,
@@ -48,7 +47,7 @@ export default function OdontologiaConfiguracion() {
   };
 
   return (
-    <PageTemplateOdontologia
+    <PageTemplate
       title="Configuración de Odontología"
       subtitle="Gestiona la configuración de agenda, especialistas, horarios y más"
       loading={loading}
@@ -90,6 +89,6 @@ export default function OdontologiaConfiguracion() {
       <div className="odonto-config-content-wrapper">
         {renderContent()}
       </div>
-    </PageTemplateOdontologia>
+    </PageTemplate>
   );
 }

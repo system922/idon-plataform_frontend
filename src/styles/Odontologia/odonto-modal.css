@@ -1,179 +1,156 @@
 /* ============================================================
-   ODONTO-MODAL.CSS - Modales base
+   OVERLAY DEL MODAL
    ============================================================ */
 .odonto-modal-overlay {
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--odonto-z-modal);
   padding: 16px;
-  animation: odonto-fadeIn 0.25s ease;
+  animation: odonto-fadeIn 0.2s ease;
 }
 
+/* ============================================================
+   CONTENEDOR DEL MODAL
+   ============================================================ */
 .odonto-modal {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  max-width: 650px;
-  width: 100%;
-  max-height: 92vh;
+  background: var(--odonto-bg-card);
+  border-radius: var(--odonto-radius-lg);
+  box-shadow: var(--odonto-shadow-modal);
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-modal);
-  animation: odonto-slideUp 0.3s ease;
+  overflow: hidden;
+  animation: odonto-slideUp 0.25s ease;
+  width: 100%;
+  max-width: 560px; /* Tamaño por defecto, se puede sobrescribir con clases de tamaño */
 }
 
-/* Variantes de tamaño */
-.odonto-modal.detail-modal {
-  max-width: 750px !important;
-}
+/* Tamaños */
+.odonto-modal-sm { max-width: 400px; }
+.odonto-modal-md { max-width: 560px; }
+.odonto-modal-lg { max-width: 720px; }
+.odonto-modal-xl { max-width: 900px; }
+.odonto-modal-full { max-width: 95vw; }
 
-.odonto-modal.plantilla-modal {
-  max-width: 800px !important;
-}
-
-.odonto-modal.camera-modal {
-  max-width: 640px !important;
-}
-
-/* HEADER */
+/* ============================================================
+   HEADER DEL MODAL
+   ============================================================ */
 .odonto-modal-header {
-  padding: 18px 24px;
-  border-bottom: 1px solid var(--border-color);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--odonto-border-color);
+  background: var(--odonto-bg-card);
   flex-shrink: 0;
-  border-radius: var(--radius) var(--radius) 0 0;
+  border-top-left-radius: var(--odonto-radius-lg);
+  border-top-right-radius: var(--odonto-radius-lg);
 }
 
-.odonto-modal-header.blue {
-  background: var(--blue-gradient);
-}
-
-.odonto-modal-header.primary {
-  background: var(--primary-gradient);
-}
-
-.odonto-modal-header div {
-  flex: 1;
-}
-
+.odonto-modal-header h2,
 .odonto-modal-header h3 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #ffffff;
+  font-size: var(--odonto-font-size-lg);
+  font-weight: 600;
+  color: var(--odonto-text-primary);
+  font-family: var(--odonto-font-family);
 }
 
 .odonto-modal-header p {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
+  margin: 2px 0 0;
+  font-size: var(--odonto-font-size-sm);
+  color: var(--odonto-text-secondary);
 }
 
+/* Variante de color para el header (opcional) */
+.odonto-modal-header.primary {
+  background: var(--odonto-primary-bg);
+  border-bottom-color: var(--odonto-primary);
+}
+.odonto-modal-header.secondary {
+  background: var(--odonto-secondary-bg);
+  border-bottom-color: var(--odonto-secondary);
+}
+.odonto-modal-header.danger {
+  background: var(--odonto-danger-bg, rgba(239,68,68,0.08));
+  border-bottom-color: var(--odonto-danger);
+}
+
+/* ============================================================
+   BOTÓN DE CIERRE
+   ============================================================ */
 .odonto-modal-close {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  cursor: pointer;
-  color: #ffffff;
-  padding: 8px;
-  transition: var(--transition);
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--odonto-bg-tertiary);
+  border: 1px solid var(--odonto-border-color);
+  border-radius: var(--odonto-radius);
+  color: var(--odonto-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  width: 32px;
+  height: 32px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
 .odonto-modal-close:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: rotate(90deg);
+  background: var(--odonto-primary-hover);
+  color: var(--odonto-primary);
+  border-color: var(--odonto-primary);
 }
 
-/* BODY */
+/* ============================================================
+   BODY DEL MODAL
+   ============================================================ */
 .odonto-modal-body {
-  padding: 20px 24px;
+  padding: 20px;
   overflow-y: auto;
   flex: 1;
+  background: var(--odonto-bg-card);
+  color: var(--odonto-text-primary);
+  font-family: var(--odonto-font-family);
 }
 
-.odonto-modal-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.odonto-modal-body::-webkit-scrollbar-track {
-  background: var(--bg-tertiary);
-  border-radius: 3px;
-}
-
-.odonto-modal-body::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 3px;
-}
-
-.odonto-modal-body::-webkit-scrollbar-thumb:hover {
-  background: var(--text-dim);
-}
-
-/* FOOTER */
+/* ============================================================
+   FOOTER DEL MODAL
+   ============================================================ */
 .odonto-modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--border-color);
+  padding: 12px 20px;
+  border-top: 1px solid var(--odonto-border-color);
+  background: var(--odonto-bg-tertiary);
+  flex-shrink: 0;
+  border-bottom-left-radius: var(--odonto-radius-lg);
+  border-bottom-right-radius: var(--odonto-radius-lg);
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  flex-shrink: 0;
-  background: var(--bg-tertiary);
-  border-radius: 0 0 var(--radius) var(--radius);
+  gap: 8px;
 }
 
-/* Estilos para los inputs de la tabla */
-.perio-modal-input-small {
-  width: 50px;
-  padding: 2px 2px;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  text-align: center;
-  font-size: 12px;
-  background: #ffffff;
-  transition: border-color 0.2s;
+/* ============================================================
+   ANIMACIONES
+   ============================================================ */
+@keyframes odonto-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.perio-modal-input-small:focus {
-  outline: none;
-  border-color: #10b981;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
-}
-
-.perio-modal-table td {
-  padding: 3px 4px;
-  border: 1px solid #e2e8f0;
-  text-align: center;
-  vertical-align: middle;
-}
-
-.perio-modal-table input[type="checkbox"] {
-  width: 14px;
-  height: 14px;
-  accent-color: #10b981;
-  cursor: pointer;
-  margin: 0;
-}
-
-.perio-modal-nic {
-  font-weight: 700;
-  color: #6366f1;
-  font-size: 12px;
-}
-
-.perio-modal-site-label {
-  font-weight: 500;
-  color: #0f172a;
-  font-size: 12px;
-  text-align: left !important;
-  padding-left: 8px !important;
+@keyframes odonto-slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
