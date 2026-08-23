@@ -75,7 +75,7 @@
 }
 
 .news-card {
-  background: var(--bg-secondary);
+  background: var(--bg-secondary) !important;
   border-radius: var(--radius);
   padding: 10px 15px;
   border: var(--bg-secondary);

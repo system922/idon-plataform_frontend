@@ -6,10 +6,9 @@ import {
   FiSearch, 
   FiX, 
   FiRefreshCw,
-  FiDollarSign
 } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
-import PageTemplateOdontologia from '../../../components/PageTemplateOdontologia';
+import { fetchWithAuth } from '../../../config/api';
+import PageTemplate from '../../../components/PageTemplate';
 import { 
   PlanStats, 
   PlanTable, 
@@ -18,10 +17,7 @@ import {
 } from '../../../components/Odontologia/Planes/index';
 import '../../../styles/Odontologia/index.css';
 
-// ============================================================
-// RUTA BASE - debe coincidir con app.js
-// ============================================================
-const BASE_URL = '/api/odontologia/planes-tratamiento';
+
 
 export default function OdontologiaPlanes() {
   const [planes, setPlanes] = useState([]);
@@ -54,8 +50,7 @@ export default function OdontologiaPlanes() {
       console.log('🔄 [Planes] Cargando datos...');
       
       // 1. Cargar planes
-      console.log(`📡 [Planes] GET ${BASE_URL}`);
-      const res = await fetchWithAuth(BASE_URL);
+      const res = await fetchWithAuth('/odontologia/planes-tratamiento');
       const data = await res.json();
       
       console.log('📦 [Planes] Respuesta:', data);
@@ -77,12 +72,10 @@ export default function OdontologiaPlanes() {
       }
       
       setPlanes(planesData);
-      console.log(`✅ [Planes] ${planesData.length} planes cargados`);
       
       // 2. Cargar estadísticas
-      console.log(`📡 [Planes] GET ${BASE_URL}/stats`);
       try {
-        const statsRes = await fetchWithAuth(`${BASE_URL}/stats`);
+        const statsRes = await fetchWithAuth(`/odontologia/planes-tratamiento/stats`);
         const statsData = await statsRes.json();
         console.log('📦 [Planes] Estadísticas:', statsData);
         
@@ -116,7 +109,6 @@ export default function OdontologiaPlanes() {
         }
         
         setStats(statsResult);
-        console.log('📊 [Planes] Estadísticas calculadas:', statsResult);
         
       } catch (statsErr) {
         console.warn('⚠️ [Planes] Error cargando estadísticas, calculando manualmente:', statsErr);
@@ -153,16 +145,13 @@ export default function OdontologiaPlanes() {
     try {
       let url, method;
       if (selectedPlan) {
-        url = `${BASE_URL}/${selectedPlan.id}`;
+        url = `/odontologia/planes-tratamiento/${selectedPlan.id}`;
         method = 'PUT';
-        console.log(`✏️ [Planes] PUT ${url}`);
       } else {
-        url = BASE_URL;
+        url = `/odontologia/planes-tratamiento`;
         method = 'POST';
-        console.log(`📝 [Planes] POST ${url}`);
       }
 
-      console.log(`📤 [Planes] ${method} ${url}`, formData);
 
       const res = await fetchWithAuth(url, {
         method,
@@ -171,7 +160,6 @@ export default function OdontologiaPlanes() {
       });
 
       const data = await res.json();
-      console.log('📥 [Planes] Respuesta:', data);
 
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Error al guardar el plan');
@@ -204,13 +192,11 @@ export default function OdontologiaPlanes() {
     if (!window.confirm('¿Está seguro de eliminar este plan de tratamiento? Esta acción no se puede deshacer.')) return;
 
     try {
-      console.log(`🗑️ [Planes] DELETE ${BASE_URL}/${id}`);
-      const res = await fetchWithAuth(`${BASE_URL}/${id}`, {
+      const res = await fetchWithAuth(`/odontologia/planes-tratamiento/${id}`, {
         method: 'DELETE',
       });
 
       const data = await res.json();
-      console.log('📥 [Planes] Eliminación:', data);
 
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Error al eliminar el plan');
@@ -260,7 +246,7 @@ export default function OdontologiaPlanes() {
   // RENDER
   // ============================================================
   return (
-    <PageTemplateOdontologia
+    <PageTemplate
       title="Planes de Tratamiento"
       subtitle="Gestión de planes de tratamiento odontológicos"
       loading={loading}
@@ -360,6 +346,6 @@ export default function OdontologiaPlanes() {
         plan={selectedPlan}
         onEdit={handleEdit}
       />
-    </PageTemplateOdontologia>
+    </PageTemplate>
   );
 }

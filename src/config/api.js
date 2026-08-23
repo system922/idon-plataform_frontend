@@ -10,6 +10,19 @@ const REFRESH_TOKEN_KEY = 'refresh_token';
 const BUSINESS_ID_KEY = 'business_id';
 const SCHEMA_NAME_KEY = 'schema_name';
 
+// ─── RUTAS PÚBLICAS (no requieren autenticación) ──────────────
+const PUBLIC_PATHS = [
+  '/auth/login',
+  '/auth/refresh',
+  '/register',
+  '/blog',              // ← PARA EL BLOG
+  '/business-types',    // ← PARA EL REGISTRO
+  '/health',
+  '/public',
+  '/business-owners/find',
+  '/catalog'
+];
+
 // ─── FUNCIONES PARA TOKEN ──────────────────────────────────────────
 
 const getStoredToken = () => {
@@ -106,22 +119,110 @@ export const api = axios.create({
   timeout: 30000,
 });
 
-// ─── LOG DE TODAS LAS PETICIONES ──────────────────────────────────
+// ─── INTERCEPTOR DE REQUEST ──────────────────────────────────────
 
 api.interceptors.request.use(
   (config) => {
+    // VERIFICAR si es ruta pública
+    const isPublicPath = PUBLIC_PATHS.some(path => 
+      config.url?.includes(path)
+    );
+    
+    // SI es ruta pública, NO agregar token
+    if (isPublicPath) {
+      delete config.headers.Authorization;
+      return config;
+    }
+
+    // Para rutas privadas, agregar token
+    const token = getStoredToken();
+    if (token && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
+// ─── INTERCEPTOR DE RESPONSE ─────────────────────────────────────
+
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // VERIFICAR si es ruta pública
+    const isPublicPath = PUBLIC_PATHS.some(path => 
+      originalRequest.url?.includes(path)
+    );
+    
+    // SI es ruta pública, NO intentar refrescar token
+    if (isPublicPath) {
+      return Promise.reject(error);
+    }
+
+    // Solo intentar refrescar token en rutas privadas
+    if (error.response?.status === 401 && 
+        !originalRequest._retry && 
+        !originalRequest.url?.includes('/auth/login') &&
+        !originalRequest.url?.includes('/auth/refresh')) {
+            
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(token => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch(err => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const storedRefreshToken = getStoredRefreshToken();
+                
+        if (!storedRefreshToken) {
+          throw new Error('No hay refresh token disponible');
+        }
+        const response = await api.post('/auth/refresh', { 
+          refreshToken: storedRefreshToken 
+        });        
+        const newToken = response.data?.data?.token || response.data?.token;
+        const newRefreshToken = response.data?.data?.refreshToken || response.data?.refreshToken;
+        
+        if (newToken) {
+          setAuthToken(newToken);
+          
+          if (newRefreshToken) {
+            setStoredRefreshToken(newRefreshToken);
+          }
+                    
+          processQueue(null, newToken);
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return api(originalRequest);
+        } else {
+          throw new Error('No se recibió nuevo token');
+        }
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        removeAuthToken();
+        clearRefreshToken();
+        
+        window.dispatchEvent(new CustomEvent('auth:logout'));
+        
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
     return Promise.reject(error);
   }
 );
@@ -188,91 +289,6 @@ export const getBusinessContext = () => {
     return { businessId: null, schemaName: null };
   }
 };
-
-// ─── INTERCEPTOR DE REQUEST ──────────────────────────────────────
-
-api.interceptors.request.use(
-  (config) => {
-    const token = getStoredToken();
-    if (token && !config.headers.Authorization) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// ─── INTERCEPTOR DE RESPONSE ─────────────────────────────────────
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && 
-        !originalRequest._retry && 
-        !originalRequest.url?.includes('/auth/login') &&
-        !originalRequest.url?.includes('/auth/refresh')) {
-            
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then(token => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return api(originalRequest);
-          })
-          .catch(err => Promise.reject(err));
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        const storedRefreshToken = getStoredRefreshToken();
-                
-        if (!storedRefreshToken) {
-          throw new Error('No hay refresh token disponible');
-        }
-        const response = await api.post('/auth/refresh', { 
-          refreshToken: storedRefreshToken 
-        });        
-        const newToken = response.data?.data?.token || response.data?.token;
-        const newRefreshToken = response.data?.data?.refreshToken || response.data?.refreshToken;
-        
-        if (newToken) {
-          setAuthToken(newToken);
-          
-          if (newRefreshToken) {
-            setStoredRefreshToken(newRefreshToken);
-          }
-                    
-          processQueue(null, newToken);
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          return api(originalRequest);
-        } else {
-          throw new Error('No se recibió nuevo token');
-        }
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        removeAuthToken();
-        clearRefreshToken();
-        
-        window.dispatchEvent(new CustomEvent('auth:logout'));
-        
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
-        }
-        
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 // ─── FUNCIONES PARA ADMIN ──────────────────────────────────────
 

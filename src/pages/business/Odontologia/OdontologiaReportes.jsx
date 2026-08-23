@@ -1,12 +1,11 @@
-// pages/business/Odontologia/OdontologiaReportes.jsx
 import React, { useState, useEffect } from 'react';
 import { 
-  FiFileText, FiSearch, FiX, FiRefreshCw, FiPrinter,
-  FiUser, FiCalendar, FiClock, FiActivity, FiClipboard,
-  FiFile, FiBookOpen, FiPlus, FiPrinter as FiPrinterIcon
+  FiFileText, FiSearch, FiX, FiRefreshCw,
+  FiClock, FiActivity, FiClipboard,
+  FiFile, FiBookOpen, FiPrinter as FiPrinterIcon
 } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
-import PageTemplateOdontologia from '../../../components/PageTemplateOdontologia';
+import { fetchWithAuth } from '../../../config/api';
+import PageTemplate from '../../../components/PageTemplate';
 import { 
   ReporteStats, 
   ReporteConsulta,
@@ -15,7 +14,7 @@ import {
   ReportePeriodontograma,
   ReporteTratamiento,
   ReportePlan,
-  PruebasImpresionTermica  // ← IMPORTAR EL NUEVO COMPONENTE
+  PruebasImpresionTermica  
 } from '../../../components/Odontologia/Reportes/index';
 import '../../../styles/Odontologia/index.css';
 
@@ -57,9 +56,9 @@ export default function OdontologiaReportes() {
     setDebugInfo(null);
     
     try {
-      console.log('📡 [Reportes] Haciendo fetch a /api/odontologia/pacientes');
+      console.log('📡 [Reportes] Haciendo fetch a /odontologia/pacientes');
       
-      const res = await fetchWithAuth('/api/odontologia/pacientes');
+      const res = await fetchWithAuth('/odontologia/pacientes');
       console.log(`📡 [Reportes] Response status: ${res.status} ${res.statusText}`);
       
       const responseText = await res.text();
@@ -231,7 +230,7 @@ export default function OdontologiaReportes() {
   // RENDER
   // ============================================================
   return (
-    <PageTemplateOdontologia
+    <PageTemplate
       title="Reportes Odontológicos"
       subtitle="Generación de certificados y reportes odontológicos"
       loading={loading}
@@ -355,6 +354,6 @@ export default function OdontologiaReportes() {
       <div className="odonto-config-content-wrapper">
         {renderContent()}
       </div>
-    </PageTemplateOdontologia>
+    </PageTemplate>
   );
 }

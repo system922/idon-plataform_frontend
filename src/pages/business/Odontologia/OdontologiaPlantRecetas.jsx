@@ -5,11 +5,10 @@ import {
   FiCopy, 
   FiSearch, 
   FiX, 
-  FiRefreshCw,
-  FiAlertCircle
+  FiRefreshCw
 } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
-import PageTemplateOdontologia from '../../../components/PageTemplateOdontologia';
+import { fetchWithAuth } from '../../../config/api';
+import PageTemplate from '../../../components/PageTemplate';
 import { 
   PlantillaStats, 
   PlantillaTable, 
@@ -50,8 +49,7 @@ export default function PlantillasPage() {
       console.log('🔄 [Plantillas] Cargando datos...');
       
       // 1. Cargar plantillas
-      console.log(`📡 [Plantillas] GET ${BASE_URL}/`);
-      const res = await fetchWithAuth(`${BASE_URL}/`);
+      const res = await fetchWithAuth('/odontologia/plantillas-recetas');
       const data = await res.json();
       
       console.log('📦 [Plantillas] Respuesta plantillas:', data);
@@ -73,7 +71,7 @@ export default function PlantillasPage() {
       // 2. Cargar TIPOS
       console.log(`📡 [Plantillas] GET ${BASE_URL}/tipos`);
       try {
-        const tiposRes = await fetchWithAuth(`${BASE_URL}/tipos`);
+        const tiposRes = await fetchWithAuth(`/odontologia/plantillas-recetas/tipos`);
         const tiposData = await tiposRes.json();
         
         if (tiposData.success && tiposData.data) {
@@ -89,14 +87,12 @@ export default function PlantillasPage() {
       }
       
       // 3. Cargar CATEGORÍAS
-      console.log(`📡 [Plantillas] GET ${BASE_URL}/categorias`);
       try {
-        const categoriasRes = await fetchWithAuth(`${BASE_URL}/categorias`);
+        const categoriasRes = await fetchWithAuth(`/odontologia/plantillas-recetas/categorias`);
         const categoriasData = await categoriasRes.json();
         
         if (categoriasData.success && categoriasData.data) {
           setCategorias(categoriasData.data);
-          console.log(`✅ [Plantillas] ${categoriasData.data.length} categorías cargadas`);
         } else {
           console.warn('⚠️ [Plantillas] No se pudieron cargar las categorías');
           setCategorias([]);
@@ -107,14 +103,12 @@ export default function PlantillasPage() {
       }
       
       // 4. Cargar MEDICAMENTOS
-      console.log(`📡 [Plantillas] GET ${BASE_URL}/medicamentos`);
       try {
-        const medRes = await fetchWithAuth(`${BASE_URL}/medicamentos`);
+        const medRes = await fetchWithAuth(`/odontologia/plantillas-recetas/medicamentos`);
         const medData = await medRes.json();
         
         if (medData.success && medData.data) {
           setMedicamentos(medData.data);
-          console.log(`✅ [Plantillas] ${medData.data.length} medicamentos cargados`);
         } else {
           console.warn('⚠️ [Plantillas] No se pudieron cargar los medicamentos');
           setMedicamentos([]);
@@ -147,11 +141,11 @@ export default function PlantillasPage() {
     try {
       let url, method;
       if (selectedPlantilla) {
-        url = `${BASE_URL}/${selectedPlantilla.id}`;
+        url = `/odontologia/plantillas-recetas/${selectedPlantilla.id}`;
         method = 'PUT';
         console.log(`✏️ [Plantillas] PUT ${url}`);
       } else {
-        url = `${BASE_URL}/`;
+        url = `/odontologia/plantillas-recetas/`;
         method = 'POST';
         console.log(`📝 [Plantillas] POST ${url}`);
       }
@@ -191,7 +185,7 @@ export default function PlantillasPage() {
     
     try {
       console.log(`🗑️ [Plantillas] DELETE ${BASE_URL}/${id}`);
-      const res = await fetchWithAuth(`${BASE_URL}/${id}`, {
+      const res = await fetchWithAuth(`/odontologia/plantillas-recetas/${id}`, {
         method: 'DELETE',
       });
 
@@ -221,7 +215,7 @@ export default function PlantillasPage() {
         nombre: `${plantilla.nombre} (Copia)`
       };
 
-      const res = await fetchWithAuth(`${BASE_URL}/`, {
+      const res = await fetchWithAuth(`/odontologia/plantillas-recetas/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newPlantilla),
@@ -297,7 +291,7 @@ export default function PlantillasPage() {
   // RENDER
   // ============================================================
   return (
-    <PageTemplateOdontologia
+    <PageTemplate
       title="Plantillas de Recetas"
       subtitle="Gestión de plantillas para recetas odontológicas"
       loading={loading}
@@ -387,6 +381,6 @@ export default function PlantillasPage() {
         onEdit={handleEdit}
         onDuplicate={handleDuplicate}
       />
-    </PageTemplateOdontologia>
+    </PageTemplate>
   );
 }

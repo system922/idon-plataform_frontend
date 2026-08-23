@@ -7,8 +7,8 @@ import {
   FiX, 
   FiRefreshCw 
 } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
-import PageTemplateOdontologia from '../../../components/PageTemplateOdontologia';
+import { fetchWithAuth } from '../../../config/api';
+import PageTemplate from '../../../components/PageTemplate';
 import { 
   PacienteStats, 
   PacienteTable, 
@@ -42,7 +42,7 @@ export default function PacientesPage() {
     setError(null);
     
     try {
-      const res = await fetchWithAuth('/api/odontologia/pacientes');
+      const res = await fetchWithAuth('/odontologia/pacientes');
       const data = await res.json();
       
       if (!res.ok) {
@@ -71,7 +71,7 @@ export default function PacientesPage() {
       
       // Cargar estadísticas
       try {
-        const statsRes = await fetchWithAuth('/api/odontologia/pacientes/stats');
+        const statsRes = await fetchWithAuth('/odontologia/pacientes/stats');
         const statsData = await statsRes.json();
         
         let statsResult = { total: 0, activos: 0, nuevos_30dias: 0, con_citas: 0 };
@@ -121,7 +121,7 @@ export default function PacientesPage() {
     try {
       let url, method;
       if (selectedPaciente) {
-        url = `/api/odontologia/pacientes/${selectedPaciente.id}`;
+        url = `/odontologia/pacientes/${selectedPaciente.id}`;
         method = 'PUT';
       } else {
         url = '/api/odontologia/pacientes';
@@ -160,7 +160,7 @@ export default function PacientesPage() {
     if (!window.confirm('¿Está seguro de eliminar este paciente? Esta acción no se puede deshacer.')) return;
 
     try {
-      const res = await fetchWithAuth(`/api/odontologia/pacientes/${id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/odontologia/pacientes/${id}`, { method: 'DELETE' });
       const data = await res.json();
 
       if (!res.ok || !data.success) {
@@ -210,7 +210,7 @@ export default function PacientesPage() {
   // RENDER
   // ============================================================
   return (
-    <PageTemplateOdontologia
+    <PageTemplate
       title="Pacientes"
       subtitle="Gestión de pacientes odontológicos"
       loading={loading}
@@ -296,6 +296,6 @@ export default function PacientesPage() {
         paciente={selectedPaciente}
         onEdit={handleEdit}
       />
-    </PageTemplateOdontologia>
+    </PageTemplate>
   );
 }

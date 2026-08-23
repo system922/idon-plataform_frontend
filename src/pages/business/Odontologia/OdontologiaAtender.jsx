@@ -6,8 +6,8 @@ import {
   FiActivity, FiHeart, FiDollarSign, FiFile, FiPaperclip,
   FiRefreshCw, FiSave, FiCheck, FiX, FiPhone, FiMapPin
 } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
-import PageTemplateOdontologia from '../../../components/PageTemplateOdontologia';
+import { fetchWithAuth } from '../../../config/api';
+import PageTemplate from '../../../components/PageTemplate';
 import { PacienteAvatar } from '../../../components/Odontologia/Pacientes/PacienteAvatar';
 import '../../../styles/Odontologia/index.css';
 
@@ -135,7 +135,7 @@ export default function OdontologiaAtender() {
   // ============================================================
   const loadTratamientos = async () => {
     try {
-      const res = await fetchWithAuth('/api/odontologia/tratamientos');
+      const res = await fetchWithAuth('/odontologia/tratamientos');
       const data = await res.json();
       
       let tratamientosData = [];
@@ -166,7 +166,7 @@ export default function OdontologiaAtender() {
       
       for (const fase of fases) {
         const res = await fetchWithAuth(
-          `/api/odontologia/odontogramas/patient/${patientId}/fase/${fase}`
+          `/odontologia/odontogramas/patient/${patientId}/fase/${fase}`
         );
         
         if (res.ok) {
@@ -207,7 +207,7 @@ export default function OdontologiaAtender() {
         console.log('📋 [Atender] Cargando cita ID:', citaId);
 
         // Cargar cita
-        const citaRes = await fetchWithAuth(`/api/odontologia/citas/${citaId}`);
+        const citaRes = await fetchWithAuth(`/odontologia/citas/${citaId}`);
         const citaData = await citaRes.json();
 
         if (!citaRes.ok || !citaData.success) {
@@ -227,7 +227,7 @@ export default function OdontologiaAtender() {
         // Cargar paciente
         if (citaEncontrada.patient_id) {
           try {
-            const patientRes = await fetchWithAuth(`/api/odontologia/pacientes/${citaEncontrada.patient_id}`);
+            const patientRes = await fetchWithAuth(`/odontologia/pacientes/${citaEncontrada.patient_id}`);
             const patientData = await patientRes.json();
             if (patientRes.ok && patientData.success) {
               console.log('✅ [Atender] Paciente encontrado:', patientData.data);
@@ -242,7 +242,7 @@ export default function OdontologiaAtender() {
         // Cargar especialista
         if (citaEncontrada.especialista_id) {
           try {
-            const espRes = await fetchWithAuth(`/api/odontologia/especialistas/${citaEncontrada.especialista_id}`);
+            const espRes = await fetchWithAuth(`/odontologia/especialistas/${citaEncontrada.especialista_id}`);
             const espData = await espRes.json();
             if (espRes.ok && espData.success) {
               console.log('✅ [Atender] Especialista encontrado:', espData.data);
@@ -257,7 +257,7 @@ export default function OdontologiaAtender() {
         // Cargar tratamiento
         if (citaEncontrada.tratamiento_id) {
           try {
-            const tratRes = await fetchWithAuth(`/api/odontologia/tratamientos/${citaEncontrada.tratamiento_id}`);
+            const tratRes = await fetchWithAuth(`/odontologia/tratamientos/${citaEncontrada.tratamiento_id}`);
             const tratData = await tratRes.json();
             if (tratRes.ok && tratData.success) {
               console.log('✅ [Atender] Tratamiento encontrado:', tratData.data);
@@ -529,7 +529,7 @@ export default function OdontologiaAtender() {
 
   if (error) {
     return (
-      <PageTemplateOdontologia title="Error" subtitle="No se pudo cargar la atención">
+      <PageTemplate title="Error" subtitle="No se pudo cargar la atención">
         <div className="odont-empty-state" style={{ padding: '40px', textAlign: 'center' }}>
           <h3 style={{ color: '#ef4444' }}>❌ {error}</h3>
           <button 
@@ -540,13 +540,13 @@ export default function OdontologiaAtender() {
             <FiArrowLeft /> Volver a la Agenda
           </button>
         </div>
-      </PageTemplateOdontologia>
+      </PageTemplate>
     );
   }
 
   if (!cita) {
     return (
-      <PageTemplateOdontologia title="Cita no encontrada" subtitle="La cita que buscas no existe">
+      <PageTemplate title="Cita no encontrada" subtitle="La cita que buscas no existe">
         <div className="odont-empty-state" style={{ padding: '40px', textAlign: 'center' }}>
           <h3>🔍 Cita no encontrada</h3>
           <p>La cita con ID {citaId} no existe en el sistema.</p>
@@ -558,7 +558,7 @@ export default function OdontologiaAtender() {
             <FiArrowLeft /> Volver a la Agenda
           </button>
         </div>
-      </PageTemplateOdontologia>
+      </PageTemplate>
     );
   }
 
@@ -622,7 +622,7 @@ export default function OdontologiaAtender() {
   };
 
   return (
-    <PageTemplateOdontologia
+    <PageTemplate
       title={`Atención Odontológica`}
       subtitle={`Paciente: ${paciente ? `${paciente.first_name || ''} ${paciente.last_name || ''}` : 'Cargando...'} | ${cita.fecha ? new Date(cita.fecha).toLocaleDateString() : ''} - ${cita.hora_inicio?.slice(0, 5) || ''}`}
       loading={loading}
@@ -807,6 +807,6 @@ export default function OdontologiaAtender() {
           />
         )}
       </div>
-    </PageTemplateOdontologia>
+    </PageTemplate>
   );
 }

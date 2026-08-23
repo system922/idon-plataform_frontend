@@ -1,22 +1,31 @@
 // components/Odontologia/Tratamientos/TratamientosPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   FiPlus, FiActivity, FiSearch, FiX, FiRefreshCw
 } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
-import PageTemplateOdontologia from '../../../components/PageTemplateOdontologia';
+import { useSession } from '../../../context/SessionContext';
+import { fetchWithAuth } from '../../../config/api';
+import { useConfirm } from '../../../context/ConfirmContext';
+import { useAlert } from '../../../components/ConfirmContext';
+import PageTemplate from '../../../components/PageTemplate';
 import { 
   TratamientoStats, 
   TratamientoTable, 
   TratamientoModal, 
   TratamientoDetailModal 
 } from '../../../components/Odontologia/Tratamientos/index';
-
 import '../../../styles/Odontologia/index.css';
 
 export default function TratamientosPage() {
+  const { user } = useSession();
+  const alert = useAlert();
+  const confirm = useConfirm();
+  const isMounted = useRef(true);
+
   const [tratamientos, setTratamientos] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     activos: 0,
@@ -28,59 +37,42 @@ export default function TratamientosPage() {
   const [showModal, setShowModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedTratamiento, setSelectedTratamiento] = useState(null);
-  const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
   const [error, setError] = useState(null);
+  const [modalError, setModalError] = useState('');
 
-  // ============================================================
-  // CARGAR DATOS DESDE API
-  // ============================================================
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    if (!isMounted.current) return;
+    
     setLoading(true);
     setError(null);
     try {
-      console.log('🔄 Cargando tratamientos...');
+      const response = await fetchWithAuth('/odontologia/tratamientos');
+      const data = await response.json();
       
-      const res = await fetchWithAuth('/api/odontologia/tratamientos');
-      const data = await res.json();
-      
-      console.log('📦 Respuesta completa:', data);
+      if (!isMounted.current) return;
       
       let tratamientosData = [];
       
-      // Manejar diferentes formatos de respuesta
       if (Array.isArray(data)) {
         tratamientosData = data;
-        console.log('✅ Formato: Array directo');
-      } else if (data.success && data.data) {
-        tratamientosData = Array.isArray(data.data) ? data.data : [];
-        console.log('✅ Formato: { success, data }');
+      } else if (data.tratamientos && Array.isArray(data.tratamientos)) {
+        tratamientosData = data.tratamientos;
       } else if (data.data && Array.isArray(data.data)) {
         tratamientosData = data.data;
-        console.log('✅ Formato: { data }');
       } else if (data.rows && Array.isArray(data.rows)) {
         tratamientosData = data.rows;
-        console.log('✅ Formato: { rows }');
-      } else if (data.result && Array.isArray(data.result)) {
-        tratamientosData = data.result;
-        console.log('✅ Formato: { result }');
-      } else {
-        console.warn('⚠️ Formato de datos no reconocido:', data);
-        tratamientosData = [];
+      } else if (data.success && data.data) {
+        tratamientosData = Array.isArray(data.data) ? data.data : [];
       }
-      
-      console.log('📋 Tratamientos procesados:', tratamientosData);
-      console.log('📊 Cantidad:', tratamientosData.length);
       
       setTratamientos(tratamientosData);
       
-      // Calcular estadísticas
       const total = tratamientosData.length;
       const activos = tratamientosData.filter(t => t.is_active === true).length;
       const inactivos = tratamientosData.filter(t => t.is_active === false).length;
       
-      // Calcular promedios
       let duracionPromedio = 0;
       let precioPromedio = 0;
       
@@ -99,61 +91,73 @@ export default function TratamientosPage() {
         precioPromedio
       });
       
-      console.log('📊 Estadísticas calculadas:', { total, activos, inactivos, duracionPromedio, precioPromedio });
-      
     } catch (err) {
-      console.error('❌ Error loading tratamientos:', err);
       setError('Error al cargar los datos: ' + err.message);
+      if (isMounted.current) {
+        await alert.error('Error al cargar los datos: ' + err.message);
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, []); // <- Array vacío para evitar bucles
 
   useEffect(() => {
+    isMounted.current = true;
     loadData();
-  }, []);
+    return () => {
+      isMounted.current = false;
+    };
+  }, []); // <- Array vacío para ejecutar solo UNA VEZ
 
-  // ============================================================
-  // HANDLERS - CRUD
-  // ============================================================
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
   const handleSave = async (formData) => {
     setSaving(true);
-    setError(null);
+    setModalError('');
     try {
       let url, method;
       if (selectedTratamiento) {
         url = `/api/odontologia/tratamientos/${selectedTratamiento.id}`;
         method = 'PUT';
       } else {
-        url = '/api/odontologia/tratamientos';
+        url = '/odontologia/tratamientos';
         method = 'POST';
       }
 
-      console.log(`📤 ${method} ${url}`, formData);
-
-      const res = await fetchWithAuth(url, {
+      const response = await fetchWithAuth(url, {
         method,
         body: JSON.stringify(formData),
       });
 
-      const data = await res.json();
-      console.log('📥 Respuesta guardado:', data);
+      const data = await response.json();
 
-      if (!res.ok || !data.success) {
+      if (!response.ok) {
+        if (response.status === 409) {
+          throw new Error(data.error || 'El tratamiento ya existe');
+        }
         throw new Error(data.error || 'Error al guardar el tratamiento');
       }
 
-      // Recargar datos
       await loadData();
       setShowModal(false);
       setSelectedTratamiento(null);
+      setModalError('');
       
-      alert(data.message || 'Tratamiento guardado correctamente');
+      await alert.success(
+        data.message || 'Tratamiento guardado correctamente',
+        'Guardado exitoso'
+      );
+      
       return data.data;
+      
     } catch (err) {
-      console.error('❌ Error saving tratamiento:', err);
-      setError(err.message || 'Error al guardar el tratamiento');
-      alert(err.message || 'Error al guardar el tratamiento');
+      setModalError(err.message || 'Error al guardar el tratamiento');
       throw err;
     } finally {
       setSaving(false);
@@ -161,46 +165,52 @@ export default function TratamientosPage() {
   };
 
   const handleEdit = (tratamiento) => {
-    console.log('✏️ Editando tratamiento:', tratamiento);
-    // Cerrar el modal de detalles si está abierto
     if (showDetailModal) {
       setShowDetailModal(false);
     }
-    // Establecer el tratamiento y abrir el modal de edición
     setSelectedTratamiento(tratamiento);
     setShowModal(true);
+    setModalError('');
     setError(null);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Está seguro de eliminar este tratamiento? Esta acción no se puede deshacer.')) return;
+    const confirmed = await confirm.showConfirm({
+      title: 'Confirmar eliminación',
+      message: '¿Está seguro de eliminar este tratamiento? Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      danger: true,
+    });
+
+    if (!confirmed) return;
 
     try {
-      console.log(`🗑️ Eliminando tratamiento ID: ${id}`);
-      
-      const res = await fetchWithAuth(`/api/odontologia/tratamientos/${id}`, {
+      const response = await fetchWithAuth(`/odontologia/tratamientos/${id}`, {
         method: 'DELETE',
       });
 
-      const data = await res.json();
-      console.log('📥 Respuesta eliminación:', data);
+      const data = await response.json();
 
-      if (!res.ok || !data.success) {
+      if (!response.ok) {
         throw new Error(data.error || 'Error al eliminar el tratamiento');
       }
 
       await loadData();
-      alert('Tratamiento eliminado correctamente');
+      await alert.success(
+        'Tratamiento eliminado correctamente',
+        'Eliminación exitosa'
+      );
+      
       return { success: true };
+      
     } catch (err) {
-      console.error('❌ Error deleting tratamiento:', err);
-      alert(err.message || 'Error al eliminar el tratamiento');
+      await alert.error(err.message || 'Error al eliminar el tratamiento');
       return { success: false, error: err.message };
     }
   };
 
   const handleView = (tratamiento) => {
-    console.log('👁️ Viendo tratamiento:', tratamiento);
     setSelectedTratamiento(tratamiento);
     setShowDetailModal(true);
   };
@@ -208,6 +218,7 @@ export default function TratamientosPage() {
   const closeModal = () => {
     setShowModal(false);
     setSelectedTratamiento(null);
+    setModalError('');
     setError(null);
   };
 
@@ -216,9 +227,6 @@ export default function TratamientosPage() {
     setSelectedTratamiento(null);
   };
 
-  // ============================================================
-  // FILTRAR TRATAMIENTOS
-  // ============================================================
   const filteredTratamientos = tratamientos.filter(t => {
     const matchSearch = searchTerm === '' || 
       (t.name && t.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -231,13 +239,8 @@ export default function TratamientosPage() {
     return matchSearch && matchEstado;
   });
 
-  console.log('🔍 Tratamientos filtrados:', filteredTratamientos.length, 'de', tratamientos.length);
-
-  // ============================================================
-  // RENDER
-  // ============================================================
   return (
-    <PageTemplateOdontologia
+    <PageTemplate
       title="Tratamientos"
       subtitle="Catálogo de tratamientos odontológicos"
       loading={loading}
@@ -269,6 +272,7 @@ export default function TratamientosPage() {
             onClick={() => {
               setSelectedTratamiento(null);
               setShowModal(true);
+              setModalError('');
               setError(null);
             }}
           >
@@ -277,11 +281,11 @@ export default function TratamientosPage() {
           
           <button 
             className="odonto-btn-secondary" 
-            onClick={loadData} 
+            onClick={handleRefresh} 
             title="Recargar" 
-            disabled={loading}
+            disabled={loading || refreshing}
           >
-            <FiRefreshCw size={18} className={loading ? 'spin' : ''} />
+            <FiRefreshCw size={18} className={refreshing ? 'spin' : ''} />
           </button>
         </div>
       }
@@ -327,6 +331,7 @@ export default function TratamientosPage() {
         tratamiento={selectedTratamiento}
         onSave={handleSave}
         loading={saving}
+        error={modalError}
       />
 
       <TratamientoDetailModal 
@@ -335,6 +340,6 @@ export default function TratamientosPage() {
         tratamiento={selectedTratamiento}
         onEdit={handleEdit}
       />
-    </PageTemplateOdontologia>
+    </PageTemplate>
   );
 }

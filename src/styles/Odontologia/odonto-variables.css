@@ -1,0 +1,183 @@
+:root {
+  /* ============================================================
+     COLORES PRINCIPALES - IDON Brand
+     ============================================================ */
+  
+  --odonto-primary: #87CEEB;
+  --primary-dark: #ea580c;
+  --primary-light: #fb923c;
+  --primary-muted: #fcd9b6;
+  --primary-bg: rgba(249, 115, 22, 0.08);
+  --primary-hover: rgba(249, 115, 22, 0.15);
+  --primary-gradient: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  
+  /* AZUL CORPORATIVO (Secondary) */
+  --blue-primary: #1A3A5C;
+  --blue-dark: #0F2440;
+  --blue-light: #2B5A8C;
+  --blue-bg: rgba(26, 58, 92, 0.08);
+  --blue-hover: rgba(26, 58, 92, 0.12);
+  --blue-gradient: linear-gradient(135deg, #1A3A5C 0%, #2B5A8C 100%);
+  
+  /* ROJO (Para acciones peligrosas/cerrar) */
+  --danger: #ef4444;
+  --danger-dark: #dc2626;
+  --danger-light: #f87171;
+  --danger-bg: rgba(239, 68, 68, 0.08);
+  --danger-hover: rgba(239, 68, 68, 0.15);
+  --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  
+  /* VERDE (Para éxito/abrir) */
+  --success: #10b981;
+  --success-dark: #059669;
+  --success-light: #34d399;
+  --success-bg: rgba(16, 185, 129, 0.08);
+  --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  
+  /* AMARILLO (Para advertencias) */
+  --warning: #f59e0b;
+  --warning-dark: #d97706;
+  --warning-light: #fbbf24;
+  --warning-bg: rgba(245, 158, 11, 0.08);
+  
+  /* AZUL INFO */
+  --info: #3b82f6;
+  --info-dark: #2563eb;
+  --info-light: #60a5fa;
+  --info-bg: rgba(59, 130, 246, 0.08);
+  
+  /* MORADO */
+  --purple: #8b5cf6;
+  --purple-dark: #7c3aed;
+  --purple-light: #a78bfa;
+  --purple-bg: rgba(139, 92, 246, 0.08);
+  
+  /* ============================================================
+     FONDOS - TEMA CLARO
+     ============================================================ */
+  
+  /* Sidebar y fondos principales */
+  --bg-sidebar: #F4F6F9;
+  --bg-primary: #f0f4f8;
+  --bd-primary_1: #F5F3EE;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --bg-hover: rgba(249, 115, 22, 0.04);
+  --bg-active: rgba(249, 115, 22, 0.10);
+  --bg-body: #f0f4f8;
+  --bg-header-modal: #b9bbbe;
+
+  
+  /* Fondos específicos para el sidebar */
+  --sb-bg: #F4F6F9;
+  --sb-bg-secondary: #0f0f17;
+  
+  /* ============================================================
+     BORDES
+     ============================================================ */
+  --border-color: #E2E8F0;
+  --border-light: #F1F5F9;
+  --border-dark: #CBD5E1;
+  --border-hover: #D1D5DB;
+  --border-focus: #9d9fa3;
+  --border-primary: rgba(249, 115, 22, 0.3);
+  --border-blue: rgba(26, 58, 92, 0.2);
+  
+  /* ============================================================
+     TEXTOS
+     ============================================================ */
+  --text-primary: #1A202C;
+  --text-secondary: #4A5568;
+  --text-muted: #545456;
+  --text-dim: #a0aec0;
+  --text-white: #ffffff;
+  --text-strong: #1A202C;
+  --text-body: #1A202C;
+  --text-input: #282a2d;
+  --modal-title-color: #333333;
+  --text-placeholder: #a0aec0;
+  --text-title-header: #111827;
+  
+  /* Textos específicos sidebar */
+  --sb-text: #4A5568;
+  --sb-text-strong: #1A202C;
+  --sb-muted: #4A5568;
+  
+  /* ============================================================
+     SOMBRAS
+     ============================================================ */
+  --radius: 16px;
+  --radius-lg: 12px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.12);
+  --shadow-modal: 0 25px 50px rgba(0, 0, 0, 0.15);
+  --shadow-dropdown: 0 -8px 30px rgba(0, 0, 0, 0.08);
+  
+  /* ============================================================
+     TRANSICIONES
+     ============================================================ */
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.15s ease;
+  --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  
+  /* ============================================================
+     TAMAÑOS Y ESPACIOS
+     ============================================================ */
+  --sb-width: 260px;
+  --sb-collapsed: 72px;
+  
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  
+  /* ============================================================
+     TIPOGRAFÍA
+     ============================================================ */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Courier New', monospace;
+  
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 28px;
+  --font-size-4xl: 32px;
+  --font-size-5xl: 48px;
+  
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  
+  /* ============================================================
+     Z-INDEX
+     ============================================================ */
+  --z-dropdown: 1000;
+  --z-modal: 2000;
+  --z-tooltip: 3000;
+  --z-notification: 4000;
+  --z-overlay: 5000;
+  --z-max: 9999;
+}
+     

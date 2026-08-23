@@ -1,4 +1,4 @@
-// src/pages/BlogPage.js
+// src/pages/BlogPage.jsx
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
@@ -14,15 +14,27 @@ const BlogPage = () => {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await api.get('/blog');
-        // Estructura esperada: { ok: true, data: [...] }
-        if (response.data?.ok && Array.isArray(response.data?.data)) {
-          setArticles(response.data.data);
+        console.log('🔍 [BLOG] Solicitando novedades...');
+        const response = await api.get('/blog/news');
+        console.log('📦 [BLOG] Respuesta recibida:', response);
+        
+        // CORREGIDO: Verificar 'success' en lugar de 'ok'
+        if (response.data?.success && Array.isArray(response.data?.data)) {
+          console.log(`📊 [BLOG] ${response.data.data.length} artículos recibidos del backend`);
+          
+          // FILTRAR solo los artículos activos en el frontend
+          const activeArticles = response.data.data.filter(
+            article => article.is_active === true
+          );
+          
+          console.log(`✅ [BLOG] ${activeArticles.length} artículos activos después del filtro`);
+          setArticles(activeArticles);
         } else {
+          console.warn('⚠️ [BLOG] Respuesta sin datos o estructura incorrecta:', response.data);
           setArticles([]);
         }
       } catch (err) {
-        console.error('Error al cargar novedades:', err);
+        console.error('❌ [BLOG] Error al cargar novedades:', err);
         setError('No se pudieron cargar los artículos.');
       } finally {
         setLoading(false);
@@ -99,7 +111,7 @@ const BlogPage = () => {
             <div className="blog-grid">
               {articles.map((article) => (
                 <div key={article.id} className="blog-card">
-                  {article.image_url && (
+                  {article.image_url && article.image_url.trim() !== '' && (
                     <div className="blog-card-image">
                       <img src={article.image_url} alt={article.title} />
                     </div>
