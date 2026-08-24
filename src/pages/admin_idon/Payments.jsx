@@ -63,10 +63,14 @@ export default function Payments() {
     setRefreshing(false);
   };
 
-  const handleMarkPaid = async (subId, notes) => {
-    setActing(subId);
+  // Usa el nuevo endpoint /payments/record
+  const handleMarkPaid = async (subscriptionId, payload) => {
+    setActing(subscriptionId);
     try {
-      await adminApi.post(`/admin/subscriptions/${subId}/mark-paid`, { notes });
+      await adminApi.post('/admin/payments/record', {
+        subscriptionId,
+        ...payload
+      });
       setPayModal(null);
       await load();
       alert.success('Pago registrado correctamente', '✅ Éxito');
@@ -403,17 +407,58 @@ export default function Payments() {
   );
 }
 
+// ============================================================
+// Modal de pago con selector de meses y visualización del período
+// ============================================================
 function PayModal({ row, onClose, onConfirm }) {
-  const alert = useAlert();
   const [notes, setNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('transferencia');
+  const [reference, setReference] = useState('');
+  const [months, setMonths] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // Calcular el mes actual a cobrar basado en next_billing_at
+  const getCurrentMonth = () => {
+    if (!row.next_billing_at) {
+      return new Date();
+    }
+    const next = new Date(row.next_billing_at);
+    const now = new Date();
+    // Si next es menor que hoy, significa que está vencido, usamos hoy
+    if (next < now) {
+      return now;
+    }
+    return next;
+  };
+
+  const currentMonth = getCurrentMonth();
+  const currentMonthStr = currentMonth.toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
+
+  // Calcular el período que se cubrirá con los meses seleccionados
+  const getPeriodEnd = () => {
+    const base = new Date(currentMonth);
+    base.setDate(1);
+    const end = new Date(base);
+    end.setMonth(end.getMonth() + months);
+    end.setDate(1);
+    return end;
+  };
+
+  const periodEnd = getPeriodEnd();
+  const periodEndStr = periodEnd.toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
 
   const handleConfirm = async () => {
     setSaving(true);
     setError('');
     try {
-      await onConfirm(row.sub_id, notes);
+      const payload = {
+        notes,
+        payment_method: paymentMethod,
+        reference: paymentMethod === 'transferencia' ? reference : '',
+        months,
+      };
+      await onConfirm(row.sub_id, payload);
     } catch (e) {
       setError(e.message || 'Error al registrar pago');
     } finally {
@@ -430,7 +475,7 @@ function PayModal({ row, onClose, onConfirm }) {
       )}
       <ButtonGroup>
         <IconTextButton
-          variant="secondary"
+          variant=""
           size="md"
           onClick={onClose}
           disabled={saving}
@@ -451,6 +496,15 @@ function PayModal({ row, onClose, onConfirm }) {
     </>
   );
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('es-EC', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
   return (
     <Modal
       closeOnOverlayClick={false}
@@ -461,42 +515,122 @@ function PayModal({ row, onClose, onConfirm }) {
       className="payments-pay-modal"
       footer={footer}
     >
-      <div className="payments-pay-body">
-        <p className="payments-pay-business"><strong>{row.business_name}</strong></p>
+      <div className="payments-pay-body" style={{ padding: '1rem 0' }}>
+        <p className="payments-pay-business" style={{ fontWeight: 600, marginBottom: '1rem' }}>
+          {row.business_name}
+        </p>
 
-        <div className="payments-pay-info">
-          <div className="payments-pay-amount">
-            <span className="payments-pay-label">Monto</span>
-            <span className="payments-pay-value">${parseFloat(row.total_amount || 0).toFixed(2)}</span>
+        <div className="payments-pay-info" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ flex: 1 }}>
+            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Monto</span>
+            <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>
+              ${parseFloat(row.total_amount || 0).toFixed(2)}
+            </span>
           </div>
-          <div className="payments-pay-due">
-            <span className="payments-pay-label">Vencimiento</span>
-            <span className="payments-pay-value">
-              {row.next_billing_at ? new Date(row.next_billing_at).toLocaleDateString('es-EC') : '—'}
+          <div style={{ flex: 1 }}>
+            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Vencimiento actual</span>
+            <span style={{ fontWeight: 600 }}>
+              {row.next_billing_at ? formatDate(row.next_billing_at) : '—'}
             </span>
           </div>
         </div>
 
-        <div className="payments-pay-notes">
-          <label>Notas / Referencia (opcional)</label>
+        {/* Resumen del período a cobrar */}
+        <div style={{ background: 'var(--bg-tertiary)', padding: '0.75rem', borderRadius: '6px', marginBottom: '1rem' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            <strong>Período a cubrir:</strong>
+          </div>
+          <div style={{ fontWeight: 500 }}>
+            {currentMonthStr} → {periodEndStr}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            ({months} {months === 1 ? 'mes' : 'meses'})
+          </div>
+        </div>
+
+        <div className="payments-pay-field" style={{ marginBottom: '0.75rem' }}>
+          <label htmlFor="pay-months" style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+            Meses a pagar
+          </label>
+          <select
+            id="pay-months"
+            value={months}
+            onChange={(e) => setMonths(Number(e.target.value))}
+            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+          >
+            <option value={1}>1 mes</option>
+            <option value={2}>2 meses</option>
+            <option value={3}>3 meses</option>
+            <option value={6}>6 meses</option>
+            <option value={12}>12 meses</option>
+          </select>
+        </div>
+
+        <div className="payments-pay-field" style={{ marginBottom: '0.75rem' }}>
+          <label htmlFor="pay-method" style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+            Método de Pago
+          </label>
+          <select
+            id="pay-method"
+            value={paymentMethod}
+            onChange={(e) => {
+              setPaymentMethod(e.target.value);
+              if (e.target.value !== 'transferencia') {
+                setReference('');
+              }
+            }}
+            className="payments-pay-select"
+            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+          >
+            <option value="transferencia">Transferencia Bancaria</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="tarjeta">Tarjeta de Crédito/Débito</option>
+            <option value="otros">Otros</option>
+          </select>
+        </div>
+
+        {paymentMethod === 'transferencia' && (
+          <div className="payments-pay-field" style={{ marginBottom: '0.75rem' }}>
+            <label htmlFor="pay-reference" style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+              Referencia / Comprobante (opcional)
+            </label>
+            <input
+              id="pay-reference"
+              type="text"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              placeholder="Número de transferencia, comprobante, etc."
+              className="payments-pay-input"
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+            />
+          </div>
+        )}
+
+        <div className="payments-pay-notes" style={{ marginBottom: '0.75rem' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+            Notas (opcional)
+          </label>
           <Input
             type="textarea"
             value={notes}
             onChange={setNotes}
-            placeholder="Referencia de transferencia, comprobante, etc."
+            placeholder="Notas adicionales..."
             size="md"
             rows={2}
           />
         </div>
 
-        <p className="payments-pay-hint">
-          Al confirmar se registrará el pago y se actualizará la próxima fecha de cobro.
+        <p className="payments-pay-hint" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+          Al confirmar se registrará el pago y se extenderá la suscripción por los meses seleccionados.
         </p>
       </div>
     </Modal>
   );
 }
 
+// ============================================================
+// Modal de envío de email (sin cambios)
+// ============================================================
 const PALETTE = ['#22c55e','#f59e0b','#ef4444','#6366f1','#3b82f6','#8b5cf6'];
 const TYPE_COLORS = {
   bienvenida: '#22c55e',
