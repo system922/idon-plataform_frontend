@@ -69,18 +69,18 @@ Mensaje: ${mensaje || 'Me gustaría recibir más información sobre IDON.'}
                 <li>
                   <Phone size={20} />
                   <strong>Teléfono:</strong>
-                  <a href="tel:0987852907">0987852907</a>
+                  <a href="tel:0987852907">+593 987852907</a>
                 </li>
                 <li>
                   <Mail size={20} />
                   <strong>Email:</strong>
-                  <a href="mailto:system.design.ec@gmail.com">system.design.ec@gmail.com</a>
+                  <a href="mailto:soporte@idonplataform.site">soporte@idonplataform.site</a>
                 </li>
                 <li>
                   <Globe size={20} />
                   <strong>Web:</strong>
                   <a href="https://www.idonplataform.site" target="_blank" rel="noopener noreferrer">
-                    idonplataform.site
+                    www.idonplataform.site
                   </a>
                 </li>
                 <li>
