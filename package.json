@@ -33,7 +33,7 @@
   "scripts": {
     "start": "craco start",
     "prebuild": "node -e \"require('fs').writeFileSync('public/meta.json', JSON.stringify({v: Date.now()}))\"",
-    "build": "cross-env DISABLE_ESLINT_PLUGIN=true craco build && rimraf build/**/*.map",
+    "build": "cross-env DISABLE_ESLINT_PLUGIN=true craco build",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
