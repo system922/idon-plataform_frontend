@@ -26,26 +26,35 @@ const LandingPage = () => {
         {/* ===== IMÁGENES ===== */}
         {/* ===== IMÁGENES CON OPTIMIZACIÓN LCP ===== */}
         <div className="images-grid">
-          {/* IMAGEN PRINCIPAL - PRIORIDAD ALTA (LCP) */}
           <picture>
-            <source srcSet="/landing.webp" type="image/webp" />
+            <source 
+              type="image/webp"
+              srcSet="/landing-400.webp 400w, /landing-800.webp 800w, /landing-1200.webp 1200w"
+              sizes="(max-width: 480px) 100vw, (max-width: 1024px) 50vw, 50vw"
+              
+            />
             <img 
-              src="/landing.webp"
+              src="/landing-800.webp"  /* Fallback (tamaño mediano) */
               alt="IDON - Facturación y ventas" 
               className="landing-image" 
               width="634" 
               height="272" 
               loading="eager" 
-              fetchpriority="high" 
+              fetchPriority="high" 
             />
           </picture>
           
 
           {/* IMAGEN SECUNDARIA - CARGA DIFERIDA */}
+          {/* IMAGEN SECUNDARIA - CON srcset y lazy loading */}
           <picture>
-            <source srcSet="/landing_2.webp" type="image/webp" />
+            <source 
+              type="image/webp"
+              srcSet="/landing2-400.webp 400w, /landing2-800.webp 800w, /landing2-1200.webp 1200w"
+              sizes="(max-width: 480px) 100vw, (max-width: 1024px) 50vw, 50vw"
+            />
             <img 
-              src="/landing_2.webp" 
+              src="/landing2-800.webp"
               alt="IDON - Gestión y control" 
               className="landing-image" 
               width="634" 

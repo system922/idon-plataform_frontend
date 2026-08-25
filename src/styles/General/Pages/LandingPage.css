@@ -231,7 +231,7 @@
    ============================================================ */
 .images-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* Siempre dos columnas */
+  grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
   justify-items: center;
   align-items: start;
@@ -242,7 +242,7 @@
   width: 100%;
   height: auto;
   max-width: 100%;
-  aspect-ratio: attr(width) / attr(height); /* Usa los atributos HTML */
+  aspect-ratio: 634 / 272;
   object-fit: contain;
   border-radius: 5px;
   box-shadow: var(--shadow-md);
@@ -663,17 +663,24 @@
   }
 }
 
-/* Pantallas muy grandes (≥ 1400px) */
-@media (min-width: 1400px) {
-  .landing-main {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 3rem 0; /* ← Solo padding vertical, nada horizontal */
+/* Pantallas grandes (≥ 1024px) - Dos columnas ocupando todo el ancho */
+@media (min-width: 1024px) {
+  .images-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;                 /* Ocupa todo el ancho del contenedor padre */
+    max-width: 100%;             /* Sin límite máximo */
+    margin: 0;
+    padding: 0;                  /* Sin padding interno */
+    gap: 1.5rem;                 /* Espacio mínimo entre imágenes (opcional) */
   }
 
-  .landing-header {
-    max-width: 1200px;
-    padding: 0.15rem 0 0.40rem 0;
+  .images-grid .landing-image {
+    width: 100%;                 /* Cada imagen ocupa el 100% de su columna */
+    height: auto;
+    object-fit: content;           /* Llena el contenedor recortando si es necesario */
+    border-radius: 0;            /* Sin bordes redondeados para look full-width */
+    box-shadow: none;            /* Elimina sombras */
   }
 }
 
@@ -1812,4 +1819,34 @@
     padding: 0.5rem 1rem;
     min-height: 44px;
   }
+}
+
+/* ============================================================
+   RESERVA DE ESPACIO PARA EVITAR CLS (Paso 4)
+   ============================================================ */
+
+/* 1. Reserva espacio para el grid de imágenes */
+.images-grid {
+  min-height: 250px; /* Altura mínima mientras cargan las imágenes */
+}
+
+/* 2. La imagen LCP debe ocupar espacio incluso sin cargar */
+.landing-image {
+  display: block;
+  background-color: #f0f4f8; /* Color de respaldo */
+}
+
+/* 3. Asegura que el <picture> se comporte como bloque */
+picture {
+  display: block;
+}
+
+/* 4. Aumenta la altura mínima del features-grid */
+.features-grid {
+  min-height: 350px !important; /* Sobrescribe por si hay conflictos */
+}
+
+/* 5. Para los títulos H1 y lead, reserva espacio visual */
+.landing-main h1 {
+  min-height: 60px; /* Evita que el texto se mueva si la fuente tarda */
 }
