@@ -16,6 +16,10 @@
   padding: 0;
 }
 
+body, h1, h2, h3, h4, h5, h6, p, li, a, span, div {
+  font-display: swap;
+}
+
 /* ============================================================
    HEADER / MENÚ (Responsive)
    ============================================================ */
@@ -239,11 +243,13 @@
 }
 
 .landing-image {
+  display: block;
   width: 100%;
   height: auto;
   max-width: 100%;
   aspect-ratio: 634 / 272;
   object-fit: contain;
+  background-color: var(--bg-body);
   border-radius: 5px;
   box-shadow: var(--shadow-md);
   transition: var(--transition);
@@ -263,8 +269,8 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1rem;
   margin: 1rem 0;
-  min-height: 320px; /* ← Estima la altura real de esa sección */
-  contain: layout style paint; /* Aísla el layout para evitar reflujos */
+  min-height: 380px; /* Aumentado para evitar CLS */
+  contain: layout style paint;
 }
 
 .feature-card {
@@ -1849,4 +1855,16 @@ picture {
 /* 5. Para los títulos H1 y lead, reserva espacio visual */
 .landing-main h1 {
   min-height: 60px; /* Evita que el texto se mueva si la fuente tarda */
+}
+
+/* ============================================================
+   REFUERZO PARA IMÁGENES DENTRO DE <PICTURE>
+   ============================================================ */
+picture img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 634 / 272;
+  object-fit: contain;
+  background-color: var(--bg-body);
 }
