@@ -76,7 +76,7 @@ const LandingPage = () => {
             </p>
             <p style={{ marginTop: '1rem' }}>
               Diseñado para emprendedores y dueños de negocios en Ecuador, IDON unifica 
-              la gestión de <strong>ventas, inventario, facturación electrónica y CRM</strong> 
+              la gestión de <strong>ventas, inventario, facturación electrónica y CRM </strong> 
               en una sola plataforma. Olvídate de hojas de cálculo y sistemas desconectados: 
               con IDON, todo fluye en tiempo real desde cualquier dispositivo.
             </p>
