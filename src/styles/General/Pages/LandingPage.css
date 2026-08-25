@@ -1868,3 +1868,129 @@ picture img {
   object-fit: contain;
   background-color: var(--bg-body);
 }
+
+/* ============================================================
+   MENÚ HAMBURGUESA - VERSIÓN COMPACTA
+   ============================================================ */
+
+/* Botón hamburguesa (oculto en escritorio) */
+.menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  padding: 0.3rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.menu-toggle:hover {
+  background: var(--primary-bg);
+}
+
+/* En móvil, ocultar el menú y mostrar el botón */
+@media (max-width: 768px) {
+  /* Restablecer el header a flex row */
+  .landing-header {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    padding: 0.3rem 1rem !important;
+    flex-wrap: nowrap !important;
+    min-height: 60px !important;
+  }
+
+  /* Mostrar el botón hamburguesa */
+  .menu-toggle {
+    display: block;
+  }
+
+  /* Ocultar navegación por defecto */
+  .main-nav {
+    display: none !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.3rem !important;
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(8px) !important;
+    padding: 1rem 1.5rem !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1) !important;
+    z-index: 100 !important;
+  }
+
+  /* Cuando el menú está abierto */
+  .main-nav.open {
+    display: flex !important;
+  }
+
+  /* Enlaces del menú en móvil - MÁS PEQUEÑOS */
+  .main-nav a {
+    font-size: 0.95rem !important;
+    padding: 0.4rem 0 !important;
+    border-bottom: 1px solid var(--border-light) !important;
+    text-align: center !important;
+  }
+
+  .main-nav a:last-child {
+    border-bottom: none !important;
+  }
+
+  /* Botón de login en móvil - MÁS PEQUEÑO */
+  .main-nav .btn-login {
+    text-align: center !important;
+    margin-top: 0.3rem !important;
+    padding: 0.4rem 1rem !important;
+    font-size: 0.9rem !important;
+    border-radius: 50px !important;
+  }
+
+  /* Quitar subrayado en móvil */
+  .main-nav a::after {
+    display: none !important;
+  }
+
+  /* Reducir tamaño del logo en móvil */
+  .animated-logo {
+    height: 35px !important;
+    margin-right: 6px !important;
+  }
+
+  .logo-idon, .logo-on {
+    font-size: 1.2rem !important;
+  }
+}
+
+/* Ajuste para pantallas muy pequeñas */
+@media (max-width: 480px) {
+  .landing-header {
+    padding: 0.2rem 0.8rem !important;
+    min-height: 50px !important;
+  }
+
+  .animated-logo {
+    height: 28px !important;
+  }
+
+  .logo-idon, .logo-on {
+    font-size: 1rem !important;
+  }
+
+  .main-nav a {
+    font-size: 0.85rem !important;
+    padding: 0.3rem 0 !important;
+  }
+
+  .main-nav .btn-login {
+    font-size: 0.8rem !important;
+    padding: 0.3rem 0.8rem !important;
+  }
+
+  .main-nav {
+    padding: 0.8rem 1rem !important;
+  }
+}
