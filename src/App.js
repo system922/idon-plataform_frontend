@@ -1,56 +1,54 @@
-import React, { useEffect, useState, lazy, Suspense } from 'react';
+// ========== src/App.js ==========
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
-// ========== COMPONENTES QUE SE CARGAN SÍNCRONAMENTE (SOLO LO ESENCIAL PARA LA LANDING) ==========
 import LandingPage from './pages/LandingPage';
-import PublicLayout from './admin/layout/PublicLayout';
+import PreciosPage from './pages/PreciosPage';
+import ContactoPage from './pages/ContactoPage';
+import BlogPage from './pages/BlogPage';
+
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import AdminDashboard from './pages/admin_idon/AdminDashboard';
+import './App.css';
+import './styles/General/index.css';
 import { SessionProvider, useSession } from './context/SessionContext';
 import { api } from './config/api';
+import AdminLayout from './admin/layout/AdminLayout';
+import AdminIdonNews from './pages/admin_idon/AdminIdonNews';
+import Features from './pages/admin_idon/Features';
+import Templates from './pages/admin_idon/Templates';
+import Plans from './pages/admin_idon/Plans';
+import Payments from './pages/admin_idon/Payments';
+import Roles from './pages/admin_idon/Roles';
+import Settings from './pages/admin_idon/Settings';
+import Audit from './pages/admin_idon/Audit';
+import Clientes from './pages/admin_idon/Clientes';
+import Modulos from './pages/admin_idon/Modulos';
+import Users from './pages/admin_idon/Users';
+import Requests from './pages/admin_idon/Requests';
+import BusinessTypes from './pages/admin_idon/BusinessTypes';
+import EmailTemplatesPage from './pages/admin_idon/EmailTemplatesPage';
+import ProfilePage from './pages/business/ProfilePage';
+import PublicLayout from './admin/layout/PublicLayout';
+
+// ── Business panel ──────────────────────────────────────────
+import BusinessLayout from './admin/layout/BusinessLayout';
+import { businessRoutes } from './routes/businessRoutes';
+import PendingApprovalPage from './pages/PendingApprovalPage';
+import InactiveUserPage from './pages/InactiveUserPage';
+
+/* Páginas Legales */
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsAndConditions from './pages/TermsAndConditions';
+
+// ========== Contextos y componentes ==========
 import { DrawerProvider } from './context/DrawerContext';
 import GlobalExpenseBubble from './components/GlobalExpenseBubble';
 import { ConfirmProvider } from './components/ConfirmContext';
-
-// ========== ESTILOS GLOBALES (solo los necesarios para la landing) ==========
-import './App.css';
-import './styles/General/index.css';
-
-// ========== RUTAS DE NEGOCIO (también lazy) ==========
-// Importa businessRoutes dinámicamente o usa lazy para cada ruta, pero por ahora mantenlo como está
-// pero asegura que los componentes dentro de businessRoutes estén definidos con lazy
-import { businessRoutes } from './routes/businessRoutes';
-
-// ========== LAZY LOADING PARA EL RESTO DE PÁGINAS ==========
-const PreciosPage = lazy(() => import('./pages/PreciosPage'));
-const ContactoPage = lazy(() => import('./pages/ContactoPage'));
-const BlogPage = lazy(() => import('./pages/BlogPage'));
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/RegisterPage'));
-const AdminDashboard = lazy(() => import('./pages/admin_idon/AdminDashboard'));
-const AdminIdonNews = lazy(() => import('./pages/admin_idon/AdminIdonNews'));
-const Features = lazy(() => import('./pages/admin_idon/Features'));
-const Templates = lazy(() => import('./pages/admin_idon/Templates'));
-const Plans = lazy(() => import('./pages/admin_idon/Plans'));
-const Payments = lazy(() => import('./pages/admin_idon/Payments'));
-const Roles = lazy(() => import('./pages/admin_idon/Roles'));
-const Settings = lazy(() => import('./pages/admin_idon/Settings'));
-const Audit = lazy(() => import('./pages/admin_idon/Audit'));
-const Clientes = lazy(() => import('./pages/admin_idon/Clientes'));
-const Modulos = lazy(() => import('./pages/admin_idon/Modulos'));
-const Users = lazy(() => import('./pages/admin_idon/Users'));
-const Requests = lazy(() => import('./pages/admin_idon/Requests'));
-const BusinessTypes = lazy(() => import('./pages/admin_idon/BusinessTypes'));
-const EmailTemplatesPage = lazy(() => import('./pages/admin_idon/EmailTemplatesPage'));
-const ProfilePage = lazy(() => import('./pages/business/ProfilePage'));
-const AdminLayout = lazy(() => import('./admin/layout/AdminLayout'));
-const BusinessLayout = lazy(() => import('./admin/layout/BusinessLayout'));
-const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
-const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
-const PendingApprovalPage = lazy(() => import('./pages/PendingApprovalPage'));
-const InactiveUserPage = lazy(() => import('./pages/InactiveUserPage'));
-const PaymentPendingPage = lazy(() => import('./pages/business/PaymentPendingPage'));
-const PublicOrderPage = lazy(() => import('./pages/public/PublicOrderPage'));
-const NoAccessPage = lazy(() => import('./pages/NoAccessPage'));
-
+import PaymentPendingPage from './pages/business/PaymentPendingPage';
+import PublicOrderPage from './pages/public/PublicOrderPage';
+import NoAccessPage from './pages/NoAccessPage';
 
 // ==================== FUNCIÓN AUXILIAR ====================
 const isAdminUser = (user) => {
@@ -148,6 +146,7 @@ function useBusinessStatus() {
         return;
       }
 
+      // Páginas de estado - no verificar
       if (location.pathname.includes('/pending-approval') ||
           location.pathname.includes('/app/payment-pending') ||
           location.pathname.includes('/app/inactive') ||
@@ -158,9 +157,11 @@ function useBusinessStatus() {
         return;
       }
 
+      // Si es admin, no verificar estado de negocio
       if (location.pathname.includes('/admin') || isAdminUser(user)) {
         setLoading(false);
         setChecked(true);
+        // Si está en rutas de estado de negocio, redirigir al dashboard
         const statusRoutes = ['/app/no-access', '/app/inactive', '/pending-approval', '/app/payment-pending'];
         if (statusRoutes.some(route => location.pathname.includes(route))) {
           setRedirectTo('/admin/dashboard');
@@ -246,53 +247,51 @@ function AppRoutesWrapper() {
   const { loading, redirectTo, statusData, checked } = useBusinessStatus();
 
   if (loading || !checked) {
-    return <LoadingSpinner />;
+    return (
+      <div className="spinner-overlay">
+        <div className="spinner-brand">
+          <div className="spinner-loader spinner-loader-lg spinner-primary" />
+          <div className="brand-text">
+            ID<span className="highlight">ON</span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (redirectTo) {
-    return <LoadingSpinner />;
+    return (
+      <div className="spinner-overlay">
+        <div className="spinner-brand">
+          <div className="spinner-loader spinner-loader-lg spinner-primary" />
+          <div className="brand-text">
+            ID<span className="highlight">ON</span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  // Páginas de estado (lazy)
+  // Páginas de estado
   if (location.pathname.includes('/pending-approval')) {
-    return (
-      <Suspense fallback={<LoadingSpinner />}>
-        <PendingApprovalPage onLogout={logout} />
-      </Suspense>
-    );
+    return <PendingApprovalPage onLogout={logout} />;
   }
 
   if (location.pathname.includes('/app/payment-pending')) {
-    return (
-      <Suspense fallback={<LoadingSpinner />}>
-        <PaymentPendingPage onLogout={logout} />
-      </Suspense>
-    );
+    return <PaymentPendingPage onLogout={logout} />;
   }
 
   if (location.pathname.includes('/app/inactive')) {
-    return (
-      <Suspense fallback={<LoadingSpinner />}>
-        <InactiveUserPage onLogout={logout} />
-      </Suspense>
-    );
+    return <InactiveUserPage onLogout={logout} />;
   }
 
   if (location.pathname.includes('/app/no-access')) {
-    return (
-      <Suspense fallback={<LoadingSpinner />}>
-        <NoAccessPage onLogout={logout} />
-      </Suspense>
-    );
+    return <NoAccessPage onLogout={logout} />;
   }
 
-  // Business Layout (lazy)
+  // Business Layout
   const realRole = user?.role || user?.userType || 'user';
-  return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <BusinessLayout userRole={realRole} />
-    </Suspense>
-  );
+  return <BusinessLayout userRole={realRole} />;
 }
 
 // =============================================
@@ -301,26 +300,27 @@ function AppRoutesWrapper() {
 function AppRouter() {
   const { user, isAuthenticated } = useSession();
   
+  // Si es admin, redirigir al dashboard
   if (isAuthenticated && isAdminUser(user)) {
     return <Navigate to="/admin/dashboard" replace />;
   }
   
+  // Si no está autenticado, redirigir al login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
   
+  // Usuario de negocio
   return <AppRoutesWrapper />;
 }
 
 function RegisterPageWrapper() {
   const navigate = useNavigate();
   return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <RegisterPage
-        onRegisterSuccess={() => {}}
-        onNavigateToLogin={() => navigate('/login')}
-      />
-    </Suspense>
+    <RegisterPage
+      onRegisterSuccess={() => {}}
+      onNavigateToLogin={() => navigate('/login')}
+    />
   );
 }
 
@@ -343,32 +343,22 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Rutas públicas */}
-      <Route path="/:slug/qr" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <PublicOrderPage />
-        </Suspense>
-      } />
-      <Route path="/:slug/menu" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <PublicOrderPage />
-        </Suspense>
-      } />
+      <Route path="/:slug/qr" element={<PublicOrderPage />} />
+      <Route path="/:slug/menu" element={<PublicOrderPage />} />
 
-      {/* Login (lazy) */}
+      {/* Login */}
       <Route
         path="/login"
         element={
           shouldRedirectFromAuthPage ? (
             <Navigate to={getRedirectPath()} replace />
           ) : (
-            <Suspense fallback={<LoadingSpinner />}>
-              <LoginPage />
-            </Suspense>
+            <LoginPage />
           )
         }
       />
 
-      {/* Register (lazy) */}
+      {/* Register */}
       <Route
         path="/register"
         element={
@@ -379,78 +369,40 @@ function AppRoutes() {
           )
         }
       />
-
-      {/* Páginas públicas con PublicLayout (LandingPage es síncrona, el resto lazy) */}
       <Route path="/" element={<PublicLayout><LandingPage /></PublicLayout>} />
-      <Route path="/precios" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <PublicLayout><PreciosPage /></PublicLayout>
-        </Suspense>
-      } />
-      <Route path="/contacto" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <PublicLayout><ContactoPage /></PublicLayout>
-        </Suspense>
-      } />
-      <Route path="/blog" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <PublicLayout><BlogPage /></PublicLayout>
-        </Suspense>
-      } />
-      <Route path="/terms-and-conditions" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <PublicLayout><TermsAndConditions /></PublicLayout>
-        </Suspense>
-      } />
-      <Route path="/privacy-policy" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <PublicLayout><PrivacyPolicy /></PublicLayout>
-        </Suspense>
-      } />
+      <Route path="/precios" element={<PublicLayout><PreciosPage /></PublicLayout>} />
+      <Route path="/contacto" element={<PublicLayout><ContactoPage /></PublicLayout>} />
+      <Route path="/blog" element={<PublicLayout><BlogPage /></PublicLayout>} />
+      <Route path="/terms-and-conditions" element={<PublicLayout><TermsAndConditions /></PublicLayout>} />
+      <Route path="/privacy-policy" element={<PublicLayout><PrivacyPolicy /></PublicLayout>} />
 
-      {/* Páginas de estado (lazy) */}
+      {/* Páginas de estado */}
       <Route
         path="/pending-approval"
         element={
-          isAuthenticated ? (
-            <Suspense fallback={<LoadingSpinner />}>
-              <PendingApprovalPage onLogout={logout} />
-            </Suspense>
-          ) : <Navigate to="/login" replace />
+          isAuthenticated ? <PendingApprovalPage onLogout={logout} /> : <Navigate to="/login" replace />
         }
       />
       <Route
         path="/app/inactive"
         element={
-          isAuthenticated ? (
-            <Suspense fallback={<LoadingSpinner />}>
-              <InactiveUserPage onLogout={logout} />
-            </Suspense>
-          ) : <Navigate to="/login" replace />
+          isAuthenticated ? <InactiveUserPage onLogout={logout} /> : <Navigate to="/login" replace />
         }
       />
       <Route
         path="/app/no-access"
         element={
-          isAuthenticated ? (
-            <Suspense fallback={<LoadingSpinner />}>
-              <NoAccessPage onLogout={logout} />
-            </Suspense>
-          ) : <Navigate to="/login" replace />
+          isAuthenticated ? <NoAccessPage onLogout={logout} /> : <Navigate to="/login" replace />
         }
       />
       <Route
         path="/app/payment-pending"
         element={
-          isAuthenticated ? (
-            <Suspense fallback={<LoadingSpinner />}>
-              <PaymentPendingPage onLogout={logout} />
-            </Suspense>
-          ) : <Navigate to="/login" replace />
+          isAuthenticated ? <PaymentPendingPage onLogout={logout} /> : <Navigate to="/login" replace />
         }
       />
 
-      {/* Ruta raíz (redirige) */}
+      {/* Ruta raíz */}
       <Route
         path="/"
         element={
@@ -474,35 +426,33 @@ function AppRoutes() {
         }
       />
 
-      {/* Admin IDON (lazy) */}
+      {/* Admin IDON */}
       {isAdminUser(user) && (
         <Route path="/admin/*" element={
-          <Suspense fallback={<LoadingSpinner />}>
-            <AdminLayout user={user} onLogout={logout}>
-              <Routes>
-                <Route path="dashboard" element={<AdminDashboard user={user} onLogout={logout} />} />
-                <Route path="businesses" element={<Clientes />} />
-                <Route path="modules" element={<Modulos />} />
-                <Route path="idon_news" element={<AdminIdonNews />} />
-                <Route path="features" element={<Features />} />
-                <Route path="templates" element={<Templates />} />
-                <Route path="plans" element={<Plans />} />
-                <Route path="payments" element={<Payments />} />
-                <Route path="users" element={<Users />} />
-                <Route path="roles" element={<Roles />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="audit" element={<Audit />} />
-                <Route path="requests" element={<Requests />} />
-                <Route path="business-types" element={<BusinessTypes />} />
-                <Route path="email-templates" element={<EmailTemplatesPage />} />
-                <Route path="profile" element={<ProfilePage user={user} />} />
-              </Routes>
-            </AdminLayout>
-          </Suspense>
+          <AdminLayout user={user} onLogout={logout}>
+            <Routes>
+              <Route path="dashboard" element={<AdminDashboard user={user} onLogout={logout} />} />
+              <Route path="businesses" element={<Clientes />} />
+              <Route path="modules" element={<Modulos />} />
+              <Route path="idon_news" element={<AdminIdonNews />} />
+              <Route path="features" element={<Features />} />
+              <Route path="templates" element={<Templates />} />
+              <Route path="plans" element={<Plans />} />
+              <Route path="payments" element={<Payments />} />
+              <Route path="users" element={<Users />} />
+              <Route path="roles" element={<Roles />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="audit" element={<Audit />} />
+              <Route path="requests" element={<Requests />} />
+              <Route path="business-types" element={<BusinessTypes />} />
+              <Route path="email-templates" element={<EmailTemplatesPage />} />
+              <Route path="profile" element={<ProfilePage user={user} />} />
+            </Routes>
+          </AdminLayout>
         } />
       )}
 
-      {/* App Business (lazy) */}
+      {/* App Business */}
       <Route path="/app/*" element={<AppRouter />}>
         {businessRoutes}
       </Route>
