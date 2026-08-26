@@ -10,14 +10,9 @@ import { DrawerProvider } from './context/DrawerContext';
 import GlobalExpenseBubble from './components/GlobalExpenseBubble';
 import { ConfirmProvider } from './components/ConfirmContext';
 
-// ========== ESTILOS GLOBALES (solo los necesarios para la landing) ==========
+// ========== ESTILOS GLOBALES ==========
 import './App.css';
 import './styles/General/index.css';
-
-// ========== RUTAS DE NEGOCIO (también lazy) ==========
-// Importa businessRoutes dinámicamente o usa lazy para cada ruta, pero por ahora mantenlo como está
-// pero asegura que los componentes dentro de businessRoutes estén definidos con lazy
-import { businessRoutes } from './routes/businessRoutes';
 
 // ========== LAZY LOADING PARA EL RESTO DE PÁGINAS ==========
 const PreciosPage = lazy(() => import('./pages/PreciosPage'));
@@ -25,6 +20,15 @@ const ContactoPage = lazy(() => import('./pages/ContactoPage'));
 const BlogPage = lazy(() => import('./pages/BlogPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+
+// ✅ Wrapper lazy para businessRoutes (contiene tu sidebar y todas las rutas de negocio)
+const BusinessRoutesWrapper = lazy(() => import('./routes/businessRoutes').then(module => ({
+  default: function Wrapper() {
+    return <Routes>{module.businessRoutes}</Routes>;
+  }
+})));
+
+// ========== ADMIN IDON (lazy) ==========
 const AdminDashboard = lazy(() => import('./pages/admin_idon/AdminDashboard'));
 const AdminIdonNews = lazy(() => import('./pages/admin_idon/AdminIdonNews'));
 const Features = lazy(() => import('./pages/admin_idon/Features'));
@@ -51,7 +55,6 @@ const PaymentPendingPage = lazy(() => import('./pages/business/PaymentPendingPag
 const PublicOrderPage = lazy(() => import('./pages/public/PublicOrderPage'));
 const NoAccessPage = lazy(() => import('./pages/NoAccessPage'));
 
-
 // ==================== FUNCIÓN AUXILIAR ====================
 const isAdminUser = (user) => {
   if (!user) return false;
@@ -69,15 +72,12 @@ function useRoutePersistence() {
   useEffect(() => {
     if (!loading && isAuthenticated) {
       const currentPath = location.pathname + location.search;
-      
       const excludeRoutes = [
         '/', '/login', '/register', '/precios', '/contacto', '/blog',
         '/pending-approval', '/app/inactive', '/app/no-access', '/app/payment-pending',
         '/terms-and-conditions', '/privacy-policy'
       ];
-      
       const shouldExclude = excludeRoutes.some(route => currentPath.includes(route));
-      
       if (!shouldExclude && currentPath !== '/') {
         sessionStorage.setItem('lastRoute', currentPath);
         sessionStorage.setItem('lastRouteTimestamp', Date.now().toString());
@@ -95,10 +95,8 @@ function useRouteRestorer() {
   useEffect(() => {
     if (loading) return;
     if (!isAuthenticated) return;
-
     const savedRoute = sessionStorage.getItem('lastRoute');
     const currentPath = location.pathname;
-    
     if (savedRoute) {
       const shouldNotRestore = 
         currentPath.includes('/login') ||
@@ -109,15 +107,12 @@ function useRouteRestorer() {
         currentPath.includes('/app/payment-pending') ||
         currentPath === savedRoute ||
         currentPath === '/';
-
       if (!shouldNotRestore) {
         const excludeRoutes = [
           '/login', '/register', '/pending-approval',
           '/app/inactive', '/app/no-access', '/app/payment-pending'
         ];
-        
         const isExcluded = excludeRoutes.some(route => savedRoute.includes(route));
-        
         if (!isExcluded && savedRoute !== '/') {
           navigate(savedRoute, { replace: true });
         }
@@ -127,7 +122,7 @@ function useRouteRestorer() {
 }
 
 // =============================================
-// HOOK PERSONALIZADO PARA VERIFICAR ESTADO DEL NEGOCIO
+// HOOK PARA VERIFICAR ESTADO DEL NEGOCIO
 // =============================================
 function useBusinessStatus() {
   const { user, isAuthenticated, logout } = useSession();
@@ -135,19 +130,16 @@ function useBusinessStatus() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [redirectTo, setRedirectTo] = useState(null);
-  const [statusData, setStatusData] = useState(null);
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     const checkStatus = async () => {
       const publicRoutes = ['/login', '/register', '/terms-and-conditions', '/privacy-policy'];
-      
       if (publicRoutes.some(route => location.pathname.includes(route))) {
         setLoading(false);
         setChecked(true);
         return;
       }
-
       if (location.pathname.includes('/pending-approval') ||
           location.pathname.includes('/app/payment-pending') ||
           location.pathname.includes('/app/inactive') ||
@@ -157,7 +149,6 @@ function useBusinessStatus() {
         setChecked(true);
         return;
       }
-
       if (location.pathname.includes('/admin') || isAdminUser(user)) {
         setLoading(false);
         setChecked(true);
@@ -167,33 +158,23 @@ function useBusinessStatus() {
         }
         return;
       }
-
       if (!isAuthenticated || !user) {
         setLoading(false);
         setChecked(true);
         return;
       }
-
       try {
         const response = await api.get('/business-status/my-status');
         const result = response.data;
-
         let status = 'pending';
-        let data = result;
-
         if (result.ok && result.data) {
-          data = result.data;
-          status = data.status || 'pending';
+          status = result.data.status || 'pending';
         } else if (result.status) {
           status = result.status;
         } else if (result.data?.status) {
           status = result.data.status;
         }
-
-        setStatusData(data);
-
         let redirect = null;
-
         if (status === 'inactive' || status === 'user_not_found') {
           redirect = '/app/inactive';
         } else if (status === 'no_business' || status === 'no_request' || status === 'error') {
@@ -207,14 +188,11 @@ function useBusinessStatus() {
         } else {
           redirect = '/app/no-access';
         }
-
         setRedirectTo(redirect);
         setChecked(true);
         setLoading(false);
-
       } catch (error) {
         console.error('Error verificando estado:', error);
-        
         if (error.response?.status === 401 || error.response?.status === 403) {
           await logout();
           navigate('/login', { replace: true });
@@ -224,7 +202,6 @@ function useBusinessStatus() {
         setChecked(true);
       }
     };
-
     checkStatus();
   }, [location.pathname, navigate, isAuthenticated, user, logout]);
 
@@ -234,26 +211,24 @@ function useBusinessStatus() {
     }
   }, [redirectTo, loading, checked, navigate]);
 
-  return { loading, redirectTo, statusData, checked };
+  return { loading, redirectTo, checked };
 }
 
 // =============================================
-// WRAPPER PARA VERIFICAR ESTADO DEL NEGOCIO
+// WRAPPER PARA PÁGINAS DE ESTADO (pending-approval, inactive, etc.)
 // =============================================
 function AppRoutesWrapper() {
   const { user, logout } = useSession();
   const location = useLocation();
-  const { loading, redirectTo, statusData, checked } = useBusinessStatus();
+  const { loading, redirectTo, checked } = useBusinessStatus();
 
   if (loading || !checked) {
     return <LoadingSpinner />;
   }
-
   if (redirectTo) {
     return <LoadingSpinner />;
   }
 
-  // Páginas de estado (lazy)
   if (location.pathname.includes('/pending-approval')) {
     return (
       <Suspense fallback={<LoadingSpinner />}>
@@ -261,7 +236,6 @@ function AppRoutesWrapper() {
       </Suspense>
     );
   }
-
   if (location.pathname.includes('/app/payment-pending')) {
     return (
       <Suspense fallback={<LoadingSpinner />}>
@@ -269,7 +243,6 @@ function AppRoutesWrapper() {
       </Suspense>
     );
   }
-
   if (location.pathname.includes('/app/inactive')) {
     return (
       <Suspense fallback={<LoadingSpinner />}>
@@ -277,7 +250,6 @@ function AppRoutesWrapper() {
       </Suspense>
     );
   }
-
   if (location.pathname.includes('/app/no-access')) {
     return (
       <Suspense fallback={<LoadingSpinner />}>
@@ -286,7 +258,7 @@ function AppRoutesWrapper() {
     );
   }
 
-  // Business Layout (lazy)
+  // Usuario autenticado y con acceso -> Cargar BusinessLayout (sidebar)
   const realRole = user?.role || user?.userType || 'user';
   return (
     <Suspense fallback={<LoadingSpinner />}>
@@ -299,17 +271,29 @@ function AppRoutesWrapper() {
 // COMPONENTE PARA RUTAS /app/*
 // =============================================
 function AppRouter() {
-  const { user, isAuthenticated } = useSession();
-  
+  const { user, isAuthenticated, loading } = useSession();
+
+  // Esperar a que termine la carga de autenticación
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  // Admin -> redirigir al dashboard de admin
   if (isAuthenticated && isAdminUser(user)) {
     return <Navigate to="/admin/dashboard" replace />;
   }
-  
+
+  // No autenticado -> redirigir al login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  
-  return <AppRoutesWrapper />;
+
+  // ✅ Usuario autenticado (no admin) -> cargar BusinessRoutesWrapper (sidebar + rutas de negocio)
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <BusinessRoutesWrapper />
+    </Suspense>
+  );
 }
 
 function RegisterPageWrapper() {
@@ -330,9 +314,9 @@ function RegisterPageWrapper() {
 function AppRoutes() {
   const { user, logout, isAuthenticated, requiresBusinessSelection } = useSession();
   const location = useLocation();
-  
+
   const shouldRedirectFromAuthPage = isAuthenticated && !requiresBusinessSelection;
-  
+
   const getRedirectPath = () => {
     if (isAdminUser(user)) {
       return '/admin/dashboard';
@@ -380,7 +364,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Páginas públicas con PublicLayout (LandingPage es síncrona, el resto lazy) */}
+      {/* Páginas públicas con PublicLayout */}
       <Route path="/" element={<PublicLayout><LandingPage /></PublicLayout>} />
       <Route path="/precios" element={
         <Suspense fallback={<LoadingSpinner />}>
@@ -502,10 +486,8 @@ function AppRoutes() {
         } />
       )}
 
-      {/* App Business (lazy) */}
-      <Route path="/app/*" element={<AppRouter />}>
-        {businessRoutes}
-      </Route>
+      {/* ✅ App Business - AppRouter gestiona la carga condicional */}
+      <Route path="/app/*" element={<AppRouter />} />
 
       {/* 404 */}
       <Route
