@@ -15,16 +15,16 @@ const LandingPage = () => {
 
       <main className="landing-main">
         {/* ===== H1: EL MÁS IMPORTANTE ===== */}
-        <h1>IDON Control : Simplemente eficiente</h1>
+        <h1>IDON Control: Gestión de Ventas, Inventario y Operaciones</h1>
 
         <p className="lead">
           <strong>“Tu negocio en tu bolsillo.” </strong>
-          <Link to="/precios">Facturación electrónica</Link>,
-          <Link to="/precios"> inventario inteligente</Link>,
-          <Link to="/precios"> POS</Link>
-          <Link to="/precios"> en una sola plataforma. </Link> 
-          Desde <strong> $10 al mes</strong>, sin complicaciones.
-          <Link to="/contacto"> Contáctanos</Link> para más información.
+          Controla tus <strong>ventas</strong>, <strong>inventario</strong> y <strong>operaciones</strong> desde un solo lugar.
+          Con <Link to="/precios">Facturación electrónica</Link>,
+          <Link to="/precios">inventario inteligente</Link> y
+          <Link to="/precios">POS</Link> integrados.
+          Desde <strong>$10 al mes</strong>, sin complicaciones.
+          <Link to="/contacto">Contáctanos</Link> para más información.
         </p>
 
         {/* ===== IMÁGENES CON OPTIMIZACIÓN LCP ===== */}
@@ -107,7 +107,7 @@ const LandingPage = () => {
 
         {/* ===== SECCIÓN 4: ECOSISTEMA IDON (H2) ===== */}
         <section className="audience-section">
-          <h2>Ecosistema IDON Control v2.0</h2>
+          <h2>Ecosistema IDON: Ventas, Inventario y Operaciones</h2>
           <p>Módulos clave para transformar tu negocio:</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: '1rem' }}>
             <div><h3 style={{ fontSize: '1rem', margin: 0, display: 'inline' }}><ShoppingBag size={15} color="var(--text-primary)" /> POS & Comandas</h3> – Ventas rápidas, cierre de caja.</div>
@@ -120,7 +120,7 @@ const LandingPage = () => {
 
         {/* ===== NUEVA SECCIÓN 5: BENEFICIOS CLAVE ===== */}
         <section className="benefits-section" style={{ marginTop: '2.5rem' }}>
-          <h2>Beneficios de usar IDON en tu negocio</h2>
+          <h2>Beneficios de usar IDON para gestionar tu negocio</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginTop: '1.5rem' }}>
             <div className="benefit-card" style={{ background: 'var(--bg-card)', padding: '1.5rem', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-sm)' }}>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '0.5rem' }}><TrendingUp size={15} color="var(--text-primary)" /> Control total en tiempo real</h3>
@@ -173,7 +173,7 @@ const LandingPage = () => {
 
         {/* ===== NUEVA SECCIÓN 7: PREGUNTAS FRECUENTES (FAQ) ===== */}
         <section className="faq-section" style={{ marginTop: '2.5rem', background: 'var(--bg-tertiary)', padding: '2rem', borderRadius: 'var(--radius)' }}>
-          <h2>Preguntas frecuentes sobre IDON</h2>
+          <h2>Preguntas frecuentes sobre IDON Control</h2>
           <div style={{ display: 'grid', gap: '1.2rem', marginTop: '1.5rem' }}>
             <div>
               <h3 style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '0.3rem' }}>¿IDON es solo para restaurantes?</h3>
@@ -206,7 +206,7 @@ const LandingPage = () => {
 
         {/* ===== CTA FINAL (H2) ===== */}
         <section className="cta-section">
-          <h2>Empieza a gestionar tu negocio hoy</h2>
+          <h2>Empieza a gestionar tus ventas, inventario y operaciones hoy</h2>
           <p>Únete y descubre lo fácil que es manejar tu negocio.</p>
           
           {/* Botón personalizado con navegación */}
