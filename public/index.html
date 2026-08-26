@@ -71,6 +71,7 @@
       "@type": "Product",
       "name": "IDON Control",
       "description": "Software de gestión unificada para ventas, inventario y facturación electrónica.",
+      "image": "https://www.idonplataform.site/IDON_3.png",
       "brand": {
         "@type": "Brand",
         "name": "IDON"
@@ -80,8 +81,44 @@
         "priceCurrency": "USD",
         "price": "10",
         "priceValidUntil": "2026-12-31",
+        "validFrom": "2025-01-01",
         "availability": "https://schema.org/InStock",
-        "url": "https://www.idonplataform.site/precios"
+        "url": "https://www.idonplataform.site/precios",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "shippingRate": {
+            "@type": "MonetaryAmount",
+            "value": "0",
+            "currency": "USD"
+          },
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "EC"
+          },
+          "deliveryTime": {
+            "@type": "ShippingDeliveryTime",
+            "handlingTime": {
+              "@type": "QuantitativeValue",
+              "minValue": 0,
+              "maxValue": 1,
+              "unitCode": "DAY"
+            },
+            "transitTime": {
+              "@type": "QuantitativeValue",
+              "minValue": 0,
+              "maxValue": 0,
+              "unitCode": "DAY"
+            }
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "applicableCountry": "EC",
+          "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 30,
+          "returnMethod": "https://schema.org/ReturnByMail",
+          "returnFees": "https://schema.org/FreeReturn"
+        }
       },
       "aggregateRating": {
         "@type": "AggregateRating",
@@ -104,10 +141,6 @@
       ]
     }
     </script>
-
-    <!-- ============================================ -->
-    <!-- OPEN GRAPH (Facebook, WhatsApp, LinkedIn)    -->
-    <!-- ============================================ -->
 
     <!-- ============================================ -->
     <!-- OPEN GRAPH (Facebook, WhatsApp, LinkedIn)    -->
@@ -148,29 +181,31 @@
     <!-- OPTIMIZACIÓN DE FUENTES Y CSS (NO BLOQUEANTE)-->
     <!-- ============================================ -->
 
-    <!-- 1. Preconexión a Google Fonts  -->
+    <!-- 1. Preconexión a Google Fonts (para conexiones más rápidas) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="image" href="/landing.webp" fetchpriority="high" />
 
-    <!-- 2. Precarga de la hoja de estilos de Google Fonts -->
-    <link 
-      rel="preload" 
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" 
-      as="style" 
-      onload="this.onload=null;this.rel='stylesheet'" 
+    <!-- 2. Carga no bloqueante de Google Fonts (media="print") -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      media="print"
+      onload="this.media='all'"
     />
 
-    <!-- 3. Precarga de fuentes .woff2  -->
+    <!-- 3. Precarga de fuentes .woff2 (para que estén disponibles cuando se activen) -->
     <link rel="preload" href="https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa2JL7W0Q5n-wU.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="preload" href="https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa0ZL7W0Q5n-wU.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="preload" href="https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1pL7W0Q5n-wU.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
-    
+
+    <!-- 4. Precarga de la imagen LCP (para que cargue rápido) -->
+    <link rel="preload" as="image" href="/landing.webp" fetchpriority="high" />
+
     <!-- Fallback para navegadores sin soporte de preload -->
     <noscript>
-      <link 
-        rel="stylesheet" 
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" 
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       />
     </noscript>
 
@@ -567,32 +602,39 @@
         }
       }
     </style>
+
     <!-- ============================================ -->
     <!-- OPTIMIZACIÓN DE CARGA DE CSS (no bloqueante) -->
     <!-- ============================================ -->
     <script>
       (function() {
-        // Convertir todos los <link rel="stylesheet"> a media="print"
-        var links = document.querySelectorAll('link[rel="stylesheet"]');
-        links.forEach(function(link) {
+        function makeNonBlocking(link) {
           if (link.media !== 'print') {
             link.media = 'print';
             link.onload = function() {
               this.media = 'all';
             };
           }
+        }
+
+        // Aplicar a los links ya presentes
+        document.querySelectorAll('link[rel="stylesheet"]').forEach(makeNonBlocking);
+
+        // Observar la adición de nuevos links (por si CRA los añade dinámicamente)
+        const observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            mutation.addedNodes.forEach(function(node) {
+              if (node.tagName === 'LINK' && node.rel === 'stylesheet') {
+                makeNonBlocking(node);
+              }
+              if (node.querySelectorAll) {
+                node.querySelectorAll('link[rel="stylesheet"]').forEach(makeNonBlocking);
+              }
+            });
+          });
         });
 
-        // Asegurar que Google Fonts también sea no bloqueante
-        var fontLinks = document.querySelectorAll('link[href*="fonts.googleapis.com"]');
-        fontLinks.forEach(function(link) {
-          if (link.media !== 'print') {
-            link.media = 'print';
-            link.onload = function() {
-              this.media = 'all';
-            };
-          }
-        });
+        observer.observe(document.documentElement, { childList: true, subtree: true });
       })();
     </script>
   </head>
@@ -606,7 +648,6 @@
     </noscript>
 
     <div id="root"></div>
-
 
     <!--
       IDON Control | Inventario, Ventas y Operaciones
