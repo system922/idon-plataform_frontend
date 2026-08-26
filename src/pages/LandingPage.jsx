@@ -29,39 +29,29 @@ const LandingPage = () => {
 
         {/* ===== IMÁGENES CON OPTIMIZACIÓN LCP ===== */}
         <div className="images-grid">
-          <picture>
-            <source 
-              type="image/webp"
-              srcSet="/landing-320.webp 320w, /landing-400.webp 400w, /landing-640.webp 640w, /landing-800.webp 800w, /landing-1200.webp 1200w"
-              sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 50vw, 550px"
-            />
-            <img 
-              src="/landing-800.webp" 
-              alt="IDON - Facturación y ventas" 
-              className="landing-image" 
-              width="634" 
-              height="272" 
-              loading="eager" 
-              fetchPriority="high" 
-            />
-          </picture>
-
+          <img 
+            src="/landing-800.webp"
+            srcSet="/landing-320.webp 320w, /landing-400.webp 400w, /landing-640.webp 640w, /landing-800.webp 800w, /landing-1200.webp 1200w"
+            sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 50vw, 550px"
+            alt="IDON - Facturación y ventas"
+            className="landing-image"
+            width="634"
+            height="272"
+            loading="eager"
+            fetchPriority="high"
+          />
+          
           {/* IMAGEN SECUNDARIA - CARGA DIFERIDA */}
-          <picture>
-            <source 
-              type="image/webp"
-              srcSet="/landing2-320.webp 320w, /landing2-400.webp 400w, /landing2-640.webp 640w, /landing2-800.webp 800w, /landing2-1200.webp 1200w"
-              sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 50vw, 550px"
-            />
-            <img 
-              src="/landing2-800.webp"
-              alt="IDON - Gestión y control" 
-              className="landing-image" 
-              width="634" 
-              height="272" 
-              loading="lazy" 
-            />
-          </picture>
+          <img 
+            src="/landing2-800.webp"
+            srcSet="/landing2-320.webp 320w, /landing2-400.webp 400w, /landing2-640.webp 640w, /landing2-800.webp 800w, /landing2-1200.webp 1200w"
+            sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 50vw, 550px"
+            alt="IDON - Gestión y control" 
+            className="landing-image" 
+            width="634" 
+            height="272" 
+            loading="lazy" 
+          />
         </div>
 
         {/* ===== SECCIÓN 1: ¿QUÉ ES IDON? (H2) ===== */}

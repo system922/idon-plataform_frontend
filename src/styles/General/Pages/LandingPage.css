@@ -1994,3 +1994,74 @@ picture img {
     padding: 0.8rem 1rem !important;
   }
 }
+
+/* ============================================================
+   REFUERZO PARA CLS - Imágenes y Grid
+   ============================================================ */
+
+/* 1. Forzar aspect-ratio fijo en el contenedor picture */
+picture {
+  display: block;
+  width: 100%;
+  aspect-ratio: 634 / 272;
+  background-color: var(--bg-body);
+}
+
+/* 2. La imagen dentro del picture debe ocupar todo el espacio */
+picture img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  aspect-ratio: 634 / 272;
+}
+
+/* 3. Aumentar min-height del features-grid para que no se mueva */
+.features-grid {
+  min-height: 450px !important;
+}
+
+/* 4. Reservar espacio para las tarjetas (evita que se muevan al cargar) */
+.feature-card {
+  min-height: 220px;
+}
+
+/* 5. Reservar espacio para el testimonio y FAQ */
+.testimonial-section {
+  min-height: 160px;
+}
+
+.faq-section {
+  min-height: 300px;
+}
+
+picture {
+  display: block;
+  width: 100%;
+  aspect-ratio: 634 / 272;
+  background-color: var(--bg-body);
+}
+
+picture img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  aspect-ratio: 634 / 272;
+}
+
+.features-grid {
+  min-height: 450px !important;
+}
+
+.feature-card {
+  min-height: 220px;
+}
+
+.testimonial-section {
+  min-height: 160px;
+}
+
+.faq-section {
+  min-height: 300px;
+}
