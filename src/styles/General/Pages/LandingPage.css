@@ -47,14 +47,14 @@ body, h1, h2, h3, h4, h5, h6, p, li, a, span, div {
   text-decoration: none;
 }
 
-.animated-logo {
+.landing-animated-logo {
   display: block;
   transition: transform 0.3s ease;
   height: 70px;
   width: auto;
 }
 
-.animated-logo:hover {
+.landing-animated-logo:hover {
   transform: scale(1.05) rotate(-2deg);
 }
 

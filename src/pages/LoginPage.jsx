@@ -572,7 +572,7 @@ export default function LoginPage() {
             <img
               src={logo}
               alt="IDON Logo"
-              className="animated-logo"
+              className="login-animated-logo"
               style={{
                 filter: `drop-shadow(0 0 28px ${color}cc) drop-shadow(0 0 60px ${color}66)`,
               }}

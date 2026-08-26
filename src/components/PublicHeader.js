@@ -17,7 +17,7 @@ const PublicHeader = () => {
         <img
           src={logo}
           alt="IDON Logo"
-          className="animated-logo"
+          className="landing-animated-logo"
           width="50"
           height="50"
           style={{

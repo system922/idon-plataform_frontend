@@ -123,7 +123,7 @@
   to { transform: rotate(360deg); } 
 }
 
-.animated-logo {
+.login-animated-logo {
   width: 88%; 
   height: 88%;
   object-fit: contain;
