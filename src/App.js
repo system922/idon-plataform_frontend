@@ -14,17 +14,20 @@ import { ConfirmProvider } from './components/ConfirmContext';
 import './App.css';
 import './styles/General/index.css';
 
-// ========== RUTAS DE NEGOCIO (también lazy) ==========
-// Importa businessRoutes dinámicamente o usa lazy para cada ruta, pero por ahora mantenlo como está
-// pero asegura que los componentes dentro de businessRoutes estén definidos con lazy
-import { businessRoutes } from './routes/businessRoutes';
-
 // ========== LAZY LOADING PARA EL RESTO DE PÁGINAS ==========
 const PreciosPage = lazy(() => import('./pages/PreciosPage'));
 const ContactoPage = lazy(() => import('./pages/ContactoPage'));
 const BlogPage = lazy(() => import('./pages/BlogPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+
+// ✅ Wrapper lazy para businessRoutes (se carga solo cuando se accede a /app/*)
+const BusinessRoutesWrapper = lazy(() => import('./routes/businessRoutes').then(module => ({
+  default: function Wrapper() {
+    return <Routes>{module.businessRoutes}</Routes>;
+  }
+})));
+
 const AdminDashboard = lazy(() => import('./pages/admin_idon/AdminDashboard'));
 const AdminIdonNews = lazy(() => import('./pages/admin_idon/AdminIdonNews'));
 const Features = lazy(() => import('./pages/admin_idon/Features'));
@@ -50,7 +53,6 @@ const InactiveUserPage = lazy(() => import('./pages/InactiveUserPage'));
 const PaymentPendingPage = lazy(() => import('./pages/business/PaymentPendingPage'));
 const PublicOrderPage = lazy(() => import('./pages/public/PublicOrderPage'));
 const NoAccessPage = lazy(() => import('./pages/NoAccessPage'));
-
 
 // ==================== FUNCIÓN AUXILIAR ====================
 const isAdminUser = (user) => {
@@ -502,9 +504,13 @@ function AppRoutes() {
         } />
       )}
 
-      {/* App Business (lazy) */}
+      {/* ✅ App Business (lazy) - CORREGIDO */}
       <Route path="/app/*" element={<AppRouter />}>
-        {businessRoutes}
+        <Route path="*" element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <BusinessRoutesWrapper />
+          </Suspense>
+        } />
       </Route>
 
       {/* 404 */}
