@@ -131,25 +131,96 @@ export const api = axios.create({
 
 // ─── INTERCEPTOR DE REQUEST ──────────────────────────────────────
 
-api.interceptors.request.use(
-  (config) => {
-    // VERIFICAR si es ruta pública
-    const isPublicPath = isPublicRequest(config.url);
-    
-    // SI es ruta pública, NO agregar token
-    if (isPublicPath) {
-      delete config.headers.Authorization;
-      return config;
+// ========== src/config/api.js ==========
+// Reemplazar el interceptor de response completo
+
+api.interceptors.response.use(
+  (response) => {
+    // ✅ Para respuestas exitosas, simplemente devolver la respuesta
+    console.log('✅ [API] Respuesta exitosa:', response.config.url, response.status);
+    return response;
+  },
+  async (error) => {
+    // Si no hay config, rechazar
+    if (!error.config) {
+      return Promise.reject(error);
     }
 
-    // Para rutas privadas, agregar token
-    const token = getStoredToken();
-    if (token && !config.headers.Authorization) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const originalRequest = error.config;
+
+    // VERIFICAR si es ruta pública
+    const isPublicPath = isPublicRequest(originalRequest.url);
+    
+    // SI es ruta pública, NO intentar refrescar token, solo rechazar
+    if (isPublicPath) {
+      console.log('📢 [API] Error en ruta pública:', originalRequest.url, error.response?.data);
+      return Promise.reject(error);
     }
-    return config;
-  },
-  (error) => Promise.reject(error)
+
+    // Solo intentar refrescar token en rutas privadas con error 401
+    if (error.response?.status === 401 && 
+        !originalRequest._retry && 
+        !originalRequest.url?.includes('/auth/login') &&
+        !originalRequest.url?.includes('/auth/refresh')) {
+            
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(token => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch(err => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const storedRefreshToken = getStoredRefreshToken();
+                
+        if (!storedRefreshToken) {
+          throw new Error('No hay refresh token disponible');
+        }
+        const response = await api.post('/auth/refresh', { 
+          refreshToken: storedRefreshToken 
+        });        
+        const newToken = response.data?.data?.token || response.data?.token;
+        const newRefreshToken = response.data?.data?.refreshToken || response.data?.refreshToken;
+        
+        if (newToken) {
+          setAuthToken(newToken);
+          
+          if (newRefreshToken) {
+            setStoredRefreshToken(newRefreshToken);
+          }
+                    
+          processQueue(null, newToken);
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return api(originalRequest);
+        } else {
+          throw new Error('No se recibió nuevo token');
+        }
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        removeAuthToken();
+        clearRefreshToken();
+        
+        window.dispatchEvent(new CustomEvent('auth:logout'));
+        
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    return Promise.reject(error);
+  }
 );
 
 // ─── INTERCEPTOR DE RESPONSE ─────────────────────────────────────
