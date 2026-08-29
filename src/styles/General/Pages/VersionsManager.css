@@ -1,0 +1,348 @@
+/* src/admin/pages/system/VersionsManager.css */
+
+.versions-container {
+  padding: 20px 0;
+}
+
+/* Tabla de versiones */
+.versions-table-container {
+  background: #1a1a1e;
+  border-radius: 12px;
+  border: 1px solid #2a2a2a;
+  overflow: hidden;
+}
+
+.versions-table-container .admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.versions-table-container .admin-table thead {
+  background: #121216;
+}
+
+.versions-table-container .admin-table th {
+  padding: 14px 16px;
+  text-align: left;
+  color: #888;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.versions-table-container .admin-table td {
+  padding: 14px 16px;
+  color: #e0e0e0;
+  font-size: 14px;
+  border-bottom: 1px solid #2a2a2a;
+  vertical-align: middle;
+}
+
+.versions-table-container .admin-table tbody tr {
+  transition: background 0.2s;
+}
+
+.versions-table-container .admin-table tbody tr:hover {
+  background: #1f1f23;
+}
+
+.versions-table-container .admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Version tag */
+.version-tag {
+  display: inline-block;
+  background: #10b98120;
+  color: #10b981;
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+/* Status badge para versiones */
+.version-status-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Acciones en tabla */
+.versions-table-container .admin-actions-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.versions-table-container .admin-action-icon {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.versions-table-container .admin-action-icon:hover {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.versions-table-container .admin-action-icon.danger:hover {
+  background: #ef444420;
+  color: #ef4444;
+}
+
+/* Modal para versiones */
+.admin-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.admin-modal {
+  background: #1a1a1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 0;
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+}
+
+.admin-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.admin-modal-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.admin-modal-close {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.2s;
+  line-height: 1;
+}
+
+.admin-modal-close:hover {
+  color: #fff;
+}
+
+.admin-modal-form {
+  padding: 24px;
+}
+
+.admin-form-group {
+  margin-bottom: 16px;
+}
+
+.admin-form-group label {
+  display: block;
+  color: #888;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.admin-form-group input,
+.admin-form-group select,
+.admin-form-group textarea {
+  width: 100%;
+  background: #121216;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #fff;
+  font-size: 14px;
+  transition: border-color 0.3s;
+  outline: none;
+  font-family: inherit;
+}
+
+.admin-form-group input:focus,
+.admin-form-group select:focus,
+.admin-form-group textarea:focus {
+  border-color: #10b981;
+}
+
+.admin-form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.admin-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.admin-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #2a2a2a;
+}
+
+.admin-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-btn.primary {
+  background: #10b981;
+  color: #fff;
+}
+
+.admin-btn.primary:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.admin-btn.secondary {
+  background: #2a2a2a;
+  color: #888;
+}
+
+.admin-btn.secondary:hover {
+  background: #3a3a3a;
+  color: #fff;
+}
+
+.admin-btn.danger {
+  background: #ef4444;
+  color: #fff;
+}
+
+.admin-btn.danger:hover {
+  background: #dc2626;
+}
+
+/* Empty state */
+.admin-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: #1a1a1e;
+  border-radius: 12px;
+  border: 1px solid #2a2a2a;
+}
+
+.admin-empty-state svg {
+  margin-bottom: 16px;
+}
+
+.admin-empty-state p {
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.admin-empty-state .admin-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #10b981;
+  color: #fff;
+}
+
+.admin-empty-state .admin-action-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .versions-table-container .admin-table {
+    display: block;
+    overflow-x: auto;
+  }
+  
+  .admin-form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .admin-modal {
+    width: 95%;
+    max-width: 100%;
+    margin: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-modal-header h3 {
+    font-size: 16px;
+  }
+  
+  .versions-table-container .admin-table td,
+  .versions-table-container .admin-table th {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}

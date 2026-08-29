@@ -1,0 +1,256 @@
+/* src/admin/pages/businesses/BusinessStats.css */
+
+.business-stats-container {
+  padding: 20px 0;
+}
+
+/* Controles de búsqueda y selector */
+.business-stats-controls {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.business-stats-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #1a1a1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 0 12px;
+  min-width: 200px;
+  transition: border-color 0.3s;
+}
+
+.business-stats-search:focus-within {
+  border-color: #10b981;
+}
+
+.business-stats-search svg {
+  color: #666;
+}
+
+.business-stats-search input {
+  background: transparent;
+  border: none;
+  padding: 10px 8px;
+  color: #fff;
+  flex: 1;
+  outline: none;
+  font-size: 14px;
+}
+
+.business-stats-search input::placeholder {
+  color: #666;
+}
+
+.business-stats-selector {
+  min-width: 250px;
+}
+
+.business-stats-selector select {
+  width: 100%;
+  background: #1a1a1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: #fff;
+  cursor: pointer;
+  outline: none;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.business-stats-selector select:focus {
+  border-color: #10b981;
+}
+
+.business-stats-selector select option {
+  background: #1a1a1e;
+  padding: 8px;
+}
+
+/* Header del negocio */
+.business-stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #1a1a1e;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  border: 1px solid #2a2a2a;
+}
+
+.business-stats-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.business-stats-header p {
+  margin: 4px 0 0;
+  color: #888;
+  font-size: 14px;
+}
+
+.business-stats-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Badges de estado */
+.status-badge {
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.active {
+  background: #10b98120;
+  color: #10b981;
+  border: 1px solid #10b98140;
+}
+
+.status-badge.inactive {
+  background: #ef444420;
+  color: #ef4444;
+  border: 1px solid #ef444440;
+}
+
+.status-badge.pending {
+  background: #f59e0b20;
+  color: #f59e0b;
+  border: 1px solid #f59e0b40;
+}
+
+.business-stats-view-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #2a2a2a;
+  border: none;
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.business-stats-view-btn:hover {
+  background: #3a3a3a;
+  transform: translateY(-1px);
+}
+
+/* Módulos del negocio */
+.business-stats-modules {
+  margin-top: 24px;
+}
+
+.business-stats-modules h3 {
+  color: #fff;
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.business-modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.business-module-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #1a1a1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 12px 16px;
+  transition: all 0.2s;
+}
+
+.business-module-card:hover {
+  border-color: #3a3a3a;
+  transform: translateY(-2px);
+}
+
+.business-module-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.business-module-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.business-module-name {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.business-module-status {
+  color: #10b981;
+  font-size: 12px;
+}
+
+.business-empty-modules {
+  color: #666;
+  text-align: center;
+  padding: 40px;
+  grid-column: 1 / -1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .business-stats-controls {
+    flex-direction: column;
+  }
+  
+  .business-stats-selector {
+    min-width: unset;
+    width: 100%;
+  }
+  
+  .business-stats-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .business-stats-status {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .business-modules-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .business-stats-header h2 {
+    font-size: 18px;
+  }
+  
+  .business-stats-header p {
+    font-size: 13px;
+  }
+}

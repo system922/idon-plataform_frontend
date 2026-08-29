@@ -23,14 +23,17 @@ export default function BusinessTypes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos');
 
+  // ✅ MISMO PATRÓN QUE Payments Y EmailTemplates
   const load = useCallback(async () => {
     try {
       setLoading(true);
       const r = await adminApi.get('/admin/business-types');
-      setTypes(Array.isArray(r) ? r : (r.data || []));
+      setTypes(r.data || r || []);
       setError(null);
     } catch (e) {
+      console.error('❌ Error loading business types:', e);
       setError(e.message);
+      setTypes([]);
     } finally {
       setLoading(false);
     }
@@ -57,6 +60,7 @@ export default function BusinessTypes() {
       await load();
       alert.success('Tipo de negocio eliminado correctamente', '✅ Éxito');
     } catch (e) {
+      console.error('❌ Error deleting business type:', e);
       alert.error('Error: ' + e.message);
     }
   };
@@ -156,26 +160,28 @@ export default function BusinessTypes() {
   ];
 
   const toolbar = (
-    <div className="business-types-toolbar">
-      <CustomCombobox
-        options={statusOptions}
-        value={filterStatus}
-        onChange={setFilterStatus}
-        placeholder="Filtrar por estado"
-        filterable={false}
-        size="sm"
-        className="business-types-filter"
-      />
-      <ButtonGroup>
-        <IconTextButton
-          variant="success"
-          size="md"
-          icon={<FiPlus size={13} />}
-          onClick={() => setModal('new')}
-        >
-          Nuevo tipo
-        </IconTextButton>
-      </ButtonGroup>
+    <div className="features-toolbar">
+      <div className="features-filters">
+        <CustomCombobox
+          options={statusOptions}
+          value={filterStatus}
+          onChange={setFilterStatus}
+          placeholder="Filtrar por estado"
+          filterable={false}
+          size="sm"
+          className="features-filter"
+        />
+        <ButtonGroup>
+          <IconTextButton
+            variant="success"
+            size="md"
+            icon={<FiPlus size={13} />}
+            onClick={() => setModal('new')}
+          >
+            Nuevo tipo
+          </IconTextButton>
+        </ButtonGroup>
+      </div>
     </div>
   );
 
@@ -204,6 +210,20 @@ export default function BusinessTypes() {
       {error && (
         <div className="alert alert-error">
           <FiAlertCircle size={16} /> {error}
+          <button 
+            onClick={load}
+            style={{
+              marginLeft: '12px',
+              background: 'transparent',
+              border: '1px solid currentColor',
+              borderRadius: '4px',
+              padding: '4px 12px',
+              cursor: 'pointer',
+              color: 'inherit'
+            }}
+          >
+            Reintentar
+          </button>
         </div>
       )}
 
@@ -273,6 +293,7 @@ function BusinessTypeModal({ item, onClose, onSaved }) {
       onSaved();
       onClose();
     } catch (e) {
+      console.error('❌ Error saving business type:', e);
       setError(e.message || 'Error al guardar');
     } finally {
       setSaving(false);

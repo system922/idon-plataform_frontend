@@ -383,16 +383,9 @@ export const SessionProvider = ({ children }) => {
       
       return { success: false, error: 'Formato de respuesta inválido' };
     } catch (error) {
-      const backendMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.response?.data?.data?.message ||
-        error.message ||
-        'Error en el login';
-
-      return {
-        success: false,
-        error: backendMessage
+      return { 
+        success: false, 
+        error: error.response?.data?.message || error.response?.data?.error || error.message || 'Error en el login' 
       };
     }
   };

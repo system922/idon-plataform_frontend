@@ -1,0 +1,311 @@
+/* src/admin/pages/commercial/PendingPayments.css */
+
+.pending-payments-container {
+  padding: 20px 0;
+}
+
+/* Resumen de pagos pendientes */
+.pending-payments-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.pending-summary-card {
+  background: #1a1a1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pending-summary-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pending-summary-icon.overdue {
+  background: #ef444420;
+  color: #ef4444;
+}
+
+.pending-summary-icon.due-soon {
+  background: #f59e0b20;
+  color: #f59e0b;
+}
+
+.pending-summary-icon.total {
+  background: #3b82f620;
+  color: #3b82f6;
+}
+
+.pending-summary-icon.amount {
+  background: #10b98120;
+  color: #10b981;
+}
+
+.pending-summary-info {
+  flex: 1;
+}
+
+.pending-summary-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.pending-summary-label {
+  font-size: 13px;
+  color: #888;
+}
+
+/* Filtros */
+.pending-payments-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.pending-payments-filters select,
+.pending-payments-filters input {
+  background: #1a1a1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.pending-payments-filters select:focus,
+.pending-payments-filters input:focus {
+  border-color: #10b981;
+}
+
+.pending-payments-filters select {
+  min-width: 150px;
+  cursor: pointer;
+}
+
+.pending-payments-filters select option {
+  background: #1a1a1e;
+}
+
+.pending-payments-filters .filter-search {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Tabla de pagos pendientes */
+.pending-payments-table-container {
+  background: #1a1a1e;
+  border-radius: 12px;
+  border: 1px solid #2a2a2a;
+  overflow: hidden;
+}
+
+.pending-payments-table-container .admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pending-payments-table-container .admin-table thead {
+  background: #121216;
+}
+
+.pending-payments-table-container .admin-table th {
+  padding: 14px 16px;
+  text-align: left;
+  color: #888;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.pending-payments-table-container .admin-table td {
+  padding: 14px 16px;
+  color: #e0e0e0;
+  font-size: 14px;
+  border-bottom: 1px solid #2a2a2a;
+  vertical-align: middle;
+}
+
+.pending-payments-table-container .admin-table tbody tr {
+  transition: background 0.2s;
+}
+
+.pending-payments-table-container .admin-table tbody tr:hover {
+  background: #1f1f23;
+}
+
+.pending-payments-table-container .admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Badges de estado de pago */
+.payment-status-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.payment-status-badge.overdue {
+  background: #ef444420;
+  color: #ef4444;
+}
+
+.payment-status-badge.due_soon {
+  background: #f59e0b20;
+  color: #f59e0b;
+}
+
+.payment-status-badge.pending {
+  background: #3b82f620;
+  color: #3b82f6;
+}
+
+.payment-status-badge.suspended {
+  background: #8b5cf620;
+  color: #8b5cf6;
+}
+
+/* Acciones en tabla */
+.pending-payments-table-container .admin-actions-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.payment-action-btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.payment-action-btn.send-reminder {
+  background: #3b82f620;
+  color: #3b82f6;
+}
+
+.payment-action-btn.send-reminder:hover {
+  background: #3b82f640;
+}
+
+.payment-action-btn.mark-paid {
+  background: #10b98120;
+  color: #10b981;
+}
+
+.payment-action-btn.mark-paid:hover {
+  background: #10b98140;
+}
+
+.payment-action-btn.view {
+  background: #2a2a2a;
+  color: #888;
+}
+
+.payment-action-btn.view:hover {
+  background: #3a3a3a;
+  color: #fff;
+}
+
+/* Días restantes */
+.days-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.days-badge.critical {
+  background: #ef444420;
+  color: #ef4444;
+}
+
+.days-badge.warning {
+  background: #f59e0b20;
+  color: #f59e0b;
+}
+
+.days-badge.info {
+  background: #3b82f620;
+  color: #3b82f6;
+}
+
+/* Empty state */
+.pending-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: #1a1a1e;
+  border-radius: 12px;
+  border: 1px solid #2a2a2a;
+}
+
+.pending-empty-state svg {
+  margin-bottom: 16px;
+  color: #444;
+}
+
+.pending-empty-state p {
+  color: #666;
+  font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pending-payments-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .pending-payments-filters {
+    flex-direction: column;
+  }
+  
+  .pending-payments-filters .filter-search {
+    min-width: unset;
+  }
+  
+  .pending-payments-table-container .admin-table {
+    display: block;
+    overflow-x: auto;
+  }
+  
+  .pending-payments-table-container .admin-table td,
+  .pending-payments-table-container .admin-table th {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pending-payments-summary {
+    grid-template-columns: 1fr;
+  }
+  
+  .pending-summary-card {
+    padding: 12px 16px;
+  }
+  
+  .pending-summary-value {
+    font-size: 18px;
+  }
+}

@@ -6,7 +6,8 @@ import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Input from '../../components/General/Input';
 import {
   FiCheck, FiRefreshCw, FiAlertCircle, FiMessageCircle,
-  FiDollarSign, FiPercent, FiGlobe, FiShield
+  FiDollarSign, FiPercent, FiGlobe, FiShield,
+  FiMail, FiGlobe as FiGlobeIcon, FiMapPin
 } from 'react-icons/fi';
 import { adminApi } from '../../config/api';
 
@@ -21,7 +22,12 @@ const F = ({ label, hint, children }) => (
 export default function Settings() {
   const alert = useAlert();
   const [cfg, setCfg] = useState(null);
-  const [platform, setPlatform] = useState({ whatsapp_support_number: '' });
+  const [platform, setPlatform] = useState({ 
+    whatsapp_support_number: '',
+    contact_email: '',
+    contact_website: '',
+    contact_location: ''
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -36,7 +42,12 @@ export default function Settings() {
         adminApi.get('/admin/platform-settings'),
       ]);
       setCfg(fiscal.data || {});
-      setPlatform(plat.data || { whatsapp_support_number: '' });
+      setPlatform(plat.data || { 
+        whatsapp_support_number: '',
+        contact_email: '',
+        contact_website: '',
+        contact_location: ''
+      });
       setError(null);
     } catch (e) {
       setError(e.message);
@@ -71,7 +82,7 @@ export default function Settings() {
     setSavingWa(true);
     try {
       await adminApi.put('/admin/platform-settings', platform);
-      alert.success('Número de soporte guardado correctamente', '✅ Éxito');
+      alert.success('Configuración de soporte guardada correctamente', '✅ Éxito');
     } catch (e) {
       alert.error('Error: ' + e.message);
     } finally {
@@ -265,6 +276,7 @@ export default function Settings() {
             </div>
           </div>
 
+          {/* ===== SOPORTE IDON — WHATSAPP ===== */}
           <div className="settings-whatsapp-card">
             <div className="settings-card-header">
               <FiMessageCircle size={16} className="settings-whatsapp-icon" />
@@ -275,6 +287,8 @@ export default function Settings() {
                 Configura el número de WhatsApp de soporte IDON. Este número se incluirá en el mensaje de bienvenida
                 que se envía automáticamente al dueño del negocio cuando crea su cuenta en la plataforma.
               </p>
+
+              {/* ===== Número WhatsApp ===== */}
               <F
                 label="Número WhatsApp Soporte IDON"
                 hint="Formato internacional sin espacios ni guiones. Ej: 593987654321"
@@ -291,12 +305,94 @@ export default function Settings() {
                   />
                 </div>
               </F>
+
               {platform.whatsapp_support_number && (
                 <div className="settings-whatsapp-preview">
                   <span className="settings-whatsapp-preview-label">Vista previa del enlace:</span>
                   <span>wa.me/{platform.whatsapp_support_number.replace(/\D/g, '')}</span>
                 </div>
               )}
+
+              {/* ===== INFORMACIÓN DE CONTACTO (sin Teléfono) ===== */}
+              <div className="settings-contact-divider">
+                <span>Información de Contacto</span>
+              </div>
+
+              {/* Email */}
+              <F
+                label="Correo Electrónico"
+                hint="Email de soporte y contacto general"
+              >
+                <div className="settings-contact-input">
+                  <span className="settings-contact-emoji">✉️</span>
+                  <Input
+                    type="email"
+                    value={platform.contact_email || ''}
+                    onChange={(value) => setPlatform(p => ({ ...p, contact_email: value }))}
+                    placeholder="soporte@idonplataform.site"
+                    size="md"
+                    className="settings-contact-field"
+                  />
+                </div>
+              </F>
+
+              {platform.contact_email && (
+                <div className="settings-contact-preview">
+                  <span className="settings-contact-preview-label">✉️ Email:</span>
+                  <span>{platform.contact_email}</span>
+                </div>
+              )}
+
+              {/* Sitio Web */}
+              <F
+                label="Sitio Web"
+                hint="URL del sitio web de IDON"
+              >
+                <div className="settings-contact-input">
+                  <span className="settings-contact-emoji">🌐</span>
+                  <Input
+                    type="url"
+                    value={platform.contact_website || ''}
+                    onChange={(value) => setPlatform(p => ({ ...p, contact_website: value }))}
+                    placeholder="www.idonplataform.site"
+                    size="md"
+                    className="settings-contact-field"
+                  />
+                </div>
+              </F>
+
+              {platform.contact_website && (
+                <div className="settings-contact-preview">
+                  <span className="settings-contact-preview-label">🌐 Web:</span>
+                  <span>{platform.contact_website}</span>
+                </div>
+              )}
+
+              {/* Ubicación */}
+              <F
+                label="Ubicación"
+                hint="Ciudad y país de la oficina principal"
+              >
+                <div className="settings-contact-input">
+                  <span className="settings-contact-emoji">📍</span>
+                  <Input
+                    type="text"
+                    value={platform.contact_location || ''}
+                    onChange={(value) => setPlatform(p => ({ ...p, contact_location: value }))}
+                    placeholder="Santo Domingo, Ecuador"
+                    size="md"
+                    className="settings-contact-field"
+                  />
+                </div>
+              </F>
+
+              {platform.contact_location && (
+                <div className="settings-contact-preview">
+                  <span className="settings-contact-preview-label">📍 Ubicación:</span>
+                  <span>{platform.contact_location}</span>
+                </div>
+              )}
+
               <div className="settings-whatsapp-actions">
                 <IconTextButton
                   variant="success"
@@ -306,7 +402,7 @@ export default function Settings() {
                   disabled={savingWa}
                   loading={savingWa}
                 >
-                  {savingWa ? 'Guardando...' : 'Guardar número de soporte'}
+                  {savingWa ? 'Guardando...' : 'Guardar configuración de soporte'}
                 </IconTextButton>
               </div>
             </div>
@@ -331,7 +427,7 @@ export default function Settings() {
               disabled={saving || !cfg}
               loading={saving}
             >
-              {saving ? 'Guardando...' : 'Guardar configuración'}
+              {saving ? 'Guardando...' : 'Guardar configuración fiscal'}
             </IconTextButton>
           </div>
         </>

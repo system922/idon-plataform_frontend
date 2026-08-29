@@ -1,0 +1,289 @@
+/* src/admin/pages/global/ReportsGenerator.css */
+
+.reports-container {
+  padding: 20px 0;
+}
+
+/* Tipos de reportes */
+.reports-types-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.report-type-card {
+  background: #1a1a1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.report-type-card:hover {
+  border-color: #10b981;
+  transform: translateY(-2px);
+}
+
+.report-type-card.active {
+  border-color: #10b981;
+  background: #10b98110;
+}
+
+.report-type-card .report-type-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.report-type-card .report-type-name {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.report-type-card .report-type-desc {
+  color: #666;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Configuración de reporte */
+.report-config {
+  background: #1a1a1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.report-config h3 {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.report-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.report-config-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.report-config-item label {
+  color: #888;
+  font-size: 13px;
+}
+
+.report-config-item select,
+.report-config-item input {
+  background: #121216;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.report-config-item select:focus,
+.report-config-item input:focus {
+  border-color: #10b981;
+}
+
+.report-config-item select option {
+  background: #121216;
+}
+
+.report-config-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #2a2a2a;
+}
+
+/* Tabla de reportes generados */
+.reports-history {
+  background: #1a1a1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.reports-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.reports-history-header h3 {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.reports-history-header .report-count {
+  color: #888;
+  font-size: 14px;
+}
+
+.reports-history-table .admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.reports-history-table .admin-table thead {
+  background: #121216;
+}
+
+.reports-history-table .admin-table th {
+  padding: 12px 16px;
+  text-align: left;
+  color: #888;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.reports-history-table .admin-table td {
+  padding: 12px 16px;
+  color: #e0e0e0;
+  font-size: 14px;
+  border-bottom: 1px solid #2a2a2a;
+  vertical-align: middle;
+}
+
+.reports-history-table .admin-table tbody tr {
+  transition: background 0.2s;
+}
+
+.reports-history-table .admin-table tbody tr:hover {
+  background: #1f1f23;
+}
+
+.reports-history-table .admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Badge de formato */
+.report-format-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.report-format-badge.pdf {
+  background: #ef444420;
+  color: #ef4444;
+}
+
+.report-format-badge.excel {
+  background: #10b98120;
+  color: #10b981;
+}
+
+.report-format-badge.csv {
+  background: #3b82f620;
+  color: #3b82f6;
+}
+
+/* Acciones en tabla */
+.reports-history-table .admin-actions-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.report-action-icon {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.report-action-icon:hover {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.report-action-icon.download:hover {
+  background: #10b98120;
+  color: #10b981;
+}
+
+.report-action-icon.delete:hover {
+  background: #ef444420;
+  color: #ef4444;
+}
+
+/* Empty state */
+.reports-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.reports-empty-state svg {
+  margin-bottom: 16px;
+  color: #444;
+}
+
+.reports-empty-state p {
+  color: #666;
+  font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .reports-types-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .report-config-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .report-config-actions {
+    flex-direction: column;
+  }
+  
+  .reports-history-table .admin-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .reports-types-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .reports-history-header {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+}

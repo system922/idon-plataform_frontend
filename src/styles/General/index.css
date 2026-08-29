@@ -31,6 +31,13 @@
 @import './Pages/AccessDeniedPage.css';
 
 
+@import './Pages/BusinessStats.css';
+@import './Pages/VersionsManager.css';
+@import './Pages/UpdatesManager.css';
+@import './Pages/PendingPayments.css';
+@import './Pages/ActivityLogs.css';
+@import './Pages/BackupsManager.css';
+
 @import './Pages/AdminDashboardPage.css';
 @import './Pages/AdminRequestsPage.css';
 @import './Pages/AdminClientsPage.css';

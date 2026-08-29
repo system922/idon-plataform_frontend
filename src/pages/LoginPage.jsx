@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useSession } from '../context/SessionContext';
+import { useAlert } from '../components/ConfirmContext';
 import { api } from '../config/api';
 import {
   FiLock, FiMail, FiUser,
@@ -12,7 +13,7 @@ import {
 import Footer from '../components/common/Footer';
 import Input from '../components/General/Input';
 import CustomCombobox from '../components/General/CustomCombobox';
-import { IconTextButton } from '../components/General/Button';
+import { IconTextButton, ButtonGroup } from '../components/General/Button';
 
 const SYSTEM_LOGO_URL = process.env.PUBLIC_URL + '/system.svg';
 
@@ -21,6 +22,8 @@ export default function LoginPage() {
   const location = useLocation();
   const { businessSlug: routeBusinessSlug } = useParams();
   const { user, login, selectBusiness, isAuthenticated, requiresBusinessSelection } = useSession();
+
+  const alert = useAlert();
 
   /* ─── Screen state ─── */
   const [isLogin, setIsLogin] = useState(true);
@@ -426,10 +429,12 @@ export default function LoginPage() {
           navigate('/app', { replace: true });
         }
       } else {
-        showError(result.error || 'Credenciales inválidas', 'general');
+        const mappedError = getLoginErrorState(result.error);
+        showError(mappedError.message, mappedError.type);
       }
     } catch (err) {
-      showError(err?.message || 'Error al iniciar sesión', 'general');
+      const mappedError = getLoginErrorState(err?.response?.data?.message || err?.message || 'Error al iniciar sesión');
+      showError(mappedError.message, mappedError.type);
     } finally {
       setLoading(false);
     }
@@ -480,7 +485,10 @@ export default function LoginPage() {
       const response = await api.post('/register', body);
       
       if (response.data?.ok) {
-        showError('¡Solicitud enviada exitosamente! Un administrador la revisará en breve.', 'success');
+        await alert.success(
+          `¡Solicitud enviada exitosamente! Un administrador la revisará en breve.`,
+          'Registro de Negocio'
+        );
         setTimeout(() => {
           setRegForm({
             firstName: '', lastName: '', email: '', phone: '',
@@ -558,6 +566,41 @@ export default function LoginPage() {
       case 'success': return <FiCheckCircle size={16} />;
       default: return <FiAlertCircle size={16} />;
     }
+  };
+
+  const getLoginErrorState = (message = '') => {
+    const text = String(message || '').trim();
+    if (!text) {
+      return { message: 'Credenciales inválidas', type: 'user' };
+    }
+
+    const normalized = text.toLowerCase();
+
+    if (
+      normalized.includes('usuario no registrado') ||
+      normalized.includes('user not registered') ||
+      normalized.includes('no existe') ||
+      normalized.includes('no registrado') ||
+      normalized.includes('not found')
+    ) {
+      return { message: text, type: 'user' };
+    }
+
+    if (
+      normalized.includes('invalid credentials') ||
+      normalized.includes('credenciales inválidas') ||
+      normalized.includes('contraseña incorrecta') ||
+      normalized.includes('password') ||
+      normalized.includes('contraseña')
+    ) {
+      return { message: 'La contraseña es incorrecta.', type: 'password' };
+    }
+
+    if (normalized.includes('inactivo')) {
+      return { message: text, type: 'user' };
+    }
+
+    return { message: text, type: 'general' };
   };
 
   return (
@@ -802,9 +845,76 @@ export default function LoginPage() {
                         />
                       </div>
 
-                      <button type="submit" disabled={loading} className="btn-submit">
-                        {loading ? <><span className="spinner" /> Iniciando...</> : <>Continuar <FiArrowRight size={17} /></>}
-                      </button>
+                     {/* ─── Fila con botón centrado y enlace a la derecha ─── */}
+                      <div style={{ 
+                        display: 'grid',
+                        gridTemplateColumns: '1fr auto 1fr',
+                        alignItems: 'center',
+                        gap: '16px'
+                      }}>
+                        {/* Espacio a la izquierda */}
+
+                        {/* Botón "Continuar" centrado */}
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'center',
+                          gridColumn: '2'
+                        }}>
+                          <IconTextButton
+                            variant="success"
+                            size="md"
+                            inline={false}
+                            icon={<FiArrowRight size={17} />}
+                            onClick={handleLoginSubmit}
+                            disabled={loading}
+                            title="continuar"
+                            block={true}
+                            style={{ 
+                              maxWidth: '110px',
+                              flexShrink: 0
+                            }}
+                          >
+                            {loading ? (
+                              <>
+                                <span className="spinner" /> Iniciando...
+                              </>
+                            ) : (
+                              'Continuar'
+                            )}
+                          </IconTextButton>
+                        </div>
+
+                        {/* Enlace "Olvidé mi contraseña" a la derecha */}
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'flex-end',
+                          gridColumn: '3'
+                        }}>
+                          <IconTextButton
+                            variant="link"
+                            size="sm"
+                            inline={true}
+                            icon={<FiLock size={14} />}
+                            onClick={() => navigate('/forgot-password')}
+                            title="recuperar contraseña"
+                            style={{
+                              color: 'var(--text-primary)',
+                              fontSize: '0.65rem',
+                              fontWeight: 500,
+                              background: 'transparent',
+                              border: 'none',
+                              padding: '0px',
+                              cursor: 'pointer',
+                              textDecoration: 'underline',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            ¿Olvidaste tu contraseña?
+                          </IconTextButton>
+                        </div>
+                      </div>
+
+                      
                     </form>
                   ) : (
                     <form
@@ -1037,37 +1147,52 @@ export default function LoginPage() {
                         </div>
                       )}
 
-                      <div className="step-buttons">
+                      <ButtonGroup>
                         {registroStep > 1 && (
                           <IconTextButton
-                            variant="blue"
-                            size="sm"
+                            variant=""
+                            size="md"
                             inline={true}
                             icon={<FiArrowLeft size={12} />}
                             onClick={handlePrevStep}
                             title="atrás"
-                            >
+                          >
                             Atrás
                           </IconTextButton>
                         )}
+                        
                         {registroStep < 3 ? (
-
                           <IconTextButton
                             variant="success"
-                            size="sm"
+                            size="md"
                             inline={true}
                             icon={<FiArrowRight size={12} />}
                             onClick={handleNextStep} 
                             title="siguiente"
-                            >
+                          >
                             Siguiente
                           </IconTextButton>
                         ) : (
-                          <button type="submit" disabled={loading || !isStep3Valid()} className="btn-submit">
-                            {loading ? <><span className="spinner" /> Registrando...</> : <>Crear Cuenta <FiArrowRight size={17} /></>}
-                          </button>
+                          <IconTextButton
+                            variant="success"
+                            size="md"
+                            inline={true}
+                            icon={<FiArrowRight size={17} />}
+                            onClick={handleRegisterSubmit}
+                            disabled={loading || !isStep3Valid()}
+                            title="crear cuenta"
+                            type="submit"
+                          >
+                            {loading ? (
+                              <>
+                                <span className="spinner" /> Registrando...
+                              </>
+                            ) : (
+                              'Crear Cuenta'
+                            )}
+                          </IconTextButton>
                         )}
-                      </div>
+                      </ButtonGroup>
                     </form>
                   )}
                 </>

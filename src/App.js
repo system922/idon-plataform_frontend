@@ -9,12 +9,25 @@ import BlogPage from './pages/BlogPage';
 
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+
 import AdminDashboard from './pages/admin_idon/AdminDashboard';
 import './App.css';
 import './styles/General/index.css';
 import { SessionProvider, useSession } from './context/SessionContext';
 import { api } from './config/api';
 import AdminLayout from './admin/layout/AdminLayout';
+
+
+import BusinessStats from './pages/admin_idon/BusinessStats';
+import VersionsManager from './pages/admin_idon/VersionsManager';
+import UpdatesManager from './pages/admin_idon/UpdatesManager';
+import PendingPayments from './pages/admin_idon/PendingPayments';
+import ActivityLogs from './pages/admin_idon/ActivityLogs';
+import BackupsManager from './pages/admin_idon/BackupsManager';
+import ReportsGenerator from './pages/admin_idon/ReportsGenerator';
+
 import AdminIdonNews from './pages/admin_idon/AdminIdonNews';
 import Features from './pages/admin_idon/Features';
 import Templates from './pages/admin_idon/Templates';
@@ -69,9 +82,20 @@ function useRoutePersistence() {
       const currentPath = location.pathname + location.search;
       
       const excludeRoutes = [
-        '/', '/login', '/register', '/precios', '/contacto', '/blog',
-        '/pending-approval', '/app/inactive', '/app/no-access', '/app/payment-pending',
-        '/terms-and-conditions', '/privacy-policy'
+        '/', 
+        '/login', 
+        '/register', 
+        '/precios', 
+        '/contacto', 
+        '/blog',
+        '/pending-approval', 
+        '/app/inactive', 
+        '/app/no-access', 
+        '/app/payment-pending',
+        '/terms-and-conditions', 
+        '/privacy-policy', 
+        '/forgot-password', 
+        '/reset-password'
       ];
       
       const shouldExclude = excludeRoutes.some(route => currentPath.includes(route));
@@ -138,7 +162,13 @@ function useBusinessStatus() {
 
   useEffect(() => {
     const checkStatus = async () => {
-      const publicRoutes = ['/login', '/register', '/terms-and-conditions', '/privacy-policy'];
+      const publicRoutes = [
+        '/login', 
+        '/register', 
+        '/terms-and-conditions', 
+        '/privacy-policy', 
+        '/forgot-password', 
+        '/reset-password'];
       
       if (publicRoutes.some(route => location.pathname.includes(route))) {
         setLoading(false);
@@ -330,8 +360,15 @@ function RegisterPageWrapper() {
 function AppRoutes() {
   const { user, logout, isAuthenticated, requiresBusinessSelection } = useSession();
   const location = useLocation();
+
+  // NO redirigir en estas páginas de autenticación
+  const isAuthPage = location.pathname === '/login' || 
+                     location.pathname === '/register' ||
+                     location.pathname === '/forgot-password' ||
+                     location.pathname === '/reset-password';
   
-  const shouldRedirectFromAuthPage = isAuthenticated && !requiresBusinessSelection;
+  const shouldRedirectFromAuthPage = isAuthenticated && !requiresBusinessSelection && !isAuthPage;
+  
   
   const getRedirectPath = () => {
     if (isAdminUser(user)) {
@@ -356,6 +393,19 @@ function AppRoutes() {
             <LoginPage />
           )
         }
+      />
+      <Route 
+        path="/forgot-password" 
+        element={<ForgotPasswordPage />
+
+        } 
+      />
+      
+      <Route 
+        path="/reset-password" 
+        element={<ResetPasswordPage />
+
+        } 
       />
 
       {/* Register */}
@@ -431,22 +481,45 @@ function AppRoutes() {
         <Route path="/admin/*" element={
           <AdminLayout user={user} onLogout={logout}>
             <Routes>
+              {/* ===== DASHBOARD ===== */}
               <Route path="dashboard" element={<AdminDashboard user={user} onLogout={logout} />} />
+
+              {/* ===== NEGOCIOS ===== */}
+              <Route path="requests" element={<Requests />} />
               <Route path="businesses" element={<Clientes />} />
+              <Route path="business-types" element={<BusinessTypes />} />
+              <Route path="business-stats" element={<BusinessStats />} />
+
+              {/* ===== SISTEMA ===== */}
               <Route path="modules" element={<Modulos />} />
-              <Route path="idon_news" element={<AdminIdonNews />} />
               <Route path="features" element={<Features />} />
-              <Route path="templates" element={<Templates />} />
+              <Route path="versions" element={<VersionsManager />} />
+              <Route path="updates" element={<UpdatesManager />} />
+
+              {/* ===== COMERCIAL ===== */}
               <Route path="plans" element={<Plans />} />
               <Route path="payments" element={<Payments />} />
+              <Route path="pending-payments" element={<PendingPayments />} />
+              <Route path="email-templates" element={<EmailTemplatesPage />} />
+              <Route path="idon_news" element={<AdminIdonNews />} />
+
+              {/* ===== USUARIOS ===== */}
               <Route path="users" element={<Users />} />
               <Route path="roles" element={<Roles />} />
+              <Route path="activity-logs" element={<ActivityLogs />} />
+
+              {/* ===== GLOBAL ===== */}
               <Route path="settings" element={<Settings />} />
               <Route path="audit" element={<Audit />} />
-              <Route path="requests" element={<Requests />} />
-              <Route path="business-types" element={<BusinessTypes />} />
-              <Route path="email-templates" element={<EmailTemplatesPage />} />
+              <Route path="backups" element={<BackupsManager />} />
+              <Route path="reports" element={<ReportsGenerator />} />
+
+              {/* ===== PERFIL ===== */}
               <Route path="profile" element={<ProfilePage user={user} />} />
+
+              {/* ===== REDIRECCIÓN ===== */}
+              <Route path="" element={<Navigate to="dashboard" replace />} />
+              <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Routes>
           </AdminLayout>
         } />
@@ -485,6 +558,8 @@ function AppContent() {
   const isPublicRoute = location.pathname === '/' ||
                         location.pathname === '/login' ||
                         location.pathname === '/register' ||
+                        location.pathname === '/forgot-password' ||
+                        location.pathname === '/reset-password' ||
                         location.pathname === '/terms-and-conditions' ||
                         location.pathname === '/privacy-policy' ||
                         location.pathname.startsWith('/pending-approval') ||
