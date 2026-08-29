@@ -87,25 +87,53 @@ export default function ResetPasswordPage() {
     return () => clearInterval(id);
   }, [vpSlides.length]);
 
+  // ✅ VALIDACIÓN DEL TOKEN CON LOGS CORREGIDA
   useEffect(() => {
+    console.log('🔍 [ResetPasswordPage] useEffect - token:', token);
+    
     if (!token) {
+      console.warn('⚠️ [ResetPasswordPage] No hay token en la URL');
       setValidating(false);
       setTokenValid(false);
       return;
     }
 
     const validateToken = async () => {
+      console.log('🔄 [ResetPasswordPage] Iniciando validación del token...');
+      console.log('📝 [ResetPasswordPage] Token a validar:', token.substring(0, 30) + '...');
+      
       try {
+        console.log('📤 [ResetPasswordPage] Enviando petición a /auth/validate-reset-token');
         const response = await api.post('/auth/validate-reset-token', { token });
-        if (response.data?.ok) {
+        
+        console.log('📥 [ResetPasswordPage] Respuesta completa:', JSON.stringify(response.data, null, 2));
+        console.log('📥 [ResetPasswordPage] response.data?.ok:', response.data?.ok);
+        console.log('📥 [ResetPasswordPage] response.data?.data:', response.data?.data);
+        console.log('📥 [ResetPasswordPage] response.data?.data?.valid:', response.data?.data?.valid);
+        console.log('📥 [ResetPasswordPage] response.status:', response.status);
+        
+        // ✅ VERIFICAR CORRECTAMENTE LA RESPUESTA
+        const isValid = response.data?.ok === true && response.data?.data?.valid === true;
+        
+        console.log('✅ [ResetPasswordPage] Token válido:', isValid);
+        
+        if (isValid) {
           setTokenValid(true);
           setEmail(response.data.data?.email || '');
+          console.log('📧 [ResetPasswordPage] Email obtenido:', response.data.data?.email);
         } else {
           setTokenValid(false);
+          console.warn('❌ [ResetPasswordPage] Token INVÁLIDO');
         }
-      } catch {
+      } catch (error) {
+        console.error('❌ [ResetPasswordPage] Error en validación del token:', error);
+        console.error('❌ [ResetPasswordPage] error.response:', error.response);
+        console.error('❌ [ResetPasswordPage] error.response?.data:', error.response?.data);
+        console.error('❌ [ResetPasswordPage] error.response?.status:', error.response?.status);
         setTokenValid(false);
       } finally {
+        // ✅ IMPORTANTE: Siempre marcar validación como completada
+        console.log('🏁 [ResetPasswordPage] Validación finalizada, tokenValid:', tokenValid);
         setValidating(false);
       }
     };
@@ -116,16 +144,21 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('🔐 [ResetPasswordPage] Intentando restablecer contraseña...');
+    
     if (password.length < 6) {
+      console.warn('⚠️ [ResetPasswordPage] Contraseña muy corta:', password.length);
       await alert.error('La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
     if (password !== confirmPassword) {
+      console.warn('⚠️ [ResetPasswordPage] Las contraseñas no coinciden');
       await alert.error('Las contraseñas no coinciden');
       return;
     }
 
+    console.log('📤 [ResetPasswordPage] Enviando petición a /auth/reset-password');
     setLoading(true);
     try {
       const response = await api.post('/auth/reset-password', {
@@ -134,17 +167,27 @@ export default function ResetPasswordPage() {
         confirmPassword
       });
 
+      console.log('📥 [ResetPasswordPage] Respuesta reset-password:', response.data);
+
       if (response.data?.ok) {
+        console.log('✅ [ResetPasswordPage] Contraseña actualizada exitosamente');
         setResetSuccess(true);
         await alert.success(
           'Tu contraseña ha sido actualizada exitosamente. Ahora puedes iniciar sesión con tu nueva contraseña.',
           '¡Contraseña actualizada!'
         );
         setTimeout(() => {
+          console.log('🔄 [ResetPasswordPage] Redirigiendo al login...');
           navigate('/login');
         }, 3000);
+      } else {
+        console.warn('❌ [ResetPasswordPage] Error en respuesta:', response.data);
+        await alert.error(response.data?.message || 'Error al restablecer la contraseña');
       }
     } catch (error) {
+      console.error('❌ [ResetPasswordPage] Error en reset-password:', error);
+      console.error('❌ [ResetPasswordPage] error.response:', error.response);
+      console.error('❌ [ResetPasswordPage] error.response?.data:', error.response?.data);
       const message = error?.response?.data?.message || 'Error al restablecer la contraseña';
       await alert.error(message);
     } finally {
