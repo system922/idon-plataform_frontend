@@ -14,6 +14,9 @@ const SCHEMA_NAME_KEY = 'schema_name';
 const PUBLIC_PATHS = [
   '/auth/login',
   '/auth/refresh',
+  '/auth/validate-reset-token',
+  '/auth/reset-password', 
+  '/auth/forgot-password', 
   '/register',
   '/blog',              // ← PARA EL BLOG
   '/business-types',    // ← PARA EL REGISTRO
