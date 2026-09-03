@@ -1,4 +1,4 @@
-import { Route, Navigate } from 'react-router-dom';
+import { Route, Navigate, Routes } from 'react-router-dom';
 import RouteGuard from '../components/RouteGuard';
 import BusinessHome from '../pages/business/BusinessHome';
 import Settings from '../pages/business/CoreSettingsPage';
@@ -85,7 +85,7 @@ import OdontologiaHistorias from '../pages/business/Odontologia/OdontologiaHisto
 import OdontologiaConfiguracion from '../pages/business/Odontologia/OdontologiaConfiguracion';
 import OdontologiaReportes from '../pages/business/Odontologia/OdontologiaReportes';
 
-export const businessRoutes = (
+const businessRoutes = (
   <>
     {/* ── Home del panel ── */}
     <Route index element={<BusinessHome />} />
@@ -1003,3 +1003,7 @@ export const businessRoutes = (
     />
   </>
 );
+
+export default function BusinessRoutes() {
+  return <Routes>{businessRoutes}</Routes>;
+}

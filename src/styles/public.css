@@ -1,0 +1,9 @@
+@import './General/Variablen/general_variables.css';
+@import './General/Layouts/Footer.css';
+@import './General/Components/Buttons.css';
+@import './General/Pages/LandingPage.css';
+@import './General/Pages/LegalPages.css';
+@import './General/Pages/LoginPage.css';
+@import './General/Pages/PendingApprovalPage.css';
+@import './General/Pages/PaymentPendingPage.css';
+@import './General/Pages/AccessDeniedPage.css';

@@ -1,5 +1,5 @@
 // ========== src/App.js ==========
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import LandingPage from './pages/LandingPage';
@@ -14,7 +14,6 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 
 import AdminDashboard from './pages/admin_idon/AdminDashboard';
 import './App.css';
-import './styles/General/index.css';
 import { SessionProvider, useSession } from './context/SessionContext';
 import { api } from './config/api';
 import AdminLayout from './admin/layout/AdminLayout';
@@ -47,7 +46,6 @@ import PublicLayout from './admin/layout/PublicLayout';
 
 // ── Business panel ──────────────────────────────────────────
 import BusinessLayout from './admin/layout/BusinessLayout';
-import { businessRoutes } from './routes/businessRoutes';
 import PendingApprovalPage from './pages/PendingApprovalPage';
 import InactiveUserPage from './pages/InactiveUserPage';
 
@@ -63,6 +61,8 @@ import PaymentPendingPage from './pages/business/PaymentPendingPage';
 import PublicOrderPage from './pages/public/PublicOrderPage';
 import NoAccessPage from './pages/NoAccessPage';
 import LoadingOverlay from './components/General/LoadingOverlay';
+
+const BusinessRoutes = lazy(() => import('./routes/businessRoutes'));
 
 
 // ==================== FUNCIÓN AUXILIAR ====================
@@ -311,7 +311,13 @@ function AppRoutesWrapper() {
 
   // Business Layout
   const realRole = user?.role || user?.userType || 'user';
-  return <BusinessLayout userRole={realRole} />;
+  return (
+    <BusinessLayout userRole={realRole}>
+      <Suspense fallback={<LoadingOverlay message="" />}>
+        <BusinessRoutes />
+      </Suspense>
+    </BusinessLayout>
+  );
 }
 
 // =============================================
@@ -516,9 +522,7 @@ function AppRoutes() {
       )}
 
       {/* App Business */}
-      <Route path="/app/*" element={<AppRouter />}>
-        {businessRoutes}
-      </Route>
+      <Route path="/app/*" element={<AppRouter />} />
 
       {/* 404 */}
       <Route
@@ -557,6 +561,12 @@ function AppContent() {
                         location.pathname.startsWith('/app/no-access') ||
                         location.pathname.endsWith('/qr') ||
                         location.pathname.endsWith('/menu');
+
+  useEffect(() => {
+    if (!isPublicRoute) {
+      import('./styles/General/index.css');
+    }
+  }, [isPublicRoute]);
 
   if (loading && !isPublicRoute) {
     return <LoadingOverlay message="" />;

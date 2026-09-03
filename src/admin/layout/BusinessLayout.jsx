@@ -441,7 +441,7 @@ function ConfirmarCierreModal({ onConfirm, onCancel, cargando }) {
 /* ══════════════════════════════════════════════════════════
    BUSINESS LAYOUT
 ══════════════════════════════════════════════════════════ */
-export default function BusinessLayout() {
+export default function BusinessLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useSession();
@@ -961,7 +961,7 @@ export default function BusinessLayout() {
                 Error de impresora: {printerError}
               </div>
             )}
-            <Outlet />
+            {children || <Outlet />}
           </div>
           <Footer />
         </div>
