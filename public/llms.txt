@@ -1,0 +1,35 @@
+# IDON Control - Software de Gestión para Negocios en Ecuador
+
+IDON es una plataforma de gestión unificada para ventas, inventario y facturación electrónica. Diseñada para emprendedores, MIPYMES y negocios en Ecuador.
+
+## Enlaces principales
+
+- [Inicio](https://www.idonplataform.site/)
+- [Planes y Precios](https://www.idonplataform.site/precios)
+- [Contacto](https://www.idonplataform.site/contacto)
+- [Iniciar Sesión](https://www.idonplataform.site/login)
+- [Registrarse](https://www.idonplataform.site/registro)
+
+## Funcionalidades principales
+
+- **Facturación electrónica SRI**: Emisión automática de comprobantes electrónicos
+- **Control de inventario**: Gestión en tiempo real de stock
+- **POS (Punto de Venta)**: Ventas rápidas desde cualquier dispositivo
+- **CRM integrado**: Gestión de clientes y campañas de email
+- **Reportes ejecutivos**: Indicadores clave desde el celular
+
+## Sectores que usan IDON
+
+- Artesanos y emprendedores
+- Agricultores y productores
+- MIPYMES y comercios
+- Servicios profesionales
+
+## Contacto
+
+- **Sitio web**: https://www.idonplataform.site/
+- **Email**: soporte@idonplataform.site
+
+---
+
+*Última actualización: Septiembre 2026*
