@@ -62,6 +62,8 @@ import { ConfirmProvider } from './components/ConfirmContext';
 import PaymentPendingPage from './pages/business/PaymentPendingPage';
 import PublicOrderPage from './pages/public/PublicOrderPage';
 import NoAccessPage from './pages/NoAccessPage';
+import LoadingOverlay from './components/General/LoadingOverlay';
+
 
 // ==================== FUNCIÓN AUXILIAR ====================
 const isAdminUser = (user) => {
@@ -277,29 +279,17 @@ function AppRoutesWrapper() {
   const { loading, redirectTo, statusData, checked } = useBusinessStatus();
 
   if (loading || !checked) {
-    return (
-      <div className="spinner-overlay">
-        <div className="spinner-brand">
-          <div className="spinner-loader spinner-loader-lg spinner-primary" />
-          <div className="brand-text">
-            ID<span className="highlight">ON</span>
-          </div>
-        </div>
-      </div>
-    );
+    return (<LoadingOverlay 
+      message=""
+      backgroundColor="var(--bg-secondary)"
+    />);
   }
 
   if (redirectTo) {
-    return (
-      <div className="spinner-overlay">
-        <div className="spinner-brand">
-          <div className="spinner-loader spinner-loader-lg spinner-primary" />
-          <div className="brand-text">
-            ID<span className="highlight">ON</span>
-          </div>
-        </div>
-      </div>
-    );
+    return (<LoadingOverlay 
+      message=""
+      backgroundColor="var(--bg-secondary)"
+    />);
   }
 
   // Páginas de estado
@@ -569,7 +559,7 @@ function AppContent() {
                         location.pathname.endsWith('/menu');
 
   if (loading && !isPublicRoute) {
-    return <LoadingSpinner />;
+    return <LoadingOverlay message="" />;
   }
 
   return (
@@ -579,20 +569,6 @@ function AppContent() {
         <GlobalExpenseBubble />
       </DrawerProvider>
     </>
-  );
-}
-
-// ========== COMPONENTE DE LOADING ==========
-function LoadingSpinner() {
-  return (
-    <div className="spinner-overlay">
-      <div className="spinner-brand">
-        <div className="spinner-loader spinner-loader-lg spinner-primary" />
-        <div className="brand-text">
-          ID<span className="highlight">ON</span>
-        </div>
-      </div>
-    </div>
   );
 }
 

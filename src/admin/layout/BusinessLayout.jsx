@@ -27,6 +27,8 @@ import { useAutoPrint } from '../../hooks/useAutoPrint';
 import { useAppVersion } from '../../hooks/useAppVersion';
 import Modal from '../../components/General/Modal';
 import { ButtonGroup, IconTextButton } from '../../components/General/Button';
+// BusinessLayout.jsx - Agregar al inicio del archivo
+import LoadingOverlay from '../../components/General/LoadingOverlay';
 
 /* ── Iconos por código de módulo ── */
 const MOD_ICONS = {
@@ -233,7 +235,7 @@ function buildSidebarMenu(navData) {
       
       const pages = (mod.pages || []).filter(page => page && page.name);
 
-      // ❌ Si no tiene páginas, no mostrar el módulo
+      // Si no tiene páginas, no mostrar el módulo
       if (pages.length === 0) {
         return null;
       }
@@ -243,7 +245,7 @@ function buildSidebarMenu(navData) {
         return rawPath.startsWith('/app') ? rawPath : `/app${rawPath}`;
       };
 
-      // ✅ Si tiene una sola página
+      // Si tiene una sola página
       if (pages.length === 1) {
         const single = pages[0];
         return {
@@ -254,12 +256,12 @@ function buildSidebarMenu(navData) {
         };
       }
 
-      // ✅ Si tiene múltiples páginas, mostrar TODAS como subitems
+      // Si tiene múltiples páginas, mostrar TODAS como subitems
       // La primera página será la principal (ruta de la sección)
       const mainPage = pages[0];
       const mainPath = resolvePath(mainPage?.path, `/app/${mod.code}`);
       
-      // ✅ TODAS las páginas van como subitems (incluyendo la primera)
+      // TODAS las páginas van como subitems (incluyendo la primera)
       const allPages = pages.map(page => ({
         label: page.name || 'Sin nombre',
         path: resolvePath(page.path, `/app/${mod.code}/${toSlug(page.name || '')}`),
@@ -270,7 +272,7 @@ function buildSidebarMenu(navData) {
         section: mod.name,
         icon: modIcon,
         path: mainPath,  // La primera página como ruta por defecto
-        items: allPages, // ✅ TODAS las páginas como subitems
+        items: allPages, // TODAS las páginas como subitems
       };
     })
     .filter(Boolean);
@@ -492,7 +494,7 @@ export default function BusinessLayout() {
   useEffect(() => {
     if (!selectedBiz?.id) return;
     const token = localStorage.getItem('idonToken') || localStorage.getItem('token');
-    const socket = io(process.env.REACT_APP_API_BASE || 'https://idon-plataform-backend.onrender.com', {
+    const socket = io(process.env.REACT_APP_API_BASE, {
       auth: { token, businessId: selectedBiz.id },
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 10,
@@ -593,17 +595,10 @@ export default function BusinessLayout() {
   };
 
   function CargandoCierreModal() {
-    return (
-      <div className="spinner-overlay">
-        <div className="spinner-brand">
-          <div className="spinner-loader spinner-loader-lg spinner-primary" />
-          <div className="brand-text">
-            ID<span className="highlight">ON</span>
-          </div>
-          <div className="sub-text">Preparando cierre de caja...</div>
-        </div>
-      </div>
-    );
+    return (<LoadingOverlay 
+      message="Preparando cierre de caja..."
+      backgroundColor="var(--bg-secondary)"
+    />);
   }
 
   // ═══════════════════════════════════════════════════════
@@ -841,22 +836,14 @@ export default function BusinessLayout() {
       await logout();
       navigate('/login', { replace: true });
     } catch (error) {
-      // Silently handle logout error
     }
   };
 
   if (loading) {
-    return (
-      <div className="spinner-overlay">
-        <div className="spinner-brand">
-          <div className="spinner-loader spinner-loader-lg spinner-primary" />
-          <div className="brand-text">
-            ID<span className="highlight">ON</span>
-          </div>
-          <div className="sub-text">Cargando panel...</div>
-        </div>
-      </div>
-    );
+    return (<LoadingOverlay 
+      message=""
+      backgroundColor="var(--bg-secondary)"
+    />);
   }
 
   return (
@@ -949,7 +936,7 @@ export default function BusinessLayout() {
               <img src="/IDON_2.svg" alt="IDON" className="mobile-topbar-logo" />
               <span className="mobile-topbar-brand-text">
                 <span className="mobile-topbar-name"><span className="logo-white">ID</span><span className="logo-orange">ON</span></span>
-                <span className="mobile-topbar-subtitle">GESTIÓN MULTINEGOCIOS</span>
+                <span className="mobile-topbar-subtitle">Simplemente Eficiente</span>
               </span>
             </span>
             <button

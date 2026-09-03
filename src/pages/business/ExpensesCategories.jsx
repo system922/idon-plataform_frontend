@@ -11,6 +11,8 @@ import { IconTextButton, ButtonGroup } from "../../components/General/Button";
 import SearchInput from "../../components/General/SearchInput";
 import Input from "../../components/General/Input";
 import Modal from "../../components/General/Modal";
+import TableSkeleton from '../../components/General/TableSkeleton';
+
 
 const COLOR_PALETTE = [
   '#2ecc71', '#3498db', '#e74c3c', '#f39c12', '#9b59b6',
@@ -508,6 +510,28 @@ export default function PurchasesCategories() {
       <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
     </button>
   );
+
+  if (loading) {
+    return (
+      <PageTemplate
+        title="CATEGORÍAS DE GASTOS"
+        subtitle="Gestiona las categorías para clasificar tus gastos operativos"
+        theme="business"
+        loading={false}
+        headerAction={refreshButton}
+      >
+        <TableSkeleton 
+          rows={5}
+          columns={3}
+          title="Categorías de gastos"
+          subtitle="Cargando categorías..."
+          columnWidths={['2.5fr', '1fr', '1.2fr']}
+          toolbarWidth={160}
+          showSearch={true}
+        />
+      </PageTemplate>
+    );
+  }
 
   // ============================================================
   // RENDER

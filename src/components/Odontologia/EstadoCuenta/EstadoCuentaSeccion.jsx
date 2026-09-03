@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { FiDollarSign, FiPackage, FiClock, FiRefreshCw } from 'react-icons/fi';
-import { fetchWithAuth } from '../../../config/apiBase_';
+import { fetchWithAuth } from '../../../config/api';
 import PrintModal from './PrintModal';
 import PresupuestosList from './PresupuestosList';
 import PagosList from './PagosList';
@@ -66,7 +66,7 @@ const EstadoCuentaSeccion = ({
     setLoadingPlanes(true);
 
     try {
-      const planesRes = await fetchWithAuth(`/api/odontologia/planes-tratamiento/patient/${id}`);
+      const planesRes = await fetchWithAuth(`/odontologia/planes-tratamiento/patient/${id}`);
       const planesDataResult = await planesRes.json();
 
       let planesList = [];
@@ -90,7 +90,7 @@ const EstadoCuentaSeccion = ({
       for (const plan of pagosList) {
         if (plan.id) {
           try {
-            const cuotasRes = await fetchWithAuth(`/api/odontologia/cuotas-ortodoncia/plan/${plan.id}`);
+            const cuotasRes = await fetchWithAuth(`/odontologia/cuotas-ortodoncia/plan/${plan.id}`);
             const cuotasDataResult = await cuotasRes.json();
             if (cuotasRes.ok && cuotasDataResult.success) {
               cuotasMap[plan.id] = cuotasDataResult.data || [];
@@ -249,7 +249,7 @@ const EstadoCuentaSeccion = ({
         invoice_number: pagoData.invoice_number || null,
       };
 
-      const res = await fetchWithAuth(`/api/odontologia/plan-pagos/${selectedPlanPago.id}/pagar`, {
+      const res = await fetchWithAuth(`/odontologia/plan-pagos/${selectedPlanPago.id}/pagar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dataToSend),
@@ -299,7 +299,7 @@ const EstadoCuentaSeccion = ({
         return item;
       });
 
-      const res = await fetchWithAuth(`/api/odontologia/planes-tratamiento/${plan.id}`, {
+      const res = await fetchWithAuth(`/odontologia/planes-tratamiento/${plan.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

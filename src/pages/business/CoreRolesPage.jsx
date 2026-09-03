@@ -17,6 +17,8 @@ import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Input from '../../components/General/Input';
 import Modal from '../../components/General/Modal';
 import Checklist from '../../components/General/Checklist';
+import TableSkeleton from '../../components/General/TableSkeleton';
+
 
 // ─── Iconos por módulo ──────────────────────────────────────────────────
 const MOD_ICON_MAP = {
@@ -587,6 +589,28 @@ export default function RolesPage() {
   );
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  if (loading) {
+    return (
+      <PageTemplate
+        title="ROLES Y PERMISOS"
+        subtitle="Define a qué módulos y funcionalidades puede acceder cada usuario"
+        theme="business"
+        loading={false}
+        headerAction={refreshButton}
+      >
+        <TableSkeleton 
+          rows={5}
+          columns={3}
+          title="Roles del negocio"
+          subtitle="Cargando roles..."
+          columnWidths={['2fr', '3fr', '1.2fr']}
+          toolbarWidth={140}
+          showSearch={true}
+        />
+      </PageTemplate>
+    );
+  }
 
   return (
     <PageTemplate

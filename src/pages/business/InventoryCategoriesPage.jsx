@@ -8,6 +8,8 @@ import {
 } from 'react-feather';
 import { fetchWithAuth } from '../../config/api';
 import { useRealtimeSync } from '../../hooks/useRealtimeSync';
+import TableSkeleton from '../../components/General/TableSkeleton';
+
 
 // ── Componentes reutilizables ──
 import Table from '../../components/General/Table';
@@ -213,7 +215,6 @@ export default function InventoryCategoriesPage() {
     setRefreshing(true);
     await load();
     setRefreshing(false);
-    await alert.info('Datos actualizados correctamente', '🔄 Actualizado');
   };
 
   // ── Filtro ──
@@ -371,6 +372,30 @@ export default function InventoryCategoriesPage() {
 
   const isLoading = loading || saving;
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  if (loading) {
+    return (
+      <PageTemplate
+        title="CATEGORÍAS DE PRODUCTOS"
+        subtitle="Cargando categorías..."
+        loading={false}
+        error={error}
+        onRetry={handleRefresh}
+        theme="business"
+        headerAction={refreshButton}
+      >
+        <TableSkeleton 
+          rows={5}
+          columns={4}
+          title="Lista de categorías"
+          subtitle="Cargando categorías..."
+          columnWidths={['2.5fr', '1fr', '1.5fr', '1.5fr']}
+          toolbarWidth={160}
+          showSearch={true}
+        />
+      </PageTemplate>
+    );
+  }
 
   return (
     <PageTemplate

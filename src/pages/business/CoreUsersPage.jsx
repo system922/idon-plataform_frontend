@@ -14,6 +14,8 @@ import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Input from '../../components/General/Input';
 import Modal from '../../components/General/Modal';
 import CustomCombobox from '../../components/General/CustomCombobox';
+import TableSkeleton from '../../components/General/TableSkeleton';
+
 
 export default function CoreUsersPage() {
   const { user } = useSession();
@@ -404,6 +406,31 @@ export default function CoreUsersPage() {
     </button>
   );
 
+  if (loading) {
+  return (
+    <PageTemplate
+      title="USUARIOS"
+      subtitle="Gestión de usuarios y roles del negocio"
+      loading={false}
+      error={error}
+      onRetry={handleRefresh}
+      theme="business"
+      headerAction={refreshButton}
+    >
+      <TableSkeleton 
+        rows={5}
+        columns={6}
+        title="Lista de usuarios"
+        subtitle="Cargando usuarios..."
+        columnWidths={['1.5fr', '1.5fr', '2fr', '1fr', '0.8fr', '1fr']}
+        toolbarWidth={140}
+        showSearch={true}
+      />
+    </PageTemplate>
+  );
+}
+
+  // ✅ SI HAY DATOS, MOSTRAR TABLA NORMAL
   return (
     <PageTemplate
       title="USUARIOS"

@@ -27,7 +27,7 @@ import {
   esHallazgoSuperficial,
   esHallazgoGlobal,
 } from '../OdontogramaConstants';
-import { fetchWithAuth } from '../../../../config/apiBase_';
+import { fetchWithAuth } from '../../../../config/api';
 
 const generarIdTemp = () => `temp-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
 
@@ -91,7 +91,7 @@ export default function FaseEvolucion({
 
     try {
       const res = await fetchWithAuth(
-        `/api/odontologia/planes-tratamiento/patient/${pacienteId}`
+        `/odontologia/planes-tratamiento/patient/${pacienteId}`
       );
 
       if (res.ok) {
@@ -170,7 +170,7 @@ export default function FaseEvolucion({
         await loadPlanData();
 
         const res = await fetchWithAuth(
-          `/api/odontologia/odontogramas/patient/${pacienteId}/fase/evolucion`
+          `/odontologia/odontogramas/patient/${pacienteId}/fase/evolucion`
         );
 
         if (res.ok) {
@@ -189,7 +189,7 @@ export default function FaseEvolucion({
         }
 
         const resEvo = await fetchWithAuth(
-          `/api/odontologia/evoluciones/patient/${pacienteId}`
+          `/odontologia/evoluciones/patient/${pacienteId}`
         );
         if (resEvo.ok) {
           const dataEvo = await resEvo.json();
@@ -317,7 +317,7 @@ export default function FaseEvolucion({
         resultado_final: tratamientoData.resultado || null
       };
 
-      const res = await fetchWithAuth('/api/odontologia/evoluciones', {
+      const res = await fetchWithAuth('/odontologia/evoluciones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dataToSend),
@@ -586,11 +586,11 @@ export default function FaseEvolucion({
         }
       };
 
-      let url = '/api/odontologia/planes-tratamiento';
+      let url = '/odontologia/planes-tratamiento';
       let method = 'POST';
 
       if (planId) {
-        url = `/api/odontologia/planes-tratamiento/${planId}`;
+        url = `/odontologia/planes-tratamiento/${planId}`;
         method = 'PUT';
         delete dataToSend.patient_id;
       }
@@ -676,7 +676,7 @@ export default function FaseEvolucion({
         plan_id: planId || null,
       };
 
-      const res = await fetchWithAuth('/api/odontologia/odontogramas', {
+      const res = await fetchWithAuth('/odontologia/odontogramas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dataToSend),

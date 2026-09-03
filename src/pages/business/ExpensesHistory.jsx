@@ -16,6 +16,8 @@ import SearchInput from '../../components/General/SearchInput';
 import Input from '../../components/General/Input';
 import Modal from '../../components/General/Modal';
 import CustomCombobox from '../../components/General/CustomCombobox';
+import TableSkeleton from '../../components/General/TableSkeleton';
+
 
 // ─── Helper para obtener fecha actual en Ecuador ────────────────────────────
 function getTodayDateInEcuador() {
@@ -857,6 +859,83 @@ export default function AccountingExpensesPage() {
   );
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  if (loading) {
+    return (
+      <PageTemplate
+        title="HISTORIAL DE GASTOS"
+        subtitle="Gestión y control de gastos contables"
+        theme="business"
+        loading={false}
+        headerAction={headerActions}
+      >
+        <div className="report-summary-grid">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="report-product-card skeleton-summary-card">
+              <div className="skeleton-icon" />
+              <div className="skeleton-text">
+                <div className="skeleton-line" style={{ width: '60%' }} />
+                <div className="skeleton-line skeleton-number" style={{ width: '50%', height: '28px' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <TableSkeleton 
+          rows={5}
+          columns={6}
+          title="Listado de gastos"
+          subtitle="Cargando gastos..."
+          columnWidths={['1.2fr', '2.5fr', '1.5fr', '1.2fr', '0.8fr', '1fr']}
+          toolbarWidth={200}
+          showSearch={true}
+        />
+
+        <style>{`
+          .skeleton-summary-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+          }
+          .skeleton-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+            flex-shrink: 0;
+          }
+          .skeleton-text {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+          }
+          .skeleton-line {
+            height: 14px;
+            background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+            background-size: 200% 100%;
+            border-radius: 4px;
+            animation: shimmer 1.5s ease-in-out infinite;
+          }
+          .skeleton-number {
+            height: 28px;
+            border-radius: 6px;
+          }
+          @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+          }
+        `}</style>
+      </PageTemplate>
+    );
+  }
 
   // ─── Render ────────────────────────────────────────────────────────────
   return (

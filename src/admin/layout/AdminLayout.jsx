@@ -1,7 +1,4 @@
 /**
- * AdminLayout.jsx
- * Ubicación: src/admin/layout/AdminLayout.jsx
- *
  * Layout principal del panel admin IDON.
  * Sidebar fijo a la izquierda, contenido ocupa el espacio restante.
  */

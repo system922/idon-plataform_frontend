@@ -11,6 +11,8 @@ import {
   getCurrentToken,
   getBusinessContext,
 } from '../config/api';
+import LoadingOverlay from '../components/General/LoadingOverlay';
+
 
 const SessionContext = createContext(null);
 
@@ -31,8 +33,12 @@ export const SessionProvider = ({ children }) => {
   const [requiresBusinessSelection, setRequiresBusinessSelection] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
 
+  const [logoutLoading, setLogoutLoading] = useState(false);
+
+
   const refreshTimeoutRef = useRef(null);
   const isRefreshingRef = useRef(false);
+  const logoutInProgressRef = useRef(false);
 
   // ─── Limpiar sesión ──────────────────────────────────────────────────
   const clearSession = useCallback(() => {
@@ -102,7 +108,6 @@ export const SessionProvider = ({ children }) => {
         }
       }
     } catch (error) {
-      console.warn('No se pudieron cargar los negocios:', error.message);
     }
   }, []);
 
@@ -399,6 +404,10 @@ export const SessionProvider = ({ children }) => {
 
   // ─── LOGOUT ──────────────────────────────────────────────────────────────
   const logout = useCallback(async () => {
+    if (logoutInProgressRef.current) return;
+
+    logoutInProgressRef.current = true;
+    setLogoutLoading(true);
     try {
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
@@ -413,7 +422,8 @@ export const SessionProvider = ({ children }) => {
       // Silently handle
     } finally {
       clearSession();
-      window.location.href = '/login';
+      logoutInProgressRef.current = false;
+      setLogoutLoading(false);
     }
   }, [clearSession]);
 
@@ -535,32 +545,21 @@ export const SessionProvider = ({ children }) => {
   };
 
   if (loading) {
+    return (<LoadingOverlay 
+      message=""
+      backgroundColor="var(--bg-secondary)"
+    />);
+  }
+
+  if (logoutLoading) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        background: '#f8fafc'
-      }}>
-        <div style={{
-          width: '40px',
-          height: '40px',
-          border: '3px solid #e2e8f0',
-          borderTopColor: '#ff8c42',
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite'
-        }} />
-        <p style={{ marginTop: '16px', color: '#64748b', fontSize: '14px' }}>
-          Restaurando sesión...
-        </p>
-        <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
+      <LoadingOverlay 
+        message="Cerrando sesión..."
+        backgroundColor="rgba(0, 0, 0, 0.5)"
+        textColor="#ffffff"
+        mutedColor="rgba(255,255,255,0.8)"
+        spinnerColor="#ff8c42"
+      />
     );
   }
 

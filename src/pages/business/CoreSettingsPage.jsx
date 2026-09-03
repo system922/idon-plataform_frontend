@@ -1,3 +1,4 @@
+// settings/SettingsPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useSession } from '../../context/SessionContext';
 import { fetchWithAuth } from '../../config/api';
@@ -9,6 +10,7 @@ import {
 import PageTemplate from '../../components/PageTemplate';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Input from '../../components/General/Input';
+
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -55,7 +57,133 @@ const parsePrinter = value => {
   try { return value ? JSON.parse(value) : {}; } catch { return {}; }
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── SKELETON COMPONENT ──────────────────────────────────────────────────────
+
+const SettingsSkeleton = () => (
+  <div className="settings-skeleton">
+    {/* Skeleton para las tarjetas */}
+    <div className="settings-grid">
+      {[1, 2].map(i => (
+        <div key={i} className="settings-card skeleton-card">
+          <div className="settings-card-header skeleton-header">
+            <div className="skeleton-line skeleton-title" style={{ width: '60%' }} />
+            <div className="skeleton-btn" />
+          </div>
+          {[1, 2, 3].map(j => (
+            <div key={j} className="settings-field-row skeleton-field">
+              <div className="settings-field-label">
+                <div className="skeleton-line" style={{ width: '30%' }} />
+              </div>
+              <div className="skeleton-line skeleton-value" style={{ width: '50%' }} />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+
+    {/* Skeleton para impresoras */}
+    <div className="settings-card printer-section skeleton-card">
+      <div className="settings-card-header skeleton-header">
+        <div className="skeleton-line skeleton-title" style={{ width: '40%' }} />
+      </div>
+      <div className="printer-list">
+        {[1, 2].map(i => (
+          <div key={i} className="printer-card skeleton-printer">
+            <div className="printer-card-header">
+              <div className="skeleton-line" style={{ width: '35%' }} />
+              <div className="skeleton-btn" />
+            </div>
+            <div className="printer-fields">
+              {[1, 2, 3].map(j => (
+                <div key={j} className="printer-field">
+                  <div className="skeleton-line" style={{ width: '25%' }} />
+                  <div className="skeleton-line" style={{ width: '45%' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <style>{`
+      .settings-skeleton {
+        animation: fadeIn 0.3s ease;
+      }
+
+      .skeleton-card {
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+
+      .skeleton-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+      }
+
+      .skeleton-line {
+        height: 16px;
+        background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+        background-size: 200% 100%;
+        border-radius: 4px;
+        animation: shimmer 1.5s ease-in-out infinite;
+      }
+
+      .skeleton-title {
+        height: 20px;
+        border-radius: 4px;
+      }
+
+      .skeleton-btn {
+        width: 80px;
+        height: 32px;
+        background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+        background-size: 200% 100%;
+        border-radius: 6px;
+        animation: shimmer 1.5s ease-in-out infinite;
+      }
+
+      .skeleton-field {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 16px;
+      }
+
+      .skeleton-value {
+        height: 14px;
+        border-radius: 4px;
+      }
+
+      .skeleton-printer {
+        padding: 16px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .skeleton-printer:last-child {
+        border-bottom: none;
+      }
+
+      @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+    `}</style>
+  </div>
+);
+
+// ─── COMPONENTE PRINCIPAL ────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const { user } = useSession();
@@ -223,6 +351,20 @@ export default function SettingsPage() {
       <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
     </button>
   );
+
+  // ✅ SI ESTÁ CARGANDO, MOSTRAR SKELETON
+  if (loading) {
+    return (
+      <PageTemplate
+        title="Configuración"
+        subtitle="Datos generales y configuración del negocio"
+        loading={false}
+        headerAction={refreshButton}
+      >
+        <SettingsSkeleton />
+      </PageTemplate>
+    );
+  }
 
   return (
     <PageTemplate

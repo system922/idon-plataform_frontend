@@ -27,6 +27,8 @@ import { fetchWithAuth } from '../../config/api';
 import { useAlert } from '../../components/ConfirmContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { usePrinterService } from '../../services/usePrinterService';
+import TableSkeleton from '../../components/General/TableSkeleton';
+
 
 // ============================================================
 // HELPERS
@@ -2163,6 +2165,28 @@ export default function PurchaseReceipts() {
   );
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  if (loading) {
+    return (
+      <PageTemplate
+        title="Recepción de mercadería"
+        subtitle="Gestión de recepciones de compras"
+        theme="business"
+        loading={false}
+        headerAction={refreshButton}
+      >
+        <TableSkeleton 
+          rows={5}
+          columns={7}
+          title="Recepciones de mercadería"
+          subtitle="Cargando recepciones..."
+          columnWidths={['1.2fr', '1.2fr', '1.8fr', '1fr', '0.6fr', '0.8fr', '1fr']}
+          toolbarWidth={200}
+          showSearch={true}
+        />
+      </PageTemplate>
+    );
+  }
 
   return (
     <PageTemplate

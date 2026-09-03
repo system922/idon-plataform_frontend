@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useSession } from '../../context/SessionContext'; // ✅ AGREGADO
+import { useSession } from '../../context/SessionContext';
 import PageTemplate from '../../components/PageTemplate';
 import PayrollPrintModal from '../../components/PayrollPrintModal';
 import Table from '../../components/General/Table';
@@ -8,11 +8,11 @@ import CustomCombobox from '../../components/General/CustomCombobox';
 import Modal from '../../components/General/Modal';
 import { useConfirm } from '../../context/ConfirmContext';
 import {
-  RefreshCw, DollarSign, Clock, Archive, List, Users, TrendingUp, Eye, X, CheckSquare, Square
+  RefreshCw, DollarSign, Clock, Archive, List, Users, TrendingUp, Eye, X,
 } from 'react-feather';
 import '../../styles/PayrollPro.css';
 
-import { fetchWithAuth } from '../../config/api'; // ✅ CORREGIDO
+import { fetchWithAuth } from '../../config/api';
 import { usePrinterService } from '../../services/usePrinterService';
 import { useAlert } from '../../components/ConfirmContext';
 

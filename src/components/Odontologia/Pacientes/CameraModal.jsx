@@ -1,8 +1,10 @@
 // componentes/pacientes/CameraModal.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import { FiCamera, FiX, FiRefreshCw, FiCheck } from 'react-icons/fi';
+import Modal from '../../General/Modal';
+import { IconTextButton, ButtonGroup } from '../../General/Button';
 
-export const CameraModal = ({ onCapture, onClose }) => {
+export const CameraModal = ({ isOpen, onCapture, onClose }) => {
   const [stream, setStream] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -88,12 +90,14 @@ export const CameraModal = ({ onCapture, onClose }) => {
 
   // ─── USE EFFECT ───
   useEffect(() => {
-    startCamera();
+    if (isOpen) {
+      startCamera();
+    }
     return () => {
       console.log('🧹 Cleanup: deteniendo cámara');
       stopCamera();
     };
-  }, []);
+  }, [isOpen]);
 
   // ─── CAPTURAR FOTO ───
   const capturePhoto = () => {
@@ -131,89 +135,150 @@ export const CameraModal = ({ onCapture, onClose }) => {
   // ─── CERRAR Y DETENER CÁMARA ───
   const handleClose = () => {
     stopCamera();
+    setCapturedImage(null);
     onClose();
   };
 
   // ─── Cerrar con ESC ───
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && isOpen) {
         handleClose();
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isOpen]);
 
-  return (
-    <div className="odonto-modal-overlay" onClick={handleClose}>
-      <div className="odonto-modal odonto-camera-modal" onClick={e => e.stopPropagation()}>
-        <div className="odonto-modal-header primary">
-          <div>
-            <h3>
-              <FiCamera size={18} />
-              Tomar foto
-            </h3>
-          </div>
-          <button className="odonto-modal-close" onClick={handleClose}>
-            <FiX size={20} />
-          </button>
-        </div>
-
-        <div className="odonto-modal-body odonto-camera-body">
-          {error ? (
-            <div className="odonto-camera-error">
-              <p>{error}</p>
-              <button className="odonto-btn-secondary" onClick={startCamera}>
-                <FiRefreshCw size={16} /> Reintentar
-              </button>
-            </div>
-          ) : loading ? (
-            <div className="odonto-camera-loading">
-              <div className="odonto-camera-spinner"></div>
-              <p>Iniciando cámara...</p>
-            </div>
+  // ─── FOOTER DEL MODAL ───
+  const modalFooter = (
+    <ButtonGroup>
+      <IconTextButton
+        variant=""
+        size="md"
+        icon={<FiX size={14} />}
+        onClick={handleClose}
+      >
+        Cancelar
+      </IconTextButton>
+      {!error && !loading && (
+        <>
+          {!capturedImage ? (
+            <IconTextButton
+              variant="success"
+              size="md"
+              icon={<FiCamera size={14} />}
+              onClick={capturePhoto}
+            >
+              Capturar
+            </IconTextButton>
           ) : (
-            <div className="odonto-camera-viewport">
-              {!capturedImage ? (
-                <>
-                  <video
-                    ref={videoRef}
-                    className="odonto-camera-video"
-                    autoPlay
-                    playsInline
-                    muted
-                  />
-                  <canvas ref={canvasRef} style={{ display: 'none' }} />
-                </>
-              ) : (
-                <img src={capturedImage} alt="Captura" className="odonto-camera-captured" />
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="odonto-modal-footer odonto-camera-footer">
-          {!error && !loading && (
             <>
-              {!capturedImage ? (
-                <button className="odonto-camera-capture" onClick={capturePhoto}>
-                  <FiCamera size={20} />
-                </button>
-              ) : (
-                <>
-                  <button className="odonto-btn-secondary" onClick={retakePhoto}>
-                    <FiRefreshCw size={16} /> Reintentar
-                  </button>
-                  <button className="odonto-btn-primary" onClick={acceptPhoto}>
-                    <FiCheck size={16} /> Aceptar
-                  </button>
-                </>
-              )}
+              <IconTextButton
+                variant="info"
+                size="md"
+                icon={<FiRefreshCw size={14} />}
+                onClick={retakePhoto}
+              >
+                Reintentar
+              </IconTextButton>
+              <IconTextButton
+                variant="success"
+                size="md"
+                icon={<FiCheck size={14} />}
+                onClick={acceptPhoto}
+              >
+                Aceptar
+              </IconTextButton>
             </>
           )}
+        </>
+      )}
+    </ButtonGroup>
+  );
+
+  // ─── BODY DEL MODAL ───
+  const modalBody = (
+    <div className="odonto-camera-body" style={{ 
+      minHeight: '300px', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      flexDirection: 'column'
+    }}>
+      {error ? (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <p style={{ color: '#dc2626' }}>{error}</p>
+          <IconTextButton
+            variant="secondary"
+            size="md"
+            icon={<FiRefreshCw size={14} />}
+            onClick={startCamera}
+          >
+            Reintentar
+          </IconTextButton>
         </div>
-      </div>
+      ) : loading ? (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <div style={{ 
+            width: '40px', 
+            height: '40px', 
+            border: '3px solid #e2e8f0', 
+            borderTop: '3px solid #3b82f6', 
+            borderRadius: '50%', 
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 12px'
+          }} />
+          <p style={{ color: '#64748b' }}>Iniciando cámara...</p>
+        </div>
+      ) : (
+        <div style={{ width: '100%', position: 'relative' }}>
+          {!capturedImage ? (
+            <>
+              <video
+                ref={videoRef}
+                style={{
+                  width: '100%',
+                  maxHeight: '400px',
+                  borderRadius: '8px',
+                  background: '#1a1a2e',
+                  display: 'block'
+                }}
+                autoPlay
+                playsInline
+                muted
+              />
+              <canvas ref={canvasRef} style={{ display: 'none' }} />
+            </>
+          ) : (
+            <img 
+              src={capturedImage} 
+              alt="Captura" 
+              style={{
+                width: '100%',
+                maxHeight: '400px',
+                borderRadius: '8px',
+                objectFit: 'contain',
+                background: '#1a1a2e'
+              }}
+            />
+          )}
+        </div>
+      )}
     </div>
+  );
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Tomar foto"
+      size="md"
+      closeOnOverlayClick={false}
+      closeOnEscape={true}
+      footer={modalFooter}
+    >
+      {modalBody}
+    </Modal>
   );
 };

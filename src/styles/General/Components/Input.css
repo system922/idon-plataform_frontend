@@ -111,6 +111,35 @@
 }
 
 /* ─── Tamaños ──────────────────────────────────────────────────── */
+/* x Small */
+/* Input más angosto */
+.input-xs .input-wrapper {
+  min-height: 28px;
+  max-width: 100px !important;
+}
+
+.input-xs .input-field {
+  font-size: 11px;
+  padding: 2px 6px;
+  min-height: 22px;
+  max-width: 160px !important;
+}
+
+.input-xs .input-icon-left,
+.input-xs .input-icon-right {
+  padding: 0 2px;
+}
+
+.input-xs .input-icon-left svg,
+.input-xs .input-icon-right svg {
+  width: 14px;
+  height: 14px;
+}
+
+.input-xs .input-clear-btn,
+.input-xs .input-password-toggle {
+  padding: 1px;
+}
 
 /* Small */
 .input-sm .input-wrapper {

@@ -1,8 +1,3 @@
-/**
- * businessRoutes.jsx
- * Ubicación: src/routes/businessRoutes.jsx
- */
-
 import { Route, Navigate } from 'react-router-dom';
 import RouteGuard from '../components/RouteGuard';
 import BusinessHome from '../pages/business/BusinessHome';

@@ -13,6 +13,8 @@ import { fetchWithAuth } from '../../config/api';
 import { formatCurrency, calculatePVP, toNumber } from '../../utils/productUtils';
 import { ERROR_MESSAGES } from '../../constants/inventoryConstants';
 import { useRealtimeSync } from '../../hooks/useRealtimeSync';
+import TableSkeleton from '../../components/General/TableSkeleton';
+
 
 const ProductosPage = () => {
   const { user } = useSession();
@@ -290,6 +292,30 @@ const ProductosPage = () => {
 
   const isLoading = loading;
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  if (loading) {
+    return (
+      <PageTemplate
+        title="Gestión de Productos"
+        subtitle="Administra los productos, incluyendo códigos, SKU, precios y stock."
+        loading={false}
+        error={loadError}
+        onRetry={loadProducts}
+        headerAction={refreshButton}
+        theme="business"
+      >
+        <TableSkeleton 
+          rows={5}
+          columns={7}
+          title="Listado de productos"
+          subtitle="Cargando productos..."
+          columnWidths={['1fr', '2fr', '1.2fr', '0.8fr', '0.8fr', '0.8fr', '0.8fr']}
+          toolbarWidth={160}
+          showSearch={true}
+        />
+      </PageTemplate>
+    );
+  }
 
   return (
     <PageTemplate

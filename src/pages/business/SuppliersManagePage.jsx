@@ -6,12 +6,14 @@ import {
   FiPlus, FiEdit2, FiTrash2, FiRefreshCw, FiX, FiAlertCircle, FiTruck
 } from "react-icons/fi";
 import PageTemplate from '../../components/PageTemplate';
-import { fetchWithAuth } from '../../config/api'; // ✅ CORREGIDO
+import { fetchWithAuth } from '../../config/api'; 
 import Table from '../../components/General/Table';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Input from '../../components/General/Input';
 import Modal from '../../components/General/Modal';
 import CustomCombobox from '../../components/General/CustomCombobox';
+import TableSkeleton from '../../components/General/TableSkeleton';
+
 
 const EMPTY = { name: '', tax_id: '', contact: '', phone: '', email: '', address: '' };
 
@@ -397,6 +399,28 @@ export default function InventorySuppliersPage() {
   );
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  if (loading) {
+    return (
+      <PageTemplate
+        title="Proveedores"
+        subtitle="Gestión de proveedores del negocio"
+        theme="business"
+        loading={false}
+        headerAction={refreshButton}
+      >
+        <TableSkeleton 
+          rows={5}
+          columns={7}
+          title="Listado de proveedores"
+          subtitle="Cargando proveedores..."
+          columnWidths={['2fr', '1fr', '1.2fr', '1.2fr', '1.5fr', '0.8fr', '1.2fr']}
+          toolbarWidth={170}
+          showSearch={true}
+        />
+      </PageTemplate>
+    );
+  }
 
   // ── Render ──────────────────────────────────────────────────────────────
   return (

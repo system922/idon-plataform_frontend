@@ -32,6 +32,8 @@ import Table from '../../components/General/Table';
 import { ButtonGroup, IconTextButton } from '../../components/General/Button';
 import Input from '../../components/General/Input';
 import Modal from '../../components/General/Modal';
+import TableSkeleton from '../../components/General/TableSkeleton';
+
 
 // ─── HELPERS GENÉRICOS ──────────────────────────────────────────────────
 
@@ -945,6 +947,28 @@ export default function CoreAuditLog() {
       <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
     </button>
   );
+
+  if (loading) {
+    return (
+      <PageTemplate
+        title="AUDITORÍA DEL NEGOCIO"
+        subtitle="Registro completo de todas las acciones del sistema"
+        theme="business"
+        loading={false}
+        headerAction={refreshButton}
+      >
+        <TableSkeleton 
+          rows={6}
+          columns={5}
+          title="Registros de auditoría"
+          subtitle="Cargando auditoría..."
+          columnWidths={['1.5fr', '1.2fr', '0.8fr', '2fr', '0.8fr']}
+          toolbarWidth={160}
+          showSearch={true}
+        />
+      </PageTemplate>
+    );
+  }
 
   return (
     <>

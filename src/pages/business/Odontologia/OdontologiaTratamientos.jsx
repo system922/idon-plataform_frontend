@@ -315,6 +315,7 @@ export default function TratamientosPage() {
             placeholder="Filtrar por estado"
             filterable={false}
             size="md"
+            forceDropup={false}
           />
         </div> 
         <ButtonGroup>
@@ -457,7 +458,7 @@ export default function TratamientosPage() {
           isOpen={showModal}
           onClose={closeModal}
           title={selectedTratamiento ? 'Editar tratamiento' : 'Nuevo tratamiento'}
-          size="md"
+          size="sm"
           className="tratamientos-modal"
           footer={modalFooter}
           closeOnOverlayClick={false}
@@ -531,7 +532,7 @@ export default function TratamientosPage() {
           isOpen={showDetailModal}
           onClose={closeDetailModal}
           title="Detalles del tratamiento"
-          size="md"
+          size="sm"
           className="tratamientos-detail-modal"
           footer={detailModalFooter}
           closeOnOverlayClick={false}
