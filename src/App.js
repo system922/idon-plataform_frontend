@@ -1,5 +1,5 @@
 // ========== src/App.js ==========
-import React, { useEffect, useState, lazy, Suspense } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import LandingPage from './pages/LandingPage';
@@ -61,8 +61,7 @@ import PaymentPendingPage from './pages/business/PaymentPendingPage';
 import PublicOrderPage from './pages/public/PublicOrderPage';
 import NoAccessPage from './pages/NoAccessPage';
 import LoadingOverlay from './components/General/LoadingOverlay';
-
-const BusinessRoutes = lazy(() => import('./routes/businessRoutes'));
+import { businessRoutes } from './routes/businessRoutes';
 
 
 // ==================== FUNCIÓN AUXILIAR ====================
@@ -311,13 +310,7 @@ function AppRoutesWrapper() {
 
   // Business Layout
   const realRole = user?.role || user?.userType || 'user';
-  return (
-    <BusinessLayout userRole={realRole}>
-      <Suspense fallback={<LoadingOverlay message="" />}>
-        <BusinessRoutes />
-      </Suspense>
-    </BusinessLayout>
-  );
+  return <BusinessLayout userRole={realRole} />;
 }
 
 // =============================================
@@ -522,7 +515,9 @@ function AppRoutes() {
       )}
 
       {/* App Business */}
-      <Route path="/app/*" element={<AppRouter />} />
+      <Route path="/app/*" element={<AppRouter />}>
+        {businessRoutes}
+      </Route>
 
       {/* 404 */}
       <Route
