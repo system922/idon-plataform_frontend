@@ -202,7 +202,7 @@ api.interceptors.response.use(
         removeAuthToken();
         clearRefreshToken();
         
-        // ✅ SOLO DISPARAR EVENTO, NO REDIRIGIR
+        // SOLO DISPARAR EVENTO, NO REDIRIGIR
         window.dispatchEvent(new CustomEvent('auth:logout'));
         
         return Promise.reject(refreshError);
