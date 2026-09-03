@@ -1,6 +1,6 @@
 // InventoryRecipesPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit2, Trash2, X, RefreshCw, BookOpen, Check, AlertCircle, Search, Package, Box, Layers } from 'react-feather';
+import { Plus, Edit2, Trash2, X, RefreshCw, BookOpen, Check, Package, Layers } from 'react-feather';
 import { fetchWithAuth } from '../../config/apiBase_';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAlert } from '../../components/ConfirmContext';

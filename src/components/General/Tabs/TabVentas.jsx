@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   TrendingUp, Calendar, Clock, DollarSign, 
-  ShoppingBag, ArrowUp, ArrowDown, 
+  ShoppingBag, 
   BarChart2, Activity, Zap
 } from 'react-feather';
 import {

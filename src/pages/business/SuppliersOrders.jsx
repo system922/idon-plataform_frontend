@@ -26,6 +26,8 @@ import CustomCombobox from '../../components/General/CustomCombobox';
 import { fetchWithAuth } from '../../config/api';
 import { useAlert } from '../../components/ConfirmContext';
 import { useConfirm } from '../../context/ConfirmContext';
+import TableSkeleton from '../../components/General/TableSkeleton';
+
 
 // ============================================================
 // HELPERS
@@ -1925,6 +1927,28 @@ export default function SuppliersOrders() {
   );
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  if (loading) {
+    return (
+      <PageTemplate
+        title="Órdenes de compra"
+        subtitle="Gestión de compras a proveedores"
+        theme="business"
+        loading={false}
+        headerAction={refreshButton}
+      >
+        <TableSkeleton 
+          rows={5}
+          columns={5}
+          title="Órdenes de compra"
+          subtitle="Cargando órdenes..."
+          columnWidths={['1.2fr', '1fr', '0.8fr', '1fr', '1.2fr']}
+          toolbarWidth={200}
+          showSearch={true}
+        />
+      </PageTemplate>
+    );
+  }
 
   // ----------------------------------------------------------
   // Render

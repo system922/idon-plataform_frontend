@@ -20,6 +20,8 @@ import {
   formatMoney,
   scheduleLabel
 } from '../../components/General/DiscountHelpers';
+import TableSkeleton from '../../components/General/TableSkeleton';
+
 
 export default function PosDiscounts() {
   const { user } = useSession();
@@ -542,6 +544,27 @@ export default function PosDiscounts() {
   };
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  if (loading) {
+    return (
+      <PageTemplate
+        title="Descuentos y Promociones"
+        subtitle="Gestiona descuentos automáticos y promociones especiales para tus productos"
+        loading={false}
+        headerAction={refreshButton}
+      >
+        <TableSkeleton 
+          rows={5}
+          columns={7}
+          title="Lista de descuentos"
+          subtitle="Cargando descuentos..."
+          columnWidths={['2fr', '1fr', '0.8fr', '1.2fr', '1fr', '0.8fr', '1.2fr']}
+          toolbarWidth={160}
+          showSearch={true}
+        />
+      </PageTemplate>
+    );
+  }
 
   return (
     <>

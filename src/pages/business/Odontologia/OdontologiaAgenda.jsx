@@ -73,6 +73,16 @@ export default function OdontologiaAgenda() {
   const [mensajeDisponibilidad, setMensajeDisponibilidad] = useState(null);
 
   // ============================================================
+  // ESTADO PARA HORARIO DE ATENCIÓN
+  // ============================================================
+
+  const [horarioAtencion, setHorarioAtencion] = useState({
+    inicio: 8,
+    fin: 18,
+    duracion_turno: 30
+  });
+
+  // ============================================================
   // HELPERS PARA NORMALIZAR RESPUESTAS
   // ============================================================
 
@@ -102,6 +112,30 @@ export default function OdontologiaAgenda() {
       fallback
     );
   };
+
+  // ============================================================
+  // CARGAR HORARIO DE ATENCIÓN
+  // ============================================================
+
+  async function cargarHorarioAtencion() {
+    try {
+      const res = await fetchWithAuth('/odontologia/configuracion-general/horario');
+      const data = await res.json();
+
+      if (res.ok && data?.success && data?.data) {
+        setHorarioAtencion({
+          inicio: data.data.inicio || 8,
+          fin: data.data.fin || 18,
+          duracion_turno: data.data.duracion_turno || 30
+        });
+      } else {
+        console.warn('⚠️ [Agenda] Usando horario por defecto (8:00 - 18:00)');
+      }
+    } catch (err) {
+      console.warn('⚠️ [Agenda] Error cargando horario:', err);
+      // Mantener valores por defecto
+    }
+  }
 
   // ============================================================
   // CARGAR ESPECIALISTAS
@@ -143,7 +177,7 @@ export default function OdontologiaAgenda() {
       return especialistasList;
     } catch (err) {
       console.error(
-        '❌ [Agenda] Error cargando especialistas:',
+        '[Agenda] Error cargando especialistas:',
         err
       );
 
@@ -257,7 +291,7 @@ export default function OdontologiaAgenda() {
       return resultado;
     } catch (err) {
       console.warn(
-        '⚠️ [Agenda] No se pudieron cargar estadísticas. Calculando localmente.'
+        '[Agenda] No se pudieron cargar estadísticas. Calculando localmente.'
       );
 
       const resultado = calcularEstadisticas(
@@ -315,14 +349,6 @@ export default function OdontologiaAgenda() {
       setLoading(true);
       setError(null);
 
-      /*
-       * Igual que TakeOrderPageNew:
-       *
-       * 1. cargar datos principales
-       * 2. transformar/normalizar
-       * 3. guardar en estados
-       */
-
       const [
         especialistasData,
         citasData,
@@ -333,15 +359,6 @@ export default function OdontologiaAgenda() {
 
       await cargarEstadisticas(citasData);
 
-      console.log(
-        '✅ [Agenda] Datos cargados correctamente',
-        {
-          especialistas:
-            especialistasData.length,
-          citas:
-            citasData.length,
-        }
-      );
     } catch (err) {
       console.error(
         '❌ [Agenda] Error cargando datos:',
@@ -362,7 +379,14 @@ export default function OdontologiaAgenda() {
   // ============================================================
 
   useEffect(() => {
-    cargarDatos();
+    async function inicializar() {
+      // Primero cargar el horario de atención
+      await cargarHorarioAtencion();
+      // Luego cargar los datos principales
+      await cargarDatos();
+    }
+    
+    inicializar();
   }, []);
 
   // ============================================================
@@ -425,11 +449,6 @@ export default function OdontologiaAgenda() {
           'especialistas',
           'disponibles',
         ]);
-
-      console.log(
-        '📦 [Agenda] Especialistas disponibles:',
-        disponibles
-      );
 
       if (disponibles.length > 0) {
         setSelectedDate(fecha);
@@ -546,27 +565,35 @@ export default function OdontologiaAgenda() {
     return days;
   }, [weekStart]);
 
+  // ============================================================
+  // GENERAR HORAS DINÁMICAMENTE SEGÚN CONFIGURACIÓN
+  // ============================================================
+
   const horas = useMemo(() => {
     const hs = [];
-
-    for (let h = 8; h <= 20; h++) {
-      hs.push(
-        `${h
-          .toString()
-          .padStart(2, '0')}:00`
-      );
-
-      if (h < 20) {
-        hs.push(
-          `${h
-            .toString()
-            .padStart(2, '0')}:30`
-        );
+    const { inicio, fin, duracion_turno } = horarioAtencion;
+    
+    // Usar la duración del turno o 30 minutos por defecto
+    const paso = duracion_turno || 30;
+    
+    // Si el paso es 30, generar :00 y :30
+    if (paso === 30) {
+      for (let h = inicio; h < fin; h++) {
+        hs.push(`${h.toString().padStart(2, '0')}:00`);
+        hs.push(`${h.toString().padStart(2, '0')}:30`);
+      }
+    } else {
+      // Si el paso es diferente a 30, generar solo :00
+      for (let h = inicio; h < fin; h++) {
+        hs.push(`${h.toString().padStart(2, '0')}:00`);
       }
     }
-
+    
+    // Agregar la última hora (fin:00)
+    hs.push(`${fin.toString().padStart(2, '0')}:00`);
+    
     return hs;
-  }, []);
+  }, [horarioAtencion]);
 
   // ============================================================
   // FILTRAR CITAS
@@ -657,11 +684,6 @@ export default function OdontologiaAgenda() {
         ? 'PUT'
         : 'POST';
 
-      console.log(
-        `📤 [Agenda] ${method} ${url}`,
-        formData
-      );
-
       const res =
         await fetchWithAuth(url, {
           method,
@@ -697,15 +719,6 @@ export default function OdontologiaAgenda() {
         );
       }
 
-      /*
-       * IMPORTANTE:
-       * No modificamos citas manualmente después
-       * del POST/PUT.
-       *
-       * Volvemos a consultar el backend.
-       *
-       * Esto mantiene frontend y backend sincronizados.
-       */
       await cargarDatos();
 
       setShowModal(false);
@@ -777,10 +790,6 @@ export default function OdontologiaAgenda() {
       const url =
         `/odontologia/citas/${id}`;
 
-      console.log(
-        `🗑️ [Agenda] DELETE ${url}`
-      );
-
       const res =
         await fetchWithAuth(
           url,
@@ -812,10 +821,6 @@ export default function OdontologiaAgenda() {
         );
       }
 
-      /*
-       * Volvemos a obtener los datos reales
-       * del backend.
-       */
       await cargarDatos();
 
       alert(
@@ -887,13 +892,8 @@ export default function OdontologiaAgenda() {
     id,
     newStatus
   ) {
-    /*
-     * Guardamos el estado anterior para poder
-     * revertirlo si la API falla.
-     */
     const citasAnteriores = citas;
 
-    // Actualización optimista
     setCitas((prev) =>
       prev.map((cita) =>
         cita.id === id
@@ -944,15 +944,7 @@ export default function OdontologiaAgenda() {
         );
       }
 
-      /*
-       * Recargamos estadísticas y citas
-       * para garantizar sincronización.
-       */
       await cargarCitas();
-
-      /*
-       * Las estadísticas también vienen del backend.
-       */
       await cargarEstadisticas(
         citas
       );
@@ -962,7 +954,6 @@ export default function OdontologiaAgenda() {
         err
       );
 
-      // Revertir estado
       setCitas(citasAnteriores);
 
       setError(
@@ -984,12 +975,6 @@ export default function OdontologiaAgenda() {
 
       return;
     }
-
-    console.log(
-      '📋 [Agenda] Atendiendo cita:',
-      cita.id,
-      cita.paciente_nombre
-    );
 
     if (
       cita.status === 'confirmed' ||

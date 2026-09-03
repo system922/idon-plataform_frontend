@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../context/SessionContext';
 import { usePermissions } from '../../utils/usePermissions';
+import TableSkeleton from '../../components/General/TableSkeleton';
+
 
 import {
   Plus,
@@ -825,6 +827,30 @@ export default function InventoryPhysicalPage() {
   ], [categories]);
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  if (loading) {
+    return (
+      <PageTemplate
+        title="Inventario Físico"
+        subtitle="Conteo y ajuste de stock"
+        loading={false}
+        error={error}
+        onRetry={handleRefresh}
+        theme="business"
+        headerAction={refreshButton}
+      >
+        <TableSkeleton 
+          rows={5}
+          columns={8}
+          title="Inventarios Registrados"
+          subtitle="Cargando inventarios..."
+          columnWidths={['2fr', '0.8fr', '1.2fr', '1.5fr', '1.2fr', '1.5fr', '0.8fr', '1fr']}
+          toolbarWidth={180}
+          showSearch={true}
+        />
+      </PageTemplate>
+    );
+  }
 
   // ─── Render ────────────────────────────────────────────────────────
   return (

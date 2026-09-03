@@ -61,7 +61,7 @@ export default function OdontogramaSeccion({
     const loadTratamientos = async () => {
       setLoadingTratamientos(true);
       try {
-        const res = await fetchWithAuth('/api/odontologia/tratamientos');
+        const res = await fetchWithAuth('/odontologia/tratamientos');
         const data = await res.json();
         let tratamientosData = [];
         if (Array.isArray(data)) {

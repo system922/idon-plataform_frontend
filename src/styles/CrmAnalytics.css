@@ -59,7 +59,7 @@
   background: var(--bg-tertiary);
   border-radius: var(--radius-lg);
   padding: var(--space-1);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-0);
   border: 1px solid var(--border-color);
   overflow-x: auto;
 }
@@ -112,7 +112,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--space-4);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-2);
 }
 
 .summary-card {

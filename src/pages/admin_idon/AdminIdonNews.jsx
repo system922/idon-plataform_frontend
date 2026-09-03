@@ -11,7 +11,7 @@ import {
   FiPlus, FiEdit2, FiTrash2, FiRefreshCw, FiCheck,
   FiAlertCircle, FiClock, FiZap,
   FiGift, FiTrendingUp, FiAward, FiBell, 
-  FiInfo, FiFire, FiCrown, FiLayers,
+  FiInfo, FiLayers,
   FiPackage, FiShoppingCart, FiUsers, FiSettings,
   FiBarChart2, FiCalendar, FiFileText, FiHome,
   FiImage, FiUploadCloud, FiX

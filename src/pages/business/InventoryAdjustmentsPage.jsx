@@ -12,6 +12,9 @@ import Input from '../../components/General/Input';
 import Modal from '../../components/General/Modal';
 import CustomCombobox from '../../components/General/CustomCombobox';
 import '../../styles/InventoryAdjustmentsPage.css';
+import TableSkeleton from '../../components/General/TableSkeleton';
+
+
 
 export default function InventoryAdjustmentsPage() {
   const { user } = useSession(); 
@@ -706,6 +709,30 @@ export default function InventoryAdjustmentsPage() {
   
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  if (loading) {
+    return (
+      <PageTemplate
+        title="Ajustes de Inventario"
+        subtitle="Kardex de productos y ajustes de stock"
+        loading={false}
+        error={error}
+        onRetry={handleRefresh}
+        theme="business"
+        headerAction={refreshButton}
+      >
+        <TableSkeleton 
+          rows={5}
+          columns={6}
+          title="Kardex de Productos"
+          subtitle="Cargando productos..."
+          columnWidths={['1.2fr', '2.2fr', '1.2fr', '0.8fr', '1.5fr', '0.8fr']}
+          toolbarWidth={160}
+          showSearch={true}
+        />
+      </PageTemplate>
+    );
+  }
 
   // ─── Render ──────────────────────────────────────────────────────────────
   return (

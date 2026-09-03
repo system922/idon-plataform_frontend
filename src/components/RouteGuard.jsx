@@ -4,6 +4,8 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useSession } from '../context/SessionContext';
 import { useBusinessNavigation } from '../hooks/useBusinessNavigation';
 import AccessDeniedPage from '../pages/business/AccessDeniedPage';
+import LoadingOverlay from './General/LoadingOverlay';
+
 
 /**
  * Componente que protege las rutas verificando si el usuario tiene acceso
@@ -56,10 +58,13 @@ export default function RouteGuard({ children, moduleCode, pageCode }) {
   // Mostrar loading mientras se verifica
   if (loading || checking || isLoading) {
     return (
-      <div className="route-guard-loading">
-        <div className="spinner-loader" />
-        <p>Verificando permisos...</p>
-      </div>
+      <LoadingOverlay 
+        message=""
+        backgroundColor="var(--bg-secondary)"
+        textColor="var(--text-primary)"
+        mutedColor="var(--text-muted)"
+        spinnerColor="#ff8c42"
+      />
     );
   }
 

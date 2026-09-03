@@ -180,26 +180,28 @@ export default function AdminModulos() {
   ];
 
   const toolbar = (
-    <div className="modulos-toolbar">
-      <CustomCombobox
-        options={statusOptions}
-        value={filterStatus}
-        onChange={setFilterStatus}
-        placeholder="Filtrar por estado"
-        filterable={false}
-        size="sm"
-        className="modulos-filter"
-      />
-      <ButtonGroup>
-        <IconTextButton
-          variant="success"
-          size="md"
-          icon={<FiPlus size={13} />}
-          onClick={() => setModal('new')}
-        >
-          Nuevo módulo
-        </IconTextButton>
-      </ButtonGroup>
+    <div className="features-toolbar">
+      <div className="features-filters">
+        <CustomCombobox
+          options={statusOptions}
+          value={filterStatus}
+          onChange={setFilterStatus}
+          placeholder="Filtrar por estado"
+          filterable={false}
+          size="sm"
+          className="features-filter"
+        />
+        <ButtonGroup>
+          <IconTextButton
+            variant="success"
+            size="md"
+            icon={<FiPlus size={13} />}
+            onClick={() => setModal('new')}
+          >
+            Nuevo módulo
+          </IconTextButton>
+        </ButtonGroup>
+      </div>
     </div>
   );
 

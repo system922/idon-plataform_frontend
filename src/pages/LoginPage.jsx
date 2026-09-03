@@ -12,6 +12,7 @@ import {
 } from 'react-icons/fi';
 import Footer from '../components/common/Footer';
 import Input from '../components/General/Input';
+import LoadingOverlay from '../components/General/LoadingOverlay';
 import CustomCombobox from '../components/General/CustomCombobox';
 import { IconTextButton, ButtonGroup } from '../components/General/Button';
 
@@ -852,9 +853,6 @@ export default function LoginPage() {
                         alignItems: 'center',
                         gap: '16px'
                       }}>
-                        {/* Espacio a la izquierda */}
-
-                        {/* Botón "Continuar" centrado */}
                         <div style={{ 
                           display: 'flex', 
                           justifyContent: 'center',
@@ -874,17 +872,10 @@ export default function LoginPage() {
                               flexShrink: 0
                             }}
                           >
-                            {loading ? (
-                              <>
-                                <span className="spinner" /> Iniciando...
-                              </>
-                            ) : (
-                              'Continuar'
-                            )}
+                            Continuar
                           </IconTextButton>
                         </div>
 
-                        {/* Enlace "Olvidé mi contraseña" a la derecha */}
                         <div style={{ 
                           display: 'flex', 
                           justifyContent: 'flex-end',
@@ -913,8 +904,15 @@ export default function LoginPage() {
                           </IconTextButton>
                         </div>
                       </div>
-
-                      
+                      {loading && (
+                        <LoadingOverlay 
+                          message="Iniciando sesión..."
+                          backgroundColor="var(--bg-secondary)"
+                          textColor="var(--text-primary)"
+                          mutedColor="var(--text-muted)"
+                          spinnerColor="#ff8c42"
+                        />
+                      )}
                     </form>
                   ) : (
                     <form

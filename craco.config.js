@@ -13,5 +13,23 @@ module.exports = {
         }
       ]
     ]
-  }
+  },
+  webpack: {
+    configure: (webpackConfig) => {
+      // Eliminar ESLintPlugin de Webpack
+      webpackConfig.plugins = webpackConfig.plugins.filter(
+        (plugin) => plugin.constructor.name !== 'ESLintWebpackPlugin'
+      );
+      return webpackConfig;
+    },
+  },
+  devServer: {
+    client: {
+      overlay: {
+        errors: false,
+        warnings: false,
+        runtimeErrors: false,
+      },
+    },
+  },
 };

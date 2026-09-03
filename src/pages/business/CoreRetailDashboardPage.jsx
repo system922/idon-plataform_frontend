@@ -1,3 +1,4 @@
+// pages/retail/RetailDashboardPage.jsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../context/SessionContext';
@@ -23,6 +24,269 @@ const METHOD_COLORS = {
   cash: '#10b981', card: '#3b82f6', transfer: '#f59e0b', mixto: '#a855f7',
 };
 
+// ─── SKELETON COMPONENT ──────────────────────────────────────────────────────
+
+const RetailDashboardSkeleton = () => (
+  <div className="rd-skeleton">
+    {/* Skeleton para Stats Cards */}
+    <div className="rd-stats-skeleton">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="rd-stat-card-skeleton">
+          <div className="skeleton-icon-circle" />
+          <div className="skeleton-text-block">
+            <div className="skeleton-line" style={{ width: '60%' }} />
+            <div className="skeleton-line skeleton-number" style={{ width: '50%', height: '28px' }} />
+            <div className="skeleton-line" style={{ width: '40%' }} />
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Skeleton para Gráficos */}
+    <div className="rd-charts-skeleton">
+      <div className="skeleton-chart-card">
+        <div className="skeleton-line" style={{ width: '40%', height: '20px', marginBottom: '16px' }} />
+        <div className="skeleton-bars">
+          {[1, 2, 3, 4, 5, 6, 7].map(i => (
+            <div key={i} className="skeleton-bar" style={{ height: `${20 + Math.random() * 60}px` }} />
+          ))}
+        </div>
+      </div>
+      <div className="skeleton-chart-card">
+        <div className="skeleton-line" style={{ width: '40%', height: '20px', marginBottom: '16px' }} />
+        <div className="skeleton-methods">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="skeleton-method-item">
+              <div className="skeleton-line" style={{ width: '30%' }} />
+              <div className="skeleton-line" style={{ width: '25%' }} />
+              <div className="skeleton-bar-track">
+                <div className="skeleton-bar-fill" style={{ width: `${20 + Math.random() * 60}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {/* Skeleton para Top Productos */}
+    <div className="skeleton-products-card">
+      <div className="skeleton-line" style={{ width: '30%', height: '20px', marginBottom: '16px' }} />
+      {[1, 2, 3, 4, 5].map(i => (
+        <div key={i} className="skeleton-product-item">
+          <div className="skeleton-rank" />
+          <div className="skeleton-product-info">
+            <div className="skeleton-line" style={{ width: '50%' }} />
+            <div className="skeleton-line" style={{ width: '20%' }} />
+            <div className="skeleton-bar-track">
+              <div className="skeleton-bar-fill" style={{ width: `${20 + Math.random() * 60}%` }} />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <style>{`
+      .rd-skeleton {
+        animation: fadeIn 0.3s ease;
+        padding: 4px;
+      }
+
+      .rd-stats-skeleton {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      .rd-stat-card-skeleton {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 20px;
+        background: var(--bg-card);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      }
+
+      .skeleton-icon-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s ease-in-out infinite;
+        flex-shrink: 0;
+      }
+
+      .skeleton-text-block {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .skeleton-line {
+        height: 14px;
+        background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+        background-size: 200% 100%;
+        border-radius: 4px;
+        animation: shimmer 1.5s ease-in-out infinite;
+      }
+
+      .skeleton-number {
+        height: 28px;
+        border-radius: 6px;
+      }
+
+      .rd-charts-skeleton {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      .skeleton-chart-card {
+        background: var(--bg-card);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      }
+
+      .skeleton-bars {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        height: 180px;
+        gap: 8px;
+        padding-top: 8px;
+      }
+
+      .skeleton-bar {
+        flex: 1;
+        min-width: 20px;
+        background: linear-gradient(180deg, #e2e8f0 0%, #f1f5f9 100%);
+        border-radius: 4px 4px 0 0;
+        animation: shimmer 1.5s ease-in-out infinite;
+        background-size: 200% 100%;
+        transition: height 0.3s ease;
+      }
+
+      .skeleton-methods {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .skeleton-method-item {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .skeleton-bar-track {
+        width: 100%;
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 4px;
+      }
+
+      .skeleton-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 100%);
+        border-radius: 4px;
+        animation: shimmer 1.5s ease-in-out infinite;
+        background-size: 200% 100%;
+      }
+
+      .skeleton-products-card {
+        background: var(--bg-card);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      }
+
+      .skeleton-product-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      .skeleton-product-item:last-child {
+        border-bottom: none;
+      }
+
+      .skeleton-rank {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s ease-in-out infinite;
+        flex-shrink: 0;
+      }
+
+      .skeleton-product-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @media (max-width: 992px) {
+        .rd-charts-skeleton {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .rd-stats-skeleton {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .skeleton-bars {
+          height: 120px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .rd-stats-skeleton {
+          grid-template-columns: 1fr;
+        }
+
+        .rd-stat-card-skeleton {
+          padding: 12px 16px;
+        }
+
+        .skeleton-icon-circle {
+          width: 36px;
+          height: 36px;
+        }
+      }
+    `}</style>
+  </div>
+);
+
+// ─── StatCard ────────────────────────────────────────────────────────────────
+
 function StatCard({ icon, label, value, detail, color, bg }) {
   return (
     <div className="rd-stat-card">
@@ -37,6 +301,8 @@ function StatCard({ icon, label, value, detail, color, bg }) {
     </div>
   );
 }
+
+// ─── Componente Principal ────────────────────────────────────────────────────
 
 export default function RetailDashboardPage() {
   const navigate = useNavigate();
@@ -70,23 +336,37 @@ export default function RetailDashboardPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await load();
+    await load(true);
     setRefreshing(false);
   };
 
+  const refreshButton = (
+    <button
+      onClick={handleRefresh}
+      className="dashboard-refresh-btn-header"
+      disabled={refreshing}
+      title="Actualizar datos"
+    >
+      <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+      <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+    </button>
+  );
 
-  // ── Botón de refrescar ──────────────────────────────────────────────────
-    const refreshButton = (
-      <button
-        onClick={handleRefresh}
-        className="dashboard-refresh-btn-header"
-        disabled={refreshing}
-        title="Actualizar datos"
+  // ✅ SI ESTÁ CARGANDO, MOSTRAR SKELETON
+  if (loading) {
+    return (
+      <PageTemplate
+        title="DASHBOARD RETAIL"
+        subtitle="Ventas del día"
+        theme="business"
+        loading={false}
+        headerAction={refreshButton}
+        error={error}
       >
-        <FiRefreshCw size={18} className={refreshing ? 'spinning' : ''} />
-        <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
-      </button>
+        <RetailDashboardSkeleton />
+      </PageTemplate>
     );
+  }
 
   return (
     <PageTemplate
@@ -95,6 +375,8 @@ export default function RetailDashboardPage() {
       theme="business"
       loading={loading}
       headerAction={refreshButton}
+      error={error}
+      onRetry={() => load(false)}
     >
       <div className="rd-page">
 

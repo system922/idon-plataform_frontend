@@ -534,7 +534,12 @@ export default function ReportsProductsPage() {
 
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
-    <PageTemplate title="REPORTE DE PRODUCTOS" subtitle="Cantidad, ventas y margen por producto" theme="business" loading={loading} headerAction={headerActions}>
+    <PageTemplate 
+      title="REPORTE DE PRODUCTOS" 
+      subtitle="Cantidad, ventas y margen por producto" 
+      theme="business" loading={loading} 
+      headerAction={headerActions}
+    >
       {error && <div className="alert alert-error"><FiAlertCircle size={16} /> {error}</div>}
 
       <div className="report-summary-grid">

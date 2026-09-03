@@ -26,21 +26,22 @@ const PlanNormalCard = ({
   const totalItems = items.length;
   const totalCompletados = completados.length;
   
+  // ✅ CORREGIDO: Usar la misma lógica de keys que en el padre
   const totalSeleccionados = pendientes.filter((t, idx) => {
-    const key = `${plan.id}-pendiente-${idx}`;
+    const key = `${plan.id}-${idx}`;  // ← Misma key que en el padre
     return selectedTratamientos[key];
   }).length;
   
   const totalMontoSeleccionado = pendientes
     .filter((t, idx) => {
-      const key = `${plan.id}-pendiente-${idx}`;
+      const key = `${plan.id}-${idx}`;
       return selectedTratamientos[key];
     })
     .reduce((sum, t) => sum + parseFloat(t.price || 0), 0);
 
   const todosSeleccionados = pendientes.length > 0 &&
     pendientes.every((t, idx) => {
-      const key = `${plan.id}-pendiente-${idx}`;
+      const key = `${plan.id}-${idx}`;  // ← Misma key
       return selectedTratamientos[key];
     });
 
@@ -51,17 +52,24 @@ const PlanNormalCard = ({
     
     if (todosSeleccionados) {
       pendientes.forEach((_, idx) => {
-        const key = `${plan.id}-pendiente-${idx}`;
+        const key = `${plan.id}-${idx}`;  // ← Misma key
         delete newSelected[key];
       });
     } else {
       pendientes.forEach((_, idx) => {
-        const key = `${plan.id}-pendiente-${idx}`;
+        const key = `${plan.id}-${idx}`;  // ← Misma key
         newSelected[key] = true;
       });
     }
     
     onSeleccionarTodos(plan.id, pendientes, newSelected);
+  };
+
+  // ✅ CORREGIDO: Handler para toggle individual
+  const handleToggleIndividual = (item, idx) => {
+    // Usar el índice del array original, no el de pendientes
+    const originalIndex = items.findIndex(i => i === item);
+    onToggleTratamiento(plan.id, originalIndex);
   };
 
   return (
@@ -117,7 +125,14 @@ const PlanNormalCard = ({
               </span>
               <button
                 className="presupuesto-cobrar-btn"
-                onClick={() => onAbrirCobro(plan)}
+                onClick={() => {
+                  console.log('🔄 Cobrando seleccionados:', {
+                    planId: plan.id,
+                    totalSeleccionados,
+                    totalMonto: totalMontoSeleccionado
+                  });
+                  onAbrirCobro(plan);
+                }}
                 disabled={cobrandoTratamientos || totalSeleccionados === 0}
               >
                 <FiDollarSign size={14} />
@@ -155,20 +170,16 @@ const PlanNormalCard = ({
                   const estado = getTratamientoEstado(item.estado);
                   const isCompletado = item.estado === 'completado';
                   const isPendiente = !isCompletado;
-                  const pendienteIndex = pendientes.findIndex(p => p === item);
-                  const key = isPendiente ? `${plan.id}-pendiente-${pendienteIndex}` : `${plan.id}-completado-${idx}`;
-                  const isSelected = isPendiente ? (selectedTratamientos[key] || false) : false;
+                  const key = `${plan.id}-${idx}`;  // ← Misma key para todos
+                  const isSelected = selectedTratamientos[key] || false;
 
                   return (
                     <tr key={key} className={isCompletado ? 'presupuesto-row-completado' : ''}>
                       <td className="presupuesto-cell-select">
-                        {!isCompletado && (
+                        {isPendiente && (
                           <button
                             className="presupuesto-select-item-btn"
-                            onClick={() => {
-                              const pendIdx = pendientes.findIndex(p => p === item);
-                              onToggleTratamiento(plan.id, pendIdx);
-                            }}
+                            onClick={() => handleToggleIndividual(item, idx)}
                           >
                             {isSelected ? <FiCheckSquare size={16} color="#10b981" /> : <FiSquare size={16} />}
                           </button>
@@ -187,7 +198,7 @@ const PlanNormalCard = ({
                         </span>
                       </td>
                       <td className="presupuesto-cell-precio">
-                        ${parseFloat(item.price || 0).toFixed(2)}
+                        {currencySymbol} {parseFloat(item.price || 0).toFixed(2)}
                       </td>
                     </tr>
                   );
@@ -197,7 +208,7 @@ const PlanNormalCard = ({
                 <tr>
                   <td colSpan="5" className="presupuesto-table-total-label">Total</td>
                   <td className="presupuesto-table-total-value">
-                    ${parseFloat(plan.costo_total || plan.total_cost || 0).toFixed(2)}
+                    {currencySymbol} {parseFloat(plan.costo_total || plan.total_cost || 0).toFixed(2)}
                   </td>
                 </tr>
               </tfoot>

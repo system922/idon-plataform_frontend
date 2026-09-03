@@ -3,6 +3,7 @@ import {
   PieChart as FeatherPieChart, Award, Star, User, PlusCircle, 
   Users, Target, TrendingUp, BarChart2, Activity, Zap
 } from 'react-feather';
+
 import {
   PieChart,
   Pie,
@@ -18,7 +19,6 @@ import {
   ComposedChart,
   Line,
   Area,
-  Scatter,
   RadarChart,
   PolarGrid,
   PolarAngleAxis,

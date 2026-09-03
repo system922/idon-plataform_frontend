@@ -1,12 +1,12 @@
 import React from 'react';
 import {
   DollarSign, UserCheck, ShoppingBag, CreditCard,
-  Award, TrendingUp, Zap, Clock, Calendar, Star,
-  ArrowUp, ArrowDown, Users, PieChart, Repeat,
-  Target, User, PlusCircle, 
-  Trophy, Award as AwardIcon, 
-  Hash, BarChart2, Circle
+  Award, TrendingUp, Calendar, Star,
+  Users, PieChart, Repeat,
+  Target, User, PlusCircle, Award as AwardIcon, 
+  Hash, BarChart2
 } from 'react-feather';
+
 import {
   LineChart,
   Line,
