@@ -30,9 +30,9 @@ const LandingPage = () => {
         {/* ===== IMÁGENES CON OPTIMIZACIÓN LCP ===== */}
         <div className="images-grid">
           <img 
-            src="/landing-800.webp"
+            src="/landing-640.webp"
             srcSet="/landing-320.webp 320w, /landing-400.webp 400w, /landing-640.webp 640w, /landing-800.webp 800w, /landing-1200.webp 1200w"
-            sizes="(max-width: 768px) 100vw, calc((100vw - 5rem) / 2)"
+            sizes="(max-width: 768px) 100vw, 640px"
             alt="IDON - Facturación y ventas"
             className="landing-image"
             width="634"
