@@ -1,5 +1,5 @@
 // ========== src/App.js ==========
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import LandingPage from './pages/LandingPage';
@@ -570,7 +570,9 @@ function AppContent() {
   return (
     <>
       <DrawerProvider>
-        <AppRoutes />
+        <Suspense fallback={<LoadingOverlay message="" />}>
+          <AppRoutes />
+        </Suspense>
         <GlobalExpenseBubble />
       </DrawerProvider>
     </>
