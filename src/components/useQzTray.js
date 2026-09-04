@@ -37,9 +37,6 @@ export function useQzTray() {
 
         // 3. Configurar firma
         qz.security.setSignaturePromise(async (toSign) => {
-          console.info('[QZ] Enviando solicitud de firma', {
-            dataLength: String(toSign).length,
-          });
           const res = await fetchWithAuth('/print/sign', {
             method: 'POST',
             body: JSON.stringify({ data: toSign }),
@@ -51,9 +48,6 @@ export function useQzTray() {
           if (!signature) {
             throw new Error('El servidor no devolvió una firma válida');
           }
-          console.info('[QZ] Firma recibida', {
-            signatureLength: signature.length,
-          });
           return signature;
         });
 
@@ -65,11 +59,6 @@ export function useQzTray() {
           await qz.websocket.connect();
         } else {
         }
-
-        console.info('[QZ] WebSocket conectado', {
-          connection: qz.websocket.getConnectionInfo?.(),
-          signatureAlgorithm: qz.security.getSignatureAlgorithm?.(),
-        });
 
         setPrinterConnected(true);
         setIsQzReady(true);
