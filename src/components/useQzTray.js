@@ -19,7 +19,7 @@ export function useQzTray() {
         setPrinterError(null);
 
         // 1. Obtener certificado
-        const res = await fetchWithAuth('/print/cert');
+        const res = await fetchWithAuth(`/print/cert?_qz=${Date.now()}`);
         if (!res.ok) {
           throw new Error(`No se pudo obtener el certificado (${res.status})`);
         }
@@ -33,9 +33,13 @@ export function useQzTray() {
         qz.security.setCertificatePromise(async () => {
           return cleanCert;
         });
+        qz.security.setSignatureAlgorithm('SHA512');
 
         // 3. Configurar firma
         qz.security.setSignaturePromise(async (toSign) => {
+          console.info('[QZ] Enviando solicitud de firma', {
+            dataLength: String(toSign).length,
+          });
           const res = await fetchWithAuth('/print/sign', {
             method: 'POST',
             body: JSON.stringify({ data: toSign }),
@@ -47,6 +51,9 @@ export function useQzTray() {
           if (!signature) {
             throw new Error('El servidor no devolvió una firma válida');
           }
+          console.info('[QZ] Firma recibida', {
+            signatureLength: signature.length,
+          });
           return signature;
         });
 
@@ -58,6 +65,11 @@ export function useQzTray() {
           await qz.websocket.connect();
         } else {
         }
+
+        console.info('[QZ] WebSocket conectado', {
+          connection: qz.websocket.getConnectionInfo?.(),
+          signatureAlgorithm: qz.security.getSignatureAlgorithm?.(),
+        });
 
         setPrinterConnected(true);
         setIsQzReady(true);
