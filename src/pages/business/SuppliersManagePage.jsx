@@ -403,7 +403,7 @@ export default function InventorySuppliersPage() {
   if (loading) {
     return (
       <PageTemplate
-        title="Proveedores"
+        title="PROVEEDORES"
         subtitle="Gestión de proveedores del negocio"
         theme="business"
         loading={false}

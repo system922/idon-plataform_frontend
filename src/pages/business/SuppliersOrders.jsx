@@ -1940,7 +1940,7 @@ export default function SuppliersOrders() {
         <TableSkeleton 
           rows={5}
           columns={5}
-          title="Órdenes de compra"
+          title="ÓRDENES DE COMPRA"
           subtitle="Cargando órdenes..."
           columnWidths={['1.2fr', '1fr', '0.8fr', '1fr', '1.2fr']}
           toolbarWidth={200}
@@ -1956,7 +1956,7 @@ export default function SuppliersOrders() {
 
   return (
     <PageTemplate
-      title="Órdenes de compra"
+      title="ÓRDENES DE COMPRA"
       subtitle="Gestión de compras a proveedores"
       theme="business"
       loading={loading}
