@@ -1366,7 +1366,7 @@ export default function OrdersHistoryPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <PageTemplate
-      title="Historial de Órdenes"
+      title="HISTORIAL DE ÓRDENES"
       subtitle={`${filteredOrders.length} orden${filteredOrders.length !== 1 ? 'es' : ''} encontradas`}
       theme="business"
       loading={loadingOrders}

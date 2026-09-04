@@ -1014,7 +1014,7 @@ export default function PosRetailPage() {
   // ── RENDER ────────────────────────────────────────────────────────────────────
   return (
     <PageTemplate
-      title="POS Retail"
+      title="POS RETAIL"
       subtitle="Escanea o busca productos y cobra al instante"
       className="pos-retail-template"
     >

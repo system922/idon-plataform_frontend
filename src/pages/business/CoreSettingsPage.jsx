@@ -352,11 +352,11 @@ export default function SettingsPage() {
     </button>
   );
 
-  // ✅ SI ESTÁ CARGANDO, MOSTRAR SKELETON
+  // SI ESTÁ CARGANDO, MOSTRAR SKELETON
   if (loading) {
     return (
       <PageTemplate
-        title="Configuración"
+        title="CONFIGURACIÓN"
         subtitle="Datos generales y configuración del negocio"
         loading={false}
         headerAction={refreshButton}
@@ -368,7 +368,7 @@ export default function SettingsPage() {
 
   return (
     <PageTemplate
-      title="Configuración"
+      title="CONFIGURACIÓN"
       subtitle="Datos generales y configuración del negocio"
       loading={loading}
       error={error}

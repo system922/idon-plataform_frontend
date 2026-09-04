@@ -627,7 +627,7 @@ export default function CrmEmail() {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <PageTemplate
-      title="Email Marketing"
+      title="EMAIL MARKETING"
       subtitle="Crea y envía campañas de email a tus clientes"
       loading={loading}
       headerAction={refreshButton}

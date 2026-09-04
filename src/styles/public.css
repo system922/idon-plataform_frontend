@@ -1,6 +1,8 @@
 @import './General/Variablen/general_variables.css';
 @import './General/Layouts/Footer.css';
 @import './General/Components/Buttons.css';
+@import './General/Components/Input.css';
+@import './General/Components/SpinnerLoader.css';
 @import './General/Pages/LandingPage.css';
 @import './General/Pages/LegalPages.css';
 @import './General/Pages/LoginPage.css';

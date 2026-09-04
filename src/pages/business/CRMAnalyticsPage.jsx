@@ -432,7 +432,7 @@ export default function CrmAnalytics() {
   if (loading) {
     return (
       <PageTemplate
-        title="Analítica de Clientes"
+        title="ANALÍTICA DE CLIENTES"
         subtitle="Dashboard completo de comportamiento y tendencias"
         loading={false}
         headerAction={refreshButton}
@@ -445,7 +445,7 @@ export default function CrmAnalytics() {
   if (error) {
     return (
       <PageTemplate
-        title="Analítica de Clientes"
+        title="ANALÍTICA DE CLIENTES"
         subtitle="Error al cargar los datos"
         error={error}
         onRetry={loadAllData}
@@ -455,7 +455,7 @@ export default function CrmAnalytics() {
 
   return (
     <PageTemplate
-      title="Analítica de Clientes"
+      title="ANALÍTICA DE CLIENTES"
       subtitle="Dashboard completo de comportamiento y tendencias"
       headerAction={refreshButton}
     >

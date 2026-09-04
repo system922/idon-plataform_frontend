@@ -1431,6 +1431,82 @@ body, h1, h2, h3, h4, h5, h6, p, li, a, span, div {
 }
 
 /* ---- Loading y Error ---- */
+.blog-skeleton {
+  width: 100%;
+}
+
+.blog-skeleton-heading {
+  margin-bottom: 2.5rem;
+}
+
+.skeleton-block {
+  background: linear-gradient(90deg, #edf1f5 25%, #f8fafc 50%, #edf1f5 75%);
+  background-size: 200% 100%;
+  border-radius: 6px;
+  animation: blog-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-title {
+  width: min(280px, 70%);
+  height: 2.25rem;
+  margin-bottom: 1rem;
+}
+
+.skeleton-subtitle {
+  width: min(750px, 90%);
+  height: 1rem;
+  margin-bottom: 0.65rem;
+}
+
+.skeleton-subtitle-short {
+  width: min(480px, 65%);
+}
+
+.blog-skeleton-card {
+  min-height: 390px;
+  pointer-events: none;
+}
+
+.blog-skeleton-image {
+  width: 100%;
+  height: 170px;
+  flex-shrink: 0;
+  border-radius: 0;
+}
+
+.skeleton-type {
+  width: 92px;
+  height: 1.1rem;
+  margin-bottom: 0.85rem;
+}
+
+.skeleton-card-title {
+  width: 82%;
+  height: 1.35rem;
+  margin-bottom: 1rem;
+}
+
+.skeleton-card-line {
+  width: 100%;
+  height: 0.8rem;
+  margin-bottom: 0.65rem;
+}
+
+.skeleton-card-line-short {
+  width: 65%;
+}
+
+.skeleton-meta {
+  width: 38%;
+  height: 0.75rem;
+  margin-top: auto;
+}
+
+@keyframes blog-skeleton-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
 .blog-loading,
 .blog-error {
   text-align: center;
@@ -1444,6 +1520,12 @@ body, h1, h2, h3, h4, h5, h6, p, li, a, span, div {
 
 .blog-error {
   color: #dc2626;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block {
+    animation: none;
+  }
 }
 
 /* ============================================================

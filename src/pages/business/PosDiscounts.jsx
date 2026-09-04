@@ -548,7 +548,7 @@ export default function PosDiscounts() {
   if (loading) {
     return (
       <PageTemplate
-        title="Descuentos y Promociones"
+        title="DESCUENTOS Y PROMOCIONES"
         subtitle="Gestiona descuentos automáticos y promociones especiales para tus productos"
         loading={false}
         headerAction={refreshButton}
@@ -569,7 +569,7 @@ export default function PosDiscounts() {
   return (
     <>
       <PageTemplate
-        title="Descuentos y Promociones"
+        title="DESCUENTOS Y PROMOCIONES"
         subtitle="Gestiona descuentos automáticos y promociones especiales para tus productos"
         loading={loading}
         headerAction={refreshButton}

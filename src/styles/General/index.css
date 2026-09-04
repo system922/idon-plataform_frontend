@@ -1,34 +1,18 @@
-@import './Variablen/general_variables.css';
-
 @import './Layouts/SidebarModern.css';
-@import './Layouts/Footer.css';
 @import './Layouts/PageTemplate.css';
 @import './Layouts/AdminLayout.css';
 @import './Layouts/BusinessLayout.css';
 
-
-@import './Components/SpinnerLoader.css';
-@import './Components/Buttons.css';
 @import './Components/Table.css';
 @import './Components/Modal.css';
 @import './Components/PayrollPrintModal.css';
 
 @import './Components/ConfirmModal.css';
-@import './Components/Input.css';
 @import './Components/SearchInput.css';
 @import './Components/Checklist.css';
 @import './Components/GlobalExpenseBubble.css';
 
-@import './Pages/LandingPage.css';
-
-@import './Pages/LegalPages.css';
-@import './Pages/LoginPage.css';
-@import './Pages/PendingApprovalPage.css';
-@import './Pages/PaymentPendingPage.css';
-
-
 @import './Components/BusinessHome.css';
-@import './Pages/AccessDeniedPage.css';
 
 
 @import './Pages/BusinessStats.css';

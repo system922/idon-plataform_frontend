@@ -839,7 +839,7 @@ export default function EmployeesPayRollPage() {
 
   return (
     <PageTemplate
-      title="Nómina Inteligente"
+      title="NÓMINA DE COLABORADORES/AS"
       subtitle={periodText}
       loading={loading || isAnyActionInProgress}
       headerAction={headerActions}

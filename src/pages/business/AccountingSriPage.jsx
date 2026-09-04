@@ -216,7 +216,7 @@ export default function AccountingSriPage() {
 
   return (
     <PageTemplate
-      title="Configuración SRI"
+      title="INTEGRACIÓN SRI"
       subtitle="Logo, firma electrónica y secuenciales para facturación electrónica"
       loading={loading}
       error={error}

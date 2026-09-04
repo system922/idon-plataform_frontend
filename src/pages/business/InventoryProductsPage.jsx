@@ -296,7 +296,7 @@ const ProductosPage = () => {
   if (loading) {
     return (
       <PageTemplate
-        title="Gestión de Productos"
+        title="GESTIÓN DE PRODUCTOS"
         subtitle="Administra los productos, incluyendo códigos, SKU, precios y stock."
         loading={false}
         error={loadError}
@@ -319,7 +319,7 @@ const ProductosPage = () => {
 
   return (
     <PageTemplate
-      title="Gestión de Productos"
+      title="GESTIÓN DE PRODUCTOS"
       subtitle="Administra los productos, incluyendo códigos, SKU, precios y stock."
       loading={isLoading}
       error={loadError}

@@ -493,7 +493,10 @@ export default function TakeOrderPageNew() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <PageTemplate title="Nueva orden" subtitle="Tomar órdenes y enviar a cocina">
+    <PageTemplate 
+      title="NUEVA ORDEN" 
+      subtitle="Tomar órdenes y enviar a cocina"
+      >
       <div className="takeorder-shell">
         {error && (
           <div className="alert alert-error">

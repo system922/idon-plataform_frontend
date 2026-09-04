@@ -807,7 +807,7 @@ export default function EinvoicingVoidPage() {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <PageTemplate
-      title="Anulación de Comprobantes"
+      title="ANULACIÓN DE COMPROBANTES"
       subtitle="Anulación interna mediante nota de crédito al SRI"
       theme="business"
       loading={loading}

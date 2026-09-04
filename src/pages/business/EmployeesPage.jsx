@@ -843,7 +843,7 @@ export default function EmployeesManagePage() {
 
   return (
     <PageTemplate
-      title="Colaboradores"
+      title="COLABORADORES/AS"
       subtitle="Gestiona y administra tu personal fácilmente"
       loading={loading}
       error={error}

@@ -2169,7 +2169,7 @@ export default function PurchaseReceipts() {
   if (loading) {
     return (
       <PageTemplate
-        title="Recepción de mercadería"
+        title="RECEPCIÓN DE MERCADERÍA"
         subtitle="Gestión de recepciones de compras"
         theme="business"
         loading={false}

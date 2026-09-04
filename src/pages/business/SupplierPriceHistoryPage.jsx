@@ -489,7 +489,7 @@ export default function SupplierPriceHistoryPage() {
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <PageTemplate
-      title="Historial de Precios por Proveedor"
+      title="HISTORIAL DE PRECIOS"
       subtitle="Últimos costos de compra por proveedor y rentabilidad por producto"
       theme="business"
       loading={loading}

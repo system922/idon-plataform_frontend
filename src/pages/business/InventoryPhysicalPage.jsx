@@ -831,7 +831,7 @@ export default function InventoryPhysicalPage() {
   if (loading) {
     return (
       <PageTemplate
-        title="Inventario Físico"
+        title="INVENTARIO FÍSICO"
         subtitle="Conteo y ajuste de stock"
         loading={false}
         error={error}
@@ -855,7 +855,7 @@ export default function InventoryPhysicalPage() {
   // ─── Render ────────────────────────────────────────────────────────
   return (
     <PageTemplate
-      title="Inventario Físico"
+      title="INVENTARIO FÍSICO"
       subtitle="Conteo y ajuste de stock"
       loading={loading}
       error={error}

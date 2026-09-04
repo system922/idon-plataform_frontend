@@ -524,7 +524,7 @@ export default function AttendancePage() {
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
     <PageTemplate
-      title="Control de Asistencia"
+      title="CONTROL DE ASISTENCIA"
       subtitle="Registro de entrada y salida"
       theme="business"
       loading={loading}

@@ -713,7 +713,7 @@ export default function InventoryAdjustmentsPage() {
   if (loading) {
     return (
       <PageTemplate
-        title="Ajustes de Inventario"
+        title="AJUSTES DE INVENTARIO"
         subtitle="Kardex de productos y ajustes de stock"
         loading={false}
         error={error}
@@ -737,7 +737,7 @@ export default function InventoryAdjustmentsPage() {
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
     <PageTemplate
-      title="Ajustes de Inventario"
+      title="AJUSTES DE INVENTARIO"
       subtitle="Kardex de productos y ajustes de stock"
       loading={loading}
       error={error}

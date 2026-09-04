@@ -805,7 +805,7 @@ export default function EinvoicingInvoicesPage() {
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <PageTemplate
-      title="Comprobantes Electrónicos"
+      title="COMPROBANTES ELECTRÓNICOS"
       subtitle="Comprobantes emitidos al SRI"
       theme="business"
       headerAction={refreshButton}

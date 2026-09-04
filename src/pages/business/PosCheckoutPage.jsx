@@ -1509,7 +1509,7 @@ export default function PosCheckoutPage() {
 
   return (
     <PageTemplate 
-      title="Cobrar Orden" 
+      title="COBRAR ORDEN" 
       subtitle="Cobrar órdenes, imprimir recibo y abrir caja" 
       backButton
     >

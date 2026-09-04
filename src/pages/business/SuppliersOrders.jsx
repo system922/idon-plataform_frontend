@@ -1931,7 +1931,7 @@ export default function SuppliersOrders() {
   if (loading) {
     return (
       <PageTemplate
-        title="Órdenes de compra"
+        title="ÓRDENES DE COMPRA"
         subtitle="Gestión de compras a proveedores"
         theme="business"
         loading={false}

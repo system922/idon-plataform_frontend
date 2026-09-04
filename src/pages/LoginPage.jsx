@@ -819,7 +819,7 @@ export default function LoginPage() {
                       )}
 
                       <div className="form-group">
-                        <label><FiMail size={14} /> EMAIL</label>
+                        <label><FiMail size={14} /> USUARIO</label>
                         <Input
                           type="email"
                           value={email}
@@ -949,7 +949,7 @@ export default function LoginPage() {
                         <div className="step-content">
                           <div className="grid-2">
                             <div className="form-group">
-                              <label><FiCreditCard size={14} /> Tipo de Documento *</label>
+                              <label><FiCreditCard size={14} /> T. Documento *</label>
                               <CustomCombobox
                                 options={[
                                   { value: 'cedula', label: 'Cédula' },
@@ -966,7 +966,7 @@ export default function LoginPage() {
                             </div>
                             
                             <div className="form-group">
-                              <label><FiCreditCard size={14} /> Número de Documento *</label>
+                              <label><FiCreditCard size={14} /> N. Documento *</label>
                               <Input
                                 type="text"
                                 value={regForm.documentNumber}
@@ -1145,13 +1145,12 @@ export default function LoginPage() {
                         </div>
                       )}
 
-                      <ButtonGroup>
+                      <ButtonGroup style={{ marginTop: 24, width: '100%', justifyContent: 'center' }}>
                         {registroStep > 1 && (
                           <IconTextButton
                             variant=""
                             size="md"
-                            inline={true}
-                            icon={<FiArrowLeft size={12} />}
+                            icon={<FiArrowLeft size={17} />}
                             onClick={handlePrevStep}
                             title="atrás"
                           >
@@ -1163,8 +1162,7 @@ export default function LoginPage() {
                           <IconTextButton
                             variant="success"
                             size="md"
-                            inline={true}
-                            icon={<FiArrowRight size={12} />}
+                            icon={<FiArrowRight size={17} />}
                             onClick={handleNextStep} 
                             title="siguiente"
                           >
@@ -1174,7 +1172,6 @@ export default function LoginPage() {
                           <IconTextButton
                             variant="success"
                             size="md"
-                            inline={true}
                             icon={<FiArrowRight size={17} />}
                             onClick={handleRegisterSubmit}
                             disabled={loading || !isStep3Valid()}

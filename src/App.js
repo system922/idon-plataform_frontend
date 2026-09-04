@@ -1,5 +1,5 @@
 // ========== src/App.js ==========
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import LandingPage from './pages/LandingPage';
@@ -12,42 +12,40 @@ import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
-import AdminDashboard from './pages/admin_idon/AdminDashboard';
 import './App.css';
 import { SessionProvider, useSession } from './context/SessionContext';
 import { api } from './config/api';
-import AdminLayout from './admin/layout/AdminLayout';
-
-
-import BusinessStats from './pages/admin_idon/BusinessStats';
-import VersionsManager from './pages/admin_idon/VersionsManager';
-import UpdatesManager from './pages/admin_idon/UpdatesManager';
-import PendingPayments from './pages/admin_idon/PendingPayments';
-import ActivityLogs from './pages/admin_idon/ActivityLogs';
-import BackupsManager from './pages/admin_idon/BackupsManager';
-import ReportsGenerator from './pages/admin_idon/ReportsGenerator';
-
-import AdminIdonNews from './pages/admin_idon/AdminIdonNews';
-import Features from './pages/admin_idon/Features';
-import Templates from './pages/admin_idon/Templates';
-import Plans from './pages/admin_idon/Plans';
-import Payments from './pages/admin_idon/Payments';
-import Roles from './pages/admin_idon/Roles';
-import Settings from './pages/admin_idon/Settings';
-import Audit from './pages/admin_idon/Audit';
-import Clientes from './pages/admin_idon/Clientes';
-import Modulos from './pages/admin_idon/Modulos';
-import Users from './pages/admin_idon/Users';
-import Requests from './pages/admin_idon/Requests';
-import BusinessTypes from './pages/admin_idon/BusinessTypes';
-import EmailTemplatesPage from './pages/admin_idon/EmailTemplatesPage';
-import ProfilePage from './pages/business/ProfilePage';
 import PublicLayout from './admin/layout/PublicLayout';
+import LoadingOverlay from './components/General/LoadingOverlay';
+import { businessRoutes } from './routes/businessRoutes';
 
-// ── Business panel ──────────────────────────────────────────
-import BusinessLayout from './admin/layout/BusinessLayout';
-import PendingApprovalPage from './pages/PendingApprovalPage';
-import InactiveUserPage from './pages/InactiveUserPage';
+const AdminDashboard = lazy(() => import('./pages/admin_idon/AdminDashboard'));
+const BusinessStats = lazy(() => import('./pages/admin_idon/BusinessStats'));
+const VersionsManager = lazy(() => import('./pages/admin_idon/VersionsManager'));
+const UpdatesManager = lazy(() => import('./pages/admin_idon/UpdatesManager'));
+const PendingPayments = lazy(() => import('./pages/admin_idon/PendingPayments'));
+const ActivityLogs = lazy(() => import('./pages/admin_idon/ActivityLogs'));
+const BackupsManager = lazy(() => import('./pages/admin_idon/BackupsManager'));
+const ReportsGenerator = lazy(() => import('./pages/admin_idon/ReportsGenerator'));
+const AdminIdonNews = lazy(() => import('./pages/admin_idon/AdminIdonNews'));
+const Features = lazy(() => import('./pages/admin_idon/Features'));
+const Templates = lazy(() => import('./pages/admin_idon/Templates'));
+const Plans = lazy(() => import('./pages/admin_idon/Plans'));
+const Payments = lazy(() => import('./pages/admin_idon/Payments'));
+const Roles = lazy(() => import('./pages/admin_idon/Roles'));
+const Settings = lazy(() => import('./pages/admin_idon/Settings'));
+const Audit = lazy(() => import('./pages/admin_idon/Audit'));
+const Clientes = lazy(() => import('./pages/admin_idon/Clientes'));
+const Modulos = lazy(() => import('./pages/admin_idon/Modulos'));
+const Users = lazy(() => import('./pages/admin_idon/Users'));
+const Requests = lazy(() => import('./pages/admin_idon/Requests'));
+const BusinessTypes = lazy(() => import('./pages/admin_idon/BusinessTypes'));
+const EmailTemplatesPage = lazy(() => import('./pages/admin_idon/EmailTemplatesPage'));
+const ProfilePage = lazy(() => import('./pages/business/ProfilePage'));
+const AdminLayout = lazy(() => import('./admin/layout/AdminLayout'));
+const BusinessLayout = lazy(() => import('./admin/layout/BusinessLayout'));
+const PendingApprovalPage = lazy(() => import('./pages/PendingApprovalPage'));
+const InactiveUserPage = lazy(() => import('./pages/InactiveUserPage'));
 
 /* Páginas Legales */
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -55,13 +53,11 @@ import TermsAndConditions from './pages/TermsAndConditions';
 
 // ========== Contextos y componentes ==========
 import { DrawerProvider } from './context/DrawerContext';
-import GlobalExpenseBubble from './components/GlobalExpenseBubble';
+const GlobalExpenseBubble = lazy(() => import('./components/GlobalExpenseBubble'));
 import { ConfirmProvider } from './components/ConfirmContext';
-import PaymentPendingPage from './pages/business/PaymentPendingPage';
+const PaymentPendingPage = lazy(() => import('./pages/business/PaymentPendingPage'));
 import PublicOrderPage from './pages/public/PublicOrderPage';
-import NoAccessPage from './pages/NoAccessPage';
-import LoadingOverlay from './components/General/LoadingOverlay';
-import { businessRoutes } from './routes/businessRoutes';
+const NoAccessPage = lazy(() => import('./pages/NoAccessPage'));
 
 
 // ==================== FUNCIÓN AUXILIAR ====================
@@ -573,7 +569,7 @@ function AppContent() {
         <Suspense fallback={<LoadingOverlay message="" />}>
           <AppRoutes />
         </Suspense>
-        <GlobalExpenseBubble />
+        {!isPublicRoute && <GlobalExpenseBubble />}
       </DrawerProvider>
     </>
   );

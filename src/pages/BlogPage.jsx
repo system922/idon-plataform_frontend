@@ -6,6 +6,31 @@ import { ExternalLink } from 'lucide-react';
 import { FiClock } from 'react-icons/fi';
 import { api } from '../config/api';
 
+const BlogSkeleton = () => (
+  <div className="blog-skeleton" aria-busy="true" aria-label="Cargando artículos">
+    <div className="blog-skeleton-heading">
+      <div className="skeleton-block skeleton-title" />
+      <div className="skeleton-block skeleton-subtitle" />
+      <div className="skeleton-block skeleton-subtitle skeleton-subtitle-short" />
+    </div>
+    <div className="blog-grid">
+      {[1, 2, 3].map((item) => (
+        <article className="blog-card blog-skeleton-card" key={item}>
+          <div className="skeleton-block blog-skeleton-image" />
+          <div className="blog-card-content">
+            <div className="skeleton-block skeleton-type" />
+            <div className="skeleton-block skeleton-card-title" />
+            <div className="skeleton-block skeleton-card-line" />
+            <div className="skeleton-block skeleton-card-line" />
+            <div className="skeleton-block skeleton-card-line skeleton-card-line-short" />
+            <div className="skeleton-block skeleton-meta" />
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+);
+
 const BlogPage = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +84,7 @@ const BlogPage = () => {
         <PublicHeader />
         <main className="landing-main">
           <div className="blog-container">
-            <div className="blog-loading">Cargando artículos...</div>
+            <BlogSkeleton />
           </div>
         </main>
       </div>

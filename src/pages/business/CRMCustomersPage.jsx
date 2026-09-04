@@ -731,7 +731,7 @@ export default function CrmCustomers() {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <PageTemplate
-      title="Gestión de Clientes"
+      title="GESTIÓN DE CLIENTES"
       subtitle={`${totalCustomers} clientes registrados`}
       loading={loading}
       error={error}
