@@ -342,9 +342,6 @@ export default function PosCheckoutPage() {
       if (!response.ok) {
         const errMsg = String(result?.error || result?.message || response.statusText || response.status || 'No se pudo emitir la factura');
         const esFirmaError = /firma|signature|p12|certificado|electr/i.test(errMsg);
-        if (!esFirmaError) {
-          console.warn('Factura pendiente o fallida:', errMsg);
-        }
         return {
           id: result?.id || null,
           invoice_number: result?.invoice_number || null,
@@ -367,9 +364,6 @@ export default function PosCheckoutPage() {
 
     } catch (e) {
       const esFirmaError = /firma|signature|p12|certificado|electr/i.test(e.message || '');
-      if (!esFirmaError) {
-        console.warn('Factura pendiente por demora o error:', e.message);
-      }
       return {
         id: null,
         invoice_number: null,
@@ -578,7 +572,6 @@ export default function PosCheckoutPage() {
         await print('printer_main', 'credit-receivable', printData, false);
         showToast('Recibo de cuenta por cobrar impreso', 'success');
       } catch (printErr) {
-        console.warn('Error al imprimir recibo:', printErr);
       }
 
       setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
@@ -675,7 +668,6 @@ export default function PosCheckoutPage() {
         await print('printer_main', 'credit-receivable-with-abono', printData, false);
         showToast('Recibo de abono y cuenta por cobrar impreso', 'success');
       } catch (printErr) {
-        console.warn('Error al imprimir recibo:', printErr);
       }
 
       setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
@@ -739,7 +731,6 @@ export default function PosCheckoutPage() {
         await print('printer_main', 'credit-receivable', printData, false);
         showToast('Recibo de cuenta por cobrar impreso', 'success');
       } catch (printErr) {
-        console.warn('Error al imprimir recibo:', printErr);
         showToast('Error al imprimir recibo de cuenta por cobrar', 'error');
       }
 
@@ -804,7 +795,6 @@ export default function PosCheckoutPage() {
         body: JSON.stringify({ amount: total, payment_method: metodoPago })
       });
     } catch (err) {
-      console.warn('Error actualizando cuenta por cobrar:', err);
     }
   };
 
@@ -1475,7 +1465,6 @@ export default function PosCheckoutPage() {
   useEffect(() => {
     const navigationState = window.history.state?.usr || {};
     if (navigationState.orderNumber) {
-      console.log('Navegando desde Cuentas por Cobrar (state):', navigationState);
       setIsFromReceivable(true);
       setCurrentReceivableId(navigationState.receivableId || null);
       if (window.history.state?.usr) {
@@ -1486,7 +1475,6 @@ export default function PosCheckoutPage() {
         String(o.id) === String(navigationState.orderNumber)
       );
       if (targetOrder) {
-        console.log('Orden encontrada en orders:', targetOrder);
         setDraftOrder(targetOrder);
         setSelectedOrder(targetOrder);
         const cedula = navigationState.customerCedula || targetOrder.customer_document_number || '9999999999';
@@ -1498,7 +1486,6 @@ export default function PosCheckoutPage() {
         setOrderNotes(targetOrder.notes || '');
         showToast(`Cobrando cuenta #${targetOrder.order_number}`, 'info');
       } else {
-        console.log('Orden no encontrada en orders, recargando...');
         loadOrders();
       }
     }

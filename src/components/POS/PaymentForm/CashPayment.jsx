@@ -127,19 +127,6 @@ const CashPayment = ({
     }
   };
 
-  console.log('💰 CASH PAYMENT DEBUG', {
-    amountPaid,
-    amountPaidRaw,
-    totalOrdenConDescuento,
-    total,
-    recibido,
-    isSufficient,
-    printLoading,
-    disabled,
-    botonDisabled: printLoading || !amountPaid || !isSufficient || disabled,
-  });
-
-
   return (
     <div className="payment-cash-row">
       <div className="payment-field">
