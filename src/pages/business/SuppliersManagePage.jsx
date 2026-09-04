@@ -425,7 +425,7 @@ export default function InventorySuppliersPage() {
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <PageTemplate
-      title="Proveedores"
+      title="PROVEEDORES"
       subtitle="Gestión de proveedores del negocio"
       theme="business"
       loading={loading}

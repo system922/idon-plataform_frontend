@@ -20,8 +20,14 @@ export function useQzTray() {
 
         // 1. Obtener certificado
         const res = await fetchWithAuth('/print/cert');
-        const certData = await res.text();
-        const cleanCert = certData.trim();
+        if (!res.ok) {
+          throw new Error(`No se pudo obtener el certificado (${res.status})`);
+        }
+        const certData = await res.json();
+        const cleanCert = String(certData).trim();
+        if (!cleanCert.includes('-----BEGIN CERTIFICATE-----')) {
+          throw new Error('El certificado recibido no tiene formato PEM válido');
+        }
 
         // 2. Configurar certificado usando setCertificatePromise (compatible con versiones antiguas)
         qz.security.setCertificatePromise(async () => {
@@ -34,7 +40,13 @@ export function useQzTray() {
             method: 'POST',
             body: JSON.stringify({ data: toSign }),
           });
+          if (!res.ok) {
+            throw new Error(`No se pudo firmar la solicitud (${res.status})`);
+          }
           const { signature } = await res.json();
+          if (!signature) {
+            throw new Error('El servidor no devolvió una firma válida');
+          }
           return signature;
         });
 
