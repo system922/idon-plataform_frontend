@@ -6,10 +6,10 @@
     <!-- ============================================ -->
     <!-- FAVICON - Logo en la pestaña del navegador   -->
     <!-- ============================================ -->
-    <link rel="icon" href="%PUBLIC_URL%/IDON_2.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/IDON_2.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/IDON_2.svg" />
-    <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/IDON_2.svg" />
+    <link rel="icon" href="%PUBLIC_URL%/logo.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/logo.svg" />
+    <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/logo.svg" />
 
     <!-- Viewport -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -27,8 +27,8 @@
       href="%PUBLIC_URL%/landing-640.webp" 
       fetchpriority="high"
       imagesizes="(max-width: 768px) 100vw, 640px"
-      imagesrcset="%PUBLIC_URL%/landing-320.webp 320w, %PUBLIC_URL%/landing-400.webp 400w, %PUBLIC_URL%/landing-640.webp 640w, %PUBLIC_URL%/landing-800.webp 800w, %PUBLIC_URL%/landing-1200.webp 1200w" 
-      />
+      imagesrcset="%PUBLIC_URL%/landing-640.webp 640w, %PUBLIC_URL%/landing-800.webp 800w" 
+    />
     <meta name="description" content="IDON: Software de gestión para negocios en Ecuador. Facturación electrónica SRI, control de inventario, POS y CRM desde $10/mes. ¡Simplifica tu negocio hoy!"/>
     <meta name="keywords" content="IDON, Plataforma de Gestión, inventario, ventas y operaciones" />
     <meta name="author" content="SYSTEM DESIGN" />
@@ -46,158 +46,6 @@
     <link rel="alternate" href="https://www.idonplataform.site/" hreflang="x-default" />
 
     <!-- ============================================ -->
-    <!-- DATOS ESTRUCTURADOS (JSON-LD)                -->
-    <!-- ============================================ -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "¿IDON es solo para restaurantes?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "No. IDON está diseñado para cualquier negocio que necesite gestionar ventas, inventario y facturación: desde artesanos y agricultores hasta tiendas de retail, servicios profesionales y MIPYMES de diversos sectores."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿IDON funciona sin conexión a internet?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "IDON es una plataforma 100% en la nube, por lo que requiere conexión a internet para funcionar. Sin embargo, hemos optimizado la aplicación para que funcione de manera rápida y estable incluso en conexiones móviles con baja señal, garantizando que puedas facturar y gestionar tu negocio desde cualquier lugar con cobertura."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿Qué incluye el plan desde $10/mes?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "El plan básico incluye facturación electrónica, control de inventario, POS para ventas en punto de venta y reportes básicos. Puedes escalar a planes superiores para acceder a CRM avanzado."
-          }
-        }
-      ]
-    }
-    </script>
-
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "IDON",
-      "url": "https://www.idonplataform.site/",
-      "logo": "https://www.idonplataform.site/IDON_3.png",
-      "description": "Software de gestión para negocios. Controla ventas, inventario y operaciones en restaurantes, comercios y más. Facturación SRI, POS y CRM integrados.",
-      "address": {
-        "@type": "PostalAddress",
-        "addressCountry": "EC"
-      },
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "contactType": "sales",
-        "availableLanguage": "es"
-      },
-      "sameAs": [
-        "https://www.facebook.com/idonplataform",
-        "https://www.instagram.com/idonplataform",
-        "https://www.linkedin.com/company/idonplataform"
-      ]
-    }
-    </script>
-
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "IDON Control",
-      "url": "https://www.idonplataform.site/",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://www.idonplataform.site/buscar?q={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
-    }
-    </script>
-
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Product",
-      "name": "IDON Control",
-      "description": "Software de gestión unificada para ventas, inventario y facturación electrónica.",
-      "image": "https://www.idonplataform.site/IDON_3.png",
-      "brand": {
-        "@type": "Brand",
-        "name": "IDON"
-      },
-      "offers": {
-        "@type": "Offer",
-        "priceCurrency": "USD",
-        "price": "10",
-        "priceValidUntil": "2026-12-31",
-        "validFrom": "2025-01-01",
-        "availability": "https://schema.org/InStock",
-        "url": "https://www.idonplataform.site/precios",
-        "shippingDetails": {
-          "@type": "OfferShippingDetails",
-          "shippingRate": {
-            "@type": "MonetaryAmount",
-            "value": "0",
-            "currency": "USD"
-          },
-          "shippingDestination": {
-            "@type": "DefinedRegion",
-            "addressCountry": "EC"
-          },
-          "deliveryTime": {
-            "@type": "ShippingDeliveryTime",
-            "handlingTime": {
-              "@type": "QuantitativeValue",
-              "minValue": 0,
-              "maxValue": 1,
-              "unitCode": "DAY"
-            },
-            "transitTime": {
-              "@type": "QuantitativeValue",
-              "minValue": 0,
-              "maxValue": 0,
-              "unitCode": "DAY"
-            }
-          }
-        },
-        "hasMerchantReturnPolicy": {
-          "@type": "MerchantReturnPolicy",
-          "applicableCountry": "EC",
-          "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
-          "merchantReturnDays": 30,
-          "returnMethod": "https://schema.org/ReturnByMail",
-          "returnFees": "https://schema.org/FreeReturn"
-        }
-      },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.8",
-        "reviewCount": "23"
-      },
-      "review": [
-        {
-          "@type": "Review",
-          "author": {
-            "@type": "Person",
-            "name": "Plinio V."
-          },
-          "reviewBody": "Con IDON, pasé de manejar todo en Excel a tener mi negocio automatizado. La facturación al SRI es un alivio y el control de inventario me permite saber qué vender y cuándo reponer.",
-          "reviewRating": {
-            "@type": "Rating",
-            "ratingValue": "5"
-          }
-        }
-      ]
-    }
-    </script>
-
-    <!-- ============================================ -->
     <!-- OPEN GRAPH (Facebook, WhatsApp, LinkedIn)    -->
     <!-- ============================================ -->
     <meta property="og:title" content="IDON Control | Simplifica tu Gestión de Negocios" />
@@ -206,9 +54,9 @@
     <meta property="og:url" content="https://www.idonplataform.site" />
     <meta property="og:site_name" content="IDON" />
     <meta property="og:locale" content="es_ES" />
-    <meta property="og:image" content="https://www.idonplataform.site/IDON_3.png" />
-    <meta property="og:image:secure_url" content="https://www.idonplataform.site/IDON_3.png" />
-    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image" content="https://www.idonplataform.site/IDON_3.svg" />
+    <meta property="og:image:secure_url" content="https://www.idonplataform.site/IDON_3.svg" />
+    <meta property="og:image:type" content="image/svg+xml" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="IDON Control - Simplifica la Gestión de tu Negocio" />
@@ -671,6 +519,164 @@
     </noscript>
 
     <div id="root"></div>
+
+    <!-- ========================================================== -->
+    <!--  DATOS ESTRUCTURADOS (JSON-LD) MOVIDOS AQUÍ                -->
+    <!--  (No bloquean el renderizado del contenido principal)      -->
+    <!-- ========================================================== -->
+
+    <!-- FAQ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿IDON es solo para restaurantes?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. IDON está diseñado para cualquier negocio que necesite gestionar ventas, inventario y facturación: desde artesanos y agricultores hasta tiendas de retail, servicios profesionales y MIPYMES de diversos sectores."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿IDON funciona sin conexión a internet?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "IDON es una plataforma 100% en la nube, por lo que requiere conexión a internet para funcionar. Sin embargo, hemos optimizado la aplicación para que funcione de manera rápida y estable incluso en conexiones móviles con baja señal, garantizando que puedas facturar y gestionar tu negocio desde cualquier lugar con cobertura."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Qué incluye el plan desde $10/mes?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "El plan básico incluye facturación electrónica, control de inventario, POS para ventas en punto de venta y reportes básicos. Puedes escalar a planes superiores para acceder a CRM avanzado."
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "IDON",
+      "url": "https://www.idonplataform.site/",
+      "logo": "https://www.idonplataform.site/IDON_3.png",
+      "description": "Software de gestión para negocios. Controla ventas, inventario y operaciones en restaurantes, comercios y más. Facturación SRI, POS y CRM integrados.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "EC"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "sales",
+        "availableLanguage": "es"
+      },
+      "sameAs": [
+        "https://www.facebook.com/idonplataform",
+        "https://www.instagram.com/idonplataform",
+        "https://www.linkedin.com/company/idonplataform"
+      ]
+    }
+    </script>
+
+    <!-- WebSite -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "IDON Control",
+      "url": "https://www.idonplataform.site/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://www.idonplataform.site/buscar?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <!-- Product -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": "IDON Control",
+      "description": "Software de gestión unificada para ventas, inventario y facturación electrónica.",
+      "image": "https://www.idonplataform.site/logo.svg",
+      "brand": {
+        "@type": "Brand",
+        "name": "IDON"
+      },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "USD",
+        "price": "10",
+        "priceValidUntil": "2026-12-31",
+        "validFrom": "2025-01-01",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.idonplataform.site/precios",
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "shippingRate": {
+            "@type": "MonetaryAmount",
+            "value": "0",
+            "currency": "USD"
+          },
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "EC"
+          },
+          "deliveryTime": {
+            "@type": "ShippingDeliveryTime",
+            "handlingTime": {
+              "@type": "QuantitativeValue",
+              "minValue": 0,
+              "maxValue": 1,
+              "unitCode": "DAY"
+            },
+            "transitTime": {
+              "@type": "QuantitativeValue",
+              "minValue": 0,
+              "maxValue": 0,
+              "unitCode": "DAY"
+            }
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "applicableCountry": "EC",
+          "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 30,
+          "returnMethod": "https://schema.org/ReturnByMail",
+          "returnFees": "https://schema.org/FreeReturn"
+        }
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "reviewCount": "23"
+      },
+      "review": [
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Plinio V."
+          },
+          "reviewBody": "Con IDON, pasé de manejar todo en Excel a tener mi negocio automatizado. La facturación al SRI es un alivio y el control de inventario me permite saber qué vender y cuándo reponer.",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5"
+          }
+        }
+      ]
+    }
+    </script>
 
     <!--
       IDON Control | Inventario, Ventas y Operaciones
