@@ -18,6 +18,7 @@ import { SessionProvider, useSession } from './context/SessionContext';
 import { api } from './config/api';
 import PublicLayout from './admin/layout/PublicLayout';
 import LoadingOverlay from './components/General/LoadingOverlay';
+import ErrorBoundary from './components/ErrorBoundary';
 import { businessRoutes } from './routes/businessRoutes';
 
 import AdminLayout from './admin/layout/AdminLayout';
@@ -564,14 +565,14 @@ function AppContent() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <DrawerProvider>
         <Suspense fallback={<LoadingOverlay message="" />}>
           <AppRoutes />
         </Suspense>
         {!isPublicRoute && <GlobalExpenseBubble />}
       </DrawerProvider>
-    </>
+    </ErrorBoundary>
   );
 }
 

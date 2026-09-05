@@ -77,3 +77,28 @@
 .global-toast-success {
   background: var(--success, #10b981);
 }
+
+/* Reserve space while a route chunk is loading to avoid layout shifts. */
+.route-loading-placeholder {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 2rem;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.page-container {
+  min-height: 80vh;
+}
+
+.dashboard-container,
+.page-content {
+  min-height: calc(100vh - 200px);
+}
+
+img[width][height] {
+  aspect-ratio: attr(width) / attr(height);
+}
