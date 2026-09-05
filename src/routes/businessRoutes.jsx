@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { Route, Navigate } from 'react-router-dom';
 import RouteGuard from '../components/RouteGuard';
 
