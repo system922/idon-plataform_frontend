@@ -8,7 +8,7 @@ const Dashboard = lazy(() => import('../pages/business/CoreDashboardPage'));
 const DashboardRetail = lazy(() => import('../pages/business/CoreRetailDashboardPage'));
 const CoreUsersPage = lazy(() => import('../pages/business/CoreUsersPage'));
 const CoreRolesPage = lazy(() => import('../pages/business/CoreRolesPage'));
-const AuditLogs = lazy(() => import('../pages/business/AuditLogsPage'));
+const AuditLogs = lazy(() => import('../pages/business/CoreAuditLogsPage'));
 
 const HistoryCajaPage = lazy(() => import('../pages/business/PosCashRegisterHistoryPage'));
 const ReceiptPrint = lazy(() => import('../pages/business/ReceiptPrintPage'));
