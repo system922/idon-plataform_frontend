@@ -1,5 +1,6 @@
 // ========== src/App.js ==========
 import React, { useEffect, useState, Suspense } from 'react';
+
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import LandingPage from './pages/LandingPage';
@@ -512,7 +513,14 @@ function AppRoutes() {
       )}
 
       {/* App Business */}
-      <Route path="/app/*" element={<AppRouter />}>
+      <Route
+        path="/app/*"
+        element={
+          <Suspense fallback={<LoadingOverlay message="Cargando módulo..." />}>
+            <AppRouter />
+          </Suspense>
+        }
+      >
         {businessRoutes}
       </Route>
 
