@@ -1,40 +1,56 @@
 import { Route, Navigate } from 'react-router-dom';
 import RouteGuard from '../components/RouteGuard';
-import BusinessHome from '../pages/business/BusinessHome';
-import Settings from '../pages/business/CoreSettingsPage';
-import Dashboard from '../pages/business/CoreDashboardPage';
-import DashboardRetail from '../pages/business/CoreRetailDashboardPage';
-import CoreUsersPage from '../pages/business/CoreUsersPage';
-import CoreRolesPage from '../pages/business/CoreRolesPage';
-import AuditLogs from '../pages/business/CoreAuditPage';
-import HistoryCajaPage from '../pages/business/PosCashRegisterHistoryPage';
-import ReceiptPrint from '../pages/business/ReceiptPrintPage';
+
+const BusinessHome = lazy(() => import('../pages/business/BusinessHome'));
+
+const Settings = lazy(() => import('../pages/business/CoreSettingsPage'));
+const Dashboard = lazy(() => import('../pages/business/CoreDashboardPage'));
+const DashboardRetail = lazy(() => import('../pages/business/CoreRetailDashboardPage'));
+const CoreUsersPage = lazy(() => import('../pages/business/CoreUsersPage'));
+const CoreRolesPage = lazy(() => import('../pages/business/CoreRolesPage'));
+const AuditLogs = lazy(() => import('../pages/business/AuditLogsPage'));
+
+const HistoryCajaPage = lazy(() => import('../pages/business/PosCashRegisterHistoryPage'));
+const ReceiptPrint = lazy(() => import('../pages/business/ReceiptPrintPage'));
+const PosDiscounts = lazy(() => import('../pages/business/PosDiscounts'));
 import Checkout from '../pages/business/PosCheckoutPage';
 import PosRetail from '../pages/business/PosRetailPage';
-import PosDiscounts from '../pages/business/PosDiscounts.jsx';
+
+
 import Inventory from '../pages/business/InventoryAdjustmentsPage';
 import InventoryCategories from '../pages/business/InventoryCategoriesPage';
 import InventoryProducts from '../pages/business/InventoryProductsPage';
 import InventoryPhysical from '../pages/business/InventoryPhysicalPage';
 import InventoryRecipes from '../pages/business/InventoryRecipesPage';
+
+
 import Order from '../pages/business/OrderPage';
 import OrderTable from '../pages/business/OrdersTablesPage';
 import OrderHistory from '../pages/business/OrdersHistoryPage';
 import OrdersKitchenScreenPage from '../pages/business/OrdersKitchenScreenPage';
 import OrdersQrPage from '../pages/business/OrdersQrPage';
+
+
 import SuppliersManagePage from '../pages/business/SuppliersManagePage';
 import SuppliersPricesPage from '../pages/business/SupplierPriceHistoryPage';
 import SuppliersReceiving from '../pages/business/SuppliersReceiving';
 import SuppliersOrders from '../pages/business/SuppliersOrders';
+
+
 import ExpensesCategory from '../pages/business/ExpensesCategories';
 import ExpensesHistory from '../pages/business/ExpensesHistory';
+
+
 import Attendance from '../pages/business/EmployeesAttendancePage';
 import Employees from '../pages/business/EmployeesPage';
 import EmployeesPayRoll from '../pages/business/EmployeesPayRoll';
 import Schedules from '../pages/business/SchedulesPage';
 import EmployeesLeaves from '../pages/business/EmployeesLeaves';
+
 import GenericFeaturePage from '../pages/business/GenericFeaturePage';
+
 import ProfilePage from '../pages/business/ProfilePage.jsx';
+
 import ReportsAdvancedPage from '../pages/business/ReportsAdvancedPage';
 import ReportsCustomersPage from '../pages/business/ReportsCustomersPage';
 import ReportsInventoryPage from '../pages/business/ReportsInventoryPage';
