@@ -356,7 +356,7 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }) => {
                   className={errors.businessType ? 'input-error' : ''}
                 >
                   <option value="">Selecciona un tipo</option>
-                  {businessTypes.map(bt => (
+                  {businessTypes.filter(bt => bt.is_active !== false).map(bt => (
                     <option key={bt.id} value={bt.id}>
                       {bt.icon ? `${bt.icon} ` : ''}{bt.name}
                     </option>

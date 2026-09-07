@@ -1062,7 +1062,7 @@ export default function LoginPage() {
                               </small>
                             )}
                             <CustomCombobox
-                              options={businessTypes.map(bt => ({
+                              options={businessTypes.filter(bt => bt.is_active !== false).map(bt => ({
                                 value: bt.id ?? bt.slug ?? bt.name,
                                 label: bt.icon ? `${bt.icon} ${bt.name}` : bt.name
                               }))}
