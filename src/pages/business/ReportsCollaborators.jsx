@@ -22,70 +22,74 @@ import ReportPdfButton from '../../components/ReportPdfGenerator';
 import ReportExcelButton from '../../components/ReportExcelGenerator';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-const formatDate = (isoDate) => {
-  if (!isoDate) return '';
-  if (typeof isoDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
-    const [year, month, day] = isoDate.split('-');
-    return `${day}/${month}/${year}`;
-  }
-  const date = new Date(isoDate);
-  if (isNaN(date.getTime())) return String(isoDate);
-  return date.toLocaleDateString('es-EC', {
-    year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'America/Guayaquil'
-  });
-};
+const ECUADOR_TIME_ZONE = 'America/Guayaquil';
+const ECUADOR_DATE_FORMATTER = new Intl.DateTimeFormat('es-EC', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: ECUADOR_TIME_ZONE,
+});
 
-const normalizeDate = (dateValue) => {
+const formatDate = (dateValue) => {
   if (!dateValue) return '';
-  if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) return dateValue;
-  if (typeof dateValue === 'string' && dateValue.includes('T')) return dateValue.split('T')[0];
-  const date = new Date(dateValue);
+  const date = typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)
+    ? new Date(`${dateValue}T12:00:00.000Z`)
+    : dateValue instanceof Date ? dateValue : new Date(dateValue);
   if (isNaN(date.getTime())) return String(dateValue);
-  return date.toISOString().split('T')[0];
+  return ECUADOR_DATE_FORMATTER.format(date);
 };
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Rango de fechas por período ───────────────────────────────────────
 const getDateRangeFromPeriod = (period, customStart, customEnd) => {
-  const now = new Date();
-  let from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  let to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayParts = Object.fromEntries(
+    new Intl.DateTimeFormat('en', {
+      timeZone: ECUADOR_TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date())
+      .filter(({ type }) => type !== 'literal')
+      .map(({ type, value }) => [type, Number(value)])
+  );
+  const today = new Date(Date.UTC(todayParts.year, todayParts.month - 1, todayParts.day));
+  let from = new Date(today);
+  let to = new Date(today);
 
   if (period === 'all') {
-    from = new Date(2020, 0, 1);
-    to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    from = new Date(Date.UTC(2020, 0, 1));
   } else if (period === 'day') {
     // hoy
   } else if (period === 'week') {
-    from = new Date(now); from.setDate(now.getDate() - 6); to = new Date(now);
+    from.setUTCDate(from.getUTCDate() - 6);
   } else if (period === 'month') {
-    from = new Date(now.getFullYear(), now.getMonth(), 1);
-    to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    from = new Date(Date.UTC(todayParts.year, todayParts.month - 1, 1));
+    to = new Date(Date.UTC(todayParts.year, todayParts.month, 0));
   } else if (period === 'quarter') {
-    const q = Math.floor(now.getMonth() / 3);
-    from = new Date(now.getFullYear(), q * 3, 1);
-    to = new Date(now.getFullYear(), q * 3 + 3, 0);
+    const quarterStartMonth = Math.floor((todayParts.month - 1) / 3) * 3;
+    from = new Date(Date.UTC(todayParts.year, quarterStartMonth, 1));
+    to = new Date(Date.UTC(todayParts.year, quarterStartMonth + 3, 0));
   } else if (period === 'year') {
-    from = new Date(now.getFullYear(), 0, 1);
-    to = new Date(now.getFullYear(), 11, 31);
+    from = new Date(Date.UTC(todayParts.year, 0, 1));
+    to = new Date(Date.UTC(todayParts.year, 11, 31));
   } else if (period === 'custom') {
     if (customStart && customEnd) {
-      from = new Date(customStart);
-      to = new Date(customEnd);
+      return { from: customStart, to: customEnd };
     } else return { from: null, to: null };
   }
 
   const fmtISO = (d) => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(d.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${dd}`;
   };
   return { from: fmtISO(from), to: fmtISO(to) };
 };
 
-// ─── Medallas por posición (SVG simple, sin emojis) ────────────────────
+// ─── Position Badge (sin emojis) ───────────────────────────────────────
 const PositionBadge = ({ index }) => {
   const colors = [
     { bg: '#fef3c7', fg: '#b45309' }, // 1° oro
@@ -220,7 +224,7 @@ export default function ReportsCollaborators() {
     return data.timeline.map((d) => ({
       id: d.date,
       dateKey: d.date,
-      dateFormatted: normalizeDate(d.date).split('-').reverse().join('/'),
+      dateFormatted: formatDate(d.date),
       orders: Number(d.orders) || 0,
       ventas: Number(d.total_sales) || 0,
       costo: Number(d.total_cost) || 0,
