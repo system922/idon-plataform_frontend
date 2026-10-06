@@ -232,6 +232,7 @@ function PaymentModal({ receipt, onClose, onConfirm, saving }) {
 function PaymentOptionsModal({ 
   isOpen, 
   onClose, 
+  onComplete,
   onConfirm, 
   supplierGroups,
   receiptNumber,
@@ -332,6 +333,14 @@ function PaymentOptionsModal({
     // Marcar como procesando para evitar doble click
     setIsProcessing(true);
 
+    const isLastSupplier = activeSupplierIndex === supplierGroups.length - 1;
+    if (!isLastSupplier) {
+      setActiveSupplierIndex(index => index + 1);
+      setError('');
+      setIsProcessing(false);
+      return;
+    }
+
     const confirmData = {
       supplierGroups: supplierGroups,
       activeSupplierIndex: activeSupplierIndex,
@@ -347,23 +356,15 @@ function PaymentOptionsModal({
       supplier_id: supplierId,
       supplier_name: supplierName,
       isFullPayment: isFullPayment,
-      allSupplierData: supplierData,
-      // Indicar si es el último proveedor
-      isLastSupplier: activeSupplierIndex === supplierGroups.length - 1
+      allSupplierData: supplierData
     };
 
-    // Pasar una función callback para manejar el resultado
+    // La recepción se guarda una sola vez, con la configuración de todos los proveedores.
     onConfirm(confirmData, (success) => {
       setIsProcessing(false);
       
       if (success) {
-        // Si hay más proveedores, avanzar al siguiente
-        if (activeSupplierIndex < supplierGroups.length - 1) {
-          setActiveSupplierIndex(activeSupplierIndex + 1);
-          setError('');
-        }
-        // Si es el último, el modal se cierra desde el callback
-        // (el callback de onConfirm maneja el cierre)
+        onComplete();
       }
     });
   };
@@ -900,7 +901,7 @@ function ReceiptModal({
       if (sup.has_history && sup.last_unit_cost) {
         label += ` (Último: ${money(sup.last_unit_cost)})`;
       } else if (sup.has_history === false) {
-        label += `Nuevo`;
+        label += ` (Nuevo)`;
       }
       
       options.push({
@@ -1079,8 +1080,7 @@ function ReceiptModal({
         supplierGroups,
         activeSupplierIndex,
         supplier_name,
-        allSupplierData,
-        isLastSupplier
+        allSupplierData
       } = paymentData;
       
       const activeGroup = supplierGroups[activeSupplierIndex];
@@ -1157,14 +1157,6 @@ function ReceiptModal({
         await alert.success(
           `Cuenta por pagar creada exitosamente para proveedor ${supplier_name} (Saldo pendiente: ${money(activeTotal - abono)})`,
           'Cuenta creada'
-        );
-      }
-      
-      // Si no es el último, mostrar mensaje de continuación
-      if (!isLastSupplier) {
-        await alert.info(
-          `Proveedor ${activeSupplierIndex + 1} de ${supplierGroups.length} procesado. Avanzando al siguiente...`,
-          'Siguiente proveedor'
         );
       }
       
@@ -1550,7 +1542,10 @@ function ReceiptModal({
         isOpen={showPaymentOptions}
         onClose={() => {
           setShowPaymentOptions(false);
-          // Cerrar también el modal principal cuando se completa todo
+          onClose();
+        }}
+        onComplete={() => {
+          setShowPaymentOptions(false);
           onClose();
         }}
         onConfirm={handleConfirmPayment}

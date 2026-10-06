@@ -68,6 +68,7 @@ const PAGE_ICONS = {
   'core.retail_dashboard': <FiBarChart2 size={15}/>,
   'pos.sales': <FiShoppingCart size={15}/>,
   'pos.retail': <FiShoppingBag size={15}/>,
+  'pos.general': <FiShoppingCart size={15}/>,
   'pos.cash_register': <FiDollarSign size={15}/>,
   'pos.discounts': <FiPercent size={15}/>,
   'pos.quotes': <FiFileText size={15}/>,
@@ -80,6 +81,7 @@ const PAGE_ICONS = {
   'inventory.physical': <FiClipboard size={15}/>,
   'inventory.suppliers': <FiTruck size={15}/>,
   'reports.sales': <FiBarChart2 size={15}/>,
+  'ventas.colaborador': <FiUser size={15}/>,
   'reports.inventory': <FiBox size={15}/>,
   'reports.shifts': <FiClock size={15}/>,
   'reports.products': <FiPackage size={15}/>,
@@ -264,7 +266,9 @@ function buildSidebarMenu(navData) {
       // TODAS las páginas van como subitems (incluyendo la primera)
       const allPages = pages.map(page => ({
         label: page.name || 'Sin nombre',
-        path: resolvePath(page.path, `/app/${mod.code}/${toSlug(page.name || '')}`),
+        path: resolvePath(page.path, page.code
+          ? `/app/${mod.code}/${page.code}`
+          : `/app/${mod.code}/${toSlug(page.name || '')}`),
         icon: resolvePageIcon(page.code, mod.code),
       }));
 

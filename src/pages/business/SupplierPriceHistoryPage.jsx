@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSession } from '../../context/SessionContext';
-import { useConfirm } from '../../context/ConfirmContext';
 import { useAlert } from '../../components/ConfirmContext';
 import {
-  FiRefreshCw, FiDollarSign, FiSave, FiX, 
+  FiRefreshCw, FiDollarSign, FiSave, FiX, FiPlus,
   FiAlertCircle, FiPackage, FiUser, FiTrendingUp, FiTrendingDown,
   FiBarChart2, FiShoppingBag
 } from 'react-icons/fi';
@@ -14,41 +12,43 @@ import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Input from '../../components/General/Input';
 import Modal from '../../components/General/Modal';
 import CustomCombobox from '../../components/General/CustomCombobox';
-import { formatCurrency, toNumber, calculatePVP } from '../../utils/productUtils';
+import { formatCurrency, toNumber } from '../../utils/productUtils';
 
-// ─── Modal de edición de precio de venta ──────────────────────────────────
-function EditSalePriceModal({ item, onClose, onSave, saving }) {
-  const [salePrice, setSalePrice] = useState(toNumber(item?.current_sale_price || 0));
-  const [newSalePrice, setNewSalePrice] = useState(toNumber(item?.current_sale_price || 0));
+function SupplierPriceModal({ item, itemType, suppliers, itemOptions, onClose, onSave, saving }) {
+  const isEditing = Boolean(item && !item.isNew);
+  const [supplierId, setSupplierId] = useState(item?.supplier_id || '');
+  const [productId, setProductId] = useState(item?.product_id || '');
+  const [unitCost, setUnitCost] = useState(String(item?.last_unit_cost ?? ''));
   const [error, setError] = useState('');
 
   const handleSubmit = () => {
-    if (newSalePrice < 0) {
-      setError('❌ El precio no puede ser negativo');
+    const parsedCost = Number(unitCost);
+    if (unitCost === '') {
+      setError('Ingresa el precio de compra');
       return;
     }
-    if (newSalePrice === salePrice) {
-      setError('❌ El precio no ha cambiado');
+    if (!supplierId || !productId) {
+      setError('Selecciona un proveedor y un producto');
       return;
     }
-    onSave({ 
-      product_id: item.product_id,
-      product_type: item.product_type || 'COMMERCIAL',
-      current_price: salePrice,
-      new_price: newSalePrice
+    if (!Number.isFinite(parsedCost) || parsedCost < 0) {
+      setError('Ingresa un precio válido mayor o igual a 0');
+      return;
+    }
+    onSave({
+      supplier_id: supplierId,
+      product_id: productId,
+      product_type: itemType,
+      unit_cost: parsedCost
     });
   };
-
-  const lastCost = toNumber(item?.last_unit_cost || 0);
-  const profit = newSalePrice - lastCost;
-  const profitMargin = lastCost > 0 ? ((newSalePrice - lastCost) / lastCost) * 100 : 0;
 
   return (
     <Modal
       closeOnOverlayClick={false}
       isOpen={true}
       onClose={onClose}
-      title="Actualizar precio de venta"
+      title={isEditing ? 'Actualizar precio del proveedor' : 'Registrar precio del proveedor'}
       size="sm"
       footer={
         <>
@@ -73,63 +73,49 @@ function EditSalePriceModal({ item, onClose, onSave, saving }) {
               size="md"
               icon={<FiSave size={14} />}
               onClick={handleSubmit}
-              disabled={saving || newSalePrice === salePrice}
+              disabled={saving}
               loading={saving}
             >
-              {saving ? 'Guardando...' : 'Actualizar precio'}
+              {saving ? 'Guardando...' : 'Guardar precio'}
             </IconTextButton>
           </ButtonGroup>
         </>
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ 
-          padding: '12px 16px', 
-          background: 'var(--bg-secondary)', 
-          borderRadius: '8px',
-          border: '1px solid var(--border-color)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Producto</span>
-            <span style={{ fontWeight: '600' }}>{item?.product_name}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Último costo</span>
-            <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
-              {formatCurrency(lastCost)}
-            </span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Proveedor</span>
-            <span style={{ fontWeight: '500' }}>{item?.supplier_name}</span>
-          </div>
-        </div>
-
         <div className="form-group">
-          <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-secondary)' }}>
-            Precio de venta actual
-          </label>
-          <Input
-            type="number"
-            value={salePrice}
-            onChange={(value) => setSalePrice(toNumber(value))}
+          <label>Proveedor *</label>
+          <CustomCombobox
+            options={suppliers
+              .filter(supplier => supplier.is_active !== false)
+              .map(supplier => ({ value: supplier.id, label: supplier.name }))}
+            value={supplierId}
+            onChange={setSupplierId}
+            placeholder="Seleccionar proveedor..."
+            filterable
             size="md"
-            step="0.01"
-            min="0"
-            disabled
-            style={{ background: 'var(--bg-disabled)', cursor: 'not-allowed' }}
+            disabled={isEditing}
           />
         </div>
-
         <div className="form-group">
-          <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-secondary)' }}>
-            Nuevo precio de venta *
-          </label>
+          <label>{itemType === 'COMMERCIAL' ? 'Producto' : 'Materia prima'} *</label>
+          <CustomCombobox
+            options={itemOptions}
+            value={productId}
+            onChange={setProductId}
+            placeholder={`Seleccionar ${itemType === 'COMMERCIAL' ? 'producto' : 'materia prima'}...`}
+            filterable
+            size="md"
+            disabled={isEditing}
+          />
+        </div>
+        <div className="form-group">
+          <label>Precio de compra / unidad *</label>
           <Input
             type="number"
-            value={newSalePrice}
+            value={unitCost}
             onChange={(value) => {
-              setNewSalePrice(toNumber(value));
+              setUnitCost(value);
               setError('');
             }}
             size="md"
@@ -139,39 +125,6 @@ function EditSalePriceModal({ item, onClose, onSave, saving }) {
             icon={<FiDollarSign size={14} />}
           />
         </div>
-
-        {/* Rentabilidad / Margen */}
-        <div style={{
-          padding: '12px 16px',
-          borderRadius: '8px',
-          border: '1px solid',
-          borderColor: profit >= 0 ? 'var(--success-border)' : 'var(--danger-border)',
-          background: profit >= 0 ? 'var(--success-bg)' : 'var(--danger-bg)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-              <FiBarChart2 size={14} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-              Rentabilidad estimada
-            </span>
-            <span style={{ 
-              fontWeight: '700', 
-              fontSize: '16px',
-              color: profit >= 0 ? 'var(--success)' : 'var(--danger)'
-            }}>
-              {profit >= 0 ? '+' : ''}{formatCurrency(profit)}
-              <span style={{ fontSize: '12px', fontWeight: '400', marginLeft: '4px' }}>
-                ({profitMargin.toFixed(1)}%)
-              </span>
-            </span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            <span>Margen: {profitMargin.toFixed(1)}%</span>
-            <span>
-              {profit >= 0 ? <FiTrendingUp size={12} style={{ color: 'var(--success)' }} /> : <FiTrendingDown size={12} style={{ color: 'var(--danger)' }} />}
-              {profit >= 0 ? ' Rentable' : ' Pérdida'}
-            </span>
-          </div>
-        </div>
       </div>
     </Modal>
   );
@@ -179,12 +132,12 @@ function EditSalePriceModal({ item, onClose, onSave, saving }) {
 
 // ─── Página principal ──────────────────────────────────────────────────────
 export default function SupplierPriceHistoryPage() {
-  const { user } = useSession();
-  const { showConfirm } = useConfirm();
   const alert = useAlert();
 
   const [history, setHistory] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [rawMaterials, setRawMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -192,7 +145,7 @@ export default function SupplierPriceHistoryPage() {
   const [supplierFilter, setSupplierFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('products'); // 'products' | 'raw_materials'
 
-  // Estado para el modal de edición de precio
+  // Modal para registrar o actualizar el precio de compra de un proveedor.
   const [editModal, setEditModal] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -201,15 +154,29 @@ export default function SupplierPriceHistoryPage() {
     setLoading(true);
     setError('');
     try {
-      // Cargar historial de productos
-      const productsRes = await fetchWithAuth('/suppliers/product-history');
-      if (!productsRes.ok) throw new Error('Error al cargar historial de productos');
-      const productsData = await productsRes.json();
-
-      // Cargar historial de materias primas
-      const rawRes = await fetchWithAuth('/suppliers/raw-material-history');
-      if (!rawRes.ok) throw new Error('Error al cargar historial de materias primas');
-      const rawData = await rawRes.json();
+      const [productsRes, rawRes, suppliersRes, catalogRes, rawMaterialsRes] = await Promise.all([
+        fetchWithAuth('/suppliers/product-history'),
+        fetchWithAuth('/suppliers/raw-material-history'),
+        fetchWithAuth('/suppliers'),
+        fetchWithAuth('/products'),
+        fetchWithAuth('/raw-materials')
+      ]);
+      const responses = [
+        [productsRes, 'historial de productos'],
+        [rawRes, 'historial de materias primas'],
+        [suppliersRes, 'proveedores'],
+        [catalogRes, 'catálogo de productos'],
+        [rawMaterialsRes, 'catálogo de materias primas']
+      ];
+      for (const [response, label] of responses) {
+        if (!response.ok) {
+          const responseData = await response.json().catch(() => ({}));
+          throw new Error(responseData.error || `Error al cargar ${label}`);
+        }
+      }
+      const [productsData, rawData, suppliersData, catalogData, rawCatalogData] = await Promise.all(
+        responses.map(([response]) => response.json())
+      );
 
       // Combinar con tipo
       const combined = [
@@ -218,17 +185,17 @@ export default function SupplierPriceHistoryPage() {
       ];
 
       setHistory(combined);
-
-      // Cargar proveedores para el filtro
-      const suppliersRes = await fetchWithAuth('/suppliers');
-      if (!suppliersRes.ok) throw new Error('Error al cargar proveedores');
-      const suppliersData = await suppliersRes.json();
       setSuppliers(Array.isArray(suppliersData) ? suppliersData : []);
+      setProducts(Array.isArray(catalogData) ? catalogData : []);
+      setRawMaterials(Array.isArray(rawCatalogData) ? rawCatalogData : []);
 
     } catch (err) {
       console.error('Error cargando datos:', err);
       setError(err.message || 'Error al cargar los datos');
       setHistory([]);
+      setSuppliers([]);
+      setProducts([]);
+      setRawMaterials([]);
     } finally {
       setLoading(false);
     }
@@ -243,28 +210,20 @@ export default function SupplierPriceHistoryPage() {
     setRefreshing(false);
   };
 
-  // ── Guardar nuevo precio de venta ──────────────────────────────────────
-  const handleSaveSalePrice = async (data) => {
+  const handleSaveSupplierPrice = async (data) => {
     setSaving(true);
     try {
-      const endpoint = data.product_type === 'COMMERCIAL' 
-        ? `/products/${data.product_id}/price`
-        : `/raw-materials/${data.product_id}/price`;
-
-      const res = await fetchWithAuth(endpoint, {
-        method: 'PATCH',
-        body: JSON.stringify({ 
-          selling_price: data.new_price,
-          previous_price: data.current_price
-        })
+      const res = await fetchWithAuth('/suppliers/prices', {
+        method: 'PUT',
+        body: JSON.stringify(data)
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Error al actualizar precio');
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Error al guardar el precio del proveedor');
       }
 
-      await alert.success(`✅ Precio actualizado: ${formatCurrency(data.new_price)}`);
+      await alert.success(`Precio del proveedor guardado: ${formatCurrency(data.unit_cost)}`);
       await loadData();
       setEditModal(null);
     } catch (err) {
@@ -347,9 +306,11 @@ export default function SupplierPriceHistoryPage() {
       label: 'Precio venta actual',
       align: 'right',
       render: (item) => (
-        <span style={{ fontWeight: '700', color: 'var(--primary)' }}>
-          {formatCurrency(toNumber(item.current_sale_price))}
-        </span>
+        item.item_type === 'COMMERCIAL' && item.current_sale_price != null
+          ? <span style={{ fontWeight: '700', color: 'var(--primary)' }}>
+              {formatCurrency(toNumber(item.current_sale_price))}
+            </span>
+          : <span style={{ color: 'var(--text-muted)' }}>—</span>
       ),
     },
     {
@@ -357,6 +318,9 @@ export default function SupplierPriceHistoryPage() {
       label: 'Rentabilidad',
       align: 'right',
       render: (item) => {
+        if (item.item_type !== 'COMMERCIAL' || item.current_sale_price == null) {
+          return <span style={{ color: 'var(--text-muted)' }}>—</span>;
+        }
         const cost = toNumber(item.last_unit_cost);
         const sale = toNumber(item.current_sale_price);
         const profit = sale - cost;
@@ -396,11 +360,12 @@ export default function SupplierPriceHistoryPage() {
     },
     {
       accessor: 'last_order_date',
-      label: 'Última compra',
+      label: 'Actualizado',
       align: 'center',
       render: (item) => {
-        if (!item.last_order_date) return <span style={{ color: 'var(--text-muted)' }}>—</span>;
-        const date = new Date(item.last_order_date);
+        const referenceDate = item.last_order_date || item.updated_at;
+        if (!referenceDate) return <span style={{ color: 'var(--text-muted)' }}>—</span>;
+        const date = new Date(referenceDate);
         return (
           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
             {date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' })}
@@ -420,9 +385,9 @@ export default function SupplierPriceHistoryPage() {
             inline={true}
             icon={<FiDollarSign size={13} />}
             onClick={() => setEditModal(item)}
-            tooltip="Actualizar precio de venta"
+            tooltip="Actualizar precio del proveedor"
           >
-            Precio
+            Editar precio
           </IconTextButton>
         </ButtonGroup>
       ),
@@ -441,6 +406,10 @@ export default function SupplierPriceHistoryPage() {
   // ── Contar items por tab ──────────────────────────────────────────────
   const productsCount = history.filter(i => i.item_type === 'COMMERCIAL').length;
   const rawMaterialsCount = history.filter(i => i.item_type === 'MANUFACTURED').length;
+  const itemOptions = (activeTab === 'products' ? products : rawMaterials).map(item => ({
+    value: item.id,
+    label: `${item.name}${item.code ? ` (${item.code})` : ''}`
+  }));
 
   // ── Toolbar ──────────────────────────────────────────────────────────────
   const toolbar = (
@@ -457,6 +426,15 @@ export default function SupplierPriceHistoryPage() {
       </div>
 
       <ButtonGroup>
+        <IconTextButton
+          variant="success"
+          size="md"
+          icon={<FiPlus size={14} />}
+          onClick={() => setEditModal({ isNew: true })}
+          disabled={suppliers.length === 0 || itemOptions.length === 0}
+        >
+          Registrar precio
+        </IconTextButton>
         <IconTextButton
           variant="primary"
           size="md"
@@ -489,8 +467,8 @@ export default function SupplierPriceHistoryPage() {
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <PageTemplate
-      title="HISTORIAL DE PRECIOS"
-      subtitle="Últimos costos de compra por proveedor y rentabilidad por producto"
+      title="PRECIOS POR PROVEEDOR"
+      subtitle="Consulta y administra los precios de compra por proveedor y producto"
       theme="business"
       loading={loading}
       headerAction={refreshButton}
@@ -610,10 +588,13 @@ export default function SupplierPriceHistoryPage() {
 
       {/* Modal de edición de precio */}
       {editModal && (
-        <EditSalePriceModal
+        <SupplierPriceModal
           item={editModal}
+          itemType={activeTab === 'products' ? 'COMMERCIAL' : 'MANUFACTURED'}
+          suppliers={suppliers}
+          itemOptions={itemOptions}
           onClose={() => setEditModal(null)}
-          onSave={handleSaveSalePrice}
+          onSave={handleSaveSupplierPrice}
           saving={saving}
         />
       )}

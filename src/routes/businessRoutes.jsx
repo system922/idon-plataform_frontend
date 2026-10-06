@@ -16,7 +16,7 @@ const ReceiptPrint = lazy(() => import('../pages/business/ReceiptPrintPage'));
 const PosDiscounts = lazy(() => import('../pages/business/PosDiscounts'));
 import Checkout from '../pages/business/PosCheckoutPage';
 import PosRetail from '../pages/business/PosRetailPage';
-
+import PosGeneral from '../pages/business/PosGeneralPage';
 
 import Inventory from '../pages/business/InventoryAdjustmentsPage';
 import InventoryCategories from '../pages/business/InventoryCategoriesPage';
@@ -53,6 +53,7 @@ import GenericFeaturePage from '../pages/business/GenericFeaturePage';
 import ProfilePage from '../pages/business/ProfilePage.jsx';
 
 import ReportsAdvancedPage from '../pages/business/ReportsAdvancedPage';
+import ReportsCollaborators from '../pages/business/ReportsCollaborators';
 import ReportsCustomersPage from '../pages/business/ReportsCustomersPage';
 import ReportsInventoryPage from '../pages/business/ReportsInventoryPage';
 import ReportProducts from '../pages/business/ReportsProductsPage';
@@ -209,6 +210,14 @@ export const businessRoutes = (
       }
     />
     <Route
+      path="pos/pos.general"
+      element={
+        <RouteGuard moduleCode="pos" pageCode="pos.general">
+          <PosGeneral />
+        </RouteGuard>
+      }
+    />
+    <Route
       path="pos/cotizaciones"
       element={
         <RouteGuard moduleCode="pos">
@@ -303,6 +312,14 @@ export const businessRoutes = (
       element={
         <RouteGuard moduleCode="reports" pageCode="reports.advanced">
           <ReportsAdvancedPage />
+        </RouteGuard>
+      }
+    />
+    <Route
+      path="reports/ventas.colaborador"
+      element={
+        <RouteGuard moduleCode="reports" pageCode="ventas.colaborador">
+          <ReportsCollaborators />
         </RouteGuard>
       }
     />
