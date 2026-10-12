@@ -1,0 +1,125 @@
+.platform-invoices-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  min-width: min(620px, 100%);
+}
+
+.platform-invoices-search {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 220px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+  color: #64748b;
+}
+
+.platform-invoices-search input {
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #1e293b;
+  font: inherit;
+  font-size: 13px;
+}
+
+.platform-invoices-toolbar > select {
+  min-height: 38px;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+  color: #1e293b;
+}
+
+.platform-invoice-subtext {
+  margin-top: 3px;
+  color: var(--text-muted, #64748b);
+  font-size: 11px;
+}
+
+.platform-invoice-error {
+  max-width: 240px;
+  margin-top: 5px;
+  color: #b91c1c;
+  font-size: 11px;
+  white-space: normal;
+}
+
+.platform-invoice-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.platform-invoice-status-autorizada {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.platform-invoice-status-rechazada,
+.platform-invoice-status-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.platform-invoice-status-pendiente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.platform-invoice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  min-width: 140px;
+}
+
+.platform-invoice-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: #6842fe;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.platform-invoice-actions button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.platform-invoices-note {
+  margin: 12px 0 0;
+  color: var(--text-muted, #64748b);
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .platform-invoices-toolbar {
+    min-width: 0;
+  }
+
+  .platform-invoices-search {
+    min-width: 100%;
+  }
+}

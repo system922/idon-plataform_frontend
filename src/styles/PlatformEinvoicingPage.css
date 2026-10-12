@@ -1,0 +1,124 @@
+.platform-einvoice-card {
+  margin-bottom: 20px;
+  padding: 22px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  background: var(--bg-primary, #fff);
+}
+
+.platform-einvoice-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.platform-einvoice-header-actions > button:first-child {
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid #6842fe;
+  border-radius: 7px;
+  background: transparent;
+  color: #6842fe;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.platform-einvoice-card h2 {
+  margin: 0 0 6px;
+  color: var(--text-primary, #1e293b);
+  font-size: 18px;
+}
+
+.platform-einvoice-card > p {
+  margin: 0 0 18px;
+  color: var(--text-muted, #64748b);
+  font-size: 13px;
+}
+
+.platform-einvoice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.platform-einvoice-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text-primary, #1e293b);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.platform-einvoice-field input,
+.platform-einvoice-field select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 7px;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #1e293b);
+  font: inherit;
+  font-weight: 400;
+}
+
+.platform-einvoice-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary, #1e293b);
+  font-size: 13px;
+}
+
+.platform-einvoice-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 7px;
+  background: #6842fe;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.platform-einvoice-primary:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.platform-einvoice-signature-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.platform-einvoice-signature-form .platform-einvoice-field {
+  flex: 1;
+}
+
+.platform-einvoice-ready {
+  color: #15803d;
+}
+
+.platform-einvoice-missing {
+  color: #b91c1c !important;
+}
+
+@media (max-width: 700px) {
+  .platform-einvoice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .platform-einvoice-signature-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

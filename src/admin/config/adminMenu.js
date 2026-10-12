@@ -32,6 +32,8 @@ export const ADMIN_MENU = [
     subitems: [
       { label: 'Planes', path: '/admin/plans' },
       { label: 'Pagos', path: '/admin/payments' },
+      { label: 'Configuración de facturación', path: '/admin/einvoicing' },
+      { label: 'Comprobantes electrónicos', path: '/admin/einvoicing/invoices' },
       { label: 'Pagos Pendientes', path: '/admin/pending-payments' },
       { label: 'Plantillas de Email', path: '/admin/email-templates' },
       { label: 'Idon News', path: '/admin/idon_news' },

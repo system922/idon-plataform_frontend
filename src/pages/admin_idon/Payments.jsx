@@ -67,13 +67,22 @@ export default function Payments() {
   const handleMarkPaid = async (subscriptionId, payload) => {
     setActing(subscriptionId);
     try {
-      await adminApi.post('/admin/payments/record', {
+      const result = await adminApi.post('/admin/payments/record', {
         subscriptionId,
         ...payload
       });
       setPayModal(null);
       await load();
-      alert.success('Pago registrado correctamente', '✅ Éxito');
+      if (result.data?.invoice_error) {
+        alert.error(`Pago registrado, pero no se pudo emitir la factura: ${result.data.invoice_error}`);
+      } else {
+        alert.success(
+          result.data?.invoice_number
+            ? `Pago registrado. Factura ${result.data.invoice_number} en proceso de autorización SRI; se enviará al correo del cliente al autorizarse.`
+            : 'Pago y factura registrados correctamente.',
+          '✅ Éxito'
+        );
+      }
     } catch (e) {
       alert.error('Error: ' + e.message);
     } finally {
@@ -415,8 +424,18 @@ function PayModal({ row, onClose, onConfirm }) {
   const [paymentMethod, setPaymentMethod] = useState('transferencia');
   const [reference, setReference] = useState('');
   const [months, setMonths] = useState(1);
+  const [invoiceCustomerName, setInvoiceCustomerName] = useState(row.owner_name || '');
+  const [invoiceDocumentType, setInvoiceDocumentType] = useState(
+    ['cedula', 'ruc', 'pasaporte'].includes(row.document_type) ? row.document_type : 'cedula'
+  );
+  const [invoiceDocumentNumber, setInvoiceDocumentNumber] = useState(row.document_number || '');
+  const [invoiceEmail, setInvoiceEmail] = useState(row.owner_email || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const monthlyAmount = Number(row.billing_period === 'annual'
+    ? Number(row.total_amount || 0) / 12
+    : Number(row.total_amount || 0));
+  const paymentAmount = Number((monthlyAmount * months).toFixed(2));
 
   // Calcular el mes actual a cobrar basado en next_billing_at
   const getCurrentMonth = () => {
@@ -449,6 +468,22 @@ function PayModal({ row, onClose, onConfirm }) {
   const periodEndStr = periodEnd.toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
 
   const handleConfirm = async () => {
+    if (!invoiceCustomerName.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invoiceEmail.trim())) {
+      setError('Ingresa el nombre y un correo válido del cliente para emitir la factura.');
+      return;
+    }
+    if (invoiceDocumentType === 'cedula' && !/^\d{10}$/.test(invoiceDocumentNumber)) {
+      setError('La cédula debe tener 10 dígitos.');
+      return;
+    }
+    if (invoiceDocumentType === 'ruc' && !/^\d{13}$/.test(invoiceDocumentNumber)) {
+      setError('El RUC debe tener 13 dígitos.');
+      return;
+    }
+    if (invoiceDocumentType === 'pasaporte' && !invoiceDocumentNumber.trim()) {
+      setError('El número de pasaporte es obligatorio.');
+      return;
+    }
     setSaving(true);
     setError('');
     try {
@@ -457,6 +492,10 @@ function PayModal({ row, onClose, onConfirm }) {
         payment_method: paymentMethod,
         reference: paymentMethod === 'transferencia' ? reference : '',
         months,
+        invoice_customer_name: invoiceDocumentType === 'consumidor_final' ? 'CONSUMIDOR FINAL' : invoiceCustomerName.trim(),
+        invoice_document_type: invoiceDocumentType,
+        invoice_document_number: invoiceDocumentType === 'consumidor_final' ? '9999999999999' : invoiceDocumentNumber.trim(),
+        invoice_email: invoiceEmail.trim(),
       };
       await onConfirm(row.sub_id, payload);
     } catch (e) {
@@ -511,7 +550,7 @@ function PayModal({ row, onClose, onConfirm }) {
       isOpen={true}
       onClose={onClose}
       title="Registrar Pago"
-      size="sm"
+      size="md"
       className="payments-pay-modal"
       footer={footer}
     >
@@ -524,7 +563,7 @@ function PayModal({ row, onClose, onConfirm }) {
           <div style={{ flex: 1 }}>
             <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Monto</span>
             <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>
-              ${parseFloat(row.total_amount || 0).toFixed(2)}
+              ${paymentAmount.toFixed(2)}
             </span>
           </div>
           <div style={{ flex: 1 }}>
@@ -545,6 +584,9 @@ function PayModal({ row, onClose, onConfirm }) {
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
             ({months} {months === 1 ? 'mes' : 'meses'})
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>
+            Total a facturar (IVA incluido): ${paymentAmount.toFixed(2)}
           </div>
         </div>
 
@@ -607,6 +649,69 @@ function PayModal({ row, onClose, onConfirm }) {
         )}
 
         <div className="payments-pay-notes" style={{ marginBottom: '0.75rem' }}>
+          <strong style={{ display: 'block', marginBottom: '0.5rem' }}>Datos para la factura electrónica</strong>
+          <label htmlFor="invoice-customer-name" style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+            Nombre o razón social
+          </label>
+          <input
+            id="invoice-customer-name"
+            type="text"
+            value={invoiceCustomerName}
+            onChange={(e) => setInvoiceCustomerName(e.target.value)}
+            className="payments-pay-input"
+            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', marginBottom: '0.5rem' }}
+          />
+          <label htmlFor="invoice-document-type" style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+            Tipo de identificación
+          </label>
+          <select
+            id="invoice-document-type"
+            value={invoiceDocumentType}
+            onChange={(e) => {
+              const value = e.target.value;
+              setInvoiceDocumentType(value);
+              if (value === 'consumidor_final') {
+                setInvoiceCustomerName('CONSUMIDOR FINAL');
+                setInvoiceDocumentNumber('9999999999999');
+              } else if (invoiceDocumentType === 'consumidor_final') {
+                setInvoiceCustomerName(row.owner_name || '');
+                setInvoiceDocumentNumber('');
+              }
+            }}
+            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', marginBottom: '0.5rem' }}
+          >
+            <option value="cedula">Cédula</option>
+            <option value="ruc">RUC</option>
+            <option value="pasaporte">Pasaporte</option>
+            <option value="consumidor_final">Consumidor final</option>
+          </select>
+          {invoiceDocumentType !== 'consumidor_final' && (
+            <>
+              <label htmlFor="invoice-document-number" style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                Número de identificación
+              </label>
+              <input
+                id="invoice-document-number"
+                type="text"
+                value={invoiceDocumentNumber}
+                onChange={(e) => setInvoiceDocumentNumber(e.target.value)}
+                maxLength={invoiceDocumentType === 'ruc' ? 13 : invoiceDocumentType === 'cedula' ? 10 : 20}
+                className="payments-pay-input"
+                style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', marginBottom: '0.5rem' }}
+              />
+            </>
+          )}
+          <label htmlFor="invoice-customer-email" style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+            Correo para enviar la factura
+          </label>
+          <input
+            id="invoice-customer-email"
+            type="email"
+            value={invoiceEmail}
+            onChange={(e) => setInvoiceEmail(e.target.value)}
+            className="payments-pay-input"
+            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', marginBottom: '0.75rem' }}
+          />
           <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
             Notas (opcional)
           </label>

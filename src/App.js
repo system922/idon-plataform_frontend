@@ -35,6 +35,8 @@ import Features from './pages/admin_idon/Features';
 import Templates from './pages/admin_idon/Templates';
 import Plans from './pages/admin_idon/Plans';
 import Payments from './pages/admin_idon/Payments';
+import PlatformEinvoicingPage from './pages/admin_idon/PlatformEinvoicingPage';
+import PlatformInvoicesPage from './pages/admin_idon/PlatformInvoicesPage';
 import Roles from './pages/admin_idon/Roles';
 import Settings from './pages/admin_idon/Settings';
 import Audit from './pages/admin_idon/Audit';
@@ -486,6 +488,8 @@ function AppRoutes() {
               {/* ===== COMERCIAL ===== */}
               <Route path="plans" element={<Plans />} />
               <Route path="payments" element={<Payments />} />
+              <Route path="einvoicing" element={<PlatformEinvoicingPage />} />
+              <Route path="einvoicing/invoices" element={<PlatformInvoicesPage />} />
               <Route path="pending-payments" element={<PendingPayments />} />
               <Route path="email-templates" element={<EmailTemplatesPage />} />
               <Route path="idon_news" element={<AdminIdonNews />} />
