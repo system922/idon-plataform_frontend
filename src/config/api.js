@@ -307,12 +307,18 @@ export const adminApi = {
 
 export const fetchWithAuth = async (path, options = {}) => {
   try {
+    const data = options.body || options.data;
+    const headers = { ...(options.headers || {}) };
+    if (typeof FormData !== 'undefined' && data instanceof FormData) {
+      headers['Content-Type'] = 'multipart/form-data';
+    }
+
     const response = await api({
+      ...options,
       url: path,
       method: options.method || 'GET',
-      data: options.body || options.data,
-      headers: options.headers || {},
-      ...options,
+      data,
+      headers,
     });
     
     return {
