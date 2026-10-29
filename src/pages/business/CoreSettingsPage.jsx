@@ -266,22 +266,32 @@ export default function SettingsPage() {
         })
       );
       
-      await Promise.all(savePromises);
+      const saveResponses = await Promise.all(savePromises);
+      const failedSave = saveResponses.find(response => !response.ok);
+      if (failedSave) {
+        const data = await failedSave.json();
+        throw new Error(data.error || 'Error al guardar la configuración del negocio');
+      }
+
+      const syncPromises = fields
+        .filter(({ key }) => EINV_SYNC[key])
+        .map(async ({ key }) => {
+          const response = await fetchWithAuth('/einvoicing/config', {
+            method: 'PUT',
+            body: JSON.stringify({ [EINV_SYNC[key]]: groupValues[key] }),
+          });
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || `No se pudo sincronizar ${key} con facturación electrónica`);
+          }
+        });
+      await Promise.all(syncPromises);
       
       const newSettings = { ...settings };
       fields.forEach(({ key }) => {
         newSettings[key] = groupValues[key];
       });
       setSettings(newSettings);
-      
-      fields.forEach(({ key }) => {
-        if (EINV_SYNC[key]) {
-          fetchWithAuth('/einvoicing/config', {
-            method: 'PUT',
-            body: JSON.stringify({ [EINV_SYNC[key]]: groupValues[key] }),
-          }).catch(() => {});
-        }
-      });
       
       showMsg(true, 'Guardado correctamente');
       setEditingGroup(null);
