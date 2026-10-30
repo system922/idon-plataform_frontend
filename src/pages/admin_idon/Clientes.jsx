@@ -575,6 +575,11 @@ function ClientAccordion({ client, onEditClient, onEditBusiness, onModBusiness, 
                           <p className="clients-business-type">
                             {biz.business_type_name} · slug: {biz.slug}
                           </p>
+                          {biz.is_provisioned === false && (
+                            <span className="clients-business-provision-warning">
+                              ⚠ Pendiente de aprovisionar
+                            </span>
+                          )}
                           {hasSub && (
                             <div className="clients-business-subscription-badge">
                               <FiCreditCard size={12} />
@@ -609,9 +614,13 @@ function ClientAccordion({ client, onEditClient, onEditBusiness, onModBusiness, 
                             variant={hasSub ? 'success' : 'primary'}
                             size="sm"
                             icon={<FiCreditCard size={13} />}
+                            disabled={!hasSub && !biz.is_provisioned}
+                            title={!biz.is_provisioned ? 'Aprovisiona el negocio primero' : undefined}
                             onClick={(e) => { e.stopPropagation(); onSubBusiness({ ...biz, existingSubscription: biz.subscription }); }}
                           >
-                            {hasSub ? 'Editar Suscripción' : 'Suscripción'}
+                            {!biz.is_provisioned
+                              ? 'Suscripción 🔒'
+                              : hasSub ? 'Editar Suscripción' : 'Suscripción'}
                           </IconTextButton>
                           {hasSub && biz.subscription?.status === 'pending_activation' && (
                             <IconTextButton

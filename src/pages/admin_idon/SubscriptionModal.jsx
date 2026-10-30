@@ -174,9 +174,10 @@ export default function SubscriptionModal({ business, existingSubscription, onCl
   
   const subtotalMens = modules.reduce((s, m) => s + parseFloat(m.price_monthly || 0), 0);
   const subtotalAnu  = modules.reduce((s, m) => s + parseFloat(m.price_annual  || 0), 0);
-  
-  const discountAmount = parseFloat((subtotalMens * discPct / 100).toFixed(2));
-  const totalWithDiscount = parseFloat((subtotalMens - discountAmount).toFixed(2));
+
+  const activeSubtotal = period === 'annual' ? subtotalAnu : subtotalMens;
+  const discountAmount = parseFloat((activeSubtotal * discPct / 100).toFixed(2));
+  const totalWithDiscount = parseFloat((activeSubtotal - discountAmount).toFixed(2));
 
   const isEdit = !!existingSub && !!existingSub.id;
 
@@ -457,8 +458,8 @@ export default function SubscriptionModal({ business, existingSubscription, onCl
 
         <div className="subscription-summary">
           <Row 
-            label="Subtotal (sin descuento)" 
-            value={`$${subtotalMens.toFixed(2)}`} 
+            label={`Subtotal ${period === 'annual' ? 'anual' : 'mensual'} (sin descuento)`}
+            value={`$${activeSubtotal.toFixed(2)}`}
             muted
           />
           
@@ -474,7 +475,7 @@ export default function SubscriptionModal({ business, existingSubscription, onCl
           
           <div className="subscription-summary-total">
             <Row 
-              label="Total mensual (con descuento)"
+              label={`Total ${period === 'annual' ? 'anual' : 'mensual'} (con descuento)`}
               value={`$${totalWithDiscount.toFixed(2)}`} 
               highlight="#ff8c42" 
               large
