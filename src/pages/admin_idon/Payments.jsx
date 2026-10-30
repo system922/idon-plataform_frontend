@@ -73,18 +73,15 @@ export default function Payments() {
       });
       setPayModal(null);
       await load();
-      if (result.data?.invoice_error) {
-        alert.error(`Pago registrado, pero no se pudo emitir la factura: ${result.data.invoice_error}`);
-      } else {
-        alert.success(
-          result.data?.invoice_number
-            ? `Pago registrado. Factura ${result.data.invoice_number} en proceso de autorización SRI; se enviará al correo del cliente al autorizarse.`
-            : 'Pago y factura registrados correctamente.',
-          '✅ Éxito'
-        );
-      }
+      alert.success(
+        result.data?.invoice_number
+          ? `Pago registrado. Factura ${result.data.invoice_number} autorizada y enviada a ${result.data.invoice_email}.`
+          : 'Pago y factura registrados correctamente.',
+        '✅ Éxito'
+      );
     } catch (e) {
-      alert.error('Error: ' + e.message);
+      const message = e.response?.data?.message || e.message || 'Error desconocido al registrar el pago';
+      throw new Error(message);
     } finally {
       setActing(null);
     }

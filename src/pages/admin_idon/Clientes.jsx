@@ -628,8 +628,14 @@ function ClientAccordion({ client, onEditClient, onEditBusiness, onModBusiness, 
                               size="sm"
                               icon={<FiCheck size={13} />}
                               onClick={(e) => { 
-                                e.stopPropagation(); 
-                                onRegisterPayment(biz); 
+                                e.stopPropagation();
+                                onRegisterPayment({
+                                  ...biz,
+                                  invoice_customer_name: client.full_name,
+                                  invoice_document_type: client.document_type || 'cedula',
+                                  invoice_document_number: client.document_number || '',
+                                  invoice_email: client.email || '',
+                                });
                               }}
                             >
                               Registrar Pago
@@ -721,6 +727,10 @@ export default function ClientsPage() {
   const [payNotes, setPayNotes] = useState('');
   const [payReference, setPayReference] = useState('');
   const [payMethod, setPayMethod] = useState('transferencia');
+  const [invoiceCustomerName, setInvoiceCustomerName] = useState('');
+  const [invoiceDocumentType, setInvoiceDocumentType] = useState('cedula');
+  const [invoiceDocumentNumber, setInvoiceDocumentNumber] = useState('');
+  const [invoiceEmail, setInvoiceEmail] = useState('');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -750,13 +760,46 @@ export default function ClientsPage() {
     setPayNotes('');
     setPayReference('');
     setPayMethod('transferencia');
+    setInvoiceCustomerName(business.invoice_customer_name || '');
+    setInvoiceDocumentType(business.invoice_document_type || 'cedula');
+    setInvoiceDocumentNumber(business.invoice_document_number || '');
+    setInvoiceEmail(business.invoice_email || '');
   };
 
   const handleConfirmPayment = async () => {
     if (savingPay) return;
     setSavingPay(true);
     setPayError('');
-    
+
+    const customerName = invoiceCustomerName.trim();
+    const customerEmail = invoiceEmail.trim();
+    const documentNumber = invoiceDocumentNumber.trim();
+    if (invoiceDocumentType !== 'consumidor_final' && !customerName) {
+      setPayError('El nombre o razón social para la factura es obligatorio');
+      setSavingPay(false);
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+      setPayError('Ingrese un correo válido para enviar la factura');
+      setSavingPay(false);
+      return;
+    }
+    if (invoiceDocumentType === 'cedula' && !/^\d{10}$/.test(documentNumber)) {
+      setPayError('La cédula debe tener 10 dígitos');
+      setSavingPay(false);
+      return;
+    }
+    if (invoiceDocumentType === 'ruc' && !/^\d{13}$/.test(documentNumber)) {
+      setPayError('El RUC debe tener 13 dígitos');
+      setSavingPay(false);
+      return;
+    }
+    if (invoiceDocumentType === 'pasaporte' && (!documentNumber || documentNumber.length > 20)) {
+      setPayError('Ingrese un número de pasaporte válido (máximo 20 caracteres)');
+      setSavingPay(false);
+      return;
+    }
+
     try {
       const subId = payBusiness.subscription?.id;
       if (!subId) {
@@ -767,14 +810,26 @@ export default function ClientsPage() {
         notes: payNotes,
         payment_method: payMethod,
         reference: payReference,
+        invoice_customer_name: invoiceDocumentType === 'consumidor_final' ? 'CONSUMIDOR FINAL' : customerName,
+        invoice_document_type: invoiceDocumentType,
+        invoice_document_number: invoiceDocumentType === 'consumidor_final' ? '9999999999999' : documentNumber,
+        invoice_email: customerEmail,
       });
       
-      alert.success('Pago registrado correctamente. Suscripción activada.', '✅ Éxito');
+      alert.success('Pago registrado y factura emitida correctamente.', '✅ Éxito');
       setPayModalOpen(false);
       setPayBusiness(null);
       await loadData();
     } catch (e) {
-      setPayError(e.message || 'Error al registrar el pago');
+      const errorMessage = e.response?.data?.message || e.message || 'Error al registrar el pago';
+      if (e.response?.data?.data?.payment_recorded) {
+        setPayModalOpen(false);
+        setPayBusiness(null);
+        alert.error(errorMessage, 'Factura no emitida');
+        await loadData();
+      } else {
+        setPayError(errorMessage);
+      }
     } finally {
       setSavingPay(false);
     }
@@ -999,6 +1054,69 @@ export default function ClientsPage() {
               </select>
             </div>
 
+            <div className="clients-pay-field">
+              <label htmlFor="invoice-customer-name">Nombre o razón social</label>
+              <input
+                id="invoice-customer-name"
+                type="text"
+                value={invoiceCustomerName}
+                onChange={(e) => setInvoiceCustomerName(e.target.value)}
+                className="clients-pay-input"
+              />
+            </div>
+
+            <div className="clients-pay-field">
+              <label htmlFor="invoice-document-type">Tipo de identificación</label>
+              <select
+                id="invoice-document-type"
+                value={invoiceDocumentType}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setInvoiceDocumentType(value);
+                  if (value === 'consumidor_final') {
+                    setInvoiceCustomerName('CONSUMIDOR FINAL');
+                    setInvoiceDocumentNumber('9999999999999');
+                  } else {
+                    if (invoiceDocumentType === 'consumidor_final') {
+                      setInvoiceCustomerName(payBusiness?.invoice_customer_name || '');
+                    }
+                    setInvoiceDocumentNumber('');
+                  }
+                }}
+                className="clients-pay-select"
+              >
+                <option value="cedula">Cédula</option>
+                <option value="ruc">RUC</option>
+                <option value="pasaporte">Pasaporte</option>
+                <option value="consumidor_final">Consumidor final</option>
+              </select>
+            </div>
+
+            {invoiceDocumentType !== 'consumidor_final' && (
+              <div className="clients-pay-field">
+                <label htmlFor="invoice-document-number">Número de identificación</label>
+                <input
+                  id="invoice-document-number"
+                  type="text"
+                  value={invoiceDocumentNumber}
+                  onChange={(e) => setInvoiceDocumentNumber(e.target.value)}
+                  maxLength={invoiceDocumentType === 'ruc' ? 13 : invoiceDocumentType === 'cedula' ? 10 : 20}
+                  className="clients-pay-input"
+                />
+              </div>
+            )}
+
+            <div className="clients-pay-field">
+              <label htmlFor="invoice-email">Correo para enviar la factura</label>
+              <input
+                id="invoice-email"
+                type="email"
+                value={invoiceEmail}
+                onChange={(e) => setInvoiceEmail(e.target.value)}
+                className="clients-pay-input"
+              />
+            </div>
+
             {payMethod === 'transferencia' && (
               <div className="clients-pay-field">
                 <label htmlFor="pay-reference">Referencia / Comprobante (opcional)</label>
@@ -1026,7 +1144,7 @@ export default function ClientsPage() {
             </div>
 
             <p className="clients-pay-hint">
-              Al confirmar se registrará el pago, la suscripción se activará y se enviará un email de confirmación al cliente.
+              Al confirmar se registrará el pago, se activará la suscripción y se emitirá la factura electrónica al correo indicado.
             </p>
           </div>
         </Modal>
