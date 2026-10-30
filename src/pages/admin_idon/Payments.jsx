@@ -73,15 +73,32 @@ export default function Payments() {
       });
       setPayModal(null);
       await load();
-      alert.success(
-        result.data?.invoice_number
-          ? `Pago registrado. Factura ${result.data.invoice_number} autorizada y enviada a ${result.data.invoice_email}.`
-          : 'Pago y factura registrados correctamente.',
-        '✅ Éxito'
-      );
+      if (result.data?.invoice_status === 'pendiente') {
+        alert.info(
+          'Pago registrado. La factura está en proceso de autorización por el SRI y se enviará al correo cuando esté lista.',
+          'Factura en Proceso'
+        );
+      } else if (result.data?.invoice_error) {
+        alert.error(`Pago registrado, pero no se pudo emitir la factura: ${result.data.invoice_error}`);
+      } else {
+        alert.success(
+          result.data?.invoice_number
+            ? `Pago registrado. Factura ${result.data.invoice_number} emitida exitosamente.`
+            : 'Pago y factura registrados correctamente.',
+          'Éxito'
+        );
+      }
     } catch (e) {
-      const message = e.response?.data?.message || e.message || 'Error desconocido al registrar el pago';
-      throw new Error(message);
+      if (e.response?.data?.data?.payment_recorded) {
+        setPayModal(null);
+        await load();
+        alert.info(
+          e.response?.data?.message || 'Pago registrado. La factura está pendiente de autorización por el SRI.',
+          'Factura Pendiente'
+        );
+      } else {
+        alert.error('Error: ' + (e.response?.data?.message || e.message));
+      }
     } finally {
       setActing(null);
     }
@@ -89,7 +106,7 @@ export default function Payments() {
 
   const handleSuspend = async (subId, businessName) => {
     if (!await showConfirm({
-      title: '⚠️ Suspender negocio',
+      title: 'Suspender negocio',
       message: `¿Suspender el negocio "${businessName}"? El dueño no podrá iniciar sesión hasta que se reactive.`,
       confirmText: 'Suspender',
       cancelText: 'Cancelar',
@@ -109,7 +126,7 @@ export default function Payments() {
 
   const handleReactive = async (subId, businessName) => {
     if (!await showConfirm({
-      title: '🔄 Reactivar negocio',
+      title: 'Reactivar negocio',
       message: `¿Reactivar el negocio "${businessName}"? El dueño podrá iniciar sesión nuevamente.`,
       confirmText: 'Reactivar',
       cancelText: 'Cancelar',

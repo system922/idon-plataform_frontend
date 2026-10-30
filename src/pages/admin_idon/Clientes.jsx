@@ -781,8 +781,15 @@ export default function ClientsPage() {
 
   const handleConfirmPayment = async () => {
     if (savingPay) return;
-    setSavingPay(true);
     setPayError('');
+
+    const amount = Number.parseFloat(payBusiness?.subscription?.total_amount || 0);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setPayError('El monto a pagar no puede ser $0.00.');
+      return;
+    }
+
+    setSavingPay(true);
 
     const customerName = invoiceCustomerName.trim();
     const customerEmail = invoiceEmail.trim();
@@ -819,25 +826,38 @@ export default function ClientsPage() {
         throw new Error('No se encontró la suscripción');
       }
       
-      await adminApi.post(`/admin/subscriptions/${subId}/mark-paid`, {
+      const res = await adminApi.post(`/admin/subscriptions/${subId}/mark-paid`, {
         notes: payNotes,
         payment_method: payMethod,
-        reference: payReference,
+        reference: payMethod === 'transferencia' ? payReference : '',
         invoice_customer_name: invoiceDocumentType === 'consumidor_final' ? 'CONSUMIDOR FINAL' : customerName,
         invoice_document_type: invoiceDocumentType,
         invoice_document_number: invoiceDocumentType === 'consumidor_final' ? '9999999999999' : documentNumber,
         invoice_email: customerEmail,
       });
-      
-      alert.success('Pago registrado y factura emitida correctamente.', '✅ Éxito');
+
       closePayModal();
       await loadData();
+      const result = res.data || res;
+      if (result.invoice_status === 'pendiente') {
+        alert.info(
+          'Pago registrado. La factura está en proceso de autorización por el SRI y se enviará al correo cuando esté lista.',
+          '⏳ Factura en Proceso'
+        );
+      } else if (result.invoice_error) {
+        alert.error(`Pago registrado, pero no se pudo emitir la factura: ${result.invoice_error}`);
+      } else {
+        alert.success('Pago registrado y factura emitida correctamente.', '✅ Éxito');
+      }
     } catch (e) {
       const errorMessage = e.response?.data?.message || e.message || 'Error al registrar el pago';
       if (e.response?.data?.data?.payment_recorded) {
         closePayModal();
-        alert.error(errorMessage, 'Factura no emitida');
         await loadData();
+        alert.info(
+          'Pago registrado. La factura está pendiente de autorización por el SRI y se enviará al correo cuando esté lista.',
+          '⏳ Factura en Proceso'
+        );
       } else {
         setPayError(errorMessage);
       }
