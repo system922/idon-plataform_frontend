@@ -766,6 +766,19 @@ export default function ClientsPage() {
     setInvoiceEmail(business.invoice_email || '');
   };
 
+  const closePayModal = () => {
+    setPayModalOpen(false);
+    setPayBusiness(null);
+    setPayError('');
+    setPayNotes('');
+    setPayReference('');
+    setPayMethod('transferencia');
+    setInvoiceCustomerName('');
+    setInvoiceDocumentType('cedula');
+    setInvoiceDocumentNumber('');
+    setInvoiceEmail('');
+  };
+
   const handleConfirmPayment = async () => {
     if (savingPay) return;
     setSavingPay(true);
@@ -817,14 +830,12 @@ export default function ClientsPage() {
       });
       
       alert.success('Pago registrado y factura emitida correctamente.', '✅ Éxito');
-      setPayModalOpen(false);
-      setPayBusiness(null);
+      closePayModal();
       await loadData();
     } catch (e) {
       const errorMessage = e.response?.data?.message || e.message || 'Error al registrar el pago';
       if (e.response?.data?.data?.payment_recorded) {
-        setPayModalOpen(false);
-        setPayBusiness(null);
+        closePayModal();
         alert.error(errorMessage, 'Factura no emitida');
         await loadData();
       } else {
@@ -960,14 +971,7 @@ export default function ClientsPage() {
         <Modal
           closeOnOverlayClick={false}
           isOpen={true}
-          onClose={() => {
-          setPayModalOpen(false);
-          setPayBusiness(null);
-          setPayError('');
-          setPayNotes('');
-          setPayReference('');
-          setPayMethod('transferencia');
-          }}
+          onClose={closePayModal}
           title="Registrar Pago"
           size="sm"
           className="clients-pay-modal"
@@ -982,14 +986,7 @@ export default function ClientsPage() {
                 <IconTextButton
                   variant=""
                   size="md"
-                  onClick={() => {
-                    setPayModalOpen(false);
-                    setPayBusiness(null);
-                    setPayError('');
-                    setPayNotes('');
-                    setPayReference('');
-                    setPayMethod('transferencia');
-                  }}
+                  onClick={closePayModal}
                   disabled={savingPay}
                 >
                   Cancelar
