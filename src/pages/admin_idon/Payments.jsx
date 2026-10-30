@@ -105,11 +105,17 @@ export default function Payments() {
   };
 
   const handleSendPaymentLinkByEmail = async (item) => {
+    if (!item.owner_email?.trim()) {
+      alert.error('No se puede enviar el link: el cliente no tiene un correo registrado.');
+      return;
+    }
+
     setActing(item.sub_id);
     try {
-      await adminApi.post('/api/payphone/enviar-link-email', {
+      await adminApi.post('/payphone/enviar-link-email', {
         amount: item.total_amount,
         subscriptionId: item.sub_id,
+        businessId: item.business_id,
         email: item.owner_email,
         businessName: item.business_name,
       });
@@ -118,7 +124,7 @@ export default function Payments() {
         '✅ Correo Enviado'
       );
     } catch (e) {
-      alert.error('Error al enviar el link: ' + e.message);
+      alert.error('Error al enviar el link: ' + (e.response?.data?.error || e.message));
     } finally {
       setActing(null);
     }
