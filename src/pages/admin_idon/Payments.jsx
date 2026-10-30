@@ -7,7 +7,7 @@ import CustomCombobox from '../../components/General/CustomCombobox';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Input from '../../components/General/Input';
 import {
-  FiRefreshCw, FiCheck, FiAlertCircle,
+  FiRefreshCw, FiCheck, FiAlertCircle, FiSend,
   FiXCircle, FiCheckCircle, FiCalendar, FiMail
 } from 'react-icons/fi';
 import { adminApi } from '../../config/api';
@@ -99,6 +99,26 @@ export default function Payments() {
       } else {
         alert.error('Error: ' + (e.response?.data?.message || e.message));
       }
+    } finally {
+      setActing(null);
+    }
+  };
+
+  const handleSendPaymentLinkByEmail = async (item) => {
+    setActing(item.sub_id);
+    try {
+      await adminApi.post('/api/payphone/enviar-link-email', {
+        amount: item.total_amount,
+        subscriptionId: item.sub_id,
+        email: item.owner_email,
+        businessName: item.business_name,
+      });
+      alert.success(
+        'Link de pago generado y enviado al correo del cliente exitosamente.',
+        '✅ Correo Enviado'
+      );
+    } catch (e) {
+      alert.error('Error al enviar el link: ' + e.message);
     } finally {
       setActing(null);
     }
@@ -290,6 +310,18 @@ export default function Payments() {
       align: 'center',
       render: (item) => (
         <div className="payment-actions">
+          {item.sub_id && item.sub_status !== 'suspended' && (
+            <IconTextButton
+              variant="primary"
+              size="sm"
+              inline={true}
+              icon={<FiSend size={12} />}
+              onClick={() => handleSendPaymentLinkByEmail(item)}
+              disabled={acting === item.sub_id}
+            >
+              Enviar link de pago
+            </IconTextButton>
+          )}
           {item.sub_id && item.sub_status !== 'suspended' && (
             <IconTextButton
               variant="success"

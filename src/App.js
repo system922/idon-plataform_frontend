@@ -63,6 +63,9 @@ import PaymentPendingPage from './pages/business/PaymentPendingPage';
 import PublicOrderPage from './pages/public/PublicOrderPage';
 import NoAccessPage from './pages/NoAccessPage';
 
+import PagoCompletado from './pages/PagoCompletado';
+import PagoCancelado from './pages/PagoCancelado';
+
 
 // ==================== FUNCIÓN AUXILIAR ====================
 const isAdminUser = (user) => {
@@ -371,6 +374,12 @@ function AppRoutes() {
       {/* Rutas públicas */}
       <Route path="/:slug/qr" element={<PublicOrderPage />} />
       <Route path="/:slug/menu" element={<PublicOrderPage />} />
+
+      {/* Ruta de Pago Completado */}
+      <Route path="/pago-completado" element={<PagoCompletado />} />
+      
+      {/* Ruta de Pago Cancelado */}
+      <Route path="/pago-cancelado" element={<PagoCancelado />} />
 
       {/* Login */}
       <Route
