@@ -10,6 +10,7 @@ import { useSession } from '../../context/SessionContext';
 import SidebarModern from '../../components/SidebarModern';
 import Footer from '../../components/common/Footer';
 import { ADMIN_MENU } from '../config/adminMenu';
+import AppUpdateNotice from '../../components/AppUpdateNotice';
 
 export default function AdminLayout({ children }) { 
   const { user, logout } = useSession(); 
@@ -67,6 +68,7 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="admin-layout">
+      <AppUpdateNotice />
 
       {/* ── Barra superior móvil (hamburger + logo) ── */}
       {isMobile && (

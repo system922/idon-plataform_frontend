@@ -24,7 +24,7 @@ import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
 import { usePrinterService } from '../../services/usePrinterService';
 import { useQzTray } from '../../components/useQzTray';
 import { useAutoPrint } from '../../hooks/useAutoPrint';
-import { useAppVersion } from '../../hooks/useAppVersion';
+import AppUpdateNotice from '../../components/AppUpdateNotice';
 import Modal from '../../components/General/Modal';
 import { ButtonGroup, IconTextButton } from '../../components/General/Button';
 // BusinessLayout.jsx - Agregar al inicio del archivo
@@ -492,7 +492,6 @@ export default function BusinessLayout() {
   useAutoPrint({ businessId, enabled: true });
 
 
-  const { updateReady, countdown } = useAppVersion();
   const { playOrderReady } = useSoundAlert();
 
   useEffect(() => {
@@ -852,17 +851,7 @@ export default function BusinessLayout() {
 
   return (
     <>
-      {updateReady && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999,
-          background: '#1a1a2e', color: '#fff',
-          padding: '10px 20px', textAlign: 'center',
-          fontSize: 14, fontWeight: 600,
-          boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
-        }}>
-          🚀 Nueva versión disponible — actualizando en {countdown}s...
-        </div>
-      )}
+      <AppUpdateNotice />
 
       {aperturaChecked && mostrarAlerta && !mostrarFormulario && !mostrarCierreForm && (
         <AlertaAperturaModal 

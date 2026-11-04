@@ -11,6 +11,7 @@
 @import './Components/SearchInput.css';
 @import './Components/Checklist.css';
 @import './Components/GlobalExpenseBubble.css';
+@import './Components/AppUpdateNotice.css';
 
 @import './Components/BusinessHome.css';
 
@@ -77,7 +78,6 @@
 @import './Pages/ExpensesHistory.css';
 
 @import './Pages/AttendancePage.css';
-
 
 
 

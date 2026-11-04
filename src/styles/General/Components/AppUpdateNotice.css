@@ -1,0 +1,115 @@
+.app-update-notice {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(520px, calc(100vw - 32px));
+  padding: 14px 16px;
+  color: #fff;
+  background: linear-gradient(120deg, #172554 0%, #1e3a8a 100%);
+  border: 1px solid rgba(191, 219, 254, 0.3);
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.28);
+  transform: translateX(-50%);
+  animation: app-update-notice-enter 240ms ease-out both;
+}
+
+.app-update-notice__icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  color: #bfdbfe;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 11px;
+}
+
+.app-update-notice__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.app-update-notice__copy strong {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.app-update-notice__copy > span {
+  color: #dbeafe;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.app-update-notice__countdown {
+  display: flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  color: #172554;
+  background: #fff;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-update-notice__countdown small {
+  align-self: center;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+@keyframes app-update-notice-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (max-width: 480px) {
+  .app-update-notice {
+    top: 10px;
+    gap: 9px;
+    padding: 11px;
+  }
+
+  .app-update-notice__copy strong {
+    font-size: 13px;
+  }
+
+  .app-update-notice__copy > span {
+    font-size: 11px;
+  }
+
+  .app-update-notice__icon {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+
+  .app-update-notice__countdown {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-update-notice {
+    animation: none;
+  }
+}
