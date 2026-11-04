@@ -62,6 +62,15 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
     if (errors[key]) setErrors(prev => ({ ...prev, [key]: '' }));
   };
 
+  const handleDocumentTypeChange = (tipo_documento) => {
+    const cedula = tipo_documento === 'pasaporte'
+      ? form.cedula.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20).toUpperCase()
+      : form.cedula.replace(/\D/g, '').slice(0, tipo_documento === 'ruc' ? 13 : 10);
+
+    setForm(prev => ({ ...prev, tipo_documento, cedula }));
+    setErrors(prev => ({ ...prev, cedula: '' }));
+  };
+
   // ── Validar cédula ecuatoriana ──────────────────────────────────────────
   const validarCedula = (cedula) => {
     if (!cedula || cedula.length !== 10) return false;
@@ -82,6 +91,22 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
     
     const digitoVerificador = (10 - (suma % 10)) % 10;
     return digitoVerificador === digitos[9];
+  };
+
+  const getDocumentError = () => {
+    const documentNumber = form.cedula.trim();
+    if (!documentNumber) return 'Número de documento es requerido';
+
+    if (form.tipo_documento === 'cedula') {
+      if (!/^\d{10}$/.test(documentNumber)) return 'La cédula debe tener 10 dígitos';
+      if (!validarCedula(documentNumber)) return 'Cédula inválida';
+    } else if (form.tipo_documento === 'ruc') {
+      if (!/^\d{13}$/.test(documentNumber)) return 'El RUC debe tener 13 dígitos';
+    } else if (!/^[a-zA-Z0-9]{1,20}$/.test(documentNumber)) {
+      return 'El pasaporte debe tener hasta 20 caracteres alfanuméricos';
+    }
+
+    return '';
   };
 
   // ── Buscar persona por cédula ──────────────────────────────────────────
@@ -140,13 +165,13 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
   // ── Auto-buscar al cambiar cédula ──────────────────────────────────────
   useEffect(() => {
     const doc = form.cedula;
-    if (doc && doc.length === 10 && validarCedula(doc)) {
+    if (form.tipo_documento === 'cedula' && doc && doc.length === 10 && validarCedula(doc)) {
       const timer = setTimeout(() => {
         buscarPersonaPorCedula(doc);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [form.cedula]);
+  }, [form.cedula, form.tipo_documento]);
 
   // ── Validación completa del formulario ──────────────────────────────────
   const validateForm = () => {
@@ -158,14 +183,9 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
       isValid = false;
     }
 
-    if (!form.cedula?.trim()) {
-      newErrors.cedula = 'Número de documento es requerido';
-      isValid = false;
-    } else if (form.cedula.length !== 10) {
-      newErrors.cedula = 'La cédula debe tener 10 dígitos';
-      isValid = false;
-    } else if (!validarCedula(form.cedula)) {
-      newErrors.cedula = 'Cédula inválida';
+    const documentError = getDocumentError();
+    if (documentError) {
+      newErrors.cedula = documentError;
       isValid = false;
     }
 
@@ -199,12 +219,19 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
   // ── Verificar si el botón de guardar debe estar habilitado ────────────
   const isFormValid = () => {
     if (!form.nombre?.trim()) return false;
-    if (!form.cedula?.trim()) return false;
-    if (form.cedula.length !== 10) return false;
-    if (!validarCedula(form.cedula)) return false;
+    if (getDocumentError()) return false;
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return false;
     return true;
   };
+
+  const documentMaxLength = form.tipo_documento === 'cedula' ? 10 : form.tipo_documento === 'ruc' ? 13 : 20;
+  const documentHelper = form.tipo_documento === 'cedula'
+    ? form.cedula.length === 10
+      ? validarCedula(form.cedula) ? '✅ Cédula válida' : '❌ Cédula inválida'
+      : '10 dígitos para cédula'
+    : form.tipo_documento === 'ruc'
+      ? form.cedula.length === 13 ? 'RUC de 13 dígitos' : '13 dígitos para RUC'
+      : 'Hasta 20 caracteres alfanuméricos';
 
   return (
     <Modal
@@ -247,7 +274,7 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
               <label>Tipo documento</label>
               <select 
                 value={form.tipo_documento} 
-                onChange={e => setFormField('tipo_documento', e.target.value)}
+                onChange={e => handleDocumentTypeChange(e.target.value)}
                 className="customer-select"
               >
                 <option value="cedula">Cédula</option>
@@ -262,13 +289,15 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
                   type="text"
                   value={form.cedula}
                   onChange={(value) => {
-                    const clean = value.replace(/\D/g, '').slice(0, 13);
+                    const clean = form.tipo_documento === 'pasaporte'
+                      ? value.replace(/[^a-zA-Z0-9]/g, '').slice(0, documentMaxLength).toUpperCase()
+                      : value.replace(/\D/g, '').slice(0, documentMaxLength);
                     setFormField('cedula', clean);
                   }}
-                  placeholder="0123456789"
+                  placeholder={form.tipo_documento === 'cedula' ? '0123456789' : form.tipo_documento === 'ruc' ? '0123456789001' : 'A12345678'}
                   size="md"
                   icon={<CreditCard size={14} />}
-                  maxLength={13}
+                  maxLength={documentMaxLength}
                   error={errors.cedula}
                   required
                 />
@@ -284,17 +313,15 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
                 )}
               </div>
               {errors.cedula && <span className="error-text">{errors.cedula}</span>}
-              <small style={{ 
-                color: form.cedula && form.cedula.length === 10 
+              <small style={{
+                color: form.tipo_documento === 'cedula' && form.cedula.length === 10
                   ? validarCedula(form.cedula) ? 'var(--success-color)' : 'var(--danger-color)'
-                  : 'var(--text-muted)', 
+                  : 'var(--text-muted)',
                 fontSize: '11px', 
                 marginTop: '2px', 
                 display: 'block' 
               }}>
-                {form.cedula && form.cedula.length === 10 
-                  ? validarCedula(form.cedula) ? '✅ Cédula válida' : '❌ Cédula inválida' 
-                  : '10 dígitos para cédula'}
+                {documentHelper}
               </small>
             </div>
           </div>
