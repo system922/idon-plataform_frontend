@@ -24,11 +24,12 @@ import CierreDeCajaPage from '../../pages/business/PosCashRegisterPage';
 import { usePrinterService } from '../../services/usePrinterService';
 import { useQzTray } from '../../components/useQzTray';
 import { useAutoPrint } from '../../hooks/useAutoPrint';
-import AppUpdateNotice from '../../components/AppUpdateNotice';
+import { useAppVersion } from '../../hooks/useAppVersion';
 import Modal from '../../components/General/Modal';
 import { ButtonGroup, IconTextButton } from '../../components/General/Button';
 // BusinessLayout.jsx - Agregar al inicio del archivo
 import LoadingOverlay from '../../components/General/LoadingOverlay';
+import '../../styles/General/Components/AppUpdateNotice.css';
 
 /* ── Iconos por código de módulo ── */
 const MOD_ICONS = {
@@ -491,6 +492,7 @@ export default function BusinessLayout() {
  
   useAutoPrint({ businessId, enabled: true });
 
+  const { updateReady, countdown } = useAppVersion();
 
   const { playOrderReady } = useSoundAlert();
 
@@ -851,7 +853,21 @@ export default function BusinessLayout() {
 
   return (
     <>
-      <AppUpdateNotice />
+      {updateReady && (
+        <div className="app-update-notice" role="status" aria-live="polite">
+          <span className="app-update-notice__icon" aria-hidden="true">
+            <FiRefreshCw size={18} />
+          </span>
+          <span className="app-update-notice__copy">
+            <strong>Nueva versión disponible</strong>
+            <span>Actualizando en {countdown}s. Guarda tu trabajo.</span>
+          </span>
+          <span className="app-update-notice__countdown" aria-label={`Actualizando en ${countdown} segundos`}>
+            {countdown}
+            <small>s</small>
+          </span>
+        </div>
+      )}
 
       {aperturaChecked && mostrarAlerta && !mostrarFormulario && !mostrarCierreForm && (
         <AlertaAperturaModal 

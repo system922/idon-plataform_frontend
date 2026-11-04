@@ -1,5 +1,6 @@
 import { FiRefreshCw } from 'react-icons/fi';
 import { useAppVersion } from '../hooks/useAppVersion';
+import '../styles/General/Components/AppUpdateNotice.css';
 
 export default function AppUpdateNotice() {
   const { updateReady, countdown } = useAppVersion();
