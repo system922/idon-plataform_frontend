@@ -13,6 +13,7 @@ import { FaHandHoldingDollar } from 'react-icons/fa6';
 import { FaMoneyBillTransfer } from 'react-icons/fa6';
 import OpenDrawerButton from '../../components/OpenDrawerButton';
 import { fetchWithAuth } from '../../config/api';
+import { consultarDocumento } from '../../utils/ecuadorApi';
 import { useQzTray } from '../../components/useQzTray';
 import { usePrinterService } from '../../services/usePrinterService';
 import PrintModal from '../../components/POS/PrintModal';
@@ -638,41 +639,41 @@ export default function PosRetailPage() {
     setClientApiLoading(true);
     try {
       const docType = doc.length === 13 ? 'ruc' : 'cedula';
-      const res = await fetchWithAuth(`/customers/by-document?document_number=${doc}&document_type=${docType}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.nombre || data?.name) {
-          setClienteNombre(data.nombre || data.name);
-          setClienteEmail(data.email || '');
-          setFoundCliente({ ...data, tipo: docType });
-        }
+      let clienteLocal = null;
+
+      try {
+        const res = await fetchWithAuth(
+          `/customers/by-document?document_number=${encodeURIComponent(doc)}&document_type=${docType}`
+        );
+        if (res.ok) clienteLocal = await res.json();
+      } catch (error) {
+        console.error('Error buscando cliente en IDON:', error);
+      }
+
+      if (clienteLocal?.nombre || clienteLocal?.name) {
+        setClienteNombre(clienteLocal.nombre || clienteLocal.name);
+        setClienteEmail(clienteLocal.email || '');
+        setFoundCliente({ ...clienteLocal, tipo: docType });
+        return;
+      }
+
+      const clienteExterno = await consultarDocumento(doc);
+      if (clienteExterno?.nombreFormateado) {
+        setClienteNombre(clienteExterno.nombreFormateado);
+        setClienteEmail(clienteExterno.email || '');
+        setFoundCliente(clienteExterno);
       } else {
         setClienteNombre('');
         setClienteEmail('');
         setFoundCliente(null);
-        await buscarEnPadron(doc.slice(0, 10));
       }
     } catch (error) {
       console.error('Error buscando cliente:', error);
+      setClienteNombre('');
+      setClienteEmail('');
+      setFoundCliente(null);
     } finally {
       setClientApiLoading(false);
-    }
-  };
-
-  const buscarEnPadron = async (cedula10) => {
-    try {
-      const proxyUrl = 'https://infoplacas.herokuapp.com/';
-      const targetUrl = 'https://si.secap.gob.ec/sisecap/logeo_web/json/busca_persona_registro_civil.php';
-      const postData = new URLSearchParams({ documento: cedula10, tipo: '1' });
-      const response = await fetch(proxyUrl + targetUrl, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: postData });
-      const text = await response.text();
-      if (text) {
-        const json = JSON.parse(text);
-        if (json?.nombres) setClienteNombre((json.nombres + ' ' + (json.apellidos || '')).trim());
-      }
-    } catch (error) {
-      console.error('Error en padron:', error);
-      setClienteNombre('');
     }
   };
 

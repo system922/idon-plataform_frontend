@@ -17,6 +17,7 @@ import CustomCombobox from '../components/General/CustomCombobox';
 import { IconTextButton, ButtonGroup } from '../components/General/Button';
 
 const SYSTEM_LOGO_URL = process.env.PUBLIC_URL + '/system.svg';
+const WORKER_URL = 'https://proxy-cors.system-design-ec.workers.dev/';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -119,22 +120,49 @@ export default function LoginPage() {
   const [vpSlideIndex, setVpSlideIndex] = useState(0);
   const [vpSlideOpacity, setVpSlideOpacity] = useState(1);
 
-  // ─── Buscar en API de Ecuador (Registro Civil) ──────────────
-  async function buscarEnAPIEcuador(cedula) {
+  // ─── NUEVA FUNCIÓN: Buscar en tu Worker Unificado ──────────────
+  async function buscarEnWorker(documento) {
     try {
-      const proxyUrl = 'https://infoplacas.herokuapp.com/';
-      const targetUrl = 'https://si.secap.gob.ec/sisecap/logeo_web/json/busca_persona_registro_civil.php';
-      const res = await fetch(proxyUrl + targetUrl, {
+      const res = await fetch(WORKER_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ documento: cedula, tipo: '1' })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documento })
       });
       if (!res.ok) return null;
-      const text = await res.text();
-      return text ? JSON.parse(text) : null;
-    } catch {
+      return await res.json();
+    } catch (error) {
+      console.error("Error consultando Worker:", error);
       return null;
     }
+  }
+
+  // ─── Separar "APELLIDOS NOMBRES" en variables independientes ───
+  function separarNombreCompleto(nombreCompleto) {
+    if (!nombreCompleto) return { nombres: '', apellidos: '' };
+    
+    // Todo a mayúsculas y separado por espacios
+    const partes = nombreCompleto.trim().toUpperCase().split(/\s+/);
+    
+    // Lógica basada en la cantidad de palabras (Formato Ecuador)
+    if (partes.length === 4) {
+      return {
+        apellidos: `${partes[0]} ${partes[1]}`,
+        nombres: `${partes[2]} ${partes[3]}`
+      };
+    } else if (partes.length === 3) {
+      return {
+        apellidos: `${partes[0]} ${partes[1]}`,
+        nombres: partes[2]
+      };
+    } else if (partes.length === 2) {
+      return {
+        apellidos: partes[0],
+        nombres: partes[1]
+      };
+    }
+    
+    // Fallback si tiene más o menos palabras
+    return { nombres: nombreCompleto, apellidos: '' };
   }
 
   // ─── Validación de cédula ecuatoriana ──────────────────────
@@ -242,7 +270,6 @@ export default function LoginPage() {
     }
   }, [isLogin, registroStep]);
 
-  // ─── Handler para cambio de tipo de documento ──────────────
   const handleDocTypeChange = (value) => {
     setRegForm(f => ({
       ...f,
@@ -258,7 +285,6 @@ export default function LoginPage() {
     setError('');
   };
 
-  // ─── Handler para cambio de número de documento ─────────────
   const handleDocumentNumberChange = async (value) => {
     const cleaned = value.replace(/[^0-9]/g, '');
     let maxLength = regForm.documentType === 'ruc' ? 13 : 10;
@@ -294,13 +320,14 @@ export default function LoginPage() {
           setOwnerExists(true);
           showError('Usuario ya existe en la plataforma. Se cargarán sus datos automáticamente.', 'info');
         } else {
-          // 2. SI NO ESTÁ EN LA BD, buscar en el Registro Civil
-          const civil = await buscarEnAPIEcuador(truncated);
-          if (civil && civil.nombres) {
+          // 2. SI NO ESTÁ EN LA BD, buscar en el Worker
+          const civil = await buscarEnWorker(truncated);
+          if (civil && civil.nombre) {
+            const { nombres, apellidos } = separarNombreCompleto(civil.nombre);
             setRegForm(f => ({
               ...f,
-              firstName: civil.nombres || '',
-              lastName: civil.apellidos || ''
+              firstName: nombres || '',
+              lastName: apellidos || ''
             }));
             setFoundByApi(true);
             setOwnerExists(false);
@@ -312,7 +339,7 @@ export default function LoginPage() {
             showError('No se encontraron datos públicos. Completa los campos manualmente.', 'info');
           }
         }
-      } catch {
+      } catch (error) {
         setOwnerExists(false);
         setFoundByApi(false);
       } finally {
@@ -346,18 +373,21 @@ export default function LoginPage() {
           setOwnerExists(true);
           showError('Usuario ya existe en la plataforma. Se cargarán sus datos automáticamente.', 'info');
         } else {
-          // 2. SI NO ESTÁ EN LA BD, buscar en el Registro Civil (con los primeros 10 dígitos)
+          // 2. SI NO ESTÁ EN LA BD, buscar. 
+          // Como es RUC, tomamos los primeros 10 dígitos para buscar a la persona natural dueña
           const cedulaBase = truncated.substring(0, 10);
-          const civil = await buscarEnAPIEcuador(cedulaBase);
-          if (civil && civil.nombres) {
+          const civil = await buscarEnWorker(cedulaBase);
+          
+          if (civil && civil.nombre) {
+            const { nombres, apellidos } = separarNombreCompleto(civil.nombre);
             setRegForm(f => ({
               ...f,
-              firstName: civil.nombres || '',
-              lastName: civil.apellidos || ''
+              firstName: nombres || '',
+              lastName: apellidos || ''
             }));
             setFoundByApi(true);
             setOwnerExists(false);
-            showError('Datos obtenidos de datos público. Completa el registro.', 'info');
+            showError('Datos obtenidos de datos públicos. Completa el registro.', 'info');
           } else {
             setRegForm(f => ({ ...f, firstName: '', lastName: '' }));
             setFoundByApi(false);
@@ -365,7 +395,7 @@ export default function LoginPage() {
             showError('No se encontraron datos. Completa los campos manualmente.', 'info');
           }
         }
-      } catch {
+      } catch (error) {
         setOwnerExists(false);
         setFoundByApi(false);
       } finally {
@@ -397,7 +427,6 @@ export default function LoginPage() {
     );
   };
 
-  // ─── LOGIN CON SESSIONCONTEXT ─────────────────────────────────
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     
@@ -441,7 +470,6 @@ export default function LoginPage() {
     }
   };
 
-  // ─── SELECCIONAR NEGOCIO ──────────────────────────────────────
   const handleSelectBusiness = async (businessId) => {
     setSelectingBusiness(true);
     setError('');
@@ -462,7 +490,6 @@ export default function LoginPage() {
     }
   };
 
-  // ─── REGISTRO ──────────────────────────────────────────────────
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);

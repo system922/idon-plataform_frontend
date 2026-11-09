@@ -11,6 +11,7 @@ import {
 } from 'react-feather';
 import { FiRefreshCw as FiRefreshCwIcon } from 'react-icons/fi';
 import { fetchWithAuth } from '../../config/api'; 
+import { consultarDocumento } from '../../utils/ecuadorApi';
 import { useRealtimeSync } from '../../hooks/useRealtimeSync';
 import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Modal from '../../components/General/Modal';
@@ -115,50 +116,33 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
     
     setLoadingPerson(true);
     try {
-      // ✅ SIN /api
-      const res = await fetchWithAuth(`/customers/by-document?document_number=${cedula}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.name) {
-          setFormField('nombre', data.name);
-          setFormField('email', data.email || '');
-          setFormField('phone', data.phone || '');
-          return;
-        }
+      let clienteLocal = null;
+      try {
+        const res = await fetchWithAuth(
+          `/customers/by-document?document_number=${encodeURIComponent(cedula)}`
+        );
+        if (res.ok) clienteLocal = await res.json();
+      } catch (error) {
+        console.error('Error buscando cliente en IDON:', error);
       }
 
-      // Si no existe en el sistema, buscar en el padrón
-      await buscarEnPadron(cedula);
+      if (clienteLocal?.name || clienteLocal?.nombre) {
+        setFormField('nombre', clienteLocal.name || clienteLocal.nombre);
+        setFormField('email', clienteLocal.email || '');
+        setFormField('phone', clienteLocal.phone || '');
+        return;
+      }
+
+      const clienteExterno = await consultarDocumento(cedula);
+      if (clienteExterno?.nombreFormateado) {
+        setFormField('nombre', clienteExterno.nombreFormateado);
+      } else {
+        console.info('No se encontró información para la cédula consultada.');
+      }
     } catch (error) {
       console.error('Error buscando persona:', error);
     } finally {
       setLoadingPerson(false);
-    }
-  };
-
-  // ── Buscar en el padrón ─────────────────────────────────────────────
-  const buscarEnPadron = async (cedula) => {
-    try {
-      const proxyUrl = 'https://infoplacas.herokuapp.com/';
-      const targetUrl = 'https://si.secap.gob.ec/sisecap/logeo_web/json/busca_persona_registro_civil.php';
-      const postData = new URLSearchParams({ documento: cedula, tipo: '1' });
-      
-      const response = await fetch(proxyUrl + targetUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: postData
-      });
-      
-      const text = await response.text();
-      if (text) {
-        const json = JSON.parse(text);
-        if (json?.nombres) {
-          const nombreCompleto = (json.nombres + ' ' + (json.apellidos || '')).trim();
-          setFormField('nombre', nombreCompleto);
-        }
-      }
-    } catch (error) {
-      console.error('Error en padrón:', error);
     }
   };
 
