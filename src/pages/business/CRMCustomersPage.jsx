@@ -296,6 +296,7 @@ function CustomerModal({ customer, onClose, onSave, saving }) {
                   </div>
                 )}
               </div>
+              {loadingPerson && <small aria-live="polite">Cargando datos...</small>}
               {errors.cedula && <span className="error-text">{errors.cedula}</span>}
               <small style={{
                 color: form.tipo_documento === 'cedula' && form.cedula.length === 10

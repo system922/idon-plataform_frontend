@@ -370,6 +370,7 @@ function EmployeeModal({ employee, onClose, onSave, saving }) {
                     </div>
                   )}
                 </div>
+                {loadingPerson && <small aria-live="polite">Cargando datos...</small>}
                 {errors.document_number && <span className="error-text">{errors.document_number}</span>}
                 <small style={{ 
                   color: form.document_number && form.document_number.length === 10 

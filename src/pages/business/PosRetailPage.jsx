@@ -1117,6 +1117,7 @@ export default function PosRetailPage() {
                       size="md"
                       iconRight={clientApiLoading ? <div className="spinner-small" /> : null}
                     />
+                    {clientApiLoading && <small aria-live="polite">Cargando datos...</small>}
                   </div>
                   <Input
                     type="text"
