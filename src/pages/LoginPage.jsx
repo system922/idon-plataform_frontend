@@ -10,7 +10,6 @@ import {
   FiBriefcase, FiCreditCard, FiCheckCircle,
   FiAlertCircle, FiInfo
 } from 'react-icons/fi';
-import Footer from '../components/common/Footer';
 import Input from '../components/General/Input';
 import LoadingOverlay from '../components/General/LoadingOverlay';
 import CustomCombobox from '../components/General/CustomCombobox';
@@ -18,6 +17,8 @@ import { IconTextButton, ButtonGroup } from '../components/General/Button';
 
 const SYSTEM_LOGO_URL = process.env.PUBLIC_URL + '/system.svg';
 const WORKER_URL = 'https://proxy-cors.system-design-ec.workers.dev/';
+const REMEMBERED_LOGIN_EMAIL_KEY = 'idon_login_remembered_email';
+const REGISTER_EMAIL_PATTERN = /^[A-Z0-9._%+-]+@[A-Z0-9-]+(?:\.[A-Z0-9-]+)*\.[A-Z]{2,}$/i;
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -30,6 +31,8 @@ export default function LoginPage() {
   /* ─── Screen state ─── */
   const [isLogin, setIsLogin] = useState(true);
   const [registroStep, setRegistroStep] = useState(1);
+  const [showCookieBanner, setShowCookieBanner] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   /* ─── Business selector state ─── */
   const [showBusinessSelector, setShowBusinessSelector] = useState(false);
@@ -48,6 +51,9 @@ export default function LoginPage() {
     businessName: '', businessTypeId: '',
     password: '', confirmPassword: '', termsAccepted: false
   });
+  const [registerEmailTouched, setRegisterEmailTouched] = useState(false);
+  const registerEmailFormatIsInvalid =
+    regForm.email.length > 0 && !REGISTER_EMAIL_PATTERN.test(regForm.email);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -63,62 +69,12 @@ export default function LoginPage() {
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [errorTypes, setErrorTypes] = useState('');
 
-  const logo = `${process.env.PUBLIC_URL}/IDON_f.svg`;
-  const color = 'var(--bg-secondary)';
-
-  // Slides de propuesta de valor
-  const vpSlides = [
-    {
-      type: 'problem',
-      question: '¿AÚN HACES TODOS LOS PROCESOS DE TU NEGOCIO A MANO?',
-      answer: 'Eso se acabó con IDON'
-    },
-    {
-      type: 'features',
-      title: 'TODO EN UNA SOLA PLATAFORMA',
-      items: [
-        'POS Retail',
-        'POS Restaurante',
-        'Inventario',
-        'Facturación SRI',
-        'Colaboradores',
-        'Reportes & CRM',
-        'Email Marketing',
-        'Cierre de Caja'
-      ]
-    },
-    {
-      type: 'ctas',
-      buttons: [
-        { text: 'DEMO GRATUITA', type: 'primary' },
-      ],
-      subtext: 'sin tarjeta de crédito o débito',
-      benefits: [
-        'Facturas Electrónicas Ilimitadas',
-        'Todo en la nube',
-        'Configura en menos de 1 hora',
-        'Soporte al 100%'
-      ],
-    },
-    {
-      type: 'faq',
-      title: 'PREGUNTAS FRECUENTES',
-      items: [
-        {
-          q: '¿Funciona con la facturación electrónica del SRI?',
-          a: 'Sí. IDON Genera documentos electrónicos validados por el SRI automáticamente.'
-        }
-      ]
-    }
-  ];
+  const logo = `${process.env.PUBLIC_URL}/IDON_3.png`;
 
   const [logoIndex, setLogoIndex] = useState(0);
   const [logoColor, setLogoColor] = useState(0);
   const [logoOpacity, setLogoOpacity] = useState(1);
   const [businessLogo, setBusinessLogo] = useState(null);
-
-  const [vpSlideIndex, setVpSlideIndex] = useState(0);
-  const [vpSlideOpacity, setVpSlideOpacity] = useState(1);
 
   // ─── NUEVA FUNCIÓN: Buscar en tu Worker Unificado ──────────────
   async function buscarEnWorker(documento) {
@@ -229,6 +185,25 @@ export default function LoginPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (localStorage.getItem('idon_cookies_accepted') === null) {
+      setShowCookieBanner(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem(REMEMBERED_LOGIN_EMAIL_KEY);
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
+
+  const handleAcceptCookies = () => {
+    localStorage.setItem('idon_cookies_accepted', 'true');
+    setShowCookieBanner(false);
+  };
+
   const showError = (message, type = 'general') => {
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     setError(message);
@@ -238,17 +213,6 @@ export default function LoginPage() {
       setErrorType('');
     }, 5000);
   };
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setVpSlideOpacity(0);
-      setTimeout(() => {
-        setVpSlideIndex(prev => (prev + 1) % vpSlides.length);
-        setVpSlideOpacity(1);
-      }, 800);
-    }, 7000);
-    return () => clearInterval(id);
-  }, [vpSlides.length]);
 
   useEffect(() => {
     const saved = localStorage.getItem('business_logo') || SYSTEM_LOGO_URL;
@@ -632,117 +596,36 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-page" style={{ position: 'relative', paddingBottom: 44 }}>
-      <div className="login-container">
-        <section className="login-left" aria-hidden="true">
-          <div className="color-ring" style={{
-            background: `var(--bg-secondary)`
-          }} />
-
-          <div className="logo-carousel">
-            <img
-              src={logo}
-              alt="IDON Logo"
-              className="login-animated-logo"
-              style={{
-                filter: `drop-shadow(0 0 28px ${color}cc) drop-shadow(0 0 60px ${color}66)`,
-              }}
-            />
+    <div className={`login-page ${isLogin ? 'login-mode' : 'register-mode'}${showCookieBanner ? ' has-cookie-banner' : ''}`} style={{ position: 'relative' }}>
+      <div className="login-container split-layout">
+        <section className="login-left image-panel-left">
+          <div className="login-visual-content image-content">
+            <h1>IDON CONTROL</h1>
+            <p className="login-visual-description">SIMPLEMENTE EFICIENTE</p>
+            <button
+              type="button"
+              className="login-switch-button"
+              onClick={isLogin ? switchToRegister : switchToLogin}
+            >
+              {isLogin ? 'REGISTRARME' : 'INICIAR SESIÓN'}
+            </button>
           </div>
-
-          <div className="logo-wordmark">
-            <div className="brand-name">
-              <span className="brand-id">ID</span>
-              <span className="brand-on">ON</span>
-            </div>
-            <div className="brand-tagline">Simplemente eficiente</div>
-          </div>
-
-          {/* ─── VALUE PROPOSITION SLIDES ─── */}
-          <div className="value-proposition" key={`vp-${vpSlideIndex}`} style={{
-            opacity: vpSlideOpacity,
-            transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)'
-          }}>
-            {vpSlides[vpSlideIndex].type === 'problem' && (
-              <div className="vp-slide vp-slide-problem">
-                <div className="vp-problem-question">
-                  {vpSlides[vpSlideIndex].question}
-                </div>
-                <div className="vp-problem-answer">
-                  {vpSlides[vpSlideIndex].answer}
-                </div>
-              </div>
-            )}
-
-            {vpSlides[vpSlideIndex].type === 'features' && (
-              <div className="vp-slide vp-slide-features">
-                <div className="vp-features-title">
-                  {vpSlides[vpSlideIndex].title}
-                </div>
-                <div className="vp-features-grid">
-                  {vpSlides[vpSlideIndex].items.map((item, idx) => (
-                    <div key={idx} className="vp-features-item" style={{
-                      animation: `slideInFeature 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) ${0.1 + idx * 0.1}s both`
-                    }}>
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {vpSlides[vpSlideIndex].type === 'ctas' && (
-              <div className="vp-slide vp-slide-ctas">
-                <div className="vp-ctas-buttons">
-                  {vpSlides[vpSlideIndex].buttons.map((btn, idx) => (
-                    <button 
-                      key={idx}
-                      className={`vp-cta-btn vp-cta-${btn.type}`}
-                      style={{
-                        animation: `slideInFeature 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${0.2 + idx * 0.2}s both`
-                      }}
-                    >
-                      {btn.text}
-                    </button>
-                  ))}
-                </div>
-                <div className="vp-ctas-subtext">
-                  {vpSlides[vpSlideIndex].subtext}
-                </div>
-                <div className="vp-ctas-benefits">
-                  {vpSlides[vpSlideIndex].benefits.map((benefit, idx) => (
-                    <div key={idx} className="vp-ctas-benefit" style={{
-                      animation: `slideInFeature 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) ${0.6 + idx * 0.1}s both`
-                    }}>
-                      {benefit}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {vpSlides[vpSlideIndex].type === 'faq' && (
-              <div className="vp-slide vp-slide-faq">
-                <div className="vp-faq-title">
-                  {vpSlides[vpSlideIndex].title}
-                </div>
-                <div className="vp-faq-items">
-                  {vpSlides[vpSlideIndex].items.map((item, idx) => (
-                    <div key={idx} className="vp-faq-item" style={{
-                      animation: `slideInFeature 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) ${0.1 + idx * 0.2}s both`
-                    }}>
-                      <div className="vp-faq-question">{item.q}</div>
-                      <div className="vp-faq-answer">{item.a}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <svg
+            className="curve-svg"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d="M 100 0 L 85 0 C 60 20, 60 80, 85 100 L 100 100 Z" fill="#ffffff" />
+          </svg>
         </section>
-
-        <main className="login-right">
+        <main className="login-right form-panel-right">
           <div className="login-right-inner">
+            <div className="login-form-brand">
+              <img src={logo} alt="IDON" />
+            </div>
             <div className="form-container">
               {showBusinessSelector ? (
                 <div className="auth-form" key="biz-selector">
@@ -826,18 +709,9 @@ export default function LoginPage() {
                 </div>
               ) : (
                 <>
-                  <div className="form-tabs">
-                    <button className={`tab ${isLogin ? 'active' : ''}`} onClick={switchToLogin}>
-                      Iniciar Sesión
-                    </button>
-                    <button className={`tab ${!isLogin ? 'active' : ''}`} onClick={switchToRegister}>
-                      Registrarse
-                    </button>
-                  </div>
-
                   {isLogin ? (
                     <form onSubmit={handleLoginSubmit} className="auth-form" key="login">
-                      <h3 className="form-title">Bienvenido/a</h3>
+                      <h3 className="form-title">¡Bienvenido!</h3>
 
                       {error && (
                         <div className={`alert alert-${errorType === 'info' ? 'info' : 'error'}`}>
@@ -850,7 +724,16 @@ export default function LoginPage() {
                         <Input
                           type="email"
                           value={email}
-                          onChange={(value) => setEmail(value)}
+                          onChange={(value) => {
+                            setEmail(value);
+                            if (rememberMe) {
+                              if (value) {
+                                localStorage.setItem(REMEMBERED_LOGIN_EMAIL_KEY, value);
+                              } else {
+                                localStorage.removeItem(REMEMBERED_LOGIN_EMAIL_KEY);
+                              }
+                            }
+                          }}
                           placeholder="Ej: miemail@email.com"
                           size="md"
                           disabled={loading}
@@ -873,63 +756,51 @@ export default function LoginPage() {
                         />
                       </div>
 
-                     {/* ─── Fila con botón centrado y enlace a la derecha ─── */}
-                      <div style={{ 
-                        display: 'grid',
-                        gridTemplateColumns: '1fr auto 1fr',
-                        alignItems: 'center',
-                        gap: '16px'
-                      }}>
-                        <div style={{ 
-                          display: 'flex', 
-                          justifyContent: 'center',
-                          gridColumn: '2'
-                        }}>
-                          <IconTextButton
-                            variant="success"
-                            size="md"
-                            inline={false}
-                            icon={<FiArrowRight size={17} />}
-                            onClick={handleLoginSubmit}
-                            disabled={loading}
-                            title="continuar"
-                            block={true}
-                            style={{ 
-                              maxWidth: '110px',
-                              flexShrink: 0
+                      <div className="login-options">
+                        <label className="remember-me" htmlFor="remember-login">
+                          <input
+                            id="remember-login"
+                            type="checkbox"
+                            checked={rememberMe}
+                            onChange={(event) => {
+                              const checked = event.target.checked;
+                              setRememberMe(checked);
+                              if (checked && email) {
+                                localStorage.setItem(REMEMBERED_LOGIN_EMAIL_KEY, email);
+                              } else if (!checked) {
+                                localStorage.removeItem(REMEMBERED_LOGIN_EMAIL_KEY);
+                              }
                             }}
-                          >
-                            Continuar
-                          </IconTextButton>
-                        </div>
-
-                        <div style={{ 
-                          display: 'flex', 
-                          justifyContent: 'flex-end',
-                          gridColumn: '3'
-                        }}>
+                          />
+                          <span>Recuérdame</span>
+                        </label>
+                        <div className="forgot-password-link">
                           <IconTextButton
                             variant="link"
                             size="sm"
                             inline={true}
-                            icon={<FiLock size={14} />}
                             onClick={() => navigate('/forgot-password')}
                             title="recuperar contraseña"
-                            style={{
-                              color: 'var(--text-primary)',
-                              fontSize: '0.65rem',
-                              fontWeight: 500,
-                              background: 'transparent',
-                              border: 'none',
-                              padding: '0px',
-                              cursor: 'pointer',
-                              textDecoration: 'underline',
-                              whiteSpace: 'nowrap'
-                            }}
+                            className="forgot-password-button"
                           >
                             ¿Olvidaste tu contraseña?
                           </IconTextButton>
                         </div>
+                      </div>
+
+                      <div className="login-actions">
+                        <IconTextButton
+                          variant="primary"
+                          size="md"
+                          icon={<FiArrowRight size={17} />}
+                          onClick={handleLoginSubmit}
+                          disabled={loading}
+                          title="continuar"
+                          block={true}
+                          className="login-submit-button"
+                        >
+                          Continuar
+                        </IconTextButton>
                       </div>
                       {loading && (
                         <LoadingOverlay 
@@ -947,6 +818,7 @@ export default function LoginPage() {
                       className="auth-form"
                       key="register"
                     >
+                      <h3 className="form-title register-main-heading">Regístrate</h3>
                       <div className="register-progress">
                         {[1,2,3].map((n, i) => (
                           <React.Fragment key={n}>
@@ -960,7 +832,7 @@ export default function LoginPage() {
                         ))}
                       </div>
 
-                      <h3 className="form-title">
+                      <h3 className="form-title register-step-title">
                         {registroStep === 1 && 'Tu información'}
                         {registroStep === 2 && 'Tu negocio'}
                         {registroStep === 3 && 'Seguridad'}
@@ -973,9 +845,9 @@ export default function LoginPage() {
                       )}
 
                       {registroStep === 1 && (
-                        <div className="step-content">
-                          <div className="grid-2">
-                            <div className="form-group">
+                        <div className="step-content step-content-personal-info">
+                          <div className="grid-2 register-document-fields">
+                            <div className="form-group register-document-type-field">
                               <label><FiCreditCard size={14} /> T. Documento *</label>
                               <CustomCombobox
                                 options={[
@@ -989,10 +861,11 @@ export default function LoginPage() {
                                 size="md"
                                 className="custom-combobox-full"
                                 disabled={loading}
+                                forceDropup={false} 
                               />
                             </div>
                             
-                            <div className="form-group">
+                            <div className="form-group register-document-number-field">
                               <label><FiCreditCard size={14} /> N. Documento *</label>
                               <Input
                                 type="text"
@@ -1009,7 +882,7 @@ export default function LoginPage() {
                             </div>
                           </div>
                           
-                          <div className="form-group">
+                          <div className="form-group register-first-name-field">
                             <label><FiUser size={14} /> Nombres *</label>
                             <Input
                               type="text"
@@ -1023,7 +896,7 @@ export default function LoginPage() {
                             />
                           </div>
                           
-                          <div className="form-group">
+                          <div className="form-group register-last-name-field">
                             <label><FiUser size={14} /> Apellidos *</label>
                             <Input
                               type="text"
@@ -1037,30 +910,46 @@ export default function LoginPage() {
                             />
                           </div>
                           
-                          <div className="form-group">
+                          <div className="form-group register-email-field">
                             <label><FiMail size={14} /> Email *</label>
                             <Input
                               type="email"
                               value={regForm.email}
                               onChange={(value) => setRegForm({ ...regForm, email: value })}
+                              onBlur={() => setRegisterEmailTouched(true)}
                               placeholder="Email"
                               size="md"
                               disabled={ownerExists || loading}
                               readOnly={ownerExists}
                               required={!ownerExists}
+                              pattern={"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}"}
+                              aria-invalid={registerEmailTouched && registerEmailFormatIsInvalid}
+                              error={
+                                registerEmailTouched && registerEmailFormatIsInvalid
+                                  ? 'Ingresa un correo válido (usuario@dominio.com).'
+                                  : ''
+                              }
                             />
                           </div>
 
-                          <div className="form-group">
+                          <div className="form-group register-phone-field">
                             <label><FiPhone size={14} /> Teléfono</label>
                             <Input
                               type="tel"
                               value={regForm.phone}
-                              onChange={(value) => setRegForm({ ...regForm, phone: value })}
+                              onChange={(value) =>
+                                setRegForm({
+                                  ...regForm,
+                                  phone: value.replace(/\D/g, '').slice(0, 10)
+                                })
+                              }
                               placeholder="Teléfono"
                               size="md"
                               disabled={ownerExists || loading}
                               readOnly={ownerExists}
+                              inputMode="numeric"
+                              maxLength={10}
+                              pattern="[0-9]{0,10}"
                             />
                           </div>
                         </div>
@@ -1187,7 +1076,7 @@ export default function LoginPage() {
                         
                         {registroStep < 3 ? (
                           <IconTextButton
-                            variant="success"
+                            variant="primary"
                             size="md"
                             icon={<FiArrowRight size={17} />}
                             onClick={handleNextStep} 
@@ -1197,7 +1086,7 @@ export default function LoginPage() {
                           </IconTextButton>
                         ) : (
                           <IconTextButton
-                            variant="success"
+                            variant="primary"
                             size="md"
                             icon={<FiArrowRight size={17} />}
                             onClick={handleRegisterSubmit}
@@ -1223,9 +1112,25 @@ export default function LoginPage() {
           </div>
         </main>
       </div>
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
-        <Footer />
-      </div>
+      {showCookieBanner && (
+        <aside className="cookie-banner" aria-label="Aviso de cookies">
+          <div className="cookie-banner-copy">
+            <h2 id="cookie-banner-title">Aviso de cookies</h2>
+            <p className="cookie-banner-message">
+              Usamos cookies para mejorar tu experiencia.
+            </p>
+          </div>
+          <div className="cookie-banner-actions">
+            <label className="cookie-banner-consent">
+              <input type="checkbox" />
+              <span>Acepto cookies</span>
+            </label>
+            <button className="cookie-banner-accept" type="button" onClick={handleAcceptCookies}>
+              Aceptar
+            </button>
+          </div>
+        </aside>
+      )}
     </div>
   );
 }
