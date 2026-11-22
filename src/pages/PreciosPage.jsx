@@ -42,19 +42,22 @@ const PreciosPage = () => {
   };
 
   return (
-    <div className="landing-container">
+    <div className="landing-container public-shell public-shell--pricing">
       <PublicHeader />
-      <main className="landing-main">
-        <h1>Planes para todos los bolsillos</h1>
-        <p className="lead">
-          <strong>Tu negocio merece herramientas profesionales.</strong> Elige tu plan y descubre lo fácil que es gestionar tu negocio.
-        </p>
+      <main className="landing-main public-page">
+        <header className="public-page__intro">
+          <h1>Planes para todos los bolsillos</h1>
+          <p className="public-page__lead">
+            <strong>Tu negocio merece herramientas profesionales.</strong> Elige el plan que
+            mejor se adapta a tu forma de trabajar.
+          </p>
+        </header>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px,1fr))', gap: '2rem', margin: '3rem 0' }}>
+        <div className="pricing-grid">
           {/* PLAN ARTESANO */}
-          <div className="feature-card-prices" style={{ textAlign: 'center' }}>
+          <div className="feature-card-prices pricing-card" style={{ textAlign: 'center' }}>
             <h3>Artesano</h3>
-            <p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>$10<small style={{ fontSize: '1rem' }}>/mes</small></p>
+            <p className="pricing-card__price" style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>$10<small style={{ fontSize: '1rem' }}>/mes</small></p>
             <ul style={{ listStyle: 'none', padding: 0, textAlign: 'left' }}>
               <li><CheckCircle size={14} color="#10b981" /> Punto de venta (POS)</li>
               <li><CheckCircle size={14} color="#10b981" /> Facturación SRI</li>
@@ -71,9 +74,9 @@ const PreciosPage = () => {
           </div>
 
           {/* PLAN EMPRENDEDOR */}
-          <div className="feature-card-prices" style={{ textAlign: 'center' }}>
+          <div className="feature-card-prices pricing-card" style={{ textAlign: 'center' }}>
             <h3>Emprendedor</h3>
-            <p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>$11<small style={{ fontSize: '1rem' }}>/mes</small></p>
+            <p className="pricing-card__price" style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>$11<small style={{ fontSize: '1rem' }}>/mes</small></p>
             <ul style={{ listStyle: 'none', padding: 0, textAlign: 'left' }}>
               <li><CheckCircle size={14} color="#10b981" /> Todo lo de Artesano</li>
               <li><CheckCircle size={14} color="#10b981" /> Descuentos y promociones</li>
@@ -90,9 +93,9 @@ const PreciosPage = () => {
           </div>
 
           {/* PLAN AGRICULTOR */}
-          <div className="feature-card-prices" style={{ textAlign: 'center' }}>
+          <div className="feature-card-prices pricing-card" style={{ textAlign: 'center' }}>
             <h3>Agricultor</h3>
-            <p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>$10<small style={{ fontSize: '1rem' }}>/mes</small></p>
+            <p className="pricing-card__price" style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>$10<small style={{ fontSize: '1rem' }}>/mes</small></p>
             <ul style={{ listStyle: 'none', padding: 0, textAlign: 'left' }}>
               <li><CheckCircle size={14} color="#10b981" /> Facturación SRI</li>
               <li><CheckCircle size={14} color="#10b981" /> Control de costos</li>
@@ -109,9 +112,9 @@ const PreciosPage = () => {
           </div>
 
           {/* PLAN MIPYME */}
-          <div className="feature-card-prices" style={{ textAlign: 'center' }}>
+          <div className="feature-card-prices pricing-card" style={{ textAlign: 'center' }}>
             <h3>MIPYME</h3>
-            <p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>$12.50<small style={{ fontSize: '1rem' }}>/mes</small></p>
+            <p className="pricing-card__price" style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>$12.50<small style={{ fontSize: '1rem' }}>/mes</small></p>
             <ul style={{ listStyle: 'none', padding: 0, textAlign: 'left' }}>
               <li><CheckCircle size={14} color="#10b981" /> Todo lo del plan emprendedor</li>
               <li><CheckCircle size={14} color="#10b981" /> Inventario avanzado</li>
@@ -129,13 +132,13 @@ const PreciosPage = () => {
         </div>
 
         {/* Comparativa de ahorro */}
-        <div className="audience-section" style={{ background: 'var(--bg-primary)' }}>
+        <div className="audience-section pricing-comparison">
           <h2>¿Por qué IDON es la mejor inversión?</h2>
           <p>
             <strong>Herramientas por separado te costarían más de $80/mes.</strong> Con IDON lo tienes 
             <strong> TODO desde $10/mes</strong>. ¡Ahorra hasta $70 al mes!
           </p>
-          <ul style={{ listStyle: 'none', padding: 0, display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+          <ul className="pricing-comparison__list">
             <li><CheckCircle size={16} color="#10b981" /> Soporte incluido</li>
             <li><CheckCircle size={16} color="#10b981" /> Capacitación para uso de la plataforma</li>
             <li><CheckCircle size={16} color="#10b981" /> Actualizaciones automáticas</li>
@@ -143,7 +146,7 @@ const PreciosPage = () => {
           </ul>
         </div>
 
-        <div className="cta-section" style={{ marginTop: '2rem' }}>
+        <div className="cta-section public-page__cta">
           <h2>¡El momento es ahora!</h2>
           <p>Regístrate en 5 minutos desde tu celular. Sin papeles, sin complicaciones.</p>
           <Link to="/login" className="cta-button">Regístrate ahora</Link>

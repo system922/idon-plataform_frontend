@@ -1,6 +1,5 @@
 // src/pages/ContactoPage.js
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
 import { CheckCircle, Mail, Phone, MapPin, Globe } from 'lucide-react';
 
@@ -46,16 +45,17 @@ Mensaje: ${mensaje || 'Me gustaría recibir más información sobre IDON.'}
   };
 
   return (
-    <div className="landing-container">
+    <div className="landing-container public-shell public-shell--contact">
       <PublicHeader />
-      <main className="landing-main">
+      <main className="landing-main public-page">
         <div className="contact-container">
-          {/* Título y subtítulo */}
-          <h1>Contáctanos</h1>
-          <p className="lead">
-            <strong>Estamos aquí para ayudarte a transformar tu negocio. </strong> 
-            Escríbenos y en breve uno de nuestros asesores se pondrá en contacto contigo.
-          </p>
+          <header className="public-page__intro">
+            <h1>Contáctanos</h1>
+            <p className="public-page__lead">
+              <strong>Estamos aquí para ayudarte a transformar tu negocio.</strong> Escríbenos y
+              en breve uno de nuestros asesores se pondrá en contacto contigo.
+            </p>
+          </header>
 
           {/* Grid de contacto (2 columnas) */}
           <div className="contact-grid">

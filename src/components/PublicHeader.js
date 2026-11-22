@@ -13,42 +13,37 @@ const PublicHeader = () => {
 
   return (
     <header className="landing-header">
-      <div className="logo">
-        <img
-          src={logo}
-          alt="IDON Logo"
-          className="landing-animated-logo"
-          width="50"
-          height="50"
-          style={{
-            height: '50px',
-            width: 'auto',
-            marginRight: '10px',
-          }}
-        />
-        <span className="logo-idon">ID</span><span className="logo-on">ON</span>
+      <div className="landing-header__inner">
+        <div className="logo">
+          <img
+            src={logo}
+            alt="IDON Logo"
+            className="landing-animated-logo"
+            width="50"
+            height="50"
+          />
+          <span className="logo-idon">ID</span><span className="logo-on">ON</span>
+        </div>
+
+        <button
+          className="menu-toggle"
+          onClick={toggleMenu}
+          aria-label={isMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          aria-expanded={isMenuOpen}
+        >
+          {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+        </button>
+
+        <nav className={`main-nav ${isMenuOpen ? 'open' : ''}`}>
+          <Link to="/" onClick={closeMenu}>Inicio</Link>
+          <Link to="/precios" onClick={closeMenu}>Precios</Link>
+          <Link to="/contacto" onClick={closeMenu}>Contacto</Link>
+          <Link to="/blog" onClick={closeMenu}>Blog</Link>
+          <Link to="/login" className="btn-login" onClick={closeMenu}>
+            Iniciar Sesión o Registrarse
+          </Link>
+        </nav>
       </div>
-
-      {/* Botón hamburguesa (visible solo en móvil) */}
-      <button
-        className="menu-toggle"
-        onClick={toggleMenu}
-        aria-label={isMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
-        aria-expanded={isMenuOpen}
-      >
-        {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
-      </button>
-
-      {/* Navegación con clase condicional */}
-      <nav className={`main-nav ${isMenuOpen ? 'open' : ''}`}>
-        <Link to="/" onClick={closeMenu}>Inicio</Link>
-        <Link to="/precios" onClick={closeMenu}>Precios</Link>
-        <Link to="/contacto" onClick={closeMenu}>Contacto</Link>
-        <Link to="/blog" onClick={closeMenu}>Blog</Link>
-        <Link to="/login" className="btn-login" onClick={closeMenu}>
-          Iniciar Sesión o Registrarse
-        </Link>
-      </nav>
     </header>
   );
 };
