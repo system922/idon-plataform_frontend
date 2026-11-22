@@ -811,6 +811,13 @@ export default function LoginPage() {
                           spinnerColor="#ff8c42"
                         />
                       )}
+                      <button
+                        type="button"
+                        className="mobile-auth-switch"
+                        onClick={switchToRegister}
+                      >
+                        ¿No tienes cuenta? <span>Regístrate</span>
+                      </button>
                     </form>
                   ) : (
                     <form
@@ -1104,6 +1111,13 @@ export default function LoginPage() {
                           </IconTextButton>
                         )}
                       </ButtonGroup>
+                      <button
+                        type="button"
+                        className="mobile-auth-switch"
+                        onClick={switchToLogin}
+                      >
+                        ¿Ya tienes cuenta? <span>Inicia sesión</span>
+                      </button>
                     </form>
                   )}
                 </>

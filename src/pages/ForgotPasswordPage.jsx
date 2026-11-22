@@ -1,5 +1,5 @@
 // ========== src/pages/ForgotPasswordPage.js ==========
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FiArrowLeft, FiMail, FiCheckCircle } from 'react-icons/fi';
 import { api } from '../config/api';
@@ -13,8 +13,37 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [showCookieBanner, setShowCookieBanner] = useState(false);
 
   const logo = `${process.env.PUBLIC_URL}/IDON_3.png`;
+
+  useEffect(() => {
+    if (localStorage.getItem('idon_cookies_accepted') === null) {
+      setShowCookieBanner(true);
+    }
+  }, []);
+
+  const handleAcceptCookies = () => {
+    localStorage.setItem('idon_cookies_accepted', 'true');
+    setShowCookieBanner(false);
+  };
+
+  const renderCookieBanner = () => showCookieBanner && (
+    <aside className="cookie-banner" aria-label="Aviso de cookies">
+      <div className="cookie-banner-copy">
+        <p className="cookie-banner-message">Usamos cookies para mejorar tu experiencia.</p>
+      </div>
+      <div className="cookie-banner-actions">
+        <label className="cookie-banner-consent">
+          <input type="checkbox" />
+          <span>Acepto cookies</span>
+        </label>
+        <button className="cookie-banner-accept" type="button" onClick={handleAcceptCookies}>
+          Aceptar
+        </button>
+      </div>
+    </aside>
+  );
 
   const renderVisualPanel = () => (
     <section className="login-left">
@@ -57,7 +86,7 @@ export default function ForgotPasswordPage() {
 
   if (submitted) {
     return (
-      <div className="login-page login-mode forgot-password-page" style={{ position: 'relative' }}>
+      <div className={`login-page login-mode forgot-password-page${showCookieBanner ? ' has-cookie-banner' : ''}`} style={{ position: 'relative' }}>
         <div className="login-container">
           {renderVisualPanel()}
 
@@ -94,12 +123,13 @@ export default function ForgotPasswordPage() {
             </div>
           </main>
         </div>
+        {renderCookieBanner()}
       </div>
     );
   }
 
   return (
-    <div className="login-page login-mode forgot-password-page" style={{ position: 'relative' }}>
+    <div className={`login-page login-mode forgot-password-page${showCookieBanner ? ' has-cookie-banner' : ''}`} style={{ position: 'relative' }}>
       <div className="login-container">
         {renderVisualPanel()}
 
@@ -160,6 +190,7 @@ export default function ForgotPasswordPage() {
           </div>
         </main>
       </div>
+      {renderCookieBanner()}
     </div>
   );
 }
