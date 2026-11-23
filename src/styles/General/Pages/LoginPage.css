@@ -3569,6 +3569,11 @@
     transition: none;
   }
 
+  .login-page .login-visual-content {
+    animation: none;
+    transition: none;
+  }
+
   .login-page .auth-form {
     animation: none !important;
   }
