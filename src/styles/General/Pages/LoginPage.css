@@ -3031,8 +3031,19 @@
 .login-page .login-visual-content {
   position: relative;
   z-index: 1;
-  width: min(420px, 72%);
+  width: min(400px, calc(100% - 32px));
   text-align: center;
+  transition: opacity 0.3s ease;
+  animation: login-visual-fade-in 0.3s ease both;
+}
+
+@keyframes login-visual-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .login-page .login-visual-eyebrow {
@@ -3059,17 +3070,26 @@
   color: #f97316;
 }
 
-.login-page .login-visual-description {
-  max-width: 360px;
-  margin: 18px auto 28px;
+.login-page .login-visual-tagline {
+  margin: 14px auto 0;
   color: #fff;
   font-family: var(--font-family);
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 700;
   letter-spacing: 0.14em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.login-page .login-visual-description {
+  max-width: 400px;
+  margin: 14px auto 28px;
+  color: #cbd5e1;
+  font-family: var(--font-family);
+  font-size: 1rem;
+  font-weight: 400;
   line-height: 1.65;
   text-shadow: 0 2px 8px rgba(15, 23, 42, 0.85);
-  text-transform: uppercase;
 }
 
 .login-page .login-switch-button {
@@ -3772,6 +3792,12 @@
   max-width: 180px;
   height: auto;
   object-position: center;
+}
+
+.login-page:not(.forgot-password-page) .login-form-brand .idon-logo__icon {
+  width: var(--idon-logo-icon-size);
+  height: var(--idon-logo-icon-size);
+  max-width: none;
 }
 
 .login-page:not(.forgot-password-page) .form-container,

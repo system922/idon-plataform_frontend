@@ -61,9 +61,8 @@ export default function RouteGuard({ children, moduleCode, pageCode }) {
       <LoadingOverlay 
         message=""
         backgroundColor="var(--bg-secondary)"
-        textColor="var(--text-primary)"
         mutedColor="var(--text-muted)"
-        spinnerColor="#ff8c42"
+        spinnerColor="#fc7916"
       />
     );
   }

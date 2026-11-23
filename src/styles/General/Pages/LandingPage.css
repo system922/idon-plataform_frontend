@@ -47,40 +47,6 @@ body, h1, h2, h3, h4, h5, h6, p, li, a, span, div {
   text-decoration: none;
 }
 
-.landing-animated-logo {
-  display: block;
-  transition: transform 0.3s ease;
-  height: 70px;
-  width: auto;
-}
-
-.landing-animated-logo:hover {
-  transform: scale(1.05) rotate(-2deg);
-}
-
-.logo-idon,
-.logo-on {
-  font-size: 1.8rem;
-  font-weight: var(--font-weight-extrabold);
-  letter-spacing: -1px;
-  line-height: 1;
-}
-
-.logo-idon {
-  font-family: 'Syne', sans-serif;
-  color: #1A202C;
-}
-
-.logo-on {
-  font-family: 'Syne', sans-serif;
-  color: var(--primary);
-}
-
-.logo-idon,
-.logo-on {
-  padding-bottom: 2px;
-}
-
 /* Navegación */
 .main-nav {
   display: flex;
@@ -2029,15 +1995,6 @@ picture img {
     display: none !important;
   }
 
-  /* Reducir tamaño del logo en móvil */
-  .animated-logo {
-    height: 35px !important;
-    margin-right: 6px !important;
-  }
-
-  .logo-idon, .logo-on {
-    font-size: 1.2rem !important;
-  }
 }
 
 /* Ajuste para pantallas muy pequeñas */
@@ -2045,14 +2002,6 @@ picture img {
   .landing-header {
     padding: 0.2rem 0.8rem !important;
     min-height: 50px !important;
-  }
-
-  .animated-logo {
-    height: 28px !important;
-  }
-
-  .logo-idon, .logo-on {
-    font-size: 1rem !important;
   }
 
   .main-nav a {
@@ -2129,11 +2078,6 @@ picture img {
 
 .landing-header .logo {
   flex-shrink: 0;
-}
-
-.landing-header .landing-animated-logo {
-  height: 46px !important;
-  margin-right: 8px !important;
 }
 
 .landing-header .main-nav {
@@ -2448,9 +2392,7 @@ picture img {
     background: #fff !important;
   }
 
-  .landing-header .landing-animated-logo {
-    height: 40px !important;
-  }
+
 
   .landing-header .menu-toggle {
     color: #172436;

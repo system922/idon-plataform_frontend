@@ -1,5 +1,6 @@
 // src/components/SpinnerLoader.jsx
 import React from 'react';
+import Logo from '../Logo';
 
 export const SpinnerLoader = ({ 
   size = 'md',        // sm, md, lg, xl
@@ -7,7 +8,7 @@ export const SpinnerLoader = ({
   overlay = true,
   dark = false,
   message = '',
-  showBrand = false,
+  showBrand = true,
   fullScreen = true,
   className = '',
 }) => {
@@ -37,10 +38,8 @@ export const SpinnerLoader = ({
       <div className={`${containerClass} ${className}`}>
         {showBrand ? (
           <div className="spinner-brand">
+            <Logo size="sm" />
             <div className={`spinner-loader ${sizeMap[size]} ${variantMap[variant]}`} />
-            <div className="brand-text">
-              ID<span className="highlight">ON</span>
-            </div>
             {message && <div className="sub-text">{message}</div>}
           </div>
         ) : (

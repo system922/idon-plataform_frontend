@@ -6,6 +6,7 @@ import { api } from '../config/api';
 import Input from '../components/General/Input';
 import { IconTextButton } from '../components/General/Button';
 import { useAlert } from '../components/ConfirmContext';
+import Logo from '../components/Logo';
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -14,8 +15,6 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showCookieBanner, setShowCookieBanner] = useState(false);
-
-  const logo = `${process.env.PUBLIC_URL}/IDON_3.png`;
 
   useEffect(() => {
     if (localStorage.getItem('idon_cookies_accepted') === null) {
@@ -46,10 +45,19 @@ export default function ForgotPasswordPage() {
   );
 
   const renderVisualPanel = () => (
-    <section className="login-left">
+    <section className="login-left image-panel-left">
       <div className="login-visual-content">
-        <h1>IDON CONTROL</h1>
-        <p className="login-visual-description">SIMPLEMENTE EFICIENTE</p>
+        <h1>RECUPERA TU ACCESO</h1>
+        <p className="login-visual-description">
+          No te preocupes, nos pasa a todos. Ingresa tu correo y te enviaremos un enlace seguro para que vuelvas a tu negocio.
+        </p>
+        <button
+          type="button"
+          className="login-switch-button"
+          onClick={() => navigate('/login')}
+        >
+          VOLVER AL LOGIN
+        </button>
       </div>
       <svg
         className="curve-svg"
@@ -93,7 +101,7 @@ export default function ForgotPasswordPage() {
           <main className="login-right">
             <div className="login-right-inner">
               <div className="login-form-brand">
-                <img src={logo} alt="IDON" />
+                <Logo size="lg" />
               </div>
               <div className="form-container">
                 <div className="auth-form">
@@ -136,7 +144,7 @@ export default function ForgotPasswordPage() {
         <main className="login-right">
           <div className="login-right-inner">
             <div className="login-form-brand">
-              <img src={logo} alt="IDON" />
+              <Logo size="lg" />
             </div>
             <div className="form-container">
               <div className="auth-form">

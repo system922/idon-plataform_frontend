@@ -5,6 +5,7 @@ import { io } from 'socket.io-client';
 import { useSession } from '../../context/SessionContext';
 import { useSoundAlert } from '../../hooks/useSoundAlert';
 import { api, fetchWithAuth } from '../../config/api';
+import Logo from '../../components/Logo';
 import SidebarModern from '../../components/SidebarModern';
 import {
   FiSettings, FiShoppingCart, FiBox, FiBarChart2, FiCreditCard,
@@ -941,13 +942,9 @@ export default function BusinessLayout() {
 
         <div className="business-content-area">
           <div className="mobile-topbar">
-            <span className="mobile-topbar-brand">
-              <img src="/IDON_2.svg" alt="IDON" className="mobile-topbar-logo" />
-              <span className="mobile-topbar-brand-text">
-                <span className="mobile-topbar-name"><span className="logo-white">ID</span><span className="logo-orange">ON</span></span>
-                <span className="mobile-topbar-subtitle">Simplemente Eficiente</span>
-              </span>
-            </span>
+            <div className="mobile-topbar-brand">
+              <Logo size="sm" />
+            </div>
             <button
               className="mobile-hamburger"
               onClick={() => setMobileOpen(v => !v)}

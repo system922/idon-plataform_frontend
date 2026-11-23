@@ -13,6 +13,7 @@
 
 import React from 'react';
 import { FiAlertCircle, FiRotateCcw } from 'react-icons/fi';
+import Logo from './Logo';
 
 /**
  * PageTemplate - Componente Universal
@@ -83,6 +84,7 @@ const PageTemplate = ({
       {/* LOADING STATE */}
       {loading ? (
         <div className="page-template-loading">
+          <Logo size="sm" />
           <div className="page-template-spinner"></div>
           <p>Cargando...</p>
         </div>

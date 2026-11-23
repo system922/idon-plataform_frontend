@@ -14,6 +14,7 @@ import Input from '../components/General/Input';
 import LoadingOverlay from '../components/General/LoadingOverlay';
 import CustomCombobox from '../components/General/CustomCombobox';
 import { IconTextButton, ButtonGroup } from '../components/General/Button';
+import Logo from '../components/Logo';
 
 const SYSTEM_LOGO_URL = process.env.PUBLIC_URL + '/system.svg';
 const WORKER_URL = 'https://proxy-cors.system-design-ec.workers.dev/';
@@ -68,8 +69,6 @@ export default function LoginPage() {
   const [businessTypes, setBusinessTypes] = useState([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [errorTypes, setErrorTypes] = useState('');
-
-  const logo = `${process.env.PUBLIC_URL}/IDON_3.png`;
 
   const [logoIndex, setLogoIndex] = useState(0);
   const [logoColor, setLogoColor] = useState(0);
@@ -599,9 +598,19 @@ export default function LoginPage() {
     <div className={`login-page ${isLogin ? 'login-mode' : 'register-mode'}${showCookieBanner ? ' has-cookie-banner' : ''}`} style={{ position: 'relative' }}>
       <div className="login-container split-layout">
         <section className="login-left image-panel-left">
-          <div className="login-visual-content image-content">
-            <h1>IDON CONTROL</h1>
-            <p className="login-visual-description">SIMPLEMENTE EFICIENTE</p>
+          <div
+            key={isLogin ? 'login' : 'register'}
+            className="login-visual-content image-content"
+          >
+            <h1>{isLogin ? 'IDON CONTROL' : 'CREA TU CUENTA'}</h1>
+            {isLogin && (
+              <p className="login-visual-tagline">SIMPLEMENTE EFICIENTE</p>
+            )}
+            <p className="login-visual-description">
+              {isLogin
+                ? 'Bienvenido de vuelta. Ingresa tus credenciales para acceder a tu panel de control y gestionar tu negocio.'
+                : 'Únete a IDON Control. Configura tu negocio en minutos y empieza a facturar, vender y controlar tu inventario hoy mismo.'}
+            </p>
             <button
               type="button"
               className="login-switch-button"
@@ -624,7 +633,7 @@ export default function LoginPage() {
         <main className="login-right form-panel-right">
           <div className="login-right-inner">
             <div className="login-form-brand">
-              <img src={logo} alt="IDON" />
+              <Logo size="lg" />
             </div>
             <div className="form-container">
               {showBusinessSelector ? (
@@ -650,9 +659,6 @@ export default function LoginPage() {
                     }}>
                       <div className="spinner-brand">
                         <div className="spinner-loader spinner-loader-lg spinner-primary" />
-                        <div className="brand-text">
-                          ID<span className="highlight">ON</span>
-                        </div>
                       </div>
                     </div>
                   ) : (
@@ -806,9 +812,9 @@ export default function LoginPage() {
                         <LoadingOverlay 
                           message="Iniciando sesión..."
                           backgroundColor="var(--bg-secondary)"
-                          textColor="var(--text-primary)"
+                          showLogo={false}
                           mutedColor="var(--text-muted)"
-                          spinnerColor="#ff8c42"
+                          spinnerColor="#fc7916"
                         />
                       )}
                       <button

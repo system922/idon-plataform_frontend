@@ -556,9 +556,8 @@ export const SessionProvider = ({ children }) => {
       <LoadingOverlay 
         message="Cerrando sesión..."
         backgroundColor="rgba(0, 0, 0, 0.5)"
-        textColor="#ffffff"
         mutedColor="rgba(255,255,255,0.8)"
-        spinnerColor="#ff8c42"
+        spinnerColor="#fc7916"
       />
     );
   }

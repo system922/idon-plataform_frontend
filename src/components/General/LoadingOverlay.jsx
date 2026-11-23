@@ -1,13 +1,14 @@
 // src/components/General/LoadingOverlay.jsx
 import React from 'react';
+import Logo from '../Logo';
 
 export const LoadingOverlay = ({ 
   message = 'Cargando...',
   fullScreen = true,
+  showLogo = true,
   backgroundColor = 'var(--bg-secondary)',
-  textColor = 'var(--text-primary)',
   mutedColor = 'var(--text-muted)',
-  spinnerColor = '#ff8c42'
+  spinnerColor = '#fc7916'
 }) => {
   return (
     <div style={{ 
@@ -30,31 +31,26 @@ export const LoadingOverlay = ({
         alignItems: 'center',
         gap: '16px'
       }}>
+        {showLogo && <Logo size="sm" />}
+
         <div style={{
           width: '48px',
           height: '48px',
-          border: '4px solid rgba(104, 66, 254, 0.15)',
+          border: '4px solid rgba(12, 52, 100, 0.15)',
           borderTopColor: spinnerColor,
           borderRadius: '50%',
           animation: 'spin 0.8s linear infinite'
         }} />
         
-        <div style={{
-          fontSize: '28px',
-          fontWeight: 700,
-          color: textColor,
-          letterSpacing: '1px',
-        }}>
-          ID<span style={{ color: spinnerColor }}>ON</span>
-        </div>
-        
-        <div style={{
-          fontSize: '14px',
-          color: mutedColor,
-          fontWeight: 500
-        }}>
-          {message}
-        </div>
+        {message && (
+          <div style={{
+            fontSize: '14px',
+            color: mutedColor,
+            fontWeight: 500
+          }}>
+            {message}
+          </div>
+        )}
       </div>
       
       <style>{`

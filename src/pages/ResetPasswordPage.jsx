@@ -7,6 +7,7 @@ import Input from '../components/General/Input';
 import { IconTextButton } from '../components/General/Button';
 import { useAlert } from '../components/ConfirmContext';
 import Footer from '../components/common/Footer';
+import Logo from '../components/Logo';
 
 const SYSTEM_LOGO_URL = process.env.PUBLIC_URL + '/system.svg';
 
@@ -237,6 +238,7 @@ export default function ResetPasswordPage() {
               <div className="form-container">
                 <div className="auth-form">
                   <div className="spinner-brand" style={{ padding: '40px 0', textAlign: 'center' }}>
+                    <Logo size="sm" />
                     <div className="spinner-loader spinner-loader-lg spinner-primary" />
                     <p style={{ color: '#666', marginTop: 16 }}>Validando enlace...</p>
                   </div>

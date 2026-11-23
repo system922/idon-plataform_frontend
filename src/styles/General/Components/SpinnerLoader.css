@@ -113,8 +113,8 @@
 .spinner-brand .spinner-loader {
   width: 48px;
   height: 48px;
-  border-color: var(--border-color);
-  border-top-color: var(--primary);
+  border-color: rgba(12, 52, 100, 0.15);
+  border-top-color: #fc7916;
 }
 
 .spinner-brand .brand-text {

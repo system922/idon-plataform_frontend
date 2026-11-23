@@ -7,6 +7,7 @@ import {
   FiMenu, FiLock, FiUnlock,
 } from 'react-icons/fi';
 import {IconTextButton, ButtonGroup } from './General/Button';
+import Logo from './Logo';
 
 
 /* ── Mapeo de íconos (adminMenu.js usa strings) ── */
@@ -200,7 +201,6 @@ export default function SidebarModern({
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState({});
-  const [logoError, setLogoError] = useState(false);
 
   const isCollapsed = collapsed;
 
@@ -244,25 +244,7 @@ export default function SidebarModern({
       {/* ── HEADER / LOGO ── */}
       <div className={`sidebar-header ${isCollapsed ? 'collapsed-header' : ''}`}>
         <div className="sidebar-logo-block">
-          <div className="sidebar-logo-icon">
-            {!logoError ? (
-              <img
-                src="/IDON_1.svg"
-                alt="IDON"
-                className="sidebar-logo-img"
-                onError={() => setLogoError(true)}
-              />
-            ) : (
-              <span className="sidebar-logo-fallback">I</span>
-            )}
-          </div>
-
-          {!isCollapsed && (
-            <div className="sidebar-logo-text">
-              <h2><span className="logo-white">ID</span><span className="logo-orange">ON</span></h2>
-              <span className="logo-subtitle">Simplemente eficiente</span>
-            </div>
-          )}
+          <Logo size={isCollapsed ? 'xs' : 'sm'} />
         </div>
 
         <button

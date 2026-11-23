@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react'; // Necesitas instalar lucide-react si no lo tienes
-
-const logo = `${process.env.PUBLIC_URL}/IDON_f.svg`;
+import Logo from './Logo';
 
 const PublicHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -15,14 +14,7 @@ const PublicHeader = () => {
     <header className="landing-header">
       <div className="landing-header__inner">
         <div className="logo">
-          <img
-            src={logo}
-            alt="IDON Logo"
-            className="landing-animated-logo"
-            width="50"
-            height="50"
-          />
-          <span className="logo-idon">ID</span><span className="logo-on">ON</span>
+          <Logo size="md" />
         </div>
 
         <button

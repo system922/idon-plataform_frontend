@@ -2,6 +2,7 @@
 import React from 'react';
 import { FiAlertCircle, FiRotateCcw } from 'react-icons/fi';
 import '../styles/PageTemplateOdontologia.css';
+import Logo from './Logo';
 
 /**
  * PageTemplateOdontologia - Template específico para el módulo de Odontología
@@ -74,6 +75,7 @@ const PageTemplateOdontologia = ({
       {/* LOADING STATE */}
       {loading ? (
         <div className="template-loading">
+          <Logo size="sm" />
           <div className="template-spinner"></div>
           <p>Cargando...</p>
         </div>

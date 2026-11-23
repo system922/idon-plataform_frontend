@@ -1,0 +1,78 @@
+.idon-logo {
+  --idon-logo-icon-size: 54px;
+  --idon-logo-name-size: 2.3rem;
+  --idon-logo-control-size: 0.8rem;
+  --idon-logo-gap: 14px;
+  --idon-logo-word-gap: 4px;
+  --idon-logo-control-spacing: 0.12em;
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--idon-logo-gap);
+  flex: 0 0 auto;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  white-space: nowrap;
+}
+
+.idon-logo__icon {
+  display: block;
+  width: var(--idon-logo-icon-size);
+  height: var(--idon-logo-icon-size);
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.idon-logo__wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--idon-logo-word-gap);
+  line-height: 1;
+}
+
+.idon-logo__name {
+  display: inline-flex;
+  align-items: baseline;
+  font-size: var(--idon-logo-name-size);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.idon-logo__id {
+  color: #0c3464;
+}
+
+.idon-logo__on {
+  color: #fc7916;
+}
+
+.idon-logo__control {
+  color: #475569;
+  font-size: var(--idon-logo-control-size);
+  font-weight: 700;
+  letter-spacing: var(--idon-logo-control-spacing);
+}
+
+.idon-logo--lg {
+  --idon-logo-icon-size: 58px;
+  --idon-logo-name-size: 2.5rem;
+  --idon-logo-control-size: 0.86rem;
+  --idon-logo-gap: 14px;
+  --idon-logo-word-gap: 4px;
+}
+
+.idon-logo--sm {
+  --idon-logo-icon-size: 36px;
+  --idon-logo-name-size: 1.4rem;
+  --idon-logo-control-size: 0.62rem;
+  --idon-logo-gap: 8px;
+  --idon-logo-word-gap: 3px;
+}
+
+.idon-logo--xs {
+  --idon-logo-icon-size: 16px;
+  --idon-logo-name-size: 0.6rem;
+  --idon-logo-control-size: 0.28rem;
+  --idon-logo-gap: 2px;
+  --idon-logo-word-gap: 1px;
+  --idon-logo-control-spacing: 0.05em;
+}

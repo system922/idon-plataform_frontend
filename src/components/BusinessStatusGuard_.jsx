@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSession } from '../context/SessionContext';
 import { api } from '../config/api';
+import Logo from './Logo';
 
 export function BusinessStatusGuard({ children }) {
   const { user, isAuthenticated, logout } = useSession();
@@ -79,10 +80,8 @@ export function BusinessStatusGuard({ children }) {
     return (
       <div className="spinner-overlay">
         <div className="spinner-brand">
+          <Logo size="sm" />
           <div className="spinner-loader spinner-loader-lg spinner-primary" />
-          <div className="brand-text">
-            ID<span className="highlight">ON</span>
-          </div>
         </div>
       </div>
     );
