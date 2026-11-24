@@ -3792,19 +3792,6 @@
   margin: 0 0 30px;
 }
 
-.login-page:not(.forgot-password-page) .login-form-brand img {
-  width: 160px;
-  max-width: 180px;
-  height: auto;
-  object-position: center;
-}
-
-.login-page:not(.forgot-password-page) .login-form-brand .idon-logo__icon {
-  width: var(--idon-logo-icon-size);
-  height: var(--idon-logo-icon-size);
-  max-width: none;
-}
-
 .login-page:not(.forgot-password-page) .form-container,
 .login-page:not(.forgot-password-page) .auth-form {
   width: 100%;
@@ -3939,11 +3926,202 @@
 }
 
 @media (max-width: 767px) {
+  .login-page:not(.forgot-password-page) .login-form-brand,
+  .forgot-password-page .login-form-brand {
+    margin-bottom: 18px;
+  }
+
+  .login-page .login-logo-split {
+    gap: 10px;
+  }
+
+  .login-page .login-logo-split__isotipo {
+    height: 48px;
+  }
+
+  .login-page .login-logo-split__logotipo {
+    height: 38px;
+    max-width: min(62vw, 170px);
+  }
+}
+
+@media (max-width: 420px) {
+  .login-page:not(.forgot-password-page) .login-form-brand,
+  .forgot-password-page .login-form-brand {
+    margin-bottom: 12px;
+  }
+
+  .login-page .login-logo-split__isotipo {
+    height: 44px;
+  }
+
+  .login-page .login-logo-split__logotipo {
+    height: 34px;
+    max-width: min(58vw, 150px);
+  }
+}
+
+@media (max-width: 767px) {
   .login-page .step-content-personal-info > .register-email-field {
     grid-column: 1 / -1;
   }
 
   .login-page .step-content-personal-info > .register-phone-field {
     grid-column: 1 / span 8;
+  }
+}
+/* Split brand logo (isotipo + logotipo) for public/auth pages */
+.login-logo-split {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  max-width: 100%;
+}
+
+.login-page .login-form-brand .login-logo-split img,
+.login-logo-split img {
+  width: auto;
+  height: auto;
+  max-width: none;
+  object-fit: contain;
+}
+
+.login-logo-split__isotipo {
+  display: block;
+  width: auto;
+  height: 56px;
+  flex: 0 0 auto;
+}
+
+.login-logo-split__logotipo {
+  display: block;
+  width: auto;
+  height: 44px;
+  flex: 0 1 auto;
+  max-width: 190px;
+}
+
+.login-logo-split--sm .login-logo-split__isotipo {
+  height: 42px;
+}
+
+.login-logo-split--sm .login-logo-split__logotipo {
+  height: 34px;
+  max-width: 140px;
+}
+
+.login-left-logo-split {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 0 auto 1.5rem;
+  padding: 16px 22px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+
+.login-left-logo-split__isotipo {
+  display: block;
+  width: auto;
+  height: 72px;
+  object-fit: contain;
+}
+
+.login-left-logo-split__logotipo {
+  display: block;
+  width: auto;
+  height: 56px;
+  max-width: 220px;
+  object-fit: contain;
+}
+/* Split logo in auth forms: white container so it compagina sobre fondo blanco */
+.login-page .login-right .login-logo-split,
+.login-page .login-right-inner .login-logo-split,
+.forgot-password-page .login-form-brand .login-logo-split {
+  background: #ffffff;
+  box-shadow: none;
+  padding: 8px 12px;
+  border-radius: 12px;
+}
+
+/* Larger brand logo in login/registro/recuperar forms */
+.login-page .login-form-brand .idon-logo--lg {
+  --idon-logo-icon-width: clamp(220px, 24vw, 260px);
+}
+
+.login-page .login-form-brand .idon-logo__icon,
+.login-page:not(.forgot-password-page) .login-form-brand .idon-logo__icon,
+.login-page.forgot-password-page .login-form-brand .idon-logo__icon {
+  width: var(--idon-logo-icon-width) !important;
+  max-width: 260px !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+@media (max-width: 767px) {
+  .login-page .login-form-brand .idon-logo--lg {
+    --idon-logo-icon-width: clamp(190px, 50vw, 230px);
+  }
+
+  .login-page .login-form-brand .idon-logo__icon,
+  .login-page:not(.forgot-password-page) .login-form-brand .idon-logo__icon,
+  .login-page.forgot-password-page .login-form-brand .idon-logo__icon {
+    max-width: 230px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .login-page .login-form-brand .idon-logo--lg {
+    --idon-logo-icon-width: clamp(160px, 54vw, 200px);
+  }
+
+  .login-page .login-form-brand .idon-logo__icon,
+  .login-page:not(.forgot-password-page) .login-form-brand .idon-logo__icon,
+  .login-page.forgot-password-page .login-form-brand .idon-logo__icon {
+    max-width: 200px !important;
+  }
+}
+
+/* Registro paso 1: formulario más legible en móvil */
+@media (max-width: 768px) {
+  .login-page .step-content-personal-info {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+  }
+
+  .login-page .step-content-personal-info > .register-document-fields,
+  .login-page .step-content-personal-info > .register-email-field,
+  .login-page .step-content-personal-info > .register-phone-field,
+  .login-page .step-content-personal-info > .register-first-name-field,
+  .login-page .step-content-personal-info > .register-last-name-field,
+  .login-page .step-content-personal-info > .form-group {
+    grid-column: 1 / -1 !important;
+    width: 100%;
+  }
+
+  .login-page .step-content-personal-info > .register-document-fields.grid-2,
+  .login-page .step-content-personal-info .register-document-fields {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .login-page .step-content-personal-info .form-group,
+  .login-page .step-content.step-content-personal-info .form-group {
+    margin-bottom: 12px;
+  }
+
+  .login-page .step-content-personal-info .form-group label {
+    white-space: nowrap;
+    font-size: 0.75rem;
+  }
+
+  .login-page .step-content-personal-info .form-group input,
+  .login-page .step-content-personal-info .form-group .custom-combobox-trigger,
+  .login-page .step-content-personal-info .form-group .input-wrapper input {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
   }
 }

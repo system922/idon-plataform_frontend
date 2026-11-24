@@ -1,61 +1,93 @@
 // src/components/General/LoadingOverlay.jsx
 import React from 'react';
-import Logo from '../Logo';
 
-export const LoadingOverlay = ({ 
+const isologo = `${process.env.PUBLIC_URL}/isotipo.png`;
+
+export const LoadingOverlay = ({
   message = 'Cargando...',
   fullScreen = true,
   showLogo = true,
-  backgroundColor = 'var(--bg-secondary)',
-  mutedColor = 'var(--text-muted)',
-  spinnerColor = '#fc7916'
+  backgroundColor = '#ffffff',
+  mutedColor = '#475569'
 }) => {
   return (
-    <div style={{ 
+    <div style={{
       position: fullScreen ? 'fixed' : 'absolute',
       top: 0,
       left: 0,
       right: 0,
       bottom: 0,
       background: backgroundColor,
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
       display: 'flex',
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
+      minHeight: fullScreen ? '100vh' : '100%',
       zIndex: 9999
     }}>
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '16px'
-      }}>
-        {showLogo && <Logo size="sm" />}
+      {showLogo && (
+        <div
+          aria-label="IDON"
+          role="img"
+          style={{
+            position: 'relative',
+            width: '90px',
+            height: '90px',
+            background: 'transparent'
+          }}
+        >
+          <img
+            src={isologo}
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              display: 'block'
+            }}
+          />
+          <img
+            src={isologo}
+            alt=""
+            aria-hidden="true"
+            className="idon-loading-reveal"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              display: 'block',
+              filter: 'grayscale(1) brightness(1.35) opacity(0.85)'
+            }}
+          />
+        </div>
+      )}
 
+      {message && (
         <div style={{
-          width: '48px',
-          height: '48px',
-          border: '4px solid rgba(12, 52, 100, 0.15)',
-          borderTopColor: spinnerColor,
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite'
-        }} />
-        
-        {message && (
-          <div style={{
-            fontSize: '14px',
-            color: mutedColor,
-            fontWeight: 500
-          }}>
-            {message}
-          </div>
-        )}
-      </div>
-      
+          marginTop: '16px',
+          fontSize: '1rem',
+          color: mutedColor,
+          fontWeight: 400,
+          fontFamily: 'Inter, Montserrat, sans-serif',
+          textAlign: 'center'
+        }}>
+          {message}
+        </div>
+      )}
+
       <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
+        @keyframes idonLogoReveal {
+          0% { clip-path: inset(0 0 0 0); }
+          70% { clip-path: inset(0 0 100% 0); }
+          100% { clip-path: inset(0 0 100% 0); }
+        }
+        .idon-loading-reveal {
+          animation: idonLogoReveal 2.4s ease-in-out infinite;
         }
       `}</style>
     </div>

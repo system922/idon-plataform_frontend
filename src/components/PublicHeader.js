@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react'; // Necesitas instalar lucide-react si no lo tienes
-import Logo from './Logo';
 
 const PublicHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,8 +12,19 @@ const PublicHeader = () => {
   return (
     <header className="landing-header">
       <div className="landing-header__inner">
-        <div className="logo">
-          <Logo size="md" />
+        <div className="logo" role="img" aria-label="IDON Control">
+          <img
+            src={`${process.env.PUBLIC_URL}/isotipo.png`}
+            alt=""
+            aria-hidden="true"
+            className="landing-logo-isotipo"
+          />
+          <img
+            src={`${process.env.PUBLIC_URL}/logotipo.png`}
+            alt=""
+            aria-hidden="true"
+            className="landing-logo-logotipo"
+          />
         </div>
 
         <button

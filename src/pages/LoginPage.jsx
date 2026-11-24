@@ -717,7 +717,7 @@ export default function LoginPage() {
                 <>
                   {isLogin ? (
                     <form onSubmit={handleLoginSubmit} className="auth-form" key="login">
-                      <h3 className="form-title">¡Bienvenido!</h3>
+                      <h3 className="form-title">¡Bienvenido/a!</h3>
 
                       {error && (
                         <div className={`alert alert-${errorType === 'info' ? 'info' : 'error'}`}>

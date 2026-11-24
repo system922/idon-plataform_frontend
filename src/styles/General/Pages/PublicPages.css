@@ -598,9 +598,9 @@
 
 .landing-header {
   display: block;
-  height: var(--landing-header-height);
-  min-height: var(--landing-header-height);
-  padding: 12px 0;
+  height: auto;
+  min-height: 56px;
+  padding: 4px 0;
   background: #fff;
   backdrop-filter: none;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -613,6 +613,33 @@
   align-items: center;
   justify-content: space-between;
   margin: 0 auto;
+}
+
+.landing-header .logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+.landing-header .landing-logo-isotipo {
+  display: block;
+  width: auto;
+  height: 56px;
+  object-fit: contain;
+  image-rendering: auto;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.landing-header .landing-logo-logotipo {
+  display: block;
+  width: auto;
+  height: 44px;
+  object-fit: contain;
+  image-rendering: auto;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .landing-header .landing-animated-logo {
@@ -694,12 +721,12 @@
 .landing-cta {
   background: #0f172a;
   height: auto;
-  min-height: 0;
+  min-height: 100vh;
   align-items: center;
   justify-content: center;
   gap: 0;
   margin: 0;
-  padding: 60px 20px;
+  padding: 3rem;
   border-bottom: 1px solid #1e293b;
   text-align: center;
 }
@@ -720,6 +747,27 @@
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 2px;
+}
+
+.landing-cta__badge {
+  display: flex;
+  min-width: 68px;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 2rem auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.landing-cta__badge img {
+  display: block;
+  width: auto !important;
+  height: 150px !important;
+  max-width: 300px !important;
+  object-fit: contain;
 }
 
 .landing-cta h2 {
@@ -743,17 +791,45 @@
 
 @media (max-width: 768px) {
   .landing-container {
-    --landing-header-height: 64px;
+    --landing-header-height: 60px;
   }
 
   .landing-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     height: var(--landing-header-height) !important;
     min-height: var(--landing-header-height) !important;
-    padding: 8px 0 !important;
+    padding: 0 1rem !important;
   }
 
   .landing-header__inner {
-    width: calc(100% - 2.2rem);
+    width: 100%;
+  }
+
+  .landing-header .logo {
+    max-width: 240px;
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  .landing-header .landing-logo-isotipo {
+    height: 42px;
+    width: auto;
+  }
+
+  .landing-header .landing-logo-logotipo {
+    height: 34px;
+    width: auto;
+    max-width: 170px;
+  }
+
+  .landing-header .menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    padding: 8px;
   }
 
   .landing-header .landing-animated-logo {

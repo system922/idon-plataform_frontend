@@ -7,7 +7,6 @@ import {
   FiMenu, FiLock, FiUnlock,
 } from 'react-icons/fi';
 import {IconTextButton, ButtonGroup } from './General/Button';
-import Logo from './Logo';
 
 
 /* ── Mapeo de íconos (adminMenu.js usa strings) ── */
@@ -244,7 +243,26 @@ export default function SidebarModern({
       {/* ── HEADER / LOGO ── */}
       <div className={`sidebar-header ${isCollapsed ? 'collapsed-header' : ''}`}>
         <div className="sidebar-logo-block">
-          <Logo size={isCollapsed ? 'xs' : 'sm'} />
+          <div
+            className={`sidebar-logo-split ${isCollapsed ? 'sidebar-logo-split--collapsed' : ''}`}
+            role="img"
+            aria-label="IDON Control"
+          >
+            <img
+              src={`${process.env.PUBLIC_URL}/isotipo.png`}
+              alt=""
+              aria-hidden="true"
+              className="sidebar-logo-split__isotipo"
+            />
+            {!isCollapsed && (
+              <img
+                src={`${process.env.PUBLIC_URL}/logotipo.png`}
+                alt=""
+                aria-hidden="true"
+                className="sidebar-logo-split__logotipo"
+              />
+            )}
+          </div>
         </div>
 
         <button

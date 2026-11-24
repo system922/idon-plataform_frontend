@@ -112,7 +112,9 @@ const LandingPage = () => (
 
       <section className="landing-cta" aria-labelledby="landing-cta-title">
         <div>
-          <p className="landing-eyebrow">IDON CONTROL</p>
+          <div className="landing-cta__badge" aria-label="IDON Control">
+            <img src="/LOGO_IDON__3_blanco.png" alt="" aria-hidden="true" />
+          </div>
           <h2 id="landing-cta-title">Tu negocio merece una gestión más simple.</h2>
           <p>Conoce los planes y encuentra el que mejor se adapta a tu operación.</p>
         </div>

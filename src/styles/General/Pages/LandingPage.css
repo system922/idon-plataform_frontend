@@ -27,7 +27,7 @@ body, h1, h2, h3, h4, h5, h6, p, li, a, span, div {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.15rem 5% 0.40rem 0.75rem;
+  padding: 0.35rem 5% 0.35rem 0.75rem;
   max-width: 100%;
   margin: 0 auto;
   background: rgba(255, 255, 255, 0.95);
@@ -43,8 +43,31 @@ body, h1, h2, h3, h4, h5, h6, p, li, a, span, div {
 .landing-header .logo {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 12px;
+  flex: 0 0 auto;
   text-decoration: none;
+}
+
+.landing-header .landing-logo-isotipo {
+  display: block;
+  width: auto;
+  height: 56px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  image-rendering: auto;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.landing-header .landing-logo-logotipo {
+  display: block;
+  width: auto;
+  height: 44px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  image-rendering: auto;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 /* Navegación */
@@ -1934,16 +1957,42 @@ picture img {
 @media (max-width: 768px) {
   /* Restablecer el header a flex row */
   .landing-header {
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    padding: 0.3rem 1rem !important;
-    flex-wrap: nowrap !important;
+    display: flex;
+    height: 60px !important;
     min-height: 60px !important;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row !important;
+    padding: 0 1rem !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .landing-header__inner {
+    width: 100%;
+  }
+
+  .landing-header .logo {
+    max-width: 240px;
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  .landing-header .landing-logo-isotipo {
+    height: 42px;
+  }
+
+  .landing-header .landing-logo-logotipo {
+    height: 34px;
+    max-width: 170px;
   }
 
   /* Mostrar el botón hamburguesa */
   .menu-toggle {
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    padding: 8px;
   }
 
   /* Ocultar navegación por defecto */
@@ -2000,8 +2049,22 @@ picture img {
 /* Ajuste para pantallas muy pequeñas */
 @media (max-width: 480px) {
   .landing-header {
-    padding: 0.2rem 0.8rem !important;
-    min-height: 50px !important;
+    height: 56px !important;
+    min-height: 56px !important;
+    padding: 0 1rem !important;
+  }
+
+  .landing-header .logo {
+    max-width: 220px;
+  }
+
+  .landing-header .landing-logo-isotipo {
+    height: 38px;
+  }
+
+  .landing-header .landing-logo-logotipo {
+    height: 30px;
+    max-width: 155px;
   }
 
   .main-nav a {
@@ -2359,6 +2422,27 @@ picture img {
   margin-bottom: 0.75rem;
 }
 
+.landing-cta__badge {
+  display: flex;
+  min-width: 68px;
+  min-height: auto;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 2rem auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.landing-cta__badge img {
+  display: block;
+  width: auto !important;
+  height: 150px !important;
+  max-width: 300px !important;
+  object-fit: contain;
+}
+
 .landing-cta h2 {
   max-width: 650px;
   margin-bottom: 0.6rem;
@@ -2488,12 +2572,18 @@ picture img {
 
 /* Keep each landing section exactly one viewport tall. */
 .landing-product,
-.landing-benefits,
-.landing-cta {
+.landing-benefits {
   height: 100vh;
   min-height: 0;
   box-sizing: border-box;
 }
+
+.landing-cta {
+  height: auto;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
 
 .landing-hero {
   height: calc(100vh - var(--landing-header-height));
@@ -2503,8 +2593,7 @@ picture img {
 
 @supports (height: 100svh) {
   .landing-product,
-  .landing-benefits,
-  .landing-cta {
+  .landing-benefits {
     height: 100svh;
   }
 
@@ -2549,7 +2638,7 @@ picture img {
   flex-direction: column;
   gap: 1.5rem;
   margin: 0;
-  padding: clamp(2rem, 7vw, 5rem);
+  padding: 3rem;
   border-radius: 0;
   text-align: center;
 }

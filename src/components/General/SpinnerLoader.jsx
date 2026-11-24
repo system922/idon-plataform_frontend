@@ -1,8 +1,9 @@
 // src/components/SpinnerLoader.jsx
 import React from 'react';
-import Logo from '../Logo';
 
-export const SpinnerLoader = ({ 
+const isologo = `${process.env.PUBLIC_URL}/isotipo.png`;
+
+export const SpinnerLoader = ({
   size = 'md',        // sm, md, lg, xl
   variant = 'primary', // primary, blue, success, danger, purple, white
   overlay = true,
@@ -12,7 +13,7 @@ export const SpinnerLoader = ({
   fullScreen = true,
   className = '',
 }) => {
-  
+
   const sizeMap = {
     sm: 'spinner-loader-sm',
     md: 'spinner-loader',
@@ -38,9 +39,56 @@ export const SpinnerLoader = ({
       <div className={`${containerClass} ${className}`}>
         {showBrand ? (
           <div className="spinner-brand">
-            <Logo size="sm" />
-            <div className={`spinner-loader ${sizeMap[size]} ${variantMap[variant]}`} />
+            <div
+              aria-label="IDON"
+              role="img"
+              style={{
+                position: 'relative',
+                width: '90px',
+                height: '90px',
+                background: 'transparent'
+              }}
+            >
+              <img
+                src={isologo}
+                alt=""
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  display: 'block'
+                }}
+              />
+              <img
+                src={isologo}
+                alt=""
+                aria-hidden="true"
+                className="idon-loading-reveal"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  display: 'block',
+                  filter: 'grayscale(1) brightness(1.35) opacity(0.85)'
+                }}
+              />
+            </div>
             {message && <div className="sub-text">{message}</div>}
+            <style>{`
+              @keyframes idonLogoReveal {
+                0% { clip-path: inset(0 0 0 0); }
+                70% { clip-path: inset(0 0 100% 0); }
+                100% { clip-path: inset(0 0 100% 0); }
+              }
+              .idon-loading-reveal {
+                animation: idonLogoReveal 2.4s ease-in-out infinite;
+              }
+            `}</style>
           </div>
         ) : (
           <>

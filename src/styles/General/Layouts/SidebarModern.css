@@ -919,3 +919,35 @@
     font-size: 13px !important;
   }
 }
+/* Split logo (isotipo + logotipo) in sidebar header */
+.sidebar-logo-split {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sidebar-logo-split__isotipo,
+.sidebar-logo-split__logotipo {
+  display: block;
+  width: auto;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.sidebar-logo-split__isotipo {
+  height: 38px;
+}
+
+.sidebar-logo-split__logotipo {
+  height: 30px;
+  max-width: 120px;
+}
+
+.sidebar-logo-split--collapsed {
+  gap: 0;
+}
+
+.sidebar-logo-split--collapsed .sidebar-logo-split__isotipo {
+  height: 34px;
+}
