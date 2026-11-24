@@ -791,7 +791,7 @@
 
 @media (max-width: 768px) {
   .landing-container {
-    --landing-header-height: 60px;
+    --landing-header-height: 62px;
   }
 
   .landing-header {
@@ -808,20 +808,20 @@
   }
 
   .landing-header .logo {
-    max-width: 240px;
+    max-width: 250px;
     gap: 8px;
     white-space: nowrap;
   }
 
   .landing-header .landing-logo-isotipo {
-    height: 42px;
+    height: 46px;
     width: auto;
   }
 
   .landing-header .landing-logo-logotipo {
-    height: 34px;
+    height: 36px;
     width: auto;
-    max-width: 170px;
+    max-width: 180px;
   }
 
   .landing-header .menu-toggle {
@@ -859,6 +859,51 @@
   }
 }
 
+@media (max-width: 480px) {
+  .landing-container {
+    --landing-header-height: 56px;
+  }
+
+  .landing-header {
+    height: var(--landing-header-height) !important;
+    min-height: var(--landing-header-height) !important;
+    padding: 0 0.75rem !important;
+  }
+
+  .landing-header__inner {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .landing-header .logo {
+    max-width: calc(100% - 44px);
+    gap: 6px;
+  }
+
+  .landing-header .landing-logo-isotipo {
+    height: 36px;
+  }
+
+  .landing-header .landing-logo-logotipo {
+    height: 28px;
+    max-width: 135px;
+  }
+
+  .landing-header .menu-toggle {
+    padding: 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .landing-header .landing-logo-isotipo {
+    height: 32px;
+  }
+
+  .landing-header .landing-logo-logotipo {
+    height: 24px;
+    max-width: 115px;
+  }
+}
 .public-page h1,
 .public-page h2,
 .landing-section-heading h2,

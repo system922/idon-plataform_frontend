@@ -1958,8 +1958,8 @@ picture img {
   /* Restablecer el header a flex row */
   .landing-header {
     display: flex;
-    height: 60px !important;
-    min-height: 60px !important;
+    height: 62px !important;
+    min-height: 62px !important;
     align-items: center;
     justify-content: space-between;
     flex-direction: row !important;
@@ -1972,18 +1972,18 @@ picture img {
   }
 
   .landing-header .logo {
-    max-width: 240px;
+    max-width: 250px;
     gap: 8px;
     white-space: nowrap;
   }
 
   .landing-header .landing-logo-isotipo {
-    height: 42px;
+    height: 46px;
   }
 
   .landing-header .landing-logo-logotipo {
-    height: 34px;
-    max-width: 170px;
+    height: 36px;
+    max-width: 180px;
   }
 
   /* Mostrar el botón hamburguesa */
@@ -2055,16 +2055,16 @@ picture img {
   }
 
   .landing-header .logo {
-    max-width: 220px;
+    max-width: 230px;
   }
 
   .landing-header .landing-logo-isotipo {
-    height: 38px;
+    height: 40px;
   }
 
   .landing-header .landing-logo-logotipo {
-    height: 30px;
-    max-width: 155px;
+    height: 32px;
+    max-width: 160px;
   }
 
   .main-nav a {

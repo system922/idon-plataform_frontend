@@ -942,8 +942,19 @@ export default function BusinessLayout() {
 
         <div className="business-content-area">
           <div className="mobile-topbar">
-            <div className="mobile-topbar-brand">
-              <Logo size="sm" />
+            <div className="mobile-topbar-brand" role="img" aria-label="IDON Control">
+              <img
+                src={`${process.env.PUBLIC_URL}/isotipo.png`}
+                alt=""
+                aria-hidden="true"
+                className="mobile-topbar-logo-isotipo"
+              />
+              <img
+                src={`${process.env.PUBLIC_URL}/logotipo.png`}
+                alt=""
+                aria-hidden="true"
+                className="mobile-topbar-logo-logotipo"
+              />
             </div>
             <button
               className="mobile-hamburger"

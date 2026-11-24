@@ -248,7 +248,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 16px;
-    height: 52px;
+    height: 56px;
     background: var(--bg-card, #ffffff);
     border-bottom: 1px solid var(--border-color, #E2E8F0);
     position: sticky;
@@ -258,13 +258,28 @@
   }
 
   .mobile-topbar-brand {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 22px;
-    font-weight: 900;
-    letter-spacing: 0.5px;
+    min-width: 0;
     line-height: 1;
+  }
+
+  .mobile-topbar-logo-isotipo,
+  .mobile-topbar-logo-logotipo {
+    display: block;
+    width: auto;
+    object-fit: contain;
+    flex: 0 0 auto;
+  }
+
+  .mobile-topbar-logo-isotipo {
+    height: 36px;
+  }
+
+  .mobile-topbar-logo-logotipo {
+    height: 28px;
+    max-width: 132px;
   }
 
   .mobile-topbar-logo {
@@ -545,34 +560,49 @@
     padding: 8px;
   }
   .mobile-topbar {
-    height: 48px;
+    height: 52px;
     padding: 0 12px;
   }
   .mobile-topbar-brand {
-    font-size: 18px;
+    gap: 6px;
+  }
+  .mobile-topbar-logo-isotipo {
+    height: 32px;
+  }
+  .mobile-topbar-logo-logotipo {
+    height: 24px;
+    max-width: 115px;
   }
   .mobile-hamburger {
     width: 34px;
     height: 34px;
   }
   .business-content-area {
-    min-height: calc(100dvh - 48px);
+    min-height: calc(100dvh - 52px);
   }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 360px) {
   .business-sidebar-wrapper {
     width: 220px !important;
     min-width: 220px !important;
   }
   .mobile-topbar {
-    height: 46px;
+    height: 50px;
     padding: 0 10px;
   }
-  .mobile-topbar-brand {
-    font-size: 16px;
+  .mobile-topbar-logo-isotipo {
+    height: 30px;
+  }
+  .mobile-topbar-logo-logotipo {
+    height: 22px;
+    max-width: 105px;
+  }
+  .mobile-hamburger {
+    width: 32px;
+    height: 32px;
   }
   .business-content-area {
-    min-height: calc(100dvh - 46px);
+    min-height: calc(100dvh - 50px);
   }
 }
