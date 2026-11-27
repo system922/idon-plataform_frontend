@@ -10,6 +10,7 @@ import {
 import { FaHandHoldingDollar, FaMoneyBillTransfer } from 'react-icons/fa6';
 import OpenDrawerButton from '../../components/OpenDrawerButton';
 import { fetchWithAuth } from '../../config/api';
+import { calculatePVP } from '../../utils/productUtils';
 import { consultarDocumento } from '../../utils/ecuadorApi';
 import { useQzTray } from '../../components/useQzTray';
 import { usePrinterService } from '../../services/usePrinterService';
@@ -222,7 +223,9 @@ export default function PosGeneralPage() {
       const descItem = redondear(descuentoTotal * (subItem / subtotalOriginal));
       const nuevoSubItem = redondear(Math.max(0, subItem - descItem));
       nuevoSub += nuevoSubItem;
-      nuevoIva += redondear(nuevoSubItem * (item.tax_rate / 100));
+      nuevoIva += subItem > 0
+        ? redondear(item.iva_amount * (nuevoSubItem / subItem))
+        : 0;
     });
     setTotalConDescuento(redondear(nuevoSub + nuevoIva));
     setSubtotalConDescuento(nuevoSub);
@@ -242,9 +245,11 @@ export default function PosGeneralPage() {
       const list = Array.isArray(data) ? data : data?.productos ?? data?.data ?? [];
       const normalized = list.map(p => {
         const price = Number(p.selling_price) || 0;
-        const taxPct = Number(p.is_taxable) || 0;
+        const taxPct = typeof p.is_taxable === 'boolean'
+          ? (p.is_taxable ? ivaRateGlobal : 0)
+          : Number(p.is_taxable) || 0;
         return { ...p, selling_price: price, tax_rate: taxPct,
-          iva_amount: p.is_active ? redondear(price * (taxPct / 100)) : 0,
+          iva_amount: p.is_active && taxPct > 0 ? redondear(calculatePVP(p) - price) : 0,
           stock: p.stock != null ? Number(p.stock) : null,
           category_id: p.category_id || null,
           code: p.code || p.barcode || p.sku || '',
@@ -321,34 +326,38 @@ export default function PosGeneralPage() {
     setCart(prev => {
       const existing = prev.find(i => i.product_id === product.id);
       if (existing) {
+        const newQty = existing.quantity + 1;
+        const newIva = redondear(product.iva_amount * newQty);
         return prev.map(i => i.product_id === product.id
-          ? { ...i, quantity: i.quantity + 1, iva_amount: redondear(i.selling_price * (i.quantity + 1) * (i.tax_rate / 100)),
-              line_total: redondear(i.selling_price * (i.quantity + 1) + i.selling_price * (i.quantity + 1) * (i.tax_rate / 100)) }
+          ? { ...i, quantity: newQty, iva_amount: newIva,
+              line_total: redondear(i.selling_price * newQty + newIva) }
           : i);
       }
-      const iva = redondear(product.selling_price * (product.tax_rate / 100));
+      const iva = product.iva_amount;
       return [...prev, { product_id: product.id, product_name: product.name, selling_price: product.selling_price,
-        tax_rate: product.tax_rate, category_id: product.category_id, code: product.code,
+        tax_rate: product.tax_rate, unit_iva_amount: iva, category_id: product.category_id, code: product.code,
         quantity: 1, iva_amount: iva, line_total: redondear(product.selling_price + iva) }];
     });
     setError('');
   };
 
   const updateQty = (productId, delta) => {
-    setCart(prev => prev.map(i => i.product_id === productId
-      ? { ...i, quantity: Math.max(1, i.quantity + delta),
-          iva_amount: redondear(i.selling_price * Math.max(1, i.quantity + delta) * (i.tax_rate / 100)),
-          line_total: redondear(i.selling_price * Math.max(1, i.quantity + delta) * (1 + i.tax_rate / 100)) }
-      : i));
+    setCart(prev => prev.map(i => {
+      if (i.product_id !== productId) return i;
+      const quantity = Math.max(1, i.quantity + delta);
+      const iva = redondear((i.unit_iva_amount ?? i.selling_price * (i.tax_rate / 100)) * quantity);
+      return { ...i, quantity, iva_amount: iva, line_total: redondear(i.selling_price * quantity + iva) };
+    }));
   };
 
   const setQtyDirect = (productId, val) => {
     const n = parseInt(val, 10);
     if (!isNaN(n) && n > 0) {
-      setCart(prev => prev.map(i => i.product_id === productId
-        ? { ...i, quantity: n, iva_amount: redondear(i.selling_price * n * (i.tax_rate / 100)),
-            line_total: redondear(i.selling_price * n * (1 + i.tax_rate / 100)) }
-        : i));
+      setCart(prev => prev.map(i => {
+        if (i.product_id !== productId) return i;
+        const iva = redondear((i.unit_iva_amount ?? i.selling_price * (i.tax_rate / 100)) * n);
+        return { ...i, quantity: n, iva_amount: iva, line_total: redondear(i.selling_price * n + iva) };
+      }));
     }
   };
 

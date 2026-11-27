@@ -180,7 +180,7 @@ const ProductosPage = () => {
       label: 'PVP',
       render: (item) => {
         const pvp = calculatePVP(item);
-        const iva = toNumber(item.tax_rate);
+        const iva = Number((pvp - toNumber(item.selling_price)).toFixed(2));
         return (
           <div>
             <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(pvp)}</strong>

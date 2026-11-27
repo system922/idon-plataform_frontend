@@ -52,14 +52,22 @@ export const formatCurrency = (value) => {
 };
 
 /**
- * Calcula el PVP = selling_price + tax_rate
- * @param {Object} product - Producto con selling_price y tax_rate
+ * Obtiene el PVP guardado o lo reconstruye desde el precio base y el IVA.
+ * @param {Object} product - Producto con precio base y datos fiscales
  * @returns {number}
  */
 export const calculatePVP = (product) => {
   const sellingPrice = toNumber(product.selling_price);
-  const taxRate = toNumber(product.tax_rate);
-  return Number((sellingPrice + taxRate).toFixed(2));
+  const savedPrice = toNumber(product.price);
+  if (savedPrice > 0) return Number(savedPrice.toFixed(2));
+
+  const taxRate = toNumber(product.is_taxable);
+  const storedTax = toNumber(product.tax_rate);
+  const validRates = [0, 5, 8, 12, 15];
+  const taxAmount = storedTax > 0 && !validRates.includes(storedTax)
+    ? storedTax
+    : sellingPrice * (taxRate / 100);
+  return Number((sellingPrice + taxAmount).toFixed(2));
 };
 
 /**

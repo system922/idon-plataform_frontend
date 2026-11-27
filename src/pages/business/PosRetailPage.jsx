@@ -13,6 +13,7 @@ import { FaHandHoldingDollar } from 'react-icons/fa6';
 import { FaMoneyBillTransfer } from 'react-icons/fa6';
 import OpenDrawerButton from '../../components/OpenDrawerButton';
 import { fetchWithAuth } from '../../config/api';
+import { calculatePVP } from '../../utils/productUtils';
 import { consultarDocumento } from '../../utils/ecuadorApi';
 import { useQzTray } from '../../components/useQzTray';
 import { usePrinterService } from '../../services/usePrinterService';
@@ -286,10 +287,11 @@ export default function PosRetailPage() {
       const precio = item.selling_price;
       const qty = item.quantity;
       const subtotalItem = precio * qty;
-      const taxRate = item.tax_rate / 100;
       const descuentoItem = redondear(descuentoTotal * (subtotalItem / subtotalOriginal));
       const nuevoSubtotalItem = redondear(Math.max(0, subtotalItem - descuentoItem));
-      const nuevoIvaItem = redondear(nuevoSubtotalItem * taxRate);
+      const nuevoIvaItem = subtotalItem > 0
+        ? redondear(item.iva_amount * (nuevoSubtotalItem / subtotalItem))
+        : 0;
       nuevoSubtotalTotal += nuevoSubtotalItem;
       nuevoIvaTotal += nuevoIvaItem;
     });
@@ -316,8 +318,12 @@ export default function PosRetailPage() {
       const list = Array.isArray(data) ? data : data?.productos ?? data?.data ?? [];
       const normalizedProducts = list.map(p => {
         const sellingPrice = Number(p.selling_price) || 0;
-        const taxRatePct = Number(p.is_taxable) || 0;
-        const ivaAmount = p.is_active ? redondear(sellingPrice * (taxRatePct / 100)) : 0;
+        const taxRatePct = typeof p.is_taxable === 'boolean'
+          ? (p.is_taxable ? ivaRateGlobal : 0)
+          : Number(p.is_taxable) || 0;
+        const ivaAmount = p.is_active && taxRatePct > 0
+          ? redondear(calculatePVP(p) - sellingPrice)
+          : 0;
         return {
           ...p,
           selling_price: sellingPrice,
@@ -400,16 +406,17 @@ export default function PosRetailPage() {
       const existing = prev.find(i => i.product_id === product.id);
       const unitPrice = product.selling_price;
       const taxPct = product.tax_rate;
+      const unitIvaAmount = product.iva_amount;
       const quantity = existing ? existing.quantity + 1 : 1;
       const subtotalBase = unitPrice * quantity;
-      const ivaMonto = redondear(subtotalBase * (taxPct / 100));
+      const ivaMonto = redondear(unitIvaAmount * quantity);
       const totalConIva = redondear(subtotalBase + ivaMonto);
       if (existing) {
         return prev.map(i => {
           if (i.product_id === product.id) {
             const newQty = i.quantity + 1;
             const newSubtotal = unitPrice * newQty;
-            const newIva = redondear(newSubtotal * (taxPct / 100));
+            const newIva = redondear(unitIvaAmount * newQty);
             return {
               ...i,
               quantity: newQty,
@@ -425,6 +432,7 @@ export default function PosRetailPage() {
         product_name: product.name,
         selling_price: unitPrice,
         tax_rate: taxPct,
+        unit_iva_amount: unitIvaAmount,
         category_id: product.category_id,
         code: product.code,
         quantity: 1,
@@ -440,7 +448,7 @@ export default function PosRetailPage() {
       if (i.product_id === productId) {
         const newQty = Math.max(1, i.quantity + delta);
         const newSubtotal = i.selling_price * newQty;
-        const newIva = redondear(newSubtotal * (i.tax_rate / 100));
+        const newIva = redondear((i.unit_iva_amount ?? i.selling_price * (i.tax_rate / 100)) * newQty);
         return {
           ...i,
           quantity: newQty,
@@ -458,7 +466,7 @@ export default function PosRetailPage() {
       setCart(prev => prev.map(i => {
         if (i.product_id === productId) {
           const newSubtotal = i.selling_price * n;
-          const newIva = redondear(newSubtotal * (i.tax_rate / 100));
+          const newIva = redondear((i.unit_iva_amount ?? i.selling_price * (i.tax_rate / 100)) * n);
           return {
             ...i,
             quantity: n,

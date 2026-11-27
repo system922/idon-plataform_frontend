@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  toNumber, toBoolean, toSafeString, generateUniqueBarcode
+  toNumber, toBoolean, toSafeString, generateUniqueBarcode, calculatePVP
 } from '../utils/productUtils';
 import { productService } from '../services/productService';
 import { ERROR_MESSAGES, INVENTORY_CONSTANTS } from '../constants/inventoryConstants';
@@ -70,7 +70,7 @@ const ProductModal = ({ isOpen, product, onSave, onClose, isSaving = false }) =>
     
     if (product) {
       // Modo edición
-      const pvp = toNumber(product.selling_price) + toNumber(product.tax_rate);
+      const pvp = calculatePVP(product);
       const ivaRate = toNumber(product.is_taxable) || 0;
       setForm({
         barcode: toSafeString(product.barcode),
