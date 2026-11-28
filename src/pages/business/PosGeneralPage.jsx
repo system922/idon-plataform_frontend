@@ -248,6 +248,7 @@ export default function PosGeneralPage() {
   const totalParaCobrar = receivableToCollect
     ? Number(receivablePaymentAmount) || 0
     : totalConDescuento;
+  const receivableAmountIsValid = !receivableToCollect || totalParaCobrar > 0.01;
 
   // ── Helpers descuentos ──
   const getSubtotalByCategory = useCallback((cartItems, categoryId) =>
@@ -966,8 +967,8 @@ export default function PosGeneralPage() {
       setError('Esta cuenta ya está pagada.');
       return;
     }
-    if (receivableToCollect && totalParaCobrar <= 0) {
-      setError('Ingrese un monto mayor a cero para registrar el abono.');
+    if (receivableToCollect && totalParaCobrar <= 0.01) {
+      setError('Ingrese un monto mayor a $0.01 para registrar el abono.');
       return;
     }
     if (receivableToCollect && totalParaCobrar > Number(receivableToCollect.balance) + 0.001) {
@@ -1467,7 +1468,7 @@ export default function PosGeneralPage() {
                           Monto a cobrar
                           <Input
                             type="number"
-                            min="0"
+                            min="0.02"
                             max={receivableToCollect.balance}
                             step="0.01"
                             value={receivablePaymentAmount}
@@ -1540,7 +1541,7 @@ export default function PosGeneralPage() {
                           <FiX size={15} /> {receivableToCollect ? 'Salir' : 'Limpiar'}
                         </IconTextButton>
                         <IconTextButton variant="success" size="md" onClick={procesarVenta}
-                          disabled={printLoading || cart.length === 0 || receivableOrderLoading || receivableToCollect?.status === 'paid'} loading={printLoading}>
+                          disabled={printLoading || cart.length === 0 || receivableOrderLoading || receivableToCollect?.status === 'paid' || !receivableAmountIsValid} loading={printLoading}>
                           <FiCheck size={18} /> Cobrar {fmt(totalParaCobrar)}
                         </IconTextButton>
                       </ButtonGroup>
@@ -1560,7 +1561,7 @@ export default function PosGeneralPage() {
                           <FiX size={15} /> {receivableToCollect ? 'Salir' : 'Limpiar'}
                         </IconTextButton>
                         <IconTextButton variant="success" size="md" onClick={procesarVenta}
-                          disabled={printLoading || cart.length === 0 || receivableOrderLoading || receivableToCollect?.status === 'paid'} loading={printLoading}>
+                          disabled={printLoading || cart.length === 0 || receivableOrderLoading || receivableToCollect?.status === 'paid' || !receivableAmountIsValid} loading={printLoading}>
                           <FiCheck size={18} /> Cobrar {fmt(totalParaCobrar)}
                         </IconTextButton>
                       </ButtonGroup>
@@ -1612,7 +1613,7 @@ export default function PosGeneralPage() {
                           <FiX size={15} /> {receivableToCollect ? 'Salir' : 'Limpiar'}
                         </IconTextButton>
                         <IconTextButton variant="success" size="md" onClick={procesarVenta}
-                          disabled={printLoading || cart.length === 0 || receivableOrderLoading || receivableToCollect?.status === 'paid'} loading={printLoading}>
+                          disabled={printLoading || cart.length === 0 || receivableOrderLoading || receivableToCollect?.status === 'paid' || !receivableAmountIsValid} loading={printLoading}>
                           <FiCheck size={18} /> Cobrar {fmt(totalParaCobrar)}
                         </IconTextButton>
                       </ButtonGroup>

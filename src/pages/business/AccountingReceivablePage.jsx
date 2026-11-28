@@ -268,9 +268,11 @@ function ReceivableEditModal({ receivable, customers, onClose, onSave, saving })
 export default function AccountingReceivablePage() {
   const { user } = useSession();
   const navigate = useNavigate();
-  const { hasAccess, isLoading: navigationLoading } = useBusinessNavigation();
+  const { accessiblePages, isLoading: navigationLoading } = useBusinessNavigation();
   const { showConfirm } = useConfirm();
   const alert = useAlert();
+  const canUsePosSales = accessiblePages.some(page => page.moduleCode === 'pos' && page.code === 'pos.sales');
+  const canUsePosGeneral = accessiblePages.some(page => page.moduleCode === 'pos' && page.code === 'pos.general');
 
   // ─── Obtener businessId de forma robusta (igual que en RolesPage) ──────────
   const getBusinessId = useCallback(() => {
@@ -830,14 +832,9 @@ export default function AccountingReceivablePage() {
 
   const handleNavigateToPayment = useCallback((receivable) => {
     if (navigationLoading) {
-      alert.info('Cargando los accesos disponibles a los puntos de venta. Intente nuevamente en unos segundos.');
+      alert.info('Cargando los accesos disponibles a los POS. Intente nuevamente en unos segundos.');
       return;
     }
-
-    const role = (user?.roleCode || user?.role || '').toLowerCase();
-    const canUseAllPages = ['admin', 'owner', 'manager'].includes(role);
-    const canUsePosSales = canUseAllPages || hasAccess('pos', 'pos.sales');
-    const canUsePosGeneral = canUseAllPages || hasAccess('pos', 'pos.general');
 
     if (canUsePosSales && canUsePosGeneral) {
       setPendingReceivablePayment(receivable);
@@ -848,7 +845,7 @@ export default function AccountingReceivablePage() {
     } else {
       alert.error('No tiene acceso a POS General ni a POS Ventas para cobrar esta cuenta.');
     }
-  }, [alert, hasAccess, navigationLoading, navigateToPos, user]);
+  }, [alert, canUsePosGeneral, canUsePosSales, navigationLoading, navigateToPos]);
 
   const choosePaymentPos = useCallback((path) => {
     if (!pendingReceivablePayment) return;
@@ -1160,25 +1157,29 @@ export default function AccountingReceivablePage() {
           closeOnOverlayClick={false}
           isOpen={true}
           onClose={() => setPendingReceivablePayment(null)}
-          title="Seleccionar punto de venta"
+          title="Seleccionar POS"
           size="sm"
           footer={
             <ButtonGroup>
               <IconTextButton variant="secondary" size="md" onClick={() => setPendingReceivablePayment(null)}>
                 Cancelar
               </IconTextButton>
-              <IconTextButton variant="primary" size="md" onClick={() => choosePaymentPos('/app/pos/pos.general')}>
-                POS General
-              </IconTextButton>
-              <IconTextButton variant="primary" size="md" onClick={() => choosePaymentPos('/app/pos/pos.sales')}>
-                POS Ventas
-              </IconTextButton>
+              {canUsePosGeneral && (
+                <IconTextButton variant="primary" size="md" onClick={() => choosePaymentPos('/app/pos/pos.general')}>
+                  POS General
+                </IconTextButton>
+              )}
+              {canUsePosSales && (
+                <IconTextButton variant="primary" size="md" onClick={() => choosePaymentPos('/app/pos/pos.sales')}>
+                  POS Ventas
+                </IconTextButton>
+              )}
             </ButtonGroup>
           }
         >
           <p>
-            Elija dónde cobrar la cuenta <strong>#{pendingReceivablePayment.order_number || pendingReceivablePayment.invoice_number}</strong>.
-            El cliente y el saldo pendiente se enviarán al punto de venta seleccionado.
+            Elija a qué POS enviar la cuenta <strong>#{pendingReceivablePayment.order_number || pendingReceivablePayment.invoice_number}</strong>.
+            El cliente y el saldo pendiente se enviarán al POS seleccionado.
           </p>
         </Modal>
       )}
