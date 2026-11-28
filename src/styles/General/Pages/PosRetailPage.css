@@ -2383,3 +2383,304 @@
     margin: 0 8px 4px;
   }
 }
+
+.pos-general-template {
+  min-height: auto;
+}
+
+.pos-general-template .page-template-content,
+.pos-general-wrapper,
+.pos-general-layout {
+  flex: 0 0 auto;
+  min-height: 0;
+  height: auto;
+  overflow: visible;
+}
+
+.pos-general-layout .retail-catalog-panel {
+  flex: 0 0 var(--retail-catalog-max-width);
+  overflow: visible;
+}
+
+.pos-general-layout .retail-product-grid {
+  flex: 0 0 auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.pos-general-cart-panel,
+.pos-general-cart-panel.mob-active {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.pos-general-cart-content,
+.pos-general-cart-items,
+.pos-general-bottom-section {
+  flex: 0 0 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.pos-general-cart-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.pos-general-cart-content > * {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.pos-general-bottom-section .rcp-totals,
+.pos-general-bottom-section .rcp-payment {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pos-general-bottom-section .credit-payment-container {
+  margin: 8px 20px 14px;
+  border: 1px solid var(--border-color);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.pos-general-bottom-section .credit-full-summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 250px);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.pos-general-bottom-section .credit-full-summary-row .credit-info-box {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.pos-general-bottom-section .credit-due-date-field {
+  display: flex;
+  flex: 1 1 190px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-width: 190px;
+}
+
+.pos-general-bottom-section .credit-due-date-field label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pos-general-bottom-section .credit-due-date-field label span {
+  color: var(--danger, #dc2626);
+}
+
+.pos-general-bottom-section .credit-due-date-preview {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.pos-general-bottom-section .partial-payment-row {
+  align-items: stretch;
+}
+
+@media (max-width: 768px) {
+  .pos-general-layout .retail-catalog-panel {
+    flex: 0 0 auto;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .pos-general-cart-panel,
+  .pos-general-cart-panel.mob-active {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .pos-general-bottom-section .credit-payment-container {
+    margin: 8px 12px 12px;
+  }
+
+  .pos-general-bottom-section .credit-full-summary-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .pos-general-bottom-section .credit-payment-container {
+    margin: 8px 10px 10px;
+    padding: 12px;
+  }
+}
+
+.pos-general-hidden {
+  display: none !important;
+}
+
+.pos-general-layout.pos-general-collecting .retail-catalog-panel {
+  display: none !important;
+}
+
+.pos-general-layout.pos-general-collecting .pos-general-cart-panel {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.pos-general-receivable-customer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0 4px;
+}
+
+.pos-general-receivable-customer-row .pos-general-receivable-customer {
+  min-width: 0;
+  padding: 0;
+}
+
+.pos-general-receivable-customer-row .rcp-cx-row {
+  gap: 8px;
+}
+
+.pos-general-receivable-customer-row .rcp-cx-doc {
+  width: 128px;
+}
+
+.pos-general-receivable-customer-row .pos-general-receivable-collaborator {
+  min-width: 0;
+}
+
+.pos-general-receivable-customer-row .pos-general-receivable-collaborator > div {
+  flex: 1 1 0 !important;
+  min-width: 0;
+}
+
+.pos-general-receivable-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  background: var(--bg-tertiary, #f8fafc);
+}
+
+.pos-general-receivable-notice > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pos-general-receivable-notice strong {
+  color: var(--text-primary, #1e293b);
+  font-size: 13px;
+}
+
+.pos-general-receivable-notice span {
+  color: var(--text-muted, #64748b);
+  font-size: 12px;
+}
+
+.pos-general-receivable-amount {
+  min-width: 0;
+  margin: 0;
+  justify-self: end;
+  width: 100%;
+  max-width: 440px;
+}
+
+.pos-general-receivable-amount label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pos-general-receivable-amount .input-container {
+  flex: 1;
+  min-width: 120px;
+  width: auto;
+}
+
+.pos-general-receivable-amount .input-wrapper {
+  min-height: 40px;
+}
+
+.pos-general-receivable-amount .input-field {
+  min-height: 38px;
+  font-size: 14px;
+}
+
+.pos-general-receivable-payment-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: center;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.pos-general-receivable-totals .rcp-total-grand {
+  font-size: var(--font-size-lg, 18px);
+  letter-spacing: normal;
+}
+
+.pos-general-balance-row {
+  min-width: 0;
+  padding-top: 0;
+  border-top: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.pos-general-balance-row strong {
+  color: var(--primary, #f97316);
+  font-size: 16px;
+}
+
+@media (max-width: 480px) {
+  .pos-general-receivable-notice {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .pos-general-receivable-customer-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pos-general-receivable-payment-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pos-general-receivable-amount {
+    justify-self: stretch;
+    max-width: none;
+  }
+}

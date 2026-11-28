@@ -6,6 +6,21 @@ import { BsCashCoin } from "react-icons/bs";
 import { CiCreditCard1 } from "react-icons/ci";
 import { SlScreenSmartphone } from "react-icons/sl";
 import { FiCheck, FiX, FiAlertTriangle } from 'react-icons/fi';
+import CustomCombobox from '../General/CustomCombobox';
+
+const calculateDueDate = (days) => {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() + Number(days));
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return {
+    value: `${year}-${month}-${day}`,
+    label: `${day}/${month}/${year}`,
+  };
+};
 
 const CreditPayment = ({
   totalOrdenConDescuento,
@@ -18,8 +33,10 @@ const CreditPayment = ({
   clienteCedula,
   clienteNombre,
   clienteEmail,
+  enableDueDate = false,
 }) => {
   const [modoPago, setModoPago] = useState('credito');
+  const [plazoDias, setPlazoDias] = useState('');
   const [montoAbono, setMontoAbono] = useState('');
   const [montoAbonoRaw, setMontoAbonoRaw] = useState('');
   const [metodoAbono, setMetodoAbono] = useState('cash');
@@ -37,6 +54,7 @@ const CreditPayment = ({
   const clienteValido = !esConsumidorFinal && 
     clienteCedula?.length >= 10 && 
     clienteNombre?.trim() !== '';
+  const fechaLimite = plazoDias ? calculateDueDate(plazoDias) : null;
 
   const handleMontoAbonoChange = (val) => {
     let digits = val.replace(/\D/g, '');
@@ -48,6 +66,8 @@ const CreditPayment = ({
   };
 
   const handlePagar = () => {
+    if (enableDueDate && !fechaLimite) return;
+
     // Validar cliente REAL primero
     if (!clienteValido) {
       alert('⚠️ Para registrar una cuenta por cobrar, debe tener un cliente real (no CONSUMIDOR FINAL)');
@@ -55,7 +75,7 @@ const CreditPayment = ({
     }
 
     if (modoPago === 'credito') {
-      onPagarCredito();
+      onPagarCredito(enableDueDate ? fechaLimite.value : undefined);
     } else {
       const abono = parseFloat(montoAbono) || 0;
       if (abono <= 0) {
@@ -66,9 +86,39 @@ const CreditPayment = ({
         alert(`El abono no puede ser mayor al total (${fmt(totalOrdenConDescuento)})`);
         return;
       }
-      onPagarParcial(abono, metodoAbono, refAbono);
+      onPagarParcial(
+        abono,
+        metodoAbono,
+        refAbono,
+        enableDueDate ? fechaLimite.value : undefined
+      );
     }
   };
+
+  const renderDueDateField = () => (
+    <div className="credit-due-date-field">
+      <label>Plazo para pagar <span>*</span></label>
+      <CustomCombobox
+        options={[
+          { value: '', label: '— Seleccionar plazo —' },
+          { value: '10', label: '10 días' },
+          { value: '30', label: '30 días' },
+          { value: '60', label: '60 días' },
+          { value: '90', label: '90 días' },
+        ]}
+        value={plazoDias}
+        onChange={setPlazoDias}
+        placeholder="Plazo para pagar"
+        filterable={false}
+        forceDropup={false}
+      />
+      <span className="credit-due-date-preview">
+        {fechaLimite
+          ? `Fecha límite: ${fechaLimite.label}`
+          : 'Seleccione los días para calcular la fecha límite'}
+      </span>
+    </div>
+  );
 
   return (
     <div className="credit-payment-container">
@@ -140,13 +190,16 @@ const CreditPayment = ({
       {/* Modo: Todo a Crédito */}
       {modoPago === 'credito' && (
         <div className="credit-full-mode">
-          <div className="credit-info-box">
-            <p>
-              <strong>Total a crédito:</strong> {fmt(totalOrdenConDescuento)}
-            </p>
-            <p style={{ fontSize: '14px', color: '#666', marginTop: '8px' }}>
-              El cliente pagará en una fecha posterior. Se generará una cuenta por cobrar.
-            </p>
+          <div className="credit-full-summary-row">
+            <div className="credit-info-box">
+              <p>
+                <strong>Total a crédito:</strong> {fmt(totalOrdenConDescuento)}
+              </p>
+              <p style={{ fontSize: '14px', color: '#666', marginTop: '8px' }}>
+                El cliente pagará en una fecha posterior. Se generará una cuenta por cobrar.
+              </p>
+            </div>
+            {enableDueDate && renderDueDateField()}
           </div>
           <div className="credit-actions">
             <ButtonGroup>
@@ -164,7 +217,7 @@ const CreditPayment = ({
                 size="md"
                 icon={<BsCashCoin size={16} />}
                 onClick={handlePagar}
-                disabled={printLoading || !clienteValido}
+                disabled={printLoading || !clienteValido || (enableDueDate && !fechaLimite)}
               >
                 {printLoading ? 'Procesando...' : 'Registrar Crédito'}
               </IconTextButton>
@@ -202,6 +255,7 @@ const CreditPayment = ({
                 {fmt(Math.max(0, totalOrdenConDescuento - (parseFloat(montoAbono) || 0)))}
               </span>
             </div>
+            {enableDueDate && renderDueDateField()}
           </div>
 
           {/* Método de pago del abono */}
@@ -281,6 +335,7 @@ const CreditPayment = ({
                 disabled={
                   printLoading ||
                   !clienteValido ||
+                  (enableDueDate && !fechaLimite) ||
                   (metodoAbono !== 'cash' && !refAbono) ||
                   (parseFloat(montoAbono) || 0) <= 0
                 }

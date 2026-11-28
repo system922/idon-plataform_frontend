@@ -16,6 +16,7 @@ import { IconTextButton, ButtonGroup } from '../../components/General/Button';
 import Modal from '../../components/General/Modal';
 import CustomCombobox from '../../components/General/CustomCombobox';
 import { fetchWithAuth } from '../../config/api'; 
+import { useBusinessNavigation } from '../../hooks/useBusinessNavigation';
 
 // ─── Helper para formatear fechas ────────────────────────────────────────────
 const formatDate = (dateValue) => {
@@ -267,6 +268,7 @@ function ReceivableEditModal({ receivable, customers, onClose, onSave, saving })
 export default function AccountingReceivablePage() {
   const { user } = useSession();
   const navigate = useNavigate();
+  const { hasAccess, isLoading: navigationLoading } = useBusinessNavigation();
   const { showConfirm } = useConfirm();
   const alert = useAlert();
 
@@ -303,6 +305,7 @@ export default function AccountingReceivablePage() {
   const [editingReceivable, setEditingReceivable] = useState(null);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [pendingReceivablePayment, setPendingReceivablePayment] = useState(null);
 
   // ─── Cargar cuentas por cobrar ──────────────────────────────────────────
   const loadReceivables = useCallback(async () => {
@@ -317,7 +320,10 @@ export default function AccountingReceivablePage() {
       const response = await fetchWithAuth(`/accounting-receivable/receivables?businessId=${businessId}`);
       const data = await response.json();
       const rows = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
-      setReceivables(rows);
+      setReceivables(rows.map(row => ({
+        ...row,
+        status: row.receivable_status || row.status,
+      })));
     } catch (err) {
       setReceivables([]);
       setError(err.message || 'Error al cargar cuentas por cobrar');
@@ -442,7 +448,7 @@ export default function AccountingReceivablePage() {
       }
 
       if (searchTerm) {
-        const searchable = [item.customer_name, item.description, item.invoice_number, item.customer_cedula]
+        const searchable = [item.customer_name, item.description, item.order_number, item.invoice_number, item.customer_cedula]
           .filter(Boolean)
           .join(' ')
           .toLowerCase();
@@ -463,9 +469,14 @@ export default function AccountingReceivablePage() {
   // ─── Estadísticas ──────────────────────────────────────────────────────────
   const stats = useMemo(() => {
     const totalReceivable = filteredReceivables.reduce((sum, r) => sum + toNumber(r.amount), 0);
-    const totalPaid = filteredReceivables
-      .filter(r => r.status === 'paid')
-      .reduce((sum, r) => sum + toNumber(r.amount), 0);
+    const totalPaid = filteredReceivables.reduce((sum, r) => {
+      const amount = toNumber(r.amount);
+      const balance = r.balance == null ? null : toNumber(r.balance);
+      const paid = balance === null
+        ? toNumber(r.paid_amount || (r.status === 'paid' ? amount : 0))
+        : Math.max(0, amount - balance);
+      return sum + paid;
+    }, 0);
     const totalPending = filteredReceivables
       .filter(r => r.status === 'pending' || r.status === 'partial')
       .reduce((sum, r) => sum + toNumber(r.balance !== undefined ? r.balance : r.amount), 0);
@@ -574,7 +585,7 @@ export default function AccountingReceivablePage() {
       ws.columns = [
         { key: 'cliente', width: 30 },
         { key: 'descripcion', width: 35 },
-        { key: 'factura', width: 15 },
+        { key: 'orden', width: 15 },
         { key: 'vencimiento', width: 15 },
         { key: 'estado', width: 15 },
         { key: 'monto', width: 15 },
@@ -589,7 +600,7 @@ export default function AccountingReceivablePage() {
       styleSection(ws.getCell('A3'), '  LISTADO DE CUENTAS ACTIVAS');
       ws.getRow(3).height = 18;
 
-      const headers = ['Cliente', 'Descripción', 'N° Factura', 'Vencimiento', 'Estado', 'Monto Total', 'Saldo Pendiente'];
+      const headers = ['Cliente', 'Descripción', 'N° Orden', 'Vencimiento', 'Estado', 'Monto Total', 'Saldo Pendiente'];
       headers.forEach((h, i) => styleColHeader(ws.getCell(4, i + 1), h));
       ws.getRow(4).height = 16;
 
@@ -605,7 +616,7 @@ export default function AccountingReceivablePage() {
         ws.getRow(rowNum).height = 15;
         styleData(ws.getCell(rowNum, 1), r.customer_name || 'Sin cliente', 'left', alt);
         styleData(ws.getCell(rowNum, 2), r.description || '-', 'left', alt);
-        styleData(ws.getCell(rowNum, 3), r.invoice_number || '-', 'center', alt);
+        styleData(ws.getCell(rowNum, 3), r.order_number || '-', 'center', alt);
         styleData(ws.getCell(rowNum, 4), formatDate(r.due_date), 'center', alt);
         const estado = r.status === 'paid' ? 'Pagado' : (r.status === 'overdue' ? 'Vencido' : (r.status === 'partial' ? 'Pago parcial' : 'Pendiente'));
         styleData(ws.getCell(rowNum, 5), estado, 'center', alt);
@@ -651,7 +662,7 @@ export default function AccountingReceivablePage() {
         columns: [
           { label: 'Cliente', key: 'cliente', width: 30 },
           { label: 'Descripción', key: 'descripcion', width: 35 },
-          { label: 'N° Factura', key: 'factura', width: 15 },
+          { label: 'N° Orden', key: 'orden', width: 15 },
           { label: 'Vencimiento', key: 'vencimiento', width: 15, formatter: (v) => formatDate(v) },
           { label: 'Monto Total', key: 'monto', width: 15, formatter: (v) => `$${toNumber(v).toFixed(2)}` },
           { label: 'Saldo Pendiente', key: 'saldo', width: 15, formatter: (v) => `$${toNumber(v).toFixed(2)}` }
@@ -659,7 +670,7 @@ export default function AccountingReceivablePage() {
         rows: filteredReceivables.map(r => ({
           cliente: r.customer_name || 'Sin cliente',
           descripcion: r.description || '-',
-          factura: r.invoice_number || '-',
+          orden: r.order_number || '-',
           vencimiento: r.due_date,
           monto: toNumber(r.amount),
           saldo: toNumber(r.balance !== undefined ? r.balance : r.amount)
@@ -791,7 +802,7 @@ export default function AccountingReceivablePage() {
   }, [user, showConfirm, alert, loadReceivables]);
 
   // ─── Navegación a POS para cobro ──────────────────────────────────────────
-  const handleNavigateToPayment = useCallback((receivable) => {
+  const navigateToPos = useCallback((receivable, path) => {
     const orderNum = receivable.order_number || receivable.invoice_number;
     const cedula = receivable.customer_cedula || receivable.customer_document || '9999999999';
     const nombre = receivable.customer_name || 'CONSUMIDOR FINAL';
@@ -799,8 +810,13 @@ export default function AccountingReceivablePage() {
     const telefono = receivable.customer_phone || '';
     const direccion = receivable.customer_address || '';
     
-    navigate('/app/pos/pos.sales', { 
+    navigate(path, {
       state: { 
+        receivableId: receivable.id,
+        receivableAmount: toNumber(receivable.amount),
+        receivableBalance: toNumber(receivable.balance ?? receivable.amount),
+        receivableDueDate: receivable.due_date || null,
+        receivableStatus: receivable.status || 'pending',
         orderNumber: orderNum, 
         customerCedula: cedula,
         customerName: nombre,
@@ -811,6 +827,34 @@ export default function AccountingReceivablePage() {
       } 
     });
   }, [navigate]);
+
+  const handleNavigateToPayment = useCallback((receivable) => {
+    if (navigationLoading) {
+      alert.info('Cargando los accesos disponibles a los puntos de venta. Intente nuevamente en unos segundos.');
+      return;
+    }
+
+    const role = (user?.roleCode || user?.role || '').toLowerCase();
+    const canUseAllPages = ['admin', 'owner', 'manager'].includes(role);
+    const canUsePosSales = canUseAllPages || hasAccess('pos', 'pos.sales');
+    const canUsePosGeneral = canUseAllPages || hasAccess('pos', 'pos.general');
+
+    if (canUsePosSales && canUsePosGeneral) {
+      setPendingReceivablePayment(receivable);
+    } else if (canUsePosGeneral) {
+      navigateToPos(receivable, '/app/pos/pos.general');
+    } else if (canUsePosSales) {
+      navigateToPos(receivable, '/app/pos/pos.sales');
+    } else {
+      alert.error('No tiene acceso a POS General ni a POS Ventas para cobrar esta cuenta.');
+    }
+  }, [alert, hasAccess, navigationLoading, navigateToPos, user]);
+
+  const choosePaymentPos = useCallback((path) => {
+    if (!pendingReceivablePayment) return;
+    navigateToPos(pendingReceivablePayment, path);
+    setPendingReceivablePayment(null);
+  }, [navigateToPos, pendingReceivablePayment]);
 
   // ─── Abrir modal de edición ──────────────────────────────────────────────
   const openEditReceivable = useCallback((receivable) => {
@@ -853,9 +897,9 @@ export default function AccountingReceivablePage() {
       render: (item) => <span>{item.description}</span>
     },
     {
-      accessor: 'invoice_number',
-      label: 'N° Factura',
-      render: (item) => <span>{item.invoice_number || '—'}</span>
+      accessor: 'order_number',
+      label: 'N° Orden',
+      render: (item) => <span>{item.order_number || '—'}</span>
     },
     {
       accessor: 'due_date',
@@ -1108,6 +1152,34 @@ export default function AccountingReceivablePage() {
             onApply={handleApplyCustomDate}
             onClose={() => setShowCustomDate(false)}
           />
+        </Modal>
+      )}
+
+      {pendingReceivablePayment && (
+        <Modal
+          closeOnOverlayClick={false}
+          isOpen={true}
+          onClose={() => setPendingReceivablePayment(null)}
+          title="Seleccionar punto de venta"
+          size="sm"
+          footer={
+            <ButtonGroup>
+              <IconTextButton variant="secondary" size="md" onClick={() => setPendingReceivablePayment(null)}>
+                Cancelar
+              </IconTextButton>
+              <IconTextButton variant="primary" size="md" onClick={() => choosePaymentPos('/app/pos/pos.general')}>
+                POS General
+              </IconTextButton>
+              <IconTextButton variant="primary" size="md" onClick={() => choosePaymentPos('/app/pos/pos.sales')}>
+                POS Ventas
+              </IconTextButton>
+            </ButtonGroup>
+          }
+        >
+          <p>
+            Elija dónde cobrar la cuenta <strong>#{pendingReceivablePayment.order_number || pendingReceivablePayment.invoice_number}</strong>.
+            El cliente y el saldo pendiente se enviarán al punto de venta seleccionado.
+          </p>
         </Modal>
       )}
     </PageTemplate>
